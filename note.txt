@@ -1,0 +1,5 @@
+riga per riga
+In  inglese
+structured output (gemma 3 lo prevede)
+esempio di input ed output
+orientarsi a dare gli errori da non fare

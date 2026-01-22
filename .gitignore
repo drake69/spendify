@@ -1,0 +1,11 @@
+__pycache__/
+.venv/
+/llm_cache
+/backup
+/da_cancellare
+/logs
+*.csv
+*.xls
+*.xlsx
+*.tmp
+secrets.py

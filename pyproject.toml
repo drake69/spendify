@@ -1,0 +1,23 @@
+[project]
+name = "spendify"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "diskcache>=5.6.3",
+    "langchain-community>=0.4.1",
+    "langchain-ollama>=1.0.1",
+    "litellm>=1.80.11",
+    "openai>=2.14.0",
+    "openpyxl>=3.1.5",
+    "pandas>=2.3.3",
+    "pdfplumber>=0.11.8",
+    "plotly>=6.5.0",
+    "psutil>=7.2.1",
+    "pytest>=9.0.2",
+    "streamlit>=1.52.2",
+    "thefuzz>=0.22.1",
+    "watchdog>=6.0.0",
+    "xlsxwriter>=3.2.9",
+]
