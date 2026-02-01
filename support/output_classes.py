@@ -2,7 +2,6 @@ from enum import Enum
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
-
 class AccountType(str, Enum):
     conto_corrente = "conto_corrente"
     carta_credito = "carta_credito"
