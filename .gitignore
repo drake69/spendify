@@ -9,4 +9,4 @@ venv
 *.xls
 *.xlsx
 *.tmp
-secrets.py
+my_secrets.py
