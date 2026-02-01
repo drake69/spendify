@@ -1,8 +1,8 @@
 import json
-import secrets
+import my_secrets
 
-OWN_NAMES = secrets.OWN_NAMES
-API_KEY = secrets.API_KEY
+OWN_NAMES = my_secrets.OWN_NAMES
+API_KEY = my_secrets.API_KEY
 
 DB_PATH = "history_database.csv"
 LLM_CACHE_PATH = "./llm_cache"
