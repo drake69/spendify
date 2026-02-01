@@ -1,5 +1,6 @@
 __pycache__/
 .venv/
+venv
 /llm_cache
 /backup
 /da_cancellare
