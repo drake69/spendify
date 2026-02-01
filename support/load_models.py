@@ -1,4 +1,3 @@
-import support.settings as settings
 
 from langchain_anthropic import ChatAnthropic
 from langchain_google_genai import ChatGoogleGenerativeAI
