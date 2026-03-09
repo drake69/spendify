@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Spendify — Report Finanziario</title>
+  <style>
+    body { font-family: sans-serif; max-width: 1100px; margin: 0 auto; padding: 1rem; }
+    h1 { color: #1e3c64; } h2 { color: #2980b9; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
+    th { background: #1e3c64; color: white; padding: 6px 10px; text-align: left; }
+    td { padding: 4px 10px; border-bottom: 1px solid #eee; }
+    tr:nth-child(even) { background: #f5f5f5; }
+    .neg { color: #c0392b; } .pos { color: #27ae60; }
+    .summary { display: flex; gap: 2rem; margin-bottom: 1rem; }
+    .kpi { border: 1px solid #ddd; padding: 1rem; border-radius: 6px; text-align: center; }
+    .kpi h3 { margin: 0 0 0.4rem 0; font-size: 0.9rem; color: #666; }
+    .kpi .value { font-size: 1.5rem; font-weight: bold; }
+  </style>
+</head>
+<body>
+<h1>Spendify — Report Finanziario</h1>
+<p>Periodo: {{ summary.date_from or 'inizio' }} — {{ summary.date_to or 'oggi' }} &nbsp;|&nbsp; Generato il {{ generated_at }}</p>
+
+<div class="summary">
+  <div class="kpi">
+    <h3>Saldo Netto</h3>
+    <div class="value {% if summary.net >= 0 %}pos{% else %}neg{% endif %}">
+      {{ "%.2f"|format(summary.net|float) }} €
+    </div>
+  </div>
+  <div class="kpi">
+    <h3>Entrate</h3>
+    <div class="value pos">{{ "%.2f"|format(summary.total_income|float) }} €</div>
+  </div>
+  <div class="kpi">
+    <h3>Uscite</h3>
+    <div class="value neg">{{ "%.2f"|format(summary.total_expense|float) }} €</div>
+  </div>
+</div>
+
+{{ chart_html }}
+
+<h2>Per Categoria</h2>
+<table>
+  <tr><th>Categoria</th><th>Importo (€)</th></tr>
+  {% for cat, val in summary.by_category.items() %}
+  <tr>
+    <td>{{ cat }}</td>
+    <td class="{% if val >= 0 %}pos{% else %}neg{% endif %}">{{ "%.2f"|format(val|float) }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h2>Transazioni (prime 200)</h2>
+<table>
+  <tr>
+    <th>Data</th><th>Descrizione</th><th>Importo</th><th>Valuta</th>
+    <th>Tipo</th><th>Categoria</th><th>Sottocategoria</th><th>Conto</th>
+  </tr>
+  {% for tx in summary.transactions[:200] %}
+  <tr>
+    <td>{{ tx.date }}</td>
+    <td>{{ tx.description[:70] if tx.description else '' }}</td>
+    <td class="{% if tx.amount >= 0 %}pos{% else %}neg{% endif %}">{{ "%.2f"|format(tx.amount|float) }}</td>
+    <td>{{ tx.currency }}</td>
+    <td>{{ tx.tx_type }}</td>
+    <td>{{ tx.category or '' }}</td>
+    <td>{{ tx.subcategory or '' }}</td>
+    <td>{{ tx.account_label or '' }}</td>
+  </tr>
+  {% endfor %}
+</table>
+</body>
+</html>
