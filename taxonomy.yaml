@@ -1,0 +1,159 @@
+version: "1"
+
+expenses:
+  - category: "Casa"
+    subcategories:
+      - "Mutuo / Affitto"
+      - "Condominio"
+      - "Gas"
+      - "Energia elettrica"
+      - "Acqua"
+      - "Spazzatura (TARI)"
+      - "IMU / Tasse sulla casa"
+      - "Manutenzione e riparazioni"
+      - "Arredamento"
+      - "Elettrodomestici"
+      - "Altro casa"
+
+  - category: "Alimentari"
+    subcategories:
+      - "Spesa supermercato"
+      - "Mercato / freschi"
+      - "Macelleria / pescheria"
+      - "Altro alimentari"
+
+  - category: "Ristorazione"
+    subcategories:
+      - "Ristorante"
+      - "Bar / caffè"
+      - "Asporto / delivery"
+
+  - category: "Trasporti"
+    subcategories:
+      - "Carburante"
+      - "Assicurazione auto"
+      - "Bollo auto"
+      - "Manutenzione auto"
+      - "Parcheggio / ZTL"
+      - "Trasporto pubblico"
+      - "Taxi / ride-sharing"
+      - "Altro trasporti"
+
+  - category: "Salute"
+    subcategories:
+      - "Medico di base / specialista"
+      - "Farmaci"
+      - "Analisi / diagnostica"
+      - "Dentista"
+      - "Ottico"
+      - "Altro salute"
+
+  - category: "Istruzione"
+    subcategories:
+      - "Rette scolastiche"
+      - "Libri e materiale"
+      - "Corsi e formazione"
+      - "Altro istruzione"
+
+  - category: "Abbigliamento"
+    subcategories:
+      - "Abbigliamento adulti"
+      - "Abbigliamento bambini"
+      - "Calzature"
+      - "Altro abbigliamento"
+
+  - category: "Comunicazioni"
+    subcategories:
+      - "Telefonia mobile"
+      - "Internet / fibra"
+      - "Telefonia fissa"
+      - "Streaming / abbonamenti digitali"
+
+  - category: "Svago e tempo libero"
+    subcategories:
+      - "Sport e palestra"
+      - "Cinema / teatro / eventi"
+      - "Viaggi e vacanze"
+      - "Hobby"
+      - "Libri / riviste"
+      - "Altro svago"
+
+  - category: "Animali domestici"
+    subcategories:
+      - "Cibo"
+      - "Veterinario"
+      - "Accessori"
+
+  - category: "Finanza e assicurazioni"
+    subcategories:
+      - "Assicurazione vita"
+      - "Assicurazione casa"
+      - "Polizze varie"
+      - "Commissioni bancarie"
+      - "Investimenti / risparmio"
+
+  - category: "Cura personale"
+    subcategories:
+      - "Parrucchiere / barbiere"
+      - "Cosmetici e igiene"
+      - "Centro estetico / SPA"
+
+  - category: "Tasse e tributi"
+    subcategories:
+      - "IRPEF / F24"
+      - "Imposte varie"
+      - "Sanzioni / more"
+
+  - category: "Regali e donazioni"
+    subcategories:
+      - "Regali"
+      - "Donazioni / beneficenza"
+
+  - category: "Altro"
+    subcategories:
+      - "Spese non classificate"
+
+income:
+  - category: "Lavoro dipendente"
+    subcategories:
+      - "Stipendio"
+      - "Tredicesima / quattordicesima"
+      - "Bonus e premi"
+      - "Rimborso spese lavorative"
+
+  - category: "Lavoro autonomo"
+    subcategories:
+      - "Fattura / parcella"
+      - "Collaborazione occasionale"
+      - "Diritti d'autore / royalties"
+
+  - category: "Rendite finanziarie"
+    subcategories:
+      - "Dividendi"
+      - "Interessi attivi"
+      - "Plusvalenze"
+      - "Cedole obbligazionarie"
+
+  - category: "Rendite immobiliari"
+    subcategories:
+      - "Affitto percepito"
+      - "Vendita immobile"
+
+  - category: "Trasferimenti e rimborsi"
+    subcategories:
+      - "Rimborso generico"
+      - "Storno / rettifica bancaria"
+      - "Giroconto entrata"
+      - "Indennizzo / risarcimento"
+
+  - category: "Prestazioni sociali"
+    subcategories:
+      - "Pensione / rendita"
+      - "Sussidio / bonus statale"
+      - "Indennità (NASpI, maternità, ecc.)"
+
+  - category: "Altro entrate"
+    subcategories:
+      - "Vendita beni usati"
+      - "Regalo ricevuto"
+      - "Entrate non classificate"

@@ -1,40 +1,41 @@
 import streamlit as st
-import support.core_logic as core
 
-def render_sidebar():
-    st.sidebar.title("🏦 Menu Finanze")
 
-    menu = st.sidebar.radio(
-        "Naviga tra le sezioni:",
-        [
-            "📥 Caricamento",
-            "📝 Revisione",
-            "📊 Analisi & Budget",
-            "🔍 Riconciliazione Ricevute",
-            "📋 Registro Caricamenti"
-        ]
-    )
+def render_sidebar() -> str:
+    """Render the sidebar and return the selected page key."""
+    st.sidebar.title("🏦 Spendify")
 
-    st.sidebar.divider()
-    st.sidebar.subheader("🤖 Configurazione AI")
-
-    ai_mode = st.sidebar.selectbox(
-        "Motore AI Fallback",
-        ["Nessuno", "Ollama (Locale)", "OpenAI"]
-    )
-
-    api_key = (
-        st.sidebar.text_input("OpenAI API Key", type="password")
-        if ai_mode == "OpenAI"
-        else None
-    )
-
-    st.sidebar.divider()
-    st.sidebar.subheader("🎯 Budget Mensile")
-
-    budgets = {
-        cat: st.sidebar.number_input(f"Limite {cat} (€)", 0, 5000, 500, step=50)
-        for cat in core.DEFAULT_CATEGORIES
+    labels = {
+        "📥 Import": "import",
+        "📋 Ledger": "ledger",
+        "📊 Analytics": "analytics",
+        "🔍 Review": "review",
     }
 
-    return menu, ai_mode, api_key, budgets
+    choice = st.sidebar.radio("Naviga", list(labels.keys()))
+
+    st.sidebar.divider()
+    st.sidebar.subheader("⚙️ Configurazione LLM")
+
+    backend = st.sidebar.selectbox(
+        "Backend LLM",
+        ["local_ollama", "openai", "claude"],
+        help="local_ollama = privacy-first (default)",
+    )
+    st.session_state["llm_backend"] = backend
+
+    if backend == "openai":
+        key = st.sidebar.text_input("OpenAI API Key", type="password",
+                                    value=st.session_state.get("openai_api_key", ""))
+        st.session_state["openai_api_key"] = key
+    elif backend == "claude":
+        key = st.sidebar.text_input("Anthropic API Key", type="password",
+                                    value=st.session_state.get("anthropic_api_key", ""))
+        st.session_state["anthropic_api_key"] = key
+
+    st.sidebar.divider()
+    st.sidebar.subheader("🔄 Modalità Giroconti")
+    mode = st.sidebar.radio("Giroconti nel registro", ["neutral", "exclude"], index=0)
+    st.session_state["giroconto_mode"] = mode
+
+    return labels[choice]
