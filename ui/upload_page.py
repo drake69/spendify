@@ -1,98 +1,136 @@
+"""Import page (RF-08): upload files, run pipeline, show summary."""
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
 import streamlit as st
-import logging
-import pandas as pd
-import support.core_logic as core
-from services.cleaning_service import clean_dataframe
 
-logger = logging.getLogger(__name__)
+from core.categorizer import TaxonomyConfig
+from core.models import GirocontoMode
+from core.orchestrator import ProcessingConfig, process_files
+from core.sanitizer import SanitizationConfig
+from db.models import get_session
+from db.repository import (
+    get_all_batch_hashes,
+    get_category_rules,
+    get_document_schema,
+    persist_import_result,
+)
+from support.logging import setup_logging
 
-STATE_KEY = "working_df"
+logger = setup_logging()
 
-def render_upload_page():
-    st.header("📥 Caricamento Nuovi Estratti Conto")
-    logger.debug("Rendering upload page")
-    
-    uploaded_file = st.file_uploader(
-        "Carica PDF, CSV o Excel",
-        type=["pdf", "csv", "xls", "xlsx"]
+TAXONOMY_PATH = os.getenv("TAXONOMY_PATH", "taxonomy.yaml")
+
+
+def _load_taxonomy() -> TaxonomyConfig:
+    if Path(TAXONOMY_PATH).exists():
+        return TaxonomyConfig.from_yaml(TAXONOMY_PATH)
+    # Fallback minimal taxonomy
+    return TaxonomyConfig(
+        expenses={"Altro": ["Spese non classificate"]},
+        income={"Altro entrate": ["Entrate non classificate"]},
     )
-    iban_input = st.text_input("IBAN manuale")
-
-    if STATE_KEY not in st.session_state:
-        st.session_state[STATE_KEY] = None
-
-    if uploaded_file and st.session_state[STATE_KEY] is None:
-        logger.info(f"Processing upload: {uploaded_file.name}")
-        try:
-            progress_bar = st.progress(0)
-            status_text = st.empty()
-            
-            status_text.text("Caricamento file...")
-            progress_bar.progress(20)
-            df, iban = _load_file(uploaded_file, iban_input)
-            logger.info(f"File loaded successfully: {len(df)} rows, IBAN: {iban}")
-            
-            status_text.text("Pulizia dati...")
-            progress_bar.progress(50)
-            df = clean_dataframe(df)
-            logger.info(f"Data cleaned: {len(df)} rows remaining")
-            
-            status_text.text("Preparazione schema...")
-            progress_bar.progress(75)
-            df = _ensure_editor_schema(df, iban)
-            logger.debug(f"Schema prepared with columns: {df.columns.tolist()}")
-            
-            progress_bar.progress(100)
-            st.session_state[STATE_KEY] = df
-            status_text.text("Completato!")
-            
-            st.success(f"File caricato con {len(df)} righe. Vai alla pagina Revisione per modificare.")
-            logger.info(f"Upload completed: {len(df)} rows stored in session state")
-        except Exception as e:
-            st.error(f"Errore nel caricamento: {e}")
-            logger.error(f"Error processing upload '{uploaded_file.name}'", exc_info=True)
 
 
-def _load_file(uploaded_file, iban_input):
-    logger.debug(f"Loading file: {uploaded_file.name}")
-    name = uploaded_file.name.lower()
-    try:
-        if name.endswith(".pdf"):
-            logger.debug("Extracting PDF file")
-            iban, df = core.load_pdf(uploaded_file)
-        elif name.endswith((".xls", ".xlsx")):
-            logger.debug("Reading Excel file")
-            df = pd.read_excel(uploaded_file)
-            iban = iban_input or "EXCEL_IMPORT"
-        elif name.endswith(".csv"):
-            logger.debug("Reading CSV file")
-            df = pd.read_csv(uploaded_file, sep=None, engine="python")
-            iban = iban_input or "CSV_IMPORT"
-        else:
-            logger.error(f"Unsupported file format: {name}")
-            raise ValueError("Formato file non supportato")
-        logger.info(f"File loaded: {len(df)} rows, IBAN: {iban}")
+def _build_config(engine) -> ProcessingConfig:
+    backend = st.session_state.get("llm_backend", "local_ollama")
+    mode_str = st.session_state.get("giroconto_mode", "neutral")
 
-        df = core.review_csv(df)
-        # df = core.apply_description_smart_cleaning(df)
-        # df = core.apply_enhanced_categorization(df, st.session_state.history_df)
-        # df = core.categorize_with_llm(df)
+    # Owner names from env for PII sanitization
+    owner_names = [n.strip() for n in os.getenv("OWNER_NAMES", "").split(",") if n.strip()]
 
-        return df, iban
-    except Exception as e:
-        logger.error(f"Failed to load file: {uploaded_file.name}", exc_info=True)
-        raise
+    return ProcessingConfig(
+        llm_backend=backend,
+        giroconto_mode=GirocontoMode(mode_str),
+        sanitize_config=SanitizationConfig(owner_names=owner_names),
+        openai_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+        claude_model=os.getenv("CLAUDE_MODEL", "claude-3-5-haiku-20241022"),
+        ollama_model=os.getenv("OLLAMA_MODEL", "gemma3:9b"),
+        ollama_base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+    )
 
 
-def _ensure_editor_schema(df, iban):
-    logger.debug(f"Ensuring editor schema for IBAN: {iban}")
-    df = df.copy()
-    df["IBAN"] = iban
-    df["Categoria"] = df.get("Categoria", "Varie da Identificare")
-    df["Contesto"] = df.get("Contesto", "Altro")
-    df["Richiede_Documento"] = df.get("Richiede_Documento", False)
-    df["Stato_Riconciliazione"] = df.get("Stato_Riconciliazione", "OK")
-    df["Categoria_Approvata"] = True
-    df["Da_Eliminare"] = False
-    logger.debug(f"Schema complete with {len(df.columns)} columns")
-    return df
+def render_upload_page(engine):
+    st.header("📥 Import — Caricamento Estratti Conto")
+
+    uploaded_files = st.file_uploader(
+        "Carica uno o più file (CSV, XLSX, PDF)",
+        type=["csv", "xls", "xlsx"],
+        accept_multiple_files=True,
+    )
+
+    if not uploaded_files:
+        st.info("Carica uno o più file per avviare l'elaborazione.")
+        return
+
+    if st.button("▶️ Elabora file", type="primary"):
+        session = get_session(engine)
+        taxonomy = _load_taxonomy()
+        config = _build_config(engine)
+
+        with session:
+            user_rules = get_category_rules(session)
+            existing_hashes = get_all_batch_hashes(session)
+
+            # Load known schemas
+            known_schemas = {}
+            for uf in uploaded_files:
+                schema = get_document_schema(session, uf.name)
+                if schema:
+                    known_schemas[uf.name] = schema
+
+            files = [(uf.read(), uf.name) for uf in uploaded_files]
+
+        progress = st.progress(0)
+        status = st.empty()
+
+        results = []
+        with get_session(engine) as session2:
+            for i, (raw_bytes, filename) in enumerate(files):
+                status.text(f"Elaborazione: {filename}…")
+                schema = known_schemas.get(filename)
+                from core.orchestrator import process_file
+                result = process_file(
+                    raw_bytes=raw_bytes,
+                    filename=filename,
+                    config=config,
+                    taxonomy=taxonomy,
+                    user_rules=user_rules,
+                    known_schema=schema,
+                    existing_batch_hashes=existing_hashes,
+                )
+                persist_import_result(session2, result)
+                results.append(result)
+                progress.progress((i + 1) / len(files))
+
+        status.text("Elaborazione completata!")
+
+        # Summary
+        st.divider()
+        st.subheader("Riepilogo elaborazione")
+        for result in results:
+            with st.expander(f"📄 {result.source_name}", expanded=True):
+                if result.skipped_duplicate:
+                    st.warning("File già importato (duplicato ignorato).")
+                    continue
+                if result.errors:
+                    st.error("Errori: " + "; ".join(result.errors))
+                else:
+                    col1, col2, col3, col4 = st.columns(4)
+                    col1.metric("Transazioni", len(result.transactions))
+                    col2.metric("Riconciliazioni", len(result.reconciliations))
+                    col3.metric("Giroconti", len(result.transfer_links))
+                    col4.metric("Flusso", result.flow_used.upper())
+
+                    to_review = sum(1 for tx in result.transactions if tx.get("to_review"))
+                    if to_review:
+                        st.warning(f"{to_review} transazioni richiedono revisione manuale → pagina Review")
+
+                    if result.doc_schema:
+                        st.caption(
+                            f"Schema: {result.doc_schema.doc_type} | "
+                            f"Account: {result.doc_schema.account_label} | "
+                            f"Confidence: {result.doc_schema.confidence}"
+                        )

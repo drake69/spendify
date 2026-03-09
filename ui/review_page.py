@@ -1,86 +1,104 @@
+"""Review page (RF-08): manual review of low/medium confidence transactions."""
+from __future__ import annotations
+
 import streamlit as st
-import logging
-import support.core_logic as core
-from services.history_service import save_history
+import pandas as pd
 
-# Configure logger with more detail
-logger = logging.getLogger(__name__)
+from db.models import get_session
+from db.repository import (
+    get_category_rules,
+    get_transactions,
+    update_transaction_category,
+    create_category_rule,
+)
+from core.categorizer import TaxonomyConfig
+from support.logging import setup_logging
+import os
+from pathlib import Path
 
-CATEGORIE = list(core.DEFAULT_CATEGORIES.keys())
-CONTESTI = core.DEFAULT_CONTEXTS
-STATE_KEY = "working_df"
-EDITOR_KEY = "review_editor"
+logger = setup_logging()
+TAXONOMY_PATH = os.getenv("TAXONOMY_PATH", "taxonomy.yaml")
 
 
-def render_review_page(history_df):
-    """Renderizza la pagina di revisione estratti conto"""
-    st.header("📝 Revisione Estratti Conto")
-    logger.debug("Rendering review page")
-    
-    # Verifica che ci sia un file caricato
-    if STATE_KEY not in st.session_state or st.session_state[STATE_KEY] is None:
-        logger.warning("No file loaded in session state")
-        st.info("Nessun file caricato. Vai alla pagina Caricamento.")
-        return
-    
-    logger.debug(f"Working dataframe shape: {st.session_state[STATE_KEY].shape}")
-    
-    # Data editor - gestisce automaticamente lo stato tramite la key
-    edited_df = st.data_editor(
-        st.session_state[STATE_KEY],
-        key=EDITOR_KEY,
-        width="stretch",
-        num_rows="dynamic",
-        column_config=_editor_columns()
+def _load_taxonomy() -> TaxonomyConfig:
+    if Path(TAXONOMY_PATH).exists():
+        return TaxonomyConfig.from_yaml(TAXONOMY_PATH)
+    return TaxonomyConfig(
+        expenses={"Altro": ["Spese non classificate"]},
+        income={"Altro entrate": ["Entrate non classificate"]},
     )
-    
-    logger.debug(f"Edited dataframe shape: {edited_df.shape}")
-    
-    # Bottone di salvataggio
-    if st.button("💾 Salva nel Database", type="primary"):
-        try:
-            logger.info("Save button clicked")
-            
-            # Usa edited_df direttamente (contiene le ultime modifiche)
-            df_to_save = edited_df.copy()
-            rows_before = len(df_to_save)
-            
-            # Rimuovi le righe marcate per eliminazione
-            df_to_save = df_to_save[df_to_save["Da_Eliminare"] != True]
-            removed_rows = rows_before - len(df_to_save)
-            logger.info(f"Removed {removed_rows} rows marked for deletion")
-            
-            # Rimuovi duplicati rispetto allo storico
-            final_df = core.remove_duplicates(df_to_save, history_df)
-            logger.info(f"Deduplication completed: {len(final_df)} rows remaining")
-            
-            # Salva nel database
-            save_history(final_df)
-            logger.info("History saved successfully to database")
-            
-            # Feedback all'utente
-            st.success("Database aggiornato con successo!")
-            st.balloons()
-            
-            # Pulisci il session state dopo il salvataggio
-            st.session_state[STATE_KEY] = None
-            
-        except Exception as e:
-            logger.error(f"Error during save operation: {str(e)}", exc_info=True)
-            st.error("Errore durante il salvataggio. Contattare l'amministratore.")
 
 
-def _editor_columns():
-    """Configurazione delle colonne per il data editor"""
-    logger.debug("Building editor columns configuration")
-    return {
-        "Categoria_Approvata": st.column_config.CheckboxColumn("Approvata"),
-        "Categoria": st.column_config.SelectboxColumn("Categoria", options=CATEGORIE),
-        "Contesto": st.column_config.SelectboxColumn("Contesto", options=CONTESTI),
-        "Richiede_Documento": st.column_config.CheckboxColumn("Richiede Documento", disabled=True),
-        "Stato_Riconciliazione": st.column_config.SelectboxColumn(
-            "Stato",
-            options=["OK", "In Attesa Ricevuta", "Riconciliato"]
-        ),
-        "Da_Eliminare": st.column_config.CheckboxColumn("Elimina")
-    }
+def render_review_page(engine):
+    st.header("🔍 Review — Revisione Manuale")
+
+    taxonomy = _load_taxonomy()
+    all_categories = taxonomy.all_expense_categories + taxonomy.all_income_categories
+
+    session = get_session(engine)
+    with session:
+        txs = get_transactions(session, filters={"to_review": True})
+
+        if not txs:
+            st.success("Nessuna transazione richiede revisione.")
+            return
+
+        st.info(f"{len(txs)} transazioni in coda di revisione.")
+
+        data = [
+            {
+                "id": tx.id,
+                "Data": tx.date,
+                "Descrizione": (tx.description or "")[:100],
+                "Importo": float(tx.amount),
+                "Tipo": tx.tx_type,
+                "Categoria attuale": tx.category or "",
+                "Sottocategoria attuale": tx.subcategory or "",
+                "Confidenza": tx.category_confidence or "",
+            }
+            for tx in txs
+        ]
+        df = pd.DataFrame(data)
+        st.dataframe(df.drop(columns=["id"]), use_container_width=True)
+
+        st.divider()
+        st.subheader("Applica correzione")
+
+        tx_options = {f"{d['Data']} | {d['Descrizione'][:60]} | {d['Importo']:.2f}€": d["id"]
+                      for d in data}
+
+        selected_label = st.selectbox("Seleziona transazione", list(tx_options.keys()))
+        selected_id = tx_options[selected_label]
+
+        col1, col2 = st.columns(2)
+        with col1:
+            new_cat = st.selectbox("Nuova categoria", all_categories)
+        with col2:
+            subs = taxonomy.valid_subcategories(new_cat)
+            new_sub = st.selectbox("Nuova sottocategoria", subs) if subs else st.text_input("Nuova sottocategoria")
+
+        save_rule = st.checkbox(
+            "Salva come regola deterministica (applica a future transazioni simili)",
+            value=False,
+        )
+
+        if st.button("💾 Applica correzione", type="primary"):
+            ok = update_transaction_category(session, selected_id, new_cat, new_sub)
+            if ok:
+                if save_rule:
+                    # Find description for the rule pattern
+                    tx_row = next((tx for tx in txs if tx.id == selected_id), None)
+                    if tx_row and tx_row.description:
+                        create_category_rule(
+                            session=session,
+                            pattern=tx_row.description,
+                            match_type="contains",
+                            category=new_cat,
+                            subcategory=new_sub,
+                            priority=10,
+                        )
+                session.commit()
+                st.success(f"Categoria aggiornata: {new_cat} / {new_sub}")
+                st.rerun()
+            else:
+                st.error("Transazione non trovata.")
