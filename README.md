@@ -1,46 +1,48 @@
 # Spendify v2.1
 
-Registro finanziario personale unificato con pipeline ibrida deterministica + LLM.
+> 🇮🇹 [Leggi in italiano](README.it.md)
 
-Aggrega estratti conto eterogenei (conti correnti, carte di credito, carte di debito, conti deposito, prepagate) in un unico ledger cronologico, eliminando il double-counting da addebiti carta periodici e da giroconti interni. Il processing avviene in modalità **offline-first**; i backend LLM remoti sono supportati come opt-in con sanitizzazione PII obbligatoria.
+Unified personal finance ledger with a hybrid deterministic + LLM pipeline.
 
----
-
-## Indice
-
-- [Caratteristiche principali](#caratteristiche-principali)
-- [Architettura](#architettura)
-- [Struttura del progetto](#struttura-del-progetto)
-- [Installazione](#installazione)
-- [Configurazione](#configurazione)
-- [Avvio](#avvio)
-- [Tassonomia](#tassonomia)
-- [Test](#test)
-- [Decisioni di design](#decisioni-di-design)
+Aggregates heterogeneous bank statements (current accounts, credit cards, debit cards, savings accounts, prepaid cards) into a single chronological ledger, eliminating double-counting from periodic card settlements and internal transfers. Processing runs **offline-first**; remote LLM backends are supported as opt-in with mandatory PII sanitization.
 
 ---
 
-## Caratteristiche principali
+## Table of Contents
 
-| Funzionalità | Dettaglio |
+- [Features](#features)
+- [Architecture](#architecture)
+- [Project structure](#project-structure)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Running the app](#running-the-app)
+- [Taxonomy](#taxonomy)
+- [Tests](#tests)
+- [Design decisions](#design-decisions)
+
+---
+
+## Features
+
+| Feature | Detail |
 |---|---|
-| **Classificazione automatica** | Rileva tipo di documento (conto corrente, carta, prepagata, deposito) senza configurazione preventiva |
-| **Normalizzazione deterministica** | Encoding detection, delimiter detection, header detection, importi in `Decimal` (mai `float`) |
-| **Idempotenza SHA-256** | Re-importare lo stesso file produce esattamente lo stesso insieme di righe |
-| **Riconciliazione carta–c/c (RF-03)** | Algoritmo a 3 fasi che elimina il double-counting da addebiti aggregati mensili |
-| **Rilevamento giroconti (RF-04)** | Matching simbolico importo+finestra temporale; esclusione o neutralizzazione configurabile |
-| **Categorizzazione a cascata (RF-05)** | Regole utente → regex statiche → LLM strutturato → fallback "Altro" |
-| **Tassonomia a 2 livelli** | 15 categorie di spesa + 7 di entrata, personalizzabile via `taxonomy.yaml` |
-| **Backend LLM multi-provider** | Ollama (locale, default), OpenAI, Claude — interfaccia astratta comune, nessun LangChain |
-| **PII sanitization (RF-10)** | IBAN, PAN, CF, nomi del titolare redatti prima di qualsiasi chiamata remota |
-| **Circuit breaker** | Fallback automatico su Ollama locale; quarantena (`to_review=True`) se tutti i backend falliscono |
-| **Persistenza SQLAlchemy** | 6 tabelle ORM; CRUD idempotente; migrazioni Alembic |
-| **Export report** | HTML standalone (Plotly), CSV, XLSX |
-| **UI Streamlit 4 pagine** | Import → Ledger → Analytics → Revisione |
+| **Automatic classification** | Detects document type (current account, credit/debit card, prepaid, savings) with no prior configuration |
+| **Deterministic normalization** | Encoding detection, delimiter detection, header detection, amounts as `Decimal` (never `float`) |
+| **SHA-256 idempotency** | Re-importing the same file always produces exactly the same set of rows |
+| **Card–account reconciliation (RF-03)** | 3-phase algorithm that eliminates double-counting from monthly aggregate settlements |
+| **Internal transfer detection (RF-04)** | Symbolic amount + time-window matching; configurable exclusion or neutralization |
+| **Cascade categorization (RF-05)** | User rules → static regex → structured LLM → fallback "Other" |
+| **2-level taxonomy** | 15 expense categories + 7 income categories, customizable via `taxonomy.yaml` |
+| **Multi-provider LLM backend** | Ollama (local, default), OpenAI, Claude — shared abstract interface, no LangChain |
+| **PII sanitization (RF-10)** | IBAN, PAN, fiscal codes, owner names redacted before any remote call |
+| **Circuit breaker** | Automatic fallback to local Ollama; quarantine (`to_review=True`) if all backends fail |
+| **SQLAlchemy persistence** | 6 ORM tables; idempotent CRUD; Alembic migrations |
+| **Report export** | Standalone HTML (Plotly), CSV, XLSX |
+| **4-page Streamlit UI** | Import → Ledger → Analytics → Review |
 
 ---
 
-## Architettura
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -55,7 +57,7 @@ Aggrega estratti conto eterogenei (conti correnti, carte di credito, carte di de
           │              │                   │
    Flow 1 (template)   Flow 2 (schema-on-read)
    DocumentSchema       classifier.py → LLM  → DocumentSchema
-   già noto             (campione sanitizzato)
+   already in DB        (sanitized sample)
           │
    normalizer.py        sanitizer.py     llm_backends.py
    ├─ encoding detect   ├─ IBAN/PAN/CF   ├─ OllamaBackend
@@ -64,14 +66,14 @@ Aggrega estratti conto eterogenei (conti correnti, carte di credito, carte di de
    ├─ RF-03 reconcile                       BackendFactory
    └─ RF-04 transfers                       call_with_fallback()
           │
-   categorizer.py  ←── taxonomy.yaml (2 livelli)
-   Step 0: regole utente
-   Step 1: regex statiche
-   Step 2: stub ML
+   categorizer.py  ←── taxonomy.yaml (2 levels)
+   Step 0: user rules
+   Step 1: static regex
+   Step 2: ML stub
    Step 3: LLM structured output
-   Step 4: fallback "Altro"
+   Step 4: fallback "Other"
           │
-      db/repository.py   (SQLAlchemy, idempotente)
+      db/repository.py   (SQLAlchemy, idempotent)
       └─ Transaction · ImportBatch · DocumentSchemaModel
          ReconciliationLink · InternalTransferLink · CategoryRule
           │
@@ -83,177 +85,177 @@ Aggrega estratti conto eterogenei (conti correnti, carte di credito, carte di de
 
 | | Flow 1 | Flow 2 |
 |---|---|---|
-| **Attivazione** | `DocumentSchema` già in DB per quel file hash / istituto | Prima importazione di un nuovo formato |
-| **Schema** | Recuperato da DB, applicato direttamente | LLM inferisce lo schema da un campione anonimizzato |
-| **Promozione** | — | Il template Flow 2 approvato viene salvato e diventa Flow 1 |
-| **Costo LLM** | Zero (solo categorizzazione) | Una chiamata per classificazione + una per categorizzazione batch |
+| **Trigger** | `DocumentSchema` already in DB for that file hash / institution | First import of a new format |
+| **Schema** | Retrieved from DB and applied directly | LLM infers the schema from an anonymized sample |
+| **Promotion** | — | Approved Flow 2 template is saved and becomes Flow 1 |
+| **LLM cost** | Zero (categorization only) | One call for classification + one for batch categorization |
 
 ---
 
-## Struttura del progetto
+## Project structure
 
 ```
 spendify/
-├── app.py                  # Entry point Streamlit
-├── taxonomy.yaml           # Tassonomia a 2 livelli (spese + entrate)
-├── .env.example            # Template variabili d'ambiente
-├── pyproject.toml          # Dipendenze (uv / pip)
+├── app.py                  # Streamlit entry point
+├── taxonomy.yaml           # 2-level taxonomy (expenses + income)
+├── .env.example            # Environment variable template
+├── pyproject.toml          # Dependencies (uv / pip)
 │
 ├── core/
-│   ├── models.py           # Enum: DocumentType, TransactionType, GirocontoMode …
+│   ├── models.py           # Enums: DocumentType, TransactionType, GirocontoMode …
 │   ├── schemas.py          # DocumentSchema (Pydantic) + llm_json_schema()
 │   ├── llm_backends.py     # LLMBackend ABC · Ollama · OpenAI · Claude · BackendFactory
 │   ├── sanitizer.py        # PII redaction (RF-10)
 │   ├── normalizer.py       # Encoding, parse_amount (Decimal), SHA-256, RF-03, RF-04
-│   ├── classifier.py       # Flow 2: inferenza DocumentSchema via LLM
-│   ├── categorizer.py      # Cascata a 4 step + TaxonomyConfig
-│   └── orchestrator.py     # Pipeline principale: ProcessingConfig · process_file()
+│   ├── classifier.py       # Flow 2: DocumentSchema inference via LLM
+│   ├── categorizer.py      # 4-step cascade + TaxonomyConfig
+│   └── orchestrator.py     # Main pipeline: ProcessingConfig · process_file()
 │
 ├── db/
-│   ├── models.py           # ORM SQLAlchemy (6 tabelle)
-│   └── repository.py       # CRUD idempotente · persist_import_result()
+│   ├── models.py           # SQLAlchemy ORM (6 tables)
+│   └── repository.py       # Idempotent CRUD · persist_import_result()
 │
 ├── reports/
 │   ├── generator.py        # HTML (Jinja2+Plotly) · CSV · XLSX
 │   └── template_report.html.j2
 │
 ├── ui/
-│   ├── sidebar.py          # Navigazione + selettori backend/giroconto
-│   ├── upload_page.py      # Import multi-file
-│   ├── registry_page.py    # Ledger filtrable + download
-│   ├── analysis_page.py    # 5 grafici Plotly + export HTML
-│   ├── review_page.py      # Correzione categorie + salvataggio regole
+│   ├── sidebar.py          # Navigation + backend/giroconto selectors
+│   ├── upload_page.py      # Multi-file import
+│   ├── registry_page.py    # Filterable ledger + download
+│   ├── analysis_page.py    # 5 Plotly charts + HTML export
+│   ├── review_page.py      # Category correction + rule saving
 │   └── reconciliation_page.py
 │
 ├── tests/
-│   ├── test_normalizer.py  # 18 test deterministici (parse_amount, SHA-256 …)
-│   ├── test_backends.py    # 10 test (factory, validazione, mock Ollama)
-│   └── test_categorizer.py # 10 test (regole statiche, cascata)
+│   ├── test_normalizer.py  # 18 deterministic tests (parse_amount, SHA-256 …)
+│   ├── test_backends.py    # 10 tests (factory, validation, Ollama mock)
+│   └── test_categorizer.py # 10 tests (static rules, cascade)
 │
-└── support/                # Moduli legacy mantenuti per compatibilità
+└── support/                # Legacy modules kept for compatibility
 ```
 
 ---
 
-## Installazione
+## Installation
 
-### Prerequisiti
+### Prerequisites
 
 - **Python 3.13+**
-- **[uv](https://github.com/astral-sh/uv)** (gestore pacchetti consigliato) oppure `pip`
-- **[Ollama](https://ollama.com)** per il backend LLM locale (default)
+- **[uv](https://github.com/astral-sh/uv)** (recommended package manager) or `pip`
+- **[Ollama](https://ollama.com)** for the local LLM backend (default)
 
-### 1. Clona il repository
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/drake69/spendify.git
 cd spendify
 ```
 
-### 2. Installa le dipendenze
+### 2. Install dependencies
 
 ```bash
-# Con uv (consigliato)
+# With uv (recommended)
 uv sync
 
-# Oppure con pip
+# Or with pip
 pip install -e .
 ```
 
-### 3. Configura le variabili d'ambiente
+### 3. Configure environment variables
 
 ```bash
 cp .env.example .env
-# Modifica .env con i tuoi valori
+# Edit .env with your values
 ```
 
-### 4. Scarica il modello LLM locale
+### 4. Pull the local LLM model
 
 ```bash
-ollama pull gemma3:9b
+ollama pull gemma3:12b
 ```
 
-> Mantieni Ollama in esecuzione (`ollama serve`) durante l'uso dell'app.
+> Keep Ollama running (`ollama serve`) while using the app.
 
 ---
 
-## Configurazione
+## Configuration
 
-Tutte le opzioni si impostano nel file `.env`:
+All options are set in the `.env` file:
 
 ```dotenv
-# Database (SQLite di default, qualsiasi URL SQLAlchemy)
+# Database (SQLite by default, any SQLAlchemy URL works)
 SPENDIFY_DB=sqlite:///ledger.db
 
-# Percorso tassonomia personalizzata
+# Custom taxonomy path
 TAXONOMY_PATH=taxonomy.yaml
 
-# Nomi del titolare da redarre prima di chiamate remote
+# Account owner names to redact before remote calls
 OWNER_NAMES=Mario Rossi,M. Rossi
 
-# Backend LLM: local_ollama | openai | claude
+# LLM backend: local_ollama | openai | claude
 LLM_BACKEND=local_ollama
 
-# --- Ollama (locale, default, privacy garantita) ---
+# --- Ollama (local, default, privacy guaranteed) ---
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=gemma3:9b
+OLLAMA_MODEL=gemma3:12b
 
-# --- OpenAI (opt-in remoto — richiede sanitizzazione PII) ---
+# --- OpenAI (remote opt-in — requires PII sanitization) ---
 OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-4o-mini
 
-# --- Claude / Anthropic (opt-in remoto — richiede sanitizzazione PII) ---
+# --- Claude / Anthropic (remote opt-in — requires PII sanitization) ---
 ANTHROPIC_API_KEY=sk-ant-...
 CLAUDE_MODEL=claude-3-5-haiku-20241022
 ```
 
-### Modalità giroconto
+### Transfer mode (giroconto)
 
-Configurabile dalla sidebar dell'app:
+Configurable from the app sidebar:
 
-| Modalità | Comportamento |
+| Mode | Behaviour |
 |---|---|
-| `neutral` | I giroconti restano nel ledger come `internal_out` / `internal_in` (default) |
-| `exclude` | I giroconti vengono rimossi dal registro (saldo netto non influenzato) |
+| `neutral` | Internal transfers stay in the ledger as `internal_out` / `internal_in` (default) |
+| `exclude` | Internal transfers are removed from the ledger (net balance unaffected) |
 
-### Privacy e backend remoti
+### Privacy and remote backends
 
 ```
-[LOCAL — default]  Ollama locale: nessun dato esce dal processo.
-                   Nessuna sanitizzazione richiesta.
+[LOCAL — default]  Local Ollama: no data leaves the process.
+                   No sanitization required.
 
-[REMOTE — opt-in]  OpenAI / Claude: PII sanitization OBBLIGATORIA.
+[REMOTE — opt-in]  OpenAI / Claude: PII sanitization MANDATORY.
                    IBAN → <ACCOUNT_ID>  |  PAN → <CARD_ID>
                    CF   → <FISCAL_ID>  |  owner → <OWNER>
-                   Chiamata bloccata se assert_sanitized() fallisce.
+                   Call blocked if assert_sanitized() fails.
 ```
 
 ---
 
-## Avvio
+## Running the app
 
 ```bash
-# Con uv
+# With uv
 uv run streamlit run app.py
 
-# Oppure
+# Or directly
 streamlit run app.py
 ```
 
-L'app si apre su `http://localhost:8501` con 4 pagine:
+The app opens at `http://localhost:8501` with 4 pages:
 
-| Pagina | Descrizione |
+| Page | Description |
 |---|---|
-| **Import** | Carica uno o più file (CSV / XLSX / PDF). Mostra riepilogo: transazioni importate, riconciliazioni, transfer link, flow usato (1/2). |
-| **Ledger** | Tabella filtrabile per data, tipo, flag revisione. Metriche netto/entrate/uscite. Download CSV/XLSX. |
-| **Analytics** | 5 grafici Plotly: barre mensili, linea saldo cumulativo, treemap spese, top-10 categorie, stacked per conto. Export HTML. |
-| **Revisione** | Transazioni con `to_review=True`. Correzione categoria + salvataggio opzionale come regola permanente. |
+| **Import** | Upload one or more files (CSV / XLSX / PDF). Shows summary: imported transactions, reconciliations, transfer links, flow used (1/2). |
+| **Ledger** | Filterable table by date, type, review flag. Net/income/expense metrics. CSV/XLSX download. |
+| **Analytics** | 5 Plotly charts: monthly bar chart, cumulative balance line, expense treemap, top-10 categories, stacked by account. HTML export. |
+| **Review** | Transactions with `to_review=True`. Category correction + optional save as permanent rule. |
 
 ---
 
-## Tassonomia
+## Taxonomy
 
-La tassonomia è definita in `taxonomy.yaml` e caricata a runtime. Struttura:
+The taxonomy is defined in `taxonomy.yaml` and loaded at runtime. Structure:
 
 ```yaml
 version: "1"
@@ -266,11 +268,6 @@ expenses:
       - "Energia elettrica"
       # …
 
-  - category: "Alimentari"
-    subcategories:
-      - "Spesa supermercato"
-      # …
-
 income:
   - category: "Lavoro dipendente"
     subcategories:
@@ -279,74 +276,74 @@ income:
       # …
 ```
 
-**Categorie di spesa (15):** Casa · Alimentari · Ristorazione · Trasporti · Salute · Istruzione · Abbigliamento · Comunicazioni · Svago e tempo libero · Animali domestici · Finanza e assicurazioni · Cura personale · Tasse e tributi · Regali e donazioni · Altro
+**Expense categories (15):** Casa · Alimentari · Ristorazione · Trasporti · Salute · Istruzione · Abbigliamento · Comunicazioni · Svago e tempo libero · Animali domestici · Finanza e assicurazioni · Cura personale · Tasse e tributi · Regali e donazioni · Altro
 
-**Categorie di entrata (7):** Lavoro dipendente · Lavoro autonomo · Rendite finanziarie · Rendite immobiliari · Trasferimenti e rimborsi · Prestazioni sociali · Altro entrate
+**Income categories (7):** Lavoro dipendente · Lavoro autonomo · Rendite finanziarie · Rendite immobiliari · Trasferimenti e rimborsi · Prestazioni sociali · Altro entrate
 
-Per modificare la tassonomia modifica `taxonomy.yaml` e riavvia l'app — l'enum JSON Schema per i prompt LLM viene rigenerato automaticamente.
+To modify the taxonomy, edit `taxonomy.yaml` and restart the app — the JSON Schema enum for LLM prompts is regenerated automatically.
 
 ---
 
-## Test
+## Tests
 
 ```bash
-# Tutti i test (44 test deterministici, nessun mock LLM richiesto)
+# Full suite (44 deterministic tests, no LLM mocks required)
 uv run python -m pytest tests/ -v
 
-# Con coverage
+# With coverage
 uv run python -m pytest tests/ --cov=core --cov=db --cov-report=term-missing
 ```
 
-I test coprono: `parse_amount` (Decimal, formati EU/US), `parse_date_safe`, `normalize_description`, `compute_transaction_id` (SHA-256), `compute_file_hash`, `detect_delimiter`, `BackendFactory`, validazione `ProcessingConfig`, `TaxonomyConfig`, cascata di categorizzazione.
+Tests cover: `parse_amount` (Decimal, EU/US formats), `parse_date_safe`, `normalize_description`, `compute_transaction_id` (SHA-256), `compute_file_hash`, `detect_delimiter`, `BackendFactory`, `ProcessingConfig` validation, `TaxonomyConfig`, categorization cascade.
 
 ---
 
-## Decisioni di design
+## Design decisions
 
-### `Decimal` — mai `float`
+### `Decimal` — never `float`
 
-Tutti gli importi sono `decimal.Decimal`. I float IEEE 754 introducono errori di arrotondamento che falsano saldi e riconciliazioni.
+All amounts are `decimal.Decimal`. IEEE 754 floats introduce rounding errors that corrupt balances and reconciliation results.
 
-### Idempotenza SHA-256
+### SHA-256 idempotency
 
-Ogni transazione ha un `id` di 24 caratteri (SHA-256 troncato) calcolato deterministicamente da `(source_file_hash, date, amount, description)`. Re-importare lo stesso file non genera duplicati: `upsert_transaction` salta le righe con id già presente.
+Each transaction has a 24-character `id` (truncated SHA-256) computed deterministically from `(source_file_hash, date, amount, description)`. Re-importing the same file does not create duplicates: `upsert_transaction` skips rows whose id already exists.
 
-### PII sanitization come precondizione
+### PII sanitization as a precondition
 
-`assert_sanitized()` è chiamata in `call_with_fallback()` prima di qualsiasi richiesta a backend remoto. Se il testo contiene pattern IBAN/PAN/CF rilevabili, la chiamata viene rifiutata — non degradata silenziosamente.
+`assert_sanitized()` is called inside `call_with_fallback()` before any request to a remote backend. If the text contains detectable IBAN/PAN/fiscal-code patterns, the call is rejected — not silently degraded.
 
-### Circuit breaker e quarantena
+### Circuit breaker and quarantine
 
-`call_with_fallback(primary, ...)` prova il backend primario, poi Ollama locale come fallback. Se entrambi falliscono, la transazione riceve `to_review=True` e viene messa in coda di revisione manuale senza bloccare il resto del batch.
+`call_with_fallback(primary, ...)` tries the primary backend, then local Ollama as fallback. If both fail, the transaction receives `to_review=True` and is queued for manual review without blocking the rest of the batch.
 
-### Nessun LangChain
+### No LangChain
 
-I backend LLM usano direttamente `openai` SDK, `anthropic` SDK e `requests` (per Ollama). Nessuna dipendenza da framework di orchestrazione LLM — meno surface di attacco, aggiornamenti SDK indipendenti.
+LLM backends use the `openai` SDK, `anthropic` SDK, and `requests` (for Ollama) directly. No LLM orchestration framework dependency — smaller attack surface, independent SDK updates.
 
-### RF-03: algoritmo a 3 fasi
+### RF-03: 3-phase algorithm
 
-La riconciliazione carta–conto corrente usa: (1) finestra temporale ±45 giorni, (2) sliding window contigua (gap ≤ 5 giorni, O(n²)), (3) subset sum al boundary (k=10 tx, ~10⁶ operazioni). Le transazioni riconciliate vengono escluse dal saldo netto per evitare double-counting.
+Card–account reconciliation uses: (1) temporal window ±45 days, (2) contiguous sliding window (gap ≤ 5 days, O(n²)), (3) boundary subset sum (k=10 txs, ~10⁶ operations). Reconciled transactions are excluded from the net balance to prevent double-counting.
 
 ---
 
-## Dipendenze principali
+## Key dependencies
 
-| Pacchetto | Versione | Scopo |
+| Package | Version | Purpose |
 |---|---|---|
 | `streamlit` | ≥ 1.35 | UI |
-| `pandas` | ≥ 2.2 | Elaborazione dati |
-| `sqlalchemy` | ≥ 2.0 | ORM / persistenza |
-| `pydantic` | ≥ 2.0 | Validazione schemi |
-| `openai` | ≥ 1.30 | Backend OpenAI |
-| `anthropic` | ≥ 0.28 | Backend Claude |
-| `requests` | ≥ 2.31 | Backend Ollama |
+| `pandas` | ≥ 2.2 | Data processing |
+| `sqlalchemy` | ≥ 2.0 | ORM / persistence |
+| `pydantic` | ≥ 2.0 | Schema validation |
+| `openai` | ≥ 1.30 | OpenAI backend |
+| `anthropic` | ≥ 0.28 | Claude backend |
+| `requests` | ≥ 2.31 | Ollama backend |
 | `chardet` | ≥ 5.0 | Encoding detection |
-| `plotly` | ≥ 5.20 | Grafici |
-| `jinja2` | ≥ 3.1 | Template report HTML |
-| `pyyaml` | ≥ 6.0 | Parsing taxonomy.yaml |
-| `alembic` | ≥ 1.13 | Migrazioni DB |
-| `pytest` | ≥ 8.0 | Test |
+| `plotly` | ≥ 5.20 | Charts |
+| `jinja2` | ≥ 3.1 | HTML report template |
+| `pyyaml` | ≥ 6.0 | taxonomy.yaml parsing |
+| `alembic` | ≥ 1.13 | DB migrations |
+| `pytest` | ≥ 8.0 | Tests |
 
 ---
 
-*Tutti i dati sono salvati localmente nel database SQLite (`ledger.db`). Nessuna informazione finanziaria viene trasmessa a servizi esterni salvo esplicita configurazione del backend remoto e sanitizzazione PII obbligatoria.*
+*All data is stored locally in the SQLite database (`ledger.db`). No financial information is transmitted to external services unless a remote backend is explicitly configured with mandatory PII sanitization.*
