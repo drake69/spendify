@@ -56,18 +56,21 @@ class TestOllamaBackend:
         mock_resp = MagicMock()
         mock_resp.raise_for_status = MagicMock()
         mock_resp.json.return_value = {
-            "message": {"content": json.dumps({"category": "Alimentari", "subcategory": "Spesa supermercato", "confidence": "high"})}
+            "response": json.dumps({"category": "Alimentari", "subcategory": "Spesa supermercato", "confidence": "high"})
         }
         schema = {"required": ["category", "subcategory", "confidence"]}
-        with patch.object(b._requests, "post", return_value=mock_resp):
+        with patch.object(b._requests, "post", return_value=mock_resp) as mock_post:
             result = b.complete_structured("sys", "user", schema)
             assert result["category"] == "Alimentari"
+            # Verify /api/generate is used, not /api/chat
+            call_url = mock_post.call_args[0][0]
+            assert "/api/generate" in call_url
 
     def test_complete_structured_invalid_json_raises(self):
         b = OllamaBackend()
         mock_resp = MagicMock()
         mock_resp.raise_for_status = MagicMock()
-        mock_resp.json.return_value = {"message": {"content": "not json"}}
+        mock_resp.json.return_value = {"response": "not json"}
         with patch.object(b._requests, "post", return_value=mock_resp):
             with pytest.raises(LLMValidationError):
                 b.complete_structured("sys", "user", {})
