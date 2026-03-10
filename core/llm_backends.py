@@ -46,13 +46,7 @@ class LLMBackend(ABC):
 # ── Ollama ────────────────────────────────────────────────────────────────────
 
 class OllamaBackend(LLMBackend):
-    """Local Ollama backend via OpenAI-compatible API (/v1).
-
-    Ollama exposes a fully OpenAI-compatible endpoint at <base_url>/v1
-    (available since Ollama v0.1.33).  Using the openai SDK here avoids
-    any dependency on native Ollama routes (/api/generate, /api/chat)
-    which may differ across Ollama versions.
-    """
+    """Local Ollama backend using the native /api/generate endpoint."""
 
     def __init__(
         self,
@@ -60,6 +54,8 @@ class OllamaBackend(LLMBackend):
         model: str | None = None,
         timeout: int = 60,
     ):
+        import requests as _requests
+        self._requests = _requests
         self.base_url = (base_url or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")).rstrip("/")
         self.model = model or os.getenv("OLLAMA_MODEL", "gemma3:12b")
         self.timeout = timeout
@@ -79,41 +75,31 @@ class OllamaBackend(LLMBackend):
         json_schema: dict[str, Any],
         temperature: float = 0.0,
     ) -> dict[str, Any]:
-        import openai as _openai
-
-        client = _openai.OpenAI(
-            base_url=f"{self.base_url}/v1",
-            api_key="ollama",          # required by the SDK, ignored by Ollama
-            timeout=self.timeout,
-        )
-        # Include the schema in the system prompt so the model knows the
-        # expected shape; use json_object mode for broad version compatibility.
-        schema_hint = json.dumps(json_schema, ensure_ascii=False)
-        augmented_system = (
-            f"{system_prompt}\n\n"
-            f"Respond with valid JSON that conforms to this JSON Schema:\n{schema_hint}"
-        )
+        payload = {
+            "model": self.model,
+            "system": system_prompt,
+            "prompt": user_prompt,
+            "stream": False,
+            "format": json_schema,
+            "options": {"temperature": temperature},
+        }
         try:
-            response = client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": augmented_system},
-                    {"role": "user", "content": user_prompt},
-                ],
-                response_format={"type": "json_object"},
-                temperature=temperature,
+            resp = self._requests.post(
+                f"{self.base_url}/api/generate",
+                json=payload,
+                timeout=self.timeout,
             )
-            content = response.choices[0].message.content
+            resp.raise_for_status()
+            content = resp.json()["response"]
             result = json.loads(content)
             _validate_required(result, json_schema)
             return result
-        except (_openai.OpenAIError, json.JSONDecodeError, KeyError) as exc:
+        except (self._requests.RequestException, KeyError, json.JSONDecodeError) as exc:
             raise LLMValidationError(f"OllamaBackend error: {exc}") from exc
 
     def is_available(self) -> bool:
         try:
-            import requests as _r
-            resp = _r.get(f"{self.base_url}/api/tags", timeout=3)
+            resp = self._requests.get(f"{self.base_url}/api/tags", timeout=3)
             return resp.status_code == 200
         except Exception:
             return False

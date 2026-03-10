@@ -53,42 +53,23 @@ class TestOllamaBackend:
 
     def test_complete_structured_success(self):
         b = OllamaBackend()
-        payload = {"category": "Alimentari", "subcategory": "Spesa supermercato", "confidence": "high"}
-        mock_message = MagicMock()
-        mock_message.content = json.dumps(payload)
-        mock_choice = MagicMock()
-        mock_choice.message = mock_message
-        mock_completion = MagicMock()
-        mock_completion.choices = [mock_choice]
-
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status = MagicMock()
+        mock_resp.json.return_value = {
+            "response": json.dumps({"category": "Alimentari", "subcategory": "Spesa supermercato", "confidence": "high"})
+        }
         schema = {"required": ["category", "subcategory", "confidence"]}
-        with patch("core.llm_backends.OllamaBackend.complete_structured", return_value=payload):
+        with patch.object(b._requests, "post", return_value=mock_resp) as mock_post:
             result = b.complete_structured("sys", "user", schema)
             assert result["category"] == "Alimentari"
-
-    def test_complete_structured_uses_v1_endpoint(self):
-        """OllamaBackend must instantiate OpenAI client with /v1 base_url."""
-        b = OllamaBackend(base_url="http://localhost:11434")
-        with patch("openai.OpenAI") as mock_openai_cls:
-            mock_client = MagicMock()
-            mock_openai_cls.return_value = mock_client
-            payload = {"category": "Casa"}
-            mock_client.chat.completions.create.return_value = MagicMock(
-                choices=[MagicMock(message=MagicMock(content=json.dumps(payload)))]
-            )
-            result = b.complete_structured("sys", "user", {"required": ["category"]})
-            call_kwargs = mock_openai_cls.call_args[1]
-            assert call_kwargs["base_url"] == "http://localhost:11434/v1"
-            assert call_kwargs["api_key"] == "ollama"
-            assert result["category"] == "Casa"
+            call_url = mock_post.call_args[0][0]
+            assert "/api/generate" in call_url
 
     def test_complete_structured_invalid_json_raises(self):
         b = OllamaBackend()
-        with patch("openai.OpenAI") as mock_openai_cls:
-            mock_client = MagicMock()
-            mock_openai_cls.return_value = mock_client
-            mock_client.chat.completions.create.return_value = MagicMock(
-                choices=[MagicMock(message=MagicMock(content="not json"))]
-            )
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status = MagicMock()
+        mock_resp.json.return_value = {"response": "not json"}
+        with patch.object(b._requests, "post", return_value=mock_resp):
             with pytest.raises(LLMValidationError):
                 b.complete_structured("sys", "user", {})
