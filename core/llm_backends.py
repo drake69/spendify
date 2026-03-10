@@ -56,7 +56,7 @@ class OllamaBackend(LLMBackend):
         import requests as _requests
         self._requests = _requests
         self.base_url = (base_url or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")).rstrip("/")
-        self.model = model or os.getenv("OLLAMA_MODEL", "gemma3:9b")
+        self.model = model or os.getenv("OLLAMA_MODEL", "gemma3:12b")
         self.timeout = timeout
 
     @property
@@ -74,24 +74,24 @@ class OllamaBackend(LLMBackend):
         json_schema: dict[str, Any],
         temperature: float = 0.0,
     ) -> dict[str, Any]:
+        # Use /api/generate (universally supported since Ollama v0.1.0).
+        # /api/chat was added only in v0.1.14 and may not be available on all installs.
         payload = {
             "model": self.model,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
+            "system": system_prompt,
+            "prompt": user_prompt,
             "stream": False,
-            "options": {"temperature": temperature},
             "format": json_schema,
+            "options": {"temperature": temperature},
         }
         try:
             resp = self._requests.post(
-                f"{self.base_url}/api/chat",
+                f"{self.base_url}/api/generate",
                 json=payload,
                 timeout=self.timeout,
             )
             resp.raise_for_status()
-            content = resp.json()["message"]["content"]
+            content = resp.json()["response"]
             result = json.loads(content)
             _validate_required(result, json_schema)
             return result
