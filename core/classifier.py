@@ -5,6 +5,8 @@ produce a DocumentSchema that can be persisted as a template for Flow 1.
 """
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -16,22 +18,13 @@ from support.logging import setup_logging
 
 logger = setup_logging()
 
-_SYSTEM_PROMPT = """You are an expert at classifying bank statement files.
+_PROMPTS_FILE = Path(__file__).parent.parent / "prompts" / "classifier.json"
 
-Given a sample of raw tabular data (CSV/Excel) from a bank statement, you must:
-1. Identify the document type (bank_account, credit_card, debit_card, prepaid_card, savings, unknown).
-2. Map column names to their semantic roles (date, amount, description, etc.).
-3. Detect the date format, sign convention, encoding, and any internal-transfer keywords.
-4. Return a complete DocumentSchema as JSON using the provided schema.
+def _load_prompts() -> dict:
+    with open(_PROMPTS_FILE, encoding="utf-8") as f:
+        return json.load(f)
 
-Rules:
-- Use ONLY the column names present in the sample.
-- sign_convention must be one of: signed_single, debit_positive, credit_negative.
-- date_format must be a valid Python strftime string (e.g. "%d/%m/%Y").
-- confidence must reflect how certain you are (high/medium/low).
-- If you cannot determine a field, set it to null.
-- Do NOT expose any PII in your response.
-"""
+_PROMPTS = _load_prompts()
 
 
 def classify_document(
@@ -74,15 +67,11 @@ def classify_document(
     sample_json = sample.to_json(orient="records", force_ascii=False)
     columns_list = df_raw.columns.tolist()
 
-    user_prompt = f"""Classify this bank statement sample.
-
-Source file: {source_name}
-Columns: {columns_list}
-Sample (first 20 rows):
-{sample_json}
-
-Return the DocumentSchema JSON using the provided tool.
-"""
+    user_prompt = _PROMPTS["user_template"].format(
+        source_name=source_name,
+        columns_list=columns_list,
+        sample_json=sample_json,
+    )
 
     schema = DocumentSchema(
         doc_type="unknown",
@@ -97,7 +86,7 @@ Return the DocumentSchema JSON using the provided tool.
 
     result, backend_used = call_with_fallback(
         primary=llm_backend,
-        system_prompt=_SYSTEM_PROMPT,
+        system_prompt=_PROMPTS["system"],
         user_prompt=user_prompt,
         json_schema=json_schema,
         fallback=fallback_backend,
