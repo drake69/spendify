@@ -47,7 +47,7 @@ def _build_config(engine) -> ProcessingConfig:
         sanitize_config=SanitizationConfig(owner_names=owner_names),
         openai_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
         claude_model=os.getenv("CLAUDE_MODEL", "claude-3-5-haiku-20241022"),
-        ollama_model=os.getenv("OLLAMA_MODEL", "gemma3:9b"),
+        ollama_model=os.getenv("OLLAMA_MODEL", "gemma3:12b"),
         ollama_base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
     )
 
