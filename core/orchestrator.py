@@ -28,6 +28,7 @@ from core.models import (
     Confidence,
     DocumentType,
     GirocontoMode,
+    SignConvention,
     TransactionType,
 )
 from core.normalizer import (
@@ -170,8 +171,14 @@ def _normalize_df_with_schema(
         raw_date_acc = row.get(schema.date_accounting_col, "") if schema.date_accounting_col else None
         tx_date_acc = parse_date_safe(str(raw_date_acc), schema.date_format) if raw_date_acc else None
 
-        # Parse amount — keep raw string for audit trail
-        raw_amount_str = str(row.get(schema.amount_col, "")) if schema.amount_col else ""
+        # Capture raw amount string(s) before parsing — used for the dedup hash
+        if schema.sign_convention in (SignConvention.debit_positive, SignConvention.credit_negative):
+            _d = str(row.get(schema.debit_col, "")) if schema.debit_col else ""
+            _c = str(row.get(schema.credit_col, "")) if schema.credit_col else ""
+            raw_amount_str = f"{_d}|{_c}"
+        else:
+            raw_amount_str = str(row.get(schema.amount_col, "")) if schema.amount_col else ""
+
         amount = apply_sign_convention(
             row.to_dict(),
             schema.amount_col,
@@ -189,8 +196,8 @@ def _normalize_df_with_schema(
         # Currency
         currency = str(row.get(schema.currency_col, schema.default_currency)) if schema.currency_col else schema.default_currency
 
-        # Idempotency key
-        tx_id = compute_transaction_id(source_name, tx_date, amount, description)
+        # Idempotency key — hashed on raw strings so it survives normalisation changes
+        tx_id = compute_transaction_id(source_name, str(raw_date), raw_amount_str, desc_raw)
 
         # Infer tx_type from doc_type
         tx_type = _infer_tx_type(amount, schema.doc_type, description, schema.internal_transfer_patterns)

@@ -186,10 +186,15 @@ def normalize_description(text: str) -> str:
 
 # ── SHA-256 idempotency key ────────────────────────────────────────────────────
 
-def compute_transaction_id(source_file: str, tx_date: date, amount: Decimal, description_normalized: str) -> str:
-    """Return the first 24 chars of SHA-256 of the canonical fields."""
-    raw = f"{source_file}|{tx_date.isoformat()}|{amount}|{description_normalized}"
-    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24]
+def compute_transaction_id(source_file: str, raw_date: str, raw_amount: str, raw_description: str) -> str:
+    """Return the first 24 chars of SHA-256 of the raw (pre-normalisation) fields.
+
+    Using raw strings keeps the key stable across normalisation changes:
+    improving parse_amount or normalize_description won't shift existing IDs.
+    For debit/credit conventions pass raw_amount as '<debit_raw>|<credit_raw>'.
+    """
+    key = f"{source_file}|{raw_date}|{raw_amount}|{raw_description}"
+    return hashlib.sha256(key.encode("utf-8")).hexdigest()[:24]
 
 
 def compute_file_hash(raw_bytes: bytes) -> str:
