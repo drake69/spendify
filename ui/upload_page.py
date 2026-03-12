@@ -12,7 +12,6 @@ from core.orchestrator import ProcessingConfig, process_files
 from core.sanitizer import SanitizationConfig
 from db.models import get_session
 from db.repository import (
-    get_all_batch_hashes,
     get_category_rules,
     get_document_schema,
     persist_import_result,
@@ -72,7 +71,6 @@ def render_upload_page(engine):
 
         with session:
             user_rules = get_category_rules(session)
-            existing_hashes = get_all_batch_hashes(session)
 
             # Load known schemas
             known_schemas = {}
@@ -99,7 +97,6 @@ def render_upload_page(engine):
                     taxonomy=taxonomy,
                     user_rules=user_rules,
                     known_schema=schema,
-                    existing_batch_hashes=existing_hashes,
                 )
                 persist_import_result(session2, result)
                 results.append(result)
@@ -112,9 +109,6 @@ def render_upload_page(engine):
         st.subheader("Riepilogo elaborazione")
         for result in results:
             with st.expander(f"📄 {result.source_name}", expanded=True):
-                if result.skipped_duplicate:
-                    st.warning("File già importato (duplicato ignorato).")
-                    continue
                 if result.errors:
                     st.error("Errori: " + "; ".join(result.errors))
                 else:
