@@ -62,7 +62,6 @@ class TestOllamaBackend:
         with patch.object(b._requests, "post", return_value=mock_resp) as mock_post:
             result = b.complete_structured("sys", "user", schema)
             assert result["category"] == "Alimentari"
-            # Verify /api/generate is used, not /api/chat
             call_url = mock_post.call_args[0][0]
             assert "/api/generate" in call_url
 

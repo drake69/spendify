@@ -8,6 +8,9 @@ Four pages:
 """
 import os
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import streamlit as st
 
 from db.models import create_tables, get_engine

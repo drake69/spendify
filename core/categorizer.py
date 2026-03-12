@@ -9,9 +9,11 @@ Cascade:
 """
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass, field
 from decimal import Decimal
+from pathlib import Path
 from typing import Any, Optional
 
 import yaml
@@ -27,22 +29,13 @@ logger = setup_logging()
 TAXONOMY_FALLBACK_EXPENSE = ("Altro", "Spese non classificate")
 TAXONOMY_FALLBACK_INCOME = ("Altro entrate", "Entrate non classificate")
 
-_SYSTEM_PROMPT_TEMPLATE = """You are a financial transaction categorizer.
-You receive one bank transaction at a time and must assign it a two-level category
-(category + subcategory) and a confidence level.
+_PROMPTS_FILE = Path(__file__).parent.parent / "prompts" / "categorizer.json"
 
-Rules:
-- Use ONLY the category/subcategory pairs defined in the response schema.
-- The subcategory must be valid for the chosen category.
-- Base the decision on the description, amount sign, and context.
-- Negative amount = expense; positive amount = income.
-- If the description contains transfer/giroconto keywords, use "Trasferimenti e rimborsi"
-  (this should have been filtered upstream).
-- Do NOT infer or expose any PII from the description.
-- If genuinely ambiguous, return category "Altro" / "Spese non classificate" (expense)
-  or "Altro entrate" / "Entrate non classificate" (income) with confidence "low".
-- rationale must be one sentence, max 120 chars, no PII.
-"""
+def _load_prompts() -> dict:
+    with open(_PROMPTS_FILE, encoding="utf-8") as f:
+        return json.load(f)
+
+_PROMPTS = _load_prompts()
 
 
 @dataclass
@@ -246,17 +239,15 @@ def _categorize_with_llm(
     json_schema["properties"]["subcategory"]["enum"] = all_subs
 
     currency = "EUR"
-    user_prompt = (
-        f"Categorize the following transaction:\n\n"
-        f"date: (not provided)\n"
-        f"amount: {amount} {currency}\n"
-        f'description: "{safe_desc}"\n\n'
-        f"Respond with the JSON schema defined in the system context."
+    user_prompt = _PROMPTS["user_template"].format(
+        amount=amount,
+        currency=currency,
+        safe_desc=safe_desc,
     )
 
     result, _ = call_with_fallback(
         primary=llm_backend,
-        system_prompt=_SYSTEM_PROMPT_TEMPLATE,
+        system_prompt=_PROMPTS["system"],
         user_prompt=user_prompt,
         json_schema=json_schema,
         fallback=fallback_backend,

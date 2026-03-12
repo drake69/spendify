@@ -46,12 +46,13 @@ class LLMBackend(ABC):
 # ── Ollama ────────────────────────────────────────────────────────────────────
 
 class OllamaBackend(LLMBackend):
+    """Local Ollama backend using the native /api/generate endpoint."""
 
     def __init__(
         self,
         base_url: str | None = None,
         model: str | None = None,
-        timeout: int = 30,
+        timeout: int = 60,
     ):
         import requests as _requests
         self._requests = _requests
@@ -74,8 +75,6 @@ class OllamaBackend(LLMBackend):
         json_schema: dict[str, Any],
         temperature: float = 0.0,
     ) -> dict[str, Any]:
-        # Use /api/generate (universally supported since Ollama v0.1.0).
-        # /api/chat was added only in v0.1.14 and may not be available on all installs.
         payload = {
             "model": self.model,
             "system": system_prompt,

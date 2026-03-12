@@ -70,7 +70,7 @@ class ProcessingConfig:
 
     # Backend kwargs
     ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "gemma3:9b"
+    ollama_model: str = "gemma3:12b"
     openai_model: str = "gpt-4o-mini"
     claude_model: str = "claude-3-5-haiku-20241022"
 
