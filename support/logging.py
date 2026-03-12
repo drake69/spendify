@@ -19,4 +19,4 @@ def setup_logging():
         ]
     )
 
-    return logging.getLogger("AI_FINANCE")
+    return logging.getLogger("SPENDIFY")
