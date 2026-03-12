@@ -170,7 +170,8 @@ def _normalize_df_with_schema(
         raw_date_acc = row.get(schema.date_accounting_col, "") if schema.date_accounting_col else None
         tx_date_acc = parse_date_safe(str(raw_date_acc), schema.date_format) if raw_date_acc else None
 
-        # Parse amount
+        # Parse amount — keep raw string for audit trail
+        raw_amount_str = str(row.get(schema.amount_col, "")) if schema.amount_col else ""
         amount = apply_sign_convention(
             row.to_dict(),
             schema.amount_col,
@@ -181,7 +182,7 @@ def _normalize_df_with_schema(
         if amount is None:
             continue
 
-        # Description
+        # Description — keep raw string before normalisation
         desc_raw = str(row.get(schema.description_col or "", "")) if schema.description_col else ""
         description = normalize_description(desc_raw)
 
@@ -199,8 +200,10 @@ def _normalize_df_with_schema(
             "date": tx_date,
             "date_accounting": tx_date_acc,
             "amount": amount,
+            "raw_amount": raw_amount_str or None,
             "currency": currency,
             "description": description,
+            "raw_description": desc_raw or None,
             "source_file": source_name,
             "doc_type": schema.doc_type.value if hasattr(schema.doc_type, 'value') else str(schema.doc_type),
             "account_label": schema.account_label,

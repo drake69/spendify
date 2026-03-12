@@ -157,6 +157,8 @@ def upsert_transaction(session: Session, tx: dict, batch_id: Optional[int] = Non
         to_review=bool(tx.get("to_review", False)),
         transfer_pair_id=tx.get("transfer_pair_id"),
         transfer_confidence=tx.get("transfer_confidence"),
+        raw_description=tx.get("raw_description"),
+        raw_amount=tx.get("raw_amount"),
     )
     session.add(row)
     return row

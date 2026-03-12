@@ -73,6 +73,8 @@ def render_registry_page(engine):
         m4.metric("Uscite", f"{expenses:.2f} €")
 
         # ── Table ─────────────────────────────────────────────────────────────
+        show_raw = st.toggle("Mostra valori originali (raw)", value=False, key="ledger_show_raw")
+
         data = [
             {
                 "Data": tx.date,
@@ -85,14 +87,20 @@ def render_registry_page(engine):
                 "Conto": tx.account_label or "",
                 "Conf.": tx.category_confidence or "",
                 "Da rivedere": "⚠️" if tx.to_review else "",
+                "Desc. originale": (tx.raw_description or "")[:80],
+                "Importo originale": tx.raw_amount or "",
                 "id": tx.id,
             }
             for tx in txs
         ]
         df = pd.DataFrame(data)
 
+        hide_cols = ["id"]
+        if not show_raw:
+            hide_cols += ["Desc. originale", "Importo originale"]
+
         st.dataframe(
-            df.drop(columns=["id"]),
+            df.drop(columns=hide_cols),
             use_container_width=True,
             height=500,
         )

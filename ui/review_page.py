@@ -45,6 +45,8 @@ def render_review_page(engine):
 
         st.info(f"{len(txs)} transazioni in coda di revisione.")
 
+        show_raw = st.toggle("Mostra valori originali (raw)", value=False, key="review_show_raw")
+
         data = [
             {
                 "id": tx.id,
@@ -55,11 +57,18 @@ def render_review_page(engine):
                 "Categoria attuale": tx.category or "",
                 "Sottocategoria attuale": tx.subcategory or "",
                 "Confidenza": tx.category_confidence or "",
+                "Desc. originale": (tx.raw_description or "")[:100],
+                "Importo originale": tx.raw_amount or "",
             }
             for tx in txs
         ]
         df = pd.DataFrame(data)
-        st.dataframe(df.drop(columns=["id"]), use_container_width=True)
+
+        hide_cols = ["id"]
+        if not show_raw:
+            hide_cols += ["Desc. originale", "Importo originale"]
+
+        st.dataframe(df.drop(columns=hide_cols), use_container_width=True)
 
         st.divider()
         st.subheader("Applica correzione")

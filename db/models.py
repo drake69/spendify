@@ -41,7 +41,26 @@ def create_tables(engine=None):
     if engine is None:
         engine = get_engine()
     Base.metadata.create_all(engine)
+    _migrate_add_raw_columns(engine)
     return engine
+
+
+def _migrate_add_raw_columns(engine) -> None:
+    """Add raw_description / raw_amount to existing DBs (idempotent)."""
+    with engine.connect() as conn:
+        result = conn.execute(
+            __import__("sqlalchemy").text("PRAGMA table_info(\"transaction\")")
+        )
+        existing = {row[1] for row in result}
+        migrations = []
+        if "raw_description" not in existing:
+            migrations.append("ALTER TABLE \"transaction\" ADD COLUMN raw_description TEXT")
+        if "raw_amount" not in existing:
+            migrations.append("ALTER TABLE \"transaction\" ADD COLUMN raw_amount TEXT")
+        for stmt in migrations:
+            conn.execute(__import__("sqlalchemy").text(stmt))
+        if migrations:
+            conn.commit()
 
 
 def get_session(engine=None) -> Session:
@@ -118,6 +137,8 @@ class Transaction(Base):
     to_review = Column(Boolean, default=False)
     transfer_pair_id = Column(String(64))
     transfer_confidence = Column(String(10))
+    raw_description = Column(Text, nullable=True)   # original text before normalize_description
+    raw_amount = Column(String(64), nullable=True)  # original string from source file
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     batch = relationship("ImportBatch", back_populates="transactions")
