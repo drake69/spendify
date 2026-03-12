@@ -46,21 +46,26 @@ def create_tables(engine=None):
 
 
 def _migrate_add_raw_columns(engine) -> None:
-    """Add raw_description / raw_amount to existing DBs (idempotent)."""
+    """Add raw_description / raw_amount to existing DBs (idempotent).
+
+    Uses try/except instead of PRAGMA inspection to stay compatible with
+    both SQLAlchemy 1.x and 2.x row-access semantics.
+    """
+    from sqlalchemy import text as _text
+    stmts = [
+        'ALTER TABLE "transaction" ADD COLUMN raw_description TEXT',
+        'ALTER TABLE "transaction" ADD COLUMN raw_amount TEXT',
+    ]
     with engine.connect() as conn:
-        result = conn.execute(
-            __import__("sqlalchemy").text("PRAGMA table_info(\"transaction\")")
-        )
-        existing = {row[1] for row in result}
-        migrations = []
-        if "raw_description" not in existing:
-            migrations.append("ALTER TABLE \"transaction\" ADD COLUMN raw_description TEXT")
-        if "raw_amount" not in existing:
-            migrations.append("ALTER TABLE \"transaction\" ADD COLUMN raw_amount TEXT")
-        for stmt in migrations:
-            conn.execute(__import__("sqlalchemy").text(stmt))
-        if migrations:
-            conn.commit()
+        for stmt in stmts:
+            try:
+                conn.execute(_text(stmt))
+                conn.commit()
+            except Exception as exc:
+                if "duplicate column name" in str(exc).lower():
+                    pass  # column already exists, nothing to do
+                else:
+                    raise
 
 
 def get_session(engine=None) -> Session:
