@@ -54,7 +54,7 @@ class DocumentSchema(BaseModel):
                 "amount_col": {"type": "string"},
                 "debit_col": {"type": ["string", "null"]},
                 "credit_col": {"type": ["string", "null"]},
-                "description_col": {"type": "string"},
+                "description_col": {"type": ["string", "null"]},
                 "currency_col": {"type": ["string", "null"]},
                 "default_currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
                 "date_format": {"type": "string"},
