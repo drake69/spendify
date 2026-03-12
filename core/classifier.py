@@ -12,6 +12,7 @@ from typing import Any
 import pandas as pd
 
 from core.llm_backends import LLMBackend, SanitizationRequiredError, call_with_fallback
+from core.normalizer import compute_columns_key
 from core.sanitizer import SanitizationConfig, sanitize_dataframe_descriptions
 from core.schemas import DocumentSchema
 from support.logging import setup_logging
@@ -104,7 +105,9 @@ def classify_document(
 
     try:
         doc_schema = DocumentSchema(**result)
-        doc_schema.source_identifier = source_name
+        # Use columns fingerprint as cache key, not the filename, so the same
+        # bank layout is recognised across differently-named export files.
+        doc_schema.source_identifier = compute_columns_key(df_raw)
         return doc_schema
     except Exception as exc:
         logger.error(f"classify_document: schema validation failed: {exc}")

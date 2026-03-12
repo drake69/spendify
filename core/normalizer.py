@@ -197,6 +197,17 @@ def compute_transaction_id(source_file: str, raw_date: str, raw_amount: str, raw
     return hashlib.sha256(key.encode("utf-8")).hexdigest()[:24]
 
 
+def compute_columns_key(df: "pd.DataFrame") -> str:  # type: ignore[name-defined]
+    """Return SHA-256[:16] of the sorted column names.
+
+    Used as the DocumentSchema cache key so the same bank layout is recognised
+    regardless of the export filename (e.g. CARTA_2025.xlsx vs CARTA_2026.xlsx).
+    Columns are sorted to be robust to minor reordering.
+    """
+    cols = "|".join(sorted(str(c).strip() for c in df.columns))
+    return "cols:" + hashlib.sha256(cols.encode("utf-8")).hexdigest()[:16]
+
+
 def compute_file_hash(raw_bytes: bytes) -> str:
     """Return SHA-256 hex of raw file bytes (for import-level idempotency)."""
     return hashlib.sha256(raw_bytes).hexdigest()

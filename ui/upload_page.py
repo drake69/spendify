@@ -8,7 +8,8 @@ import streamlit as st
 
 from core.categorizer import TaxonomyConfig
 from core.models import GirocontoMode
-from core.orchestrator import ProcessingConfig, process_files
+from core.normalizer import compute_columns_key
+from core.orchestrator import ProcessingConfig, load_raw_dataframe, process_files
 from core.sanitizer import SanitizationConfig
 from db.models import get_session
 from db.repository import (
@@ -72,14 +73,18 @@ def render_upload_page(engine):
         with session:
             user_rules = get_category_rules(session)
 
-            # Load known schemas
+            # Read bytes once, derive columns key, look up known schema by that key
+            # (not by filename, so CARTA_2025.xlsx and CARTA_2026.xlsx share a schema)
             known_schemas = {}
+            files = []
             for uf in uploaded_files:
-                schema = get_document_schema(session, uf.name)
+                raw_bytes = uf.read()
+                df_raw, _ = load_raw_dataframe(raw_bytes, uf.name)
+                cols_key = compute_columns_key(df_raw)
+                schema = get_document_schema(session, cols_key)
                 if schema:
                     known_schemas[uf.name] = schema
-
-            files = [(uf.read(), uf.name) for uf in uploaded_files]
+                files.append((raw_bytes, uf.name))
 
         progress = st.progress(0)
         status = st.empty()
