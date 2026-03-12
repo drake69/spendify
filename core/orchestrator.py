@@ -246,10 +246,13 @@ def process_file(
     taxonomy: TaxonomyConfig,
     user_rules: list[CategoryRule],
     known_schema: Optional[DocumentSchema] = None,
-    existing_batch_hashes: Optional[set[str]] = None,
 ) -> ImportResult:
     """
     Process a single file through Flow 1 or Flow 2.
+
+    Deduplication is handled at transaction level: each transaction has a
+    deterministic SHA-256 ID; upsert_transaction silently skips any that
+    already exist in the database.
 
     Args:
         raw_bytes: raw file content.
@@ -258,26 +261,11 @@ def process_file(
         taxonomy: taxonomy configuration.
         user_rules: user-defined category rules from DB.
         known_schema: DocumentSchema from DB (if exists → Flow 1).
-        existing_batch_hashes: set of already-imported file SHA-256s.
 
     Returns:
         ImportResult.
     """
     batch_sha256 = compute_file_hash(raw_bytes)
-
-    # File-level idempotency check
-    if existing_batch_hashes and batch_sha256 in existing_batch_hashes:
-        logger.info(f"process_file: {filename} already imported, skipping")
-        return ImportResult(
-            batch_sha256=batch_sha256,
-            source_name=filename,
-            transactions=[],
-            doc_schema=known_schema,
-            reconciliations=[],
-            transfer_links=[],
-            skipped_duplicate=True,
-        )
-
     backend = _build_backend(config)
     fallback = _get_fallback_backend(config)
 
@@ -440,7 +428,6 @@ def process_files(
     taxonomy: TaxonomyConfig,
     user_rules: list[CategoryRule],
     known_schemas: Optional[dict[str, DocumentSchema]] = None,
-    existing_batch_hashes: Optional[set[str]] = None,
 ) -> list[ImportResult]:
     """
     Process multiple files. Each (bytes, filename) tuple.
@@ -448,7 +435,6 @@ def process_files(
     """
     results = []
     known_schemas = known_schemas or {}
-    existing_batch_hashes = existing_batch_hashes or set()
 
     for raw_bytes, filename in files:
         schema = known_schemas.get(filename)
@@ -460,7 +446,6 @@ def process_files(
                 taxonomy=taxonomy,
                 user_rules=user_rules,
                 known_schema=schema,
-                existing_batch_hashes=existing_batch_hashes,
             )
             results.append(result)
         except Exception as exc:
