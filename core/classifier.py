@@ -98,6 +98,10 @@ def classify_document(
 
     logger.info(f"classify_document: classified via {backend_used} (confidence={result.get('confidence')})")
 
+    # Validate that column names returned by the LLM actually exist in the DataFrame.
+    # Tries case-insensitive match before nullifying.
+    result = _coerce_column_names(result, list(df_raw.columns), source_name)
+
     try:
         doc_schema = DocumentSchema(**result)
         doc_schema.source_identifier = source_name
@@ -105,3 +109,43 @@ def classify_document(
     except Exception as exc:
         logger.error(f"classify_document: schema validation failed: {exc}")
         return None
+
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+_COLUMN_FIELDS = (
+    "date_col", "date_accounting_col",
+    "amount_col", "debit_col", "credit_col",
+    "description_col", "currency_col",
+)
+
+
+def _coerce_column_names(result: dict, available: list[str], source_name: str) -> dict:
+    """
+    For every column-mapping field in result, ensure the value is an actual column
+    in `available`. Tries case-insensitive match first; nullifies on no match.
+    Logs a warning for each correction so debugging is easy.
+    """
+    lower_map = {c.lower(): c for c in available}
+    out = dict(result)
+    for field in _COLUMN_FIELDS:
+        val = out.get(field)
+        if not val:
+            continue
+        if val in available:
+            continue  # exact match, keep as-is
+        # try case-insensitive
+        canonical = lower_map.get(val.lower())
+        if canonical:
+            logger.info(
+                f"classify_document [{source_name}]: coerced {field} "
+                f"'{val}' → '{canonical}' (case-insensitive match)"
+            )
+            out[field] = canonical
+        else:
+            logger.warning(
+                f"classify_document [{source_name}]: {field}='{val}' not found in "
+                f"columns {available!r} — setting to null"
+            )
+            out[field] = None
+    return out
