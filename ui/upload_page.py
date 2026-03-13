@@ -31,7 +31,7 @@ logger = setup_logging()
 _DB_WRITE_INTERVAL = 1.5
 
 
-def _build_config(engine) -> ProcessingConfig:
+def _build_config(engine, test_mode: bool = False) -> ProcessingConfig:
     mode_str = st.session_state.get("giroconto_mode", "neutral")
     owner_names = [n.strip() for n in os.getenv("OWNER_NAMES", "").split(",") if n.strip()]
 
@@ -60,6 +60,7 @@ def _build_config(engine) -> ProcessingConfig:
         ollama_model=ollama_model,
         ollama_base_url=ollama_url,
         description_language=s.get("description_language", "it"),
+        test_mode=test_mode,
     )
 
 
@@ -137,6 +138,15 @@ def render_upload_page(engine):
         accept_multiple_files=True,
     )
 
+    test_mode = st.toggle(
+        "🧪 Modalità test (solo prime 20 righe)",
+        value=True,
+        key="import_test_mode",
+        help="Importa solo le prime 20 righe di ogni file per verificare rapidamente la classificazione dello schema.",
+    )
+    if test_mode:
+        st.caption("⚠️ Modalità test attiva — solo le prime 20 righe verranno elaborate.")
+
     if not uploaded_files:
         st.info("Carica uno o più file per avviare l'elaborazione.")
         _render_job_status(engine)
@@ -144,7 +154,7 @@ def render_upload_page(engine):
         return
 
     if st.button("▶️ Elabora file", type="primary"):
-        config = _build_config(engine)
+        config = _build_config(engine, test_mode=test_mode)
 
         # Prepare file list and load known schemas
         files = []

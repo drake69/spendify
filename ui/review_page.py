@@ -67,10 +67,8 @@ def render_review_page(engine):
                 "id": tx.id,
                 "Data": format_date_display(tx.date, _date_fmt),
                 "Descrizione": (tx.description or "")[:100],
-                "Entrata": format_amount_display(float(tx.amount), _dec, _thou, symbol="")
-                           if float(tx.amount) > 0 else "",
-                "Uscita": format_amount_display(abs(float(tx.amount)), _dec, _thou, symbol="")
-                          if float(tx.amount) < 0 else "",
+                "Entrata": float(tx.amount) if float(tx.amount) > 0 else None,
+                "Uscita": abs(float(tx.amount)) if float(tx.amount) < 0 else None,
                 "Tipo": tx.tx_type,
                 "Categoria": tx.category or "",
                 "Sottocategoria": tx.subcategory or "",
@@ -87,7 +85,15 @@ def render_review_page(engine):
         if not show_raw:
             hide_cols += ["Desc. originale", "Importo originale"]
 
-        st.dataframe(df.drop(columns=hide_cols), use_container_width=True)
+        display_df = df.drop(columns=hide_cols)
+        st.dataframe(
+            display_df,
+            use_container_width=True,
+            column_config={
+                "Entrata": st.column_config.NumberColumn("Entrata", format="%.2f"),
+                "Uscita": st.column_config.NumberColumn("Uscita", format="%.2f"),
+            },
+        )
 
     st.divider()
     st.subheader("Applica correzione")
