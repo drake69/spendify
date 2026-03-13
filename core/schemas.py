@@ -20,6 +20,7 @@ class DocumentSchema(BaseModel):
     debit_col: Optional[str] = None
     credit_col: Optional[str] = None
     description_col: Optional[str] = None
+    description_cols: list[str] = Field(default_factory=list)  # multi-col concat; takes priority over description_col
     currency_col: Optional[str] = None
     default_currency: str = "EUR"
 
@@ -56,6 +57,11 @@ class DocumentSchema(BaseModel):
                 "debit_col": {"type": ["string", "null"]},
                 "credit_col": {"type": ["string", "null"]},
                 "description_col": {"type": ["string", "null"]},
+                "description_cols": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "All columns containing descriptive text; concatenated space-separated into the transaction description.",
+                },
                 "currency_col": {"type": ["string", "null"]},
                 "default_currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
                 "date_format": {"type": "string"},
