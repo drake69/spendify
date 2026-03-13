@@ -6,37 +6,31 @@ import pandas as pd
 
 from db.models import get_session
 from db.repository import (
+    get_all_user_settings,
     get_category_rules,
+    get_taxonomy_config,
     get_transactions,
     update_transaction_category,
     create_category_rule,
 )
-from core.categorizer import TaxonomyConfig
+from support.formatting import format_amount_display, format_date_display, format_raw_amount_display
 from support.logging import setup_logging
-import os
-from pathlib import Path
 
 logger = setup_logging()
-TAXONOMY_PATH = os.getenv("TAXONOMY_PATH", "taxonomy.yaml")
-
-
-def _load_taxonomy() -> TaxonomyConfig:
-    if Path(TAXONOMY_PATH).exists():
-        return TaxonomyConfig.from_yaml(TAXONOMY_PATH)
-    return TaxonomyConfig(
-        expenses={"Altro": ["Spese non classificate"]},
-        income={"Altro entrate": ["Entrate non classificate"]},
-    )
 
 
 def render_review_page(engine):
     st.header("🔍 Review — Revisione Manuale")
 
-    taxonomy = _load_taxonomy()
-    all_categories = taxonomy.all_expense_categories + taxonomy.all_income_categories
-
     session = get_session(engine)
     with session:
+        taxonomy = get_taxonomy_config(session)
+        all_categories = taxonomy.all_expense_categories + taxonomy.all_income_categories
+        settings = get_all_user_settings(session)
+        _date_fmt = settings.get("date_display_format", "%d/%m/%Y")
+        _dec = settings.get("amount_decimal_sep", ",")
+        _thou = settings.get("amount_thousands_sep", ".")
+
         txs = get_transactions(session, filters={"to_review": True})
 
         if not txs:
@@ -50,15 +44,18 @@ def render_review_page(engine):
         data = [
             {
                 "id": tx.id,
-                "Data": tx.date,
+                "Data": format_date_display(tx.date, _date_fmt),
                 "Descrizione": (tx.description or "")[:100],
-                "Importo": float(tx.amount),
+                "Entrata": format_amount_display(float(tx.amount), _dec, _thou, symbol="")
+                           if float(tx.amount) > 0 else "",
+                "Uscita": format_amount_display(abs(float(tx.amount)), _dec, _thou, symbol="")
+                          if float(tx.amount) < 0 else "",
                 "Tipo": tx.tx_type,
                 "Categoria attuale": tx.category or "",
                 "Sottocategoria attuale": tx.subcategory or "",
                 "Confidenza": tx.category_confidence or "",
                 "Desc. originale": (tx.raw_description or "")[:100],
-                "Importo originale": tx.raw_amount or "",
+                "Importo originale": format_raw_amount_display(tx.raw_amount),
             }
             for tx in txs
         ]
@@ -73,8 +70,11 @@ def render_review_page(engine):
         st.divider()
         st.subheader("Applica correzione")
 
-        tx_options = {f"{d['Data']} | {d['Descrizione'][:60]} | {d['Importo']:.2f}€": d["id"]
-                      for d in data}
+        tx_options = {
+            f"{d['Data']} | {d['Descrizione'][:60]} | "
+            f"{d['Uscita'] or d['Entrata']}": d["id"]
+            for d in data
+        }
 
         selected_label = st.selectbox("Seleziona transazione", list(tx_options.keys()))
         selected_id = tx_options[selected_label]

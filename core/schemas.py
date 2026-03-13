@@ -25,6 +25,7 @@ class DocumentSchema(BaseModel):
 
     # derived / pre-processing
     is_zero_sum: bool = False
+    invert_sign: bool = False  # True when card file stores expenses as positive (negate all amounts)
     internal_transfer_patterns: list[str] = Field(default_factory=list)
     encoding: str = "utf-8"
     sheet_name: Optional[str] = None
@@ -63,6 +64,10 @@ class DocumentSchema(BaseModel):
                     "enum": [c.value for c in SignConvention],
                 },
                 "is_zero_sum": {"type": "boolean"},
+                "invert_sign": {
+                    "type": "boolean",
+                    "description": "Set true when a card file stores expenses as positive amounts (negate to get correct sign).",
+                },
                 "internal_transfer_patterns": {
                     "type": "array",
                     "items": {"type": "string"},

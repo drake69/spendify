@@ -2,54 +2,125 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
+import time
+from datetime import datetime, timezone
 
 import streamlit as st
 
-from core.categorizer import TaxonomyConfig
 from core.models import GirocontoMode
 from core.normalizer import compute_columns_key
 from core.orchestrator import ProcessingConfig, load_raw_dataframe, process_files
 from core.sanitizer import SanitizationConfig
 from db.models import get_session
 from db.repository import (
+    create_import_job,
+    get_all_user_settings,
     get_category_rules,
     get_document_schema,
+    get_latest_import_job,
+    get_taxonomy_config,
     persist_import_result,
+    update_import_job,
 )
 from support.logging import setup_logging
 
 logger = setup_logging()
 
-TAXONOMY_PATH = os.getenv("TAXONOMY_PATH", "taxonomy.yaml")
-
-
-def _load_taxonomy() -> TaxonomyConfig:
-    if Path(TAXONOMY_PATH).exists():
-        return TaxonomyConfig.from_yaml(TAXONOMY_PATH)
-    # Fallback minimal taxonomy
-    return TaxonomyConfig(
-        expenses={"Altro": ["Spese non classificate"]},
-        income={"Altro entrate": ["Entrate non classificate"]},
-    )
+# Minimum seconds between DB progress writes (throttle for high-frequency callbacks)
+_DB_WRITE_INTERVAL = 1.5
 
 
 def _build_config(engine) -> ProcessingConfig:
-    backend = st.session_state.get("llm_backend", "local_ollama")
     mode_str = st.session_state.get("giroconto_mode", "neutral")
-
-    # Owner names from env for PII sanitization
     owner_names = [n.strip() for n in os.getenv("OWNER_NAMES", "").split(",") if n.strip()]
+
+    with get_session(engine) as _s:
+        s = get_all_user_settings(_s)
+
+    backend = s.get("llm_backend", os.getenv("LLM_BACKEND", "local_ollama"))
+    ollama_url = s.get("ollama_base_url", os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"))
+    ollama_model = s.get("ollama_model", os.getenv("OLLAMA_MODEL", "gemma3:12b"))
+    openai_model = s.get("openai_model", os.getenv("OPENAI_MODEL", "gpt-4o-mini"))
+    claude_model = s.get("anthropic_model", os.getenv("CLAUDE_MODEL", "claude-3-5-haiku-20241022"))
+
+    openai_key = s.get("openai_api_key", "")
+    if openai_key:
+        os.environ["OPENAI_API_KEY"] = openai_key
+    anthropic_key = s.get("anthropic_api_key", "")
+    if anthropic_key:
+        os.environ["ANTHROPIC_API_KEY"] = anthropic_key
 
     return ProcessingConfig(
         llm_backend=backend,
         giroconto_mode=GirocontoMode(mode_str),
         sanitize_config=SanitizationConfig(owner_names=owner_names),
-        openai_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
-        claude_model=os.getenv("CLAUDE_MODEL", "claude-3-5-haiku-20241022"),
-        ollama_model=os.getenv("OLLAMA_MODEL", "gemma3:12b"),
-        ollama_base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+        openai_model=openai_model,
+        claude_model=claude_model,
+        ollama_model=ollama_model,
+        ollama_base_url=ollama_url,
+        description_language=s.get("description_language", "it"),
     )
+
+
+def _render_job_status(engine):
+    """Read latest import job from DB and render its state.
+
+    When a job is *running*, the function auto-refreshes the page every
+    2 seconds so that any connected session (including remote ones) sees
+    live progress without depending on the originating session_state.
+    """
+    with get_session(engine) as s:
+        job = get_latest_import_job(s)
+    if job is None:
+        return
+
+    if job.status == "running":
+        pct = float(job.progress or 0)
+        msg = job.status_message or "Elaborazione in corso…"
+        st.info(f"⏳ {msg}")
+        st.progress(pct)
+        st.caption(f"Avanzamento: {int(pct * 100)}% · aggiornamento automatico ogni 2 s")
+        # Auto-refresh: sleep then rerun so all sessions see current progress
+        time.sleep(2)
+        st.rerun()
+
+    elif job.status == "completed":
+        st.success(job.status_message or "✅ Completato")
+        st.progress(1.0)
+        if job.detail_message:
+            st.caption(job.detail_message)
+
+    elif job.status == "error":
+        st.error(job.status_message or "❌ Errore durante l'importazione")
+
+
+def _render_last_import_summary():
+    results = st.session_state.get("last_import_results")
+    if not results:
+        return
+    st.divider()
+    st.subheader("Riepilogo ultima elaborazione")
+    for result in results:
+        with st.expander(f"📄 {result.source_name}", expanded=True):
+            if result.errors:
+                st.error("Errori: " + "; ".join(result.errors))
+            else:
+                col1, col2, col3, col4 = st.columns(4)
+                col1.metric("Transazioni", len(result.transactions))
+                col2.metric("Riconciliazioni", len(result.reconciliations))
+                col3.metric("Giroconti", len(result.transfer_links))
+                col4.metric("Flusso", result.flow_used.upper())
+
+                to_review = sum(1 for tx in result.transactions if tx.get("to_review"))
+                if to_review:
+                    st.warning(f"{to_review} transazioni richiedono revisione manuale → pagina Review")
+
+                if result.doc_schema:
+                    st.caption(
+                        f"Schema: {result.doc_schema.doc_type} | "
+                        f"Account: {result.doc_schema.account_label} | "
+                        f"Confidence: {result.doc_schema.confidence}"
+                    )
 
 
 def render_upload_page(engine):
@@ -63,20 +134,19 @@ def render_upload_page(engine):
 
     if not uploaded_files:
         st.info("Carica uno o più file per avviare l'elaborazione.")
+        _render_job_status(engine)
+        _render_last_import_summary()
         return
 
     if st.button("▶️ Elabora file", type="primary"):
-        session = get_session(engine)
-        taxonomy = _load_taxonomy()
         config = _build_config(engine)
 
-        with session:
+        # Prepare file list and load known schemas
+        files = []
+        known_schemas = {}
+        with get_session(engine) as session:
+            taxonomy = get_taxonomy_config(session)
             user_rules = get_category_rules(session)
-
-            # Read bytes once, derive columns key, look up known schema by that key
-            # (not by filename, so CARTA_2025.xlsx and CARTA_2026.xlsx share a schema)
-            known_schemas = {}
-            files = []
             for uf in uploaded_files:
                 raw_bytes = uf.read()
                 df_raw, _ = load_raw_dataframe(raw_bytes, uf.name)
@@ -84,16 +154,59 @@ def render_upload_page(engine):
                 schema = get_document_schema(session, cols_key)
                 if schema:
                     known_schemas[uf.name] = schema
-                files.append((raw_bytes, uf.name))
+                files.append((raw_bytes, uf.name, len(df_raw)))
 
-        progress = st.progress(0)
-        status = st.empty()
+        total_files = len(files)
+
+        # Create job record in DB
+        with get_session(engine) as s:
+            job = create_import_job(s, n_files=total_files)
+            job_id = job.id
+
+        # Live widgets for the originating session
+        _progress_bar = st.progress(0.0)
+        _status_text = st.empty()
+        _counter_text = st.empty()
 
         results = []
         with get_session(engine) as session2:
-            for i, (raw_bytes, filename) in enumerate(files):
-                status.text(f"Elaborazione: {filename}…")
-                schema = known_schemas.get(filename)
+            for i, (raw_bytes, filename, n_rows) in enumerate(files):
+                file_start = i / total_files
+                file_end = (i + 1) / total_files
+
+                _status_text.text(f"File {i + 1}/{total_files} — {filename}")
+                _counter_text.caption("Avvio elaborazione...")
+
+                # Write file-start to DB
+                with get_session(engine) as s:
+                    update_import_job(s, job_id,
+                                      progress=file_start,
+                                      status_message=f"File {i + 1}/{total_files} — {filename}")
+
+                # Throttle state for DB writes inside the callback
+                _last_db_write = [0.0]
+
+                def _make_cb(start: float, end: float, fname: str,
+                              fidx: int, ftot: int, jid: int,
+                              _last: list):
+                    def _cb(p: float):
+                        pct = start + (end - start) * p
+                        # Update live widgets in originating session
+                        _progress_bar.progress(min(pct, 1.0))
+                        _status_text.text(f"File {fidx + 1}/{ftot} — {fname}")
+                        _counter_text.caption(f"Avanzamento file: {int(p * 100)}%")
+                        # Throttled DB write so other sessions see live progress
+                        now = time.time()
+                        if now - _last[0] >= _DB_WRITE_INTERVAL:
+                            _last[0] = now
+                            with get_session(engine) as s:
+                                update_import_job(
+                                    s, jid,
+                                    progress=round(pct, 4),
+                                    status_message=f"File {fidx + 1}/{ftot} — {fname} ({int(p * 100)}%)",
+                                )
+                    return _cb
+
                 from core.orchestrator import process_file
                 result = process_file(
                     raw_bytes=raw_bytes,
@@ -101,35 +214,39 @@ def render_upload_page(engine):
                     config=config,
                     taxonomy=taxonomy,
                     user_rules=user_rules,
-                    known_schema=schema,
+                    known_schema=known_schemas.get(filename),
+                    progress_callback=_make_cb(
+                        file_start, file_end, filename, i, total_files,
+                        job_id, _last_db_write,
+                    ),
                 )
                 persist_import_result(session2, result)
                 results.append(result)
-                progress.progress((i + 1) / len(files))
+                _progress_bar.progress(file_end)
 
-        status.text("Elaborazione completata!")
+                # Write file-end to DB
+                with get_session(engine) as s:
+                    update_import_job(s, job_id, progress=file_end)
 
-        # Summary
-        st.divider()
-        st.subheader("Riepilogo elaborazione")
-        for result in results:
-            with st.expander(f"📄 {result.source_name}", expanded=True):
-                if result.errors:
-                    st.error("Errori: " + "; ".join(result.errors))
-                else:
-                    col1, col2, col3, col4 = st.columns(4)
-                    col1.metric("Transazioni", len(result.transactions))
-                    col2.metric("Riconciliazioni", len(result.reconciliations))
-                    col3.metric("Giroconti", len(result.transfer_links))
-                    col4.metric("Flusso", result.flow_used.upper())
+        n_tx = sum(len(r.transactions) for r in results)
+        final_msg = f"✅ Completato — {n_tx:,} transazioni importate"
+        final_detail = (
+            f"{total_files} file elaborati · "
+            f"{datetime.now(timezone.utc).strftime('%H:%M:%S')} UTC"
+        )
 
-                    to_review = sum(1 for tx in result.transactions if tx.get("to_review"))
-                    if to_review:
-                        st.warning(f"{to_review} transazioni richiedono revisione manuale → pagina Review")
+        # Mark job completed in DB
+        with get_session(engine) as s:
+            update_import_job(s, job_id,
+                              status="completed",
+                              progress=1.0,
+                              status_message=final_msg,
+                              detail_message=final_detail,
+                              n_transactions=n_tx,
+                              completed_at=datetime.now(timezone.utc))
 
-                    if result.doc_schema:
-                        st.caption(
-                            f"Schema: {result.doc_schema.doc_type} | "
-                            f"Account: {result.doc_schema.account_label} | "
-                            f"Confidence: {result.doc_schema.confidence}"
-                        )
+        st.session_state["last_import_results"] = results
+
+    # Always rendered: reads job state from DB + summary from session_state
+    _render_job_status(engine)
+    _render_last_import_summary()

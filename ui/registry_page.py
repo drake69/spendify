@@ -7,8 +7,9 @@ import pandas as pd
 import streamlit as st
 
 from db.models import get_session
-from db.repository import get_transactions
+from db.repository import get_all_user_settings, get_transactions
 from reports.generator import generate_csv_export, generate_xlsx_export
+from support.formatting import format_amount_display, format_date_display, format_raw_amount_display
 from support.logging import setup_logging
 
 logger = setup_logging()
@@ -21,6 +22,8 @@ def render_registry_page(engine):
 
     session = get_session(engine)
     with session:
+        settings = get_all_user_settings(session)
+
         # ── Filters ──────────────────────────────────────────────────────────
         col1, col2, col3, col4 = st.columns(4)
         with col1:
@@ -67,19 +70,27 @@ def render_registry_page(engine):
         )
 
         m1, m2, m3, m4 = st.columns(4)
+        _dec = settings.get("amount_decimal_sep", ",")
+        _thou = settings.get("amount_thousands_sep", ".")
+
         m1.metric("Transazioni", len(txs))
-        m2.metric("Saldo Netto", f"{net:.2f} €")
-        m3.metric("Entrate", f"{income:.2f} €")
-        m4.metric("Uscite", f"{expenses:.2f} €")
+        m2.metric("Saldo Netto", format_amount_display(float(net), _dec, _thou))
+        m3.metric("Entrate", format_amount_display(float(income), _dec, _thou))
+        m4.metric("Uscite", format_amount_display(float(expenses), _dec, _thou))
 
         # ── Table ─────────────────────────────────────────────────────────────
         show_raw = st.toggle("Mostra valori originali (raw)", value=False, key="ledger_show_raw")
 
+        _date_fmt = settings.get("date_display_format", "%d/%m/%Y")
+
         data = [
             {
-                "Data": tx.date,
+                "Data": format_date_display(tx.date, _date_fmt),
                 "Descrizione": (tx.description or "")[:80],
-                "Importo": float(tx.amount),
+                "Entrata": format_amount_display(float(tx.amount), _dec, _thou, symbol="")
+                           if float(tx.amount) > 0 else "",
+                "Uscita": format_amount_display(abs(float(tx.amount)), _dec, _thou, symbol="")
+                          if float(tx.amount) < 0 else "",
                 "Valuta": tx.currency,
                 "Tipo": tx.tx_type,
                 "Categoria": tx.category or "",
@@ -88,7 +99,7 @@ def render_registry_page(engine):
                 "Conf.": tx.category_confidence or "",
                 "Da rivedere": "⚠️" if tx.to_review else "",
                 "Desc. originale": (tx.raw_description or "")[:80],
-                "Importo originale": tx.raw_amount or "",
+                "Importo originale": format_raw_amount_display(tx.raw_amount),
                 "id": tx.id,
             }
             for tx in txs
