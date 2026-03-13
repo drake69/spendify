@@ -372,6 +372,44 @@ Ogni transazione ha un `id` di 24 caratteri (SHA-256 troncato) calcolato determi
 
 Gli estratti conto italiani per carte di credito/debito esportano spesso gli acquisti come valori positivi. Il flag `DocumentSchema.invert_sign`, impostato dall'LLM durante la classificazione Flow 2, istruisce il normalizzatore a negare tutti gli importi — le spese diventano negative e i rimborsi positivi con un'unica operazione simmetrica.
 
+#### Algoritmo di rilevamento in due passi
+
+Il classificatore decide il valore di `invert_sign` con un algoritmo in due passi. **Lo Step 0 ha la priorità massima: se si attiva, lo Step 1 viene saltato completamente.** Lo Step 1 è consultato solo quando lo Step 0 non riesce a dare una risposta definitiva.
+
+**Step 0 — Sinonimi del nome colonna (priorità massima)**
+
+Il nome della colonna importo viene confrontato con tre gruppi di sinonimi:
+
+| Gruppo | Esempi di nomi | Decisione |
+|---|---|---|
+| **Sinonimi di uscita** | Uscita, Uscite, Addebito, Addebiti, Pagamento, Spesa, Dare, Importo addebitato | `invert_sign = true` (spese salvate come positivi → negarle) |
+| **Sinonimi di entrata** | Entrata, Entrate, Accredito, Accrediti, Avere, Credito, Importo accreditato | `invert_sign = false` (entrate già positive → nessuna modifica) |
+| **Nomi neutri** | Importo, Amount, Valore, Totale | Nessuna decisione — si procede allo Step 1 |
+
+Il matching è case-insensitive e parziale (es. "Addebiti carta" corrisponde a "Addebito"). La regola dei sinonimi di uscita si applica solo ai doc_type carta; conti correnti e depositi mantengono sempre `invert_sign = false` indipendentemente dal nome della colonna.
+
+**Step 1 — Analisi della distribuzione dei segni (solo nomi neutri)**
+
+Quando lo Step 0 trova un nome neutro e non può classificare per nome, il classificatore conta i valori positivi e negativi nel campione e calcola `positive_ratio` e `negative_ratio`:
+
+- File carta, maggioranza positivi (> 60 %): le spese sono salvate come positivi (convenzione AMEX / tipici export italiani) → `invert_sign = true`
+- File carta, maggioranza negativi (> 60 %): le spese hanno già il segno corretto → `invert_sign = false`
+- Split circa 50/50: si analizzano le descrizioni (nomi di esercenti con importi positivi → `invert_sign = true`; "bonifico ricevuto" con importo positivo → `invert_sign = false`)
+- Conto corrente / deposito: sempre `invert_sign = false`, indipendentemente dalla distribuzione
+
+#### Campi diagnostici
+
+Ogni `DocumentSchema` prodotto dal Flow 2 include quattro campi diagnostici per audit e debug:
+
+| Campo | Tipo | Contenuto |
+|---|---|---|
+| `positive_ratio` | `float \| null` | Frazione di valori > 0 nella colonna importo nel campione |
+| `negative_ratio` | `float \| null` | Frazione di valori < 0 nella colonna importo nel campione |
+| `semantic_evidence` | `list[str]` | 2–4 frasi brevi dell'LLM che spiegano la decisione |
+| `normalization_case_id` | `str \| null` | C1 = conto corrente signed_single · C2 = carta invertita · C3 = carta già negativa · C4 = colonne Dare/Avere · C5 = ambiguo |
+
+Questi campi sono persistiti nella tabella DB `document_schema` e visibili nel riepilogo dello schema Flow 2 nell'UI.
+
 ### Sottocategoria come chiave primaria
 
 Il categorizzatore tratta la sottocategoria come autoritativa. `TaxonomyConfig.find_category_for_subcategory()` risolve la categoria genitore da qualsiasi nome di sottocategoria valido. LLM e regole possono specificare il livello più granulare e la gerarchia è sempre consistente nel DB.
