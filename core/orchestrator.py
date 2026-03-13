@@ -162,9 +162,18 @@ def _normalize_df_with_schema(
     transactions = []
 
     for _, row in df.iterrows():
-        # Parse date
+        # Parse date — Excel cells arrive as datetime/date objects, not strings
         raw_date = row.get(schema.date_col, "")
-        tx_date = parse_date_safe(str(raw_date), schema.date_format) if raw_date else None
+        if raw_date is None or (isinstance(raw_date, float) and pd.isna(raw_date)):
+            continue
+        if hasattr(raw_date, "date"):          # datetime → date
+            tx_date = raw_date.date()
+        elif isinstance(raw_date, date):       # already a date
+            tx_date = raw_date
+        elif raw_date:
+            tx_date = parse_date_safe(str(raw_date), schema.date_format)
+        else:
+            tx_date = None
         if tx_date is None:
             continue  # skip rows with unparseable date
 
