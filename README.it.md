@@ -1,4 +1,4 @@
-# Spendify v2.2
+# Spendify v2.3
 
 > 🇬🇧 [Read in English](README.md)
 
@@ -17,6 +17,8 @@ Aggrega estratti conto eterogenei (conti correnti, carte di credito, carte di de
 - [Configurazione](#configurazione)
 - [Avvio](#avvio)
 - [Tassonomia](#tassonomia)
+- [Motore delle regole](#motore-delle-regole)
+- [Giroconti](#giroconti)
 - [Test](#test)
 - [Decisioni di design](#decisioni-di-design)
 
@@ -33,6 +35,7 @@ Aggrega estratti conto eterogenei (conti correnti, carte di credito, carte di de
 | **Riconciliazione carta–c/c (RF-03)** | Algoritmo a 3 fasi che elimina il double-counting da addebiti aggregati mensili |
 | **Rilevamento giroconti (RF-04)** | Matching simbolico importo+finestra temporale; esclusione o neutralizzazione configurabile |
 | **Categorizzazione a cascata (RF-05)** | Regole utente → regex statiche → LLM strutturato → fallback "Altro" |
+| **Motore regole con applicazione retroattiva** | Le regole deterministiche vengono applicate a tutte le transazioni esistenti al momento del salvataggio, non solo alle future importazioni |
 | **Sottocategoria come fonte di verità** | La sottocategoria è la chiave primaria: se LLM o regola assegna una sottocategoria presente in tassonomia, la categoria genitore viene risolta automaticamente |
 | **Tassonomia a 2 livelli nel DB** | 15 categorie di spesa + 7 di entrata; gestita dalla pagina Tassonomia (DB-backed, nessun restart richiesto) |
 | **Backend LLM multi-provider** | Ollama (locale, default), OpenAI, Claude — interfaccia astratta comune, nessun LangChain |
@@ -120,6 +123,8 @@ spendify/
 ├── db/
 │   ├── models.py           # ORM SQLAlchemy (9 tabelle) + migrazioni automatiche
 │   └── repository.py       # CRUD idempotente · persist_import_result() · CRUD tassonomia
+│                           #   bulk_set_giroconto_by_description()
+│                           #   get_transactions_by_rule_pattern()
 │
 ├── reports/
 │   ├── generator.py        # HTML (Jinja2+Plotly) · CSV · XLSX
@@ -128,11 +133,11 @@ spendify/
 ├── ui/
 │   ├── sidebar.py          # Pulsanti navigazione (8 pagine) + modalità giroconto
 │   ├── upload_page.py      # Import multi-file + progress bar cross-session
-│   ├── registry_page.py    # Ledger filtrabile (colonne Entrata/Uscita) + download
+│   ├── registry_page.py    # Ledger filtrabile + selezione al click + bulk giroconto
 │   ├── analysis_page.py    # 7 grafici Plotly: barre mensili, saldo cumulativo,
 │   │                       #   pie+treemap spese, drill-down categoria, pie+treemap entrate,
 │   │                       #   top-10 descrizioni, stacked per conto + export HTML
-│   ├── review_page.py      # Correzione categoria + salvataggio opzionale come regola
+│   ├── review_page.py      # Correzione categoria + toggle giroconto + salvataggio regola
 │   ├── rules_page.py       # CRUD completo regole + ricalcolo bulk transazioni
 │   ├── taxonomy_page.py    # CRUD DB-backed per categorie e sottocategorie
 │   └── settings_page.py    # Locale (formato data/importo), lingua, config backend LLM
@@ -142,9 +147,10 @@ spendify/
 │   └── categorizer.json    # Prompt categorizzazione transazioni
 │
 ├── tests/
-│   ├── test_normalizer.py  # Test deterministici (parse_amount, SHA-256 …)
-│   ├── test_backends.py    # Factory backend, validazione, mock Ollama
-│   └── test_categorizer.py # Regole statiche, cascata, risoluzione tassonomia
+│   ├── test_normalizer.py          # Test deterministici (parse_amount, SHA-256 …)
+│   ├── test_backends.py            # Factory backend, validazione, mock Ollama
+│   ├── test_categorizer.py         # Regole statiche, cascata, risoluzione tassonomia
+│   └── test_repository_rules.py    # Upsert regole, pattern matching, toggle giroconto, bulk ops
 │
 └── support/
     ├── formatting.py       # format_amount_display, format_date_display, format_raw_amount_display
@@ -252,9 +258,9 @@ L'app si apre su `http://localhost:8501` con 8 pagine:
 | Pagina | Descrizione |
 |---|---|
 | **📥 Import** | Carica uno o più file (CSV / XLSX). Progresso live visibile da tutte le sessioni browser. Riepilogo: transazioni, riconciliazioni, transfer link, flow usato (1/2). |
-| **📋 Ledger** | Tabella filtrabile per data, tipo, flag revisione. Colonne separate Entrata/Uscita. Metriche netto/entrate/uscite. Download CSV/XLSX. |
+| **📋 Ledger** | Tabella filtrabile per data, tipo, descrizione, categoria, flag revisione. Click su una riga per selezionarla istantaneamente. Colonne Entrata/Uscita separate e allineate a destra. Toggle giroconto sempre visibile con bulk-apply a tutte le transazioni con la stessa descrizione. Download CSV/XLSX. |
 | **📊 Analytics** | 7 grafici Plotly interattivi: barre mensili entrate/uscite, saldo cumulativo, pie+treemap spese per categoria, drill-down interattivo categoria→sottocategoria con trend mensile, pie+treemap entrate, top-10 descrizioni, stacked per conto. Export HTML. |
-| **🔍 Review** | Transazioni con `to_review=True`. Correzione categoria/sottocategoria + salvataggio opzionale come regola permanente. |
+| **🔍 Review** | Transazioni con `to_review=True`. Toggle giroconto (con bulk-apply). Correzione categoria/sottocategoria + salvataggio opzionale come regola permanente applicata immediatamente alle transazioni già presenti. |
 | **📏 Regole** | CRUD completo regole di categorizzazione. Modifica/elimina regole + ricalcolo bulk delle transazioni già categorizzate. |
 | **🗂️ Tassonomia** | CRUD DB-backed per categorie e sottocategorie (spese e entrate). Le modifiche hanno effetto immediato senza restart. |
 | **⚙️ Impostazioni** | Formato data, separatori importo, lingua descrizioni, backend LLM (modello + chiavi API). Tutto persistito nel DB. |
@@ -273,6 +279,62 @@ La tassonomia è memorizzata nel database (tabelle `taxonomy_category` / `taxono
 
 ---
 
+## Motore delle regole
+
+Le regole di categorizzazione sono memorizzate nella tabella `category_rule` e applicate in più punti del ciclo di vita.
+
+### Tipi di matching
+
+| Tipo | Comportamento |
+|---|---|
+| `contains` | Il pattern appare ovunque nella descrizione (case-insensitive) |
+| `exact` | La descrizione corrisponde esattamente al pattern (case-insensitive) |
+| `regex` | Regex Python completa confrontata con la descrizione |
+
+`get_transactions_by_rule_pattern` ricerca **tutte** le transazioni indipendentemente da come erano state categorizzate (LLM, regola o correzione manuale). Salvare una nuova regola corregge correttamente anche le transazioni già categorizzate dall'LLM.
+
+### Priorità
+
+Quando più regole corrispondono alla stessa transazione vince quella con il valore di `priority` più alto. La priorità di default è 10; è possibile assegnare qualsiasi intero.
+
+### Semantica upsert
+
+Creare una regola con la stessa coppia `(pattern, match_type)` di una regola esistente la **aggiorna** sul posto (categoria, sottocategoria, priorità) anziché creare un duplicato.
+
+### Applicazione retroattiva
+
+Salvare una regola dalle pagine **Ledger** o **Review** la applica immediatamente a tutte le transazioni esistenti che corrispondono al pattern, non solo alle future importazioni. Il messaggio di conferma indica quante transazioni sono state aggiornate. Lo stesso comportamento è disponibile dalla pagina **Regole** tramite l'opzione di ricalcolo bulk.
+
+---
+
+## Giroconti
+
+Un *giroconto* è un movimento interno tra conti di propria titolarità (es. bonifico da conto corrente a conto deposito, ricarica di una prepagata). Includere entrambi i lati nel saldo causerebbe double-counting.
+
+### Tipi di transazione
+
+| `tx_type` | Significato |
+|---|---|
+| `internal_out` | Lato uscente del giroconto (importo negativo) |
+| `internal_in` | Lato entrante del giroconto (importo positivo) |
+
+Entrambi i tipi sono esclusi dal saldo netto, dalle entrate e dalle uscite.
+
+### Rilevamento automatico (RF-04)
+
+La pipeline tenta di abbinare i giroconti automaticamente durante l'importazione usando matching simbolico importo + finestra temporale.
+
+### Toggle manuale
+
+Dalle pagine **Ledger** o **Review** è possibile contrassegnare manualmente qualsiasi transazione come giroconto (o ripristinarla):
+
+- **Toggle singolo** — cambia il `tx_type` della transazione selezionata (`expense` ↔ `internal_out`, `income` ↔ `internal_in`).
+- **Bulk apply** — se altre transazioni condividono la stessa descrizione, una checkbox (default: abilitata) consente di applicare la stessa modifica a tutte con un solo click. Il numero di transazioni coinvolte è visibile prima di confermare.
+
+`bulk_set_giroconto_by_description` in `db/repository.py` implementa l'operazione bulk: aggiorna tutte le transazioni con la descrizione indicata eccetto quella già modificata, e restituisce il numero di righe cambiate.
+
+---
+
 ## Test
 
 ```bash
@@ -282,6 +344,17 @@ uv run python -m pytest tests/ -v
 # Con coverage
 uv run python -m pytest tests/ --cov=core --cov=db --cov-report=term-missing
 ```
+
+### File di test
+
+| File | Copertura |
+|---|---|
+| `test_normalizer.py` | `parse_amount`, dedup SHA-256, encoding detection |
+| `test_backends.py` | Factory backend, validazione, mock Ollama |
+| `test_categorizer.py` | Regole statiche, cascata 4-step, risoluzione tassonomia |
+| `test_repository_rules.py` | Upsert regole, `get_transactions_by_rule_pattern` (tutti i tipi + regressione LLM-sourced), `apply_rules_to_review_transactions`, `toggle_transaction_giroconto`, `bulk_set_giroconto_by_description` |
+
+Tutti i test usano un database SQLite in-memory — nessun I/O su file, nessun servizio esterno richiesto.
 
 ---
 

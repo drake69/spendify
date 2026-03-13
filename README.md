@@ -1,4 +1,4 @@
-# Spendify v2.2
+# Spendify v2.3
 
 > 🇮🇹 [Leggi in italiano](README.it.md)
 
@@ -17,6 +17,8 @@ Aggregates heterogeneous bank statements (current accounts, credit cards, debit 
 - [Configuration](#configuration)
 - [Running the app](#running-the-app)
 - [Taxonomy](#taxonomy)
+- [Rule engine](#rule-engine)
+- [Giroconto (internal transfers)](#giroconto-internal-transfers)
 - [Tests](#tests)
 - [Design decisions](#design-decisions)
 
@@ -33,6 +35,7 @@ Aggregates heterogeneous bank statements (current accounts, credit cards, debit 
 | **Card–account reconciliation (RF-03)** | 3-phase algorithm that eliminates double-counting from monthly aggregate settlements |
 | **Internal transfer detection (RF-04)** | Symbolic amount + time-window matching; configurable exclusion or neutralization |
 | **Cascade categorization (RF-05)** | User rules → static regex → structured LLM → fallback "Other" |
+| **Rule engine with bulk apply** | Deterministic rules apply to all existing transactions on save, not just future imports |
 | **Subcategory-authoritative matching** | Subcategory is the primary key: if an LLM or rule assigns a subcategory present in the taxonomy, the parent category is resolved automatically |
 | **2-level taxonomy in DB** | 15 expense + 7 income categories; managed via the Tassonomia UI page (DB-backed, no file restart required) |
 | **Multi-provider LLM backend** | Ollama (local, default), OpenAI, Claude — shared abstract interface, no LangChain |
@@ -120,6 +123,8 @@ spendify/
 ├── db/
 │   ├── models.py           # SQLAlchemy ORM (9 tables) + automatic migrations
 │   └── repository.py       # Idempotent CRUD · persist_import_result() · taxonomy CRUD
+│                           #   bulk_set_giroconto_by_description()
+│                           #   get_transactions_by_rule_pattern()
 │
 ├── reports/
 │   ├── generator.py        # HTML (Jinja2+Plotly) · CSV · XLSX
@@ -128,11 +133,11 @@ spendify/
 ├── ui/
 │   ├── sidebar.py          # Navigation buttons (8 pages) + giroconto mode
 │   ├── upload_page.py      # Multi-file import + cross-session progress bar
-│   ├── registry_page.py    # Filterable ledger (Entrata/Uscita split) + download
+│   ├── registry_page.py    # Filterable ledger + row-click selection + giroconto bulk-apply
 │   ├── analysis_page.py    # 7 Plotly charts: monthly bars, cumulative balance,
 │   │                       #   expense pie+treemap, category drill-down, income pie+treemap,
 │   │                       #   top-10 descriptions, stacked by account + HTML export
-│   ├── review_page.py      # Category correction + optional rule saving
+│   ├── review_page.py      # Category correction + giroconto toggle + optional rule saving
 │   ├── rules_page.py       # Full CRUD for CategoryRule + bulk transaction re-categorization
 │   ├── taxonomy_page.py    # DB-backed CRUD for categories and subcategories
 │   └── settings_page.py    # Locale (date/amount format), language, LLM backend config
@@ -142,9 +147,10 @@ spendify/
 │   └── categorizer.json    # System+user prompts for transaction categorization
 │
 ├── tests/
-│   ├── test_normalizer.py  # Deterministic tests (parse_amount, SHA-256 …)
-│   ├── test_backends.py    # Backend factory, validation, Ollama mock
-│   └── test_categorizer.py # Static rules, cascade, taxonomy resolution
+│   ├── test_normalizer.py      # Deterministic tests (parse_amount, SHA-256 …)
+│   ├── test_backends.py        # Backend factory, validation, Ollama mock
+│   ├── test_categorizer.py     # Static rules, cascade, taxonomy resolution
+│   └── test_repository_rules.py  # Rule upsert, pattern matching, giroconto toggle, bulk ops
 │
 └── support/
     ├── formatting.py       # format_amount_display, format_date_display, format_raw_amount_display
@@ -252,9 +258,9 @@ The app opens at `http://localhost:8501` with 8 pages:
 | Page | Description |
 |---|---|
 | **📥 Import** | Upload one or more files (CSV / XLSX). Shows live progress (visible across all browser sessions). Summary: imported transactions, reconciliations, transfer links, flow used (1/2). |
-| **📋 Ledger** | Filterable table by date, type, review flag. Split Entrata/Uscita columns. Net/income/expense metrics. CSV/XLSX download. |
+| **📋 Ledger** | Filterable table (date, type, description, category, review flag). Click any row to select it instantly. Split Entrata/Uscita columns, right-aligned. Net/income/expense metrics. Always-visible giroconto toggle with one-click bulk-apply to all transactions sharing the same description. CSV/XLSX download. |
 | **📊 Analytics** | 7 interactive Plotly charts: monthly bar chart, cumulative balance, expense pie+treemap, interactive category drill-down with subcategory bar + monthly trend, income pie+treemap, top-10 descriptions, stacked by account. HTML export. |
-| **🔍 Review** | Transactions with `to_review=True`. Category/subcategory correction + optional save as permanent rule. |
+| **🔍 Review** | Transactions with `to_review=True`. Giroconto toggle (with bulk-apply). Category/subcategory correction + optional save as permanent rule that is immediately applied to all existing matching transactions. |
 | **📏 Regole** | Full CRUD for category rules. Edit/delete existing rules + optional bulk re-categorization of already-matched transactions. |
 | **🗂️ Tassonomia** | DB-backed CRUD for categories and subcategories (expenses and income). Changes take effect immediately without restarting. |
 | **⚙️ Impostazioni** | Date format, amount separators, description language, LLM backend (model + API keys). All persisted in DB. |
@@ -269,7 +275,65 @@ The taxonomy is stored in the database (`taxonomy_category` / `taxonomy_subcateg
 
 **Income categories (7):** Lavoro dipendente · Lavoro autonomo · Rendite finanziarie · Rendite immobiliari · Trasferimenti e rimborsi · Prestazioni sociali · Altro entrate
 
-**Subcategory is authoritative:** if the LLM or a rule assigns a subcategory that exists in the taxonomy, the correct parent category is resolved automatically — the two levels are always consistent.
+**Subcategory is authoritative:** if the LLM or a rule assigns a subcategory that exists in the taxonomy, the correct parent category is resolved automatically — the two levels are always consistent in the DB.
+
+---
+
+## Rule engine
+
+Category rules are stored in the `category_rule` table and applied at multiple points in the lifecycle:
+
+### Rule matching
+
+Rules support three match types, all case-insensitive:
+
+| Match type | Behaviour |
+|---|---|
+| `contains` | Pattern appears anywhere in the description (case-insensitive) |
+| `exact` | Description equals the pattern exactly (case-insensitive) |
+| `regex` | Full Python regex matched against the description |
+
+`get_transactions_by_rule_pattern` searches **all** transactions regardless of how they were previously categorized (LLM, rule, or manual correction). This means saving a new rule will correctly identify and update transactions that the LLM had already categorized.
+
+### Rule priority
+
+When multiple rules match the same transaction the one with the highest `priority` value wins. The default priority is 10; you can assign any integer.
+
+### Upsert semantics
+
+Creating a rule with the same `(pattern, match_type)` pair as an existing rule **updates** it in place (category, subcategory, priority), rather than creating a duplicate. The return value indicates whether the rule was newly created or updated.
+
+### Retroactive application
+
+Saving a rule from the **Ledger** or **Review** pages applies it immediately to all existing transactions that match the pattern, not just future imports. The success message reports how many transactions were updated. The same behaviour is available from the **Regole** page via the bulk re-categorization option.
+
+---
+
+## Giroconto (internal transfers)
+
+A *giroconto* is an internal fund movement between accounts you own (e.g., a transfer from a current account to a savings account, or a top-up of a prepaid card). Including both sides in the balance would cause double-counting.
+
+### Transaction types
+
+| `tx_type` | Meaning |
+|---|---|
+| `internal_out` | Outgoing side of an internal transfer (negative amount) |
+| `internal_in` | Incoming side of an internal transfer (positive amount) |
+
+Both types are excluded from net balance, income, and expense metrics.
+
+### Automatic detection (RF-04)
+
+The pipeline tries to match transfers automatically using symbolic amount + time-window matching during import.
+
+### Manual toggle
+
+From the **Ledger** or **Review** pages you can manually mark any transaction as a giroconto (or revert it):
+
+- **Single toggle** — flips the `tx_type` of the selected transaction (`expense` ↔ `internal_out`, `income` ↔ `internal_in`).
+- **Bulk apply** — if other transactions share the same description, a checkbox (default: enabled) offers to apply the same change to all of them in one click. The count of affected transactions is shown before confirming.
+
+`bulk_set_giroconto_by_description` in `db/repository.py` implements the bulk operation: it updates all transactions with the given description except the one already toggled, and returns the number of rows changed.
 
 ---
 
@@ -282,6 +346,17 @@ uv run python -m pytest tests/ -v
 # With coverage
 uv run python -m pytest tests/ --cov=core --cov=db --cov-report=term-missing
 ```
+
+### Test files
+
+| File | Coverage |
+|---|---|
+| `test_normalizer.py` | `parse_amount`, SHA-256 dedup, encoding detection |
+| `test_backends.py` | Backend factory, validation, Ollama mock |
+| `test_categorizer.py` | Static rules, 4-step cascade, taxonomy resolution |
+| `test_repository_rules.py` | Rule upsert, `get_transactions_by_rule_pattern` (all match types + regression for LLM-sourced), `apply_rules_to_review_transactions`, `toggle_transaction_giroconto`, `bulk_set_giroconto_by_description` |
+
+All tests use an in-memory SQLite database — no file I/O, no external services required.
 
 ---
 
