@@ -159,6 +159,9 @@ def apply_sign_convention(
     elif convention == SignConvention.debit_positive:
         debit = parse_amount(row.get(debit_col)) if debit_col else None
         credit = parse_amount(row.get(credit_col)) if credit_col else None
+        # If neither column parsed, fall back to amount_col (schema may have mismapped)
+        if debit is None and credit is None:
+            return parse_amount(row.get(amount_col)) if amount_col else None
         debit = debit or Decimal(0)
         credit = credit or Decimal(0)
         return credit - debit
@@ -166,6 +169,8 @@ def apply_sign_convention(
         # credit column is positive (income), debit column is negative (expense)
         credit = parse_amount(row.get(credit_col)) if credit_col else None
         debit = parse_amount(row.get(debit_col)) if debit_col else None
+        if credit is None and debit is None:
+            return parse_amount(row.get(amount_col)) if amount_col else None
         if credit and credit > 0:
             return credit
         if debit:

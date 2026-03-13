@@ -97,6 +97,28 @@ class TaxonomyConfig:
         subs = self.valid_subcategories(category)
         return subcategory in subs
 
+    def find_category_for_subcategory(self, subcategory: str) -> Optional[str]:
+        """Return the parent category for a given subcategory, or None if not found.
+
+        The subcategory is treated as authoritative: if an LLM or rule assigns a
+        subcategory that exists in the taxonomy, this resolves the correct category.
+        """
+        for cat, subs in self.expenses.items():
+            if subcategory in subs:
+                return cat
+        for cat, subs in self.income.items():
+            if subcategory in subs:
+                return cat
+        return None
+
+    @property
+    def all_subcategories(self) -> list[str]:
+        """Flat list of all subcategories across expenses and income."""
+        result = []
+        for subs in list(self.expenses.values()) + list(self.income.values()):
+            result.extend(subs)
+        return result
+
 
 @dataclass
 class CategorizationResult:
@@ -149,6 +171,7 @@ def categorize_transaction(
     sanitize_config: SanitizationConfig | None = None,
     fallback_backend: LLMBackend | None = None,
     confidence_threshold: float = 0.8,
+    description_language: str = "it",
 ) -> CategorizationResult:
     """
     Run the categorization cascade for a single transaction.
@@ -157,10 +180,19 @@ def categorize_transaction(
     # Step 0: user-defined rules (sorted by priority desc)
     for rule in sorted(user_rules, key=lambda r: r.priority, reverse=True):
         if rule.matches(description, doc_type):
-            sub = rule.subcategory or taxonomy.valid_subcategories(rule.category)[0] if taxonomy.valid_subcategories(rule.category) else ""
+            rule_cat = rule.category
+            rule_sub = rule.subcategory or ""
+            # If subcategory is set and exists in taxonomy, resolve the correct category
+            if rule_sub:
+                resolved = taxonomy.find_category_for_subcategory(rule_sub)
+                if resolved:
+                    rule_cat = resolved
+            if not rule_sub:
+                subs = taxonomy.valid_subcategories(rule_cat)
+                rule_sub = subs[0] if subs else ""
             return CategorizationResult(
-                category=rule.category,
-                subcategory=sub,
+                category=rule_cat,
+                subcategory=rule_sub,
                 confidence=Confidence.high,
                 source=CategorySource.rule,
             )
@@ -195,6 +227,7 @@ def categorize_transaction(
             llm_backend=llm_backend,
             sanitize_config=sanitize_config,
             fallback_backend=fallback_backend,
+            description_language=description_language,
         )
         if llm_result:
             return llm_result
@@ -222,6 +255,7 @@ def _categorize_with_llm(
     llm_backend: LLMBackend,
     sanitize_config: SanitizationConfig | None,
     fallback_backend: LLMBackend | None,
+    description_language: str = "it",
 ) -> Optional[CategorizationResult]:
     if llm_backend.is_remote:
         safe_desc = redact_pii(description, sanitize_config)
@@ -232,17 +266,26 @@ def _categorize_with_llm(
     income_cats = taxonomy.all_income_categories
     json_schema = build_categorization_schema(expense_cats, income_cats)
 
-    # Inject subcategory enum as well
+    # Inject flat subcategory enum for JSON schema (structural constraint only)
     all_subs = []
     for subs in list(taxonomy.expenses.values()) + list(taxonomy.income.values()):
         all_subs.extend(subs)
     json_schema["properties"]["subcategory"]["enum"] = all_subs
+
+    # Build a compact taxonomy map for the prompt so the LLM knows which
+    # subcategories belong to which category
+    tax_lines = []
+    for cat, subs in {**taxonomy.expenses, **taxonomy.income}.items():
+        tax_lines.append(f"  {cat}: {', '.join(subs)}")
+    taxonomy_hint = "\n".join(tax_lines)
 
     currency = "EUR"
     user_prompt = _PROMPTS["user_template"].format(
         amount=amount,
         currency=currency,
         safe_desc=safe_desc,
+        taxonomy_hint=taxonomy_hint,
+        description_language=description_language,
     )
 
     result, _ = call_with_fallback(
@@ -262,10 +305,34 @@ def _categorize_with_llm(
     rationale = result.get("rationale", "")
 
     if not taxonomy.is_valid_pair(category, subcategory):
-        logger.warning(f"LLM returned invalid pair ({category}, {subcategory}), using fallback")
-        fallback_cat, fallback_sub = TAXONOMY_FALLBACK_EXPENSE if amount < 0 else TAXONOMY_FALLBACK_INCOME
-        category, subcategory = fallback_cat, fallback_sub
-        confidence_str = "low"
+        # Subcategory is authoritative: if it exists in taxonomy under a different
+        # category, use the correct parent category instead of the LLM's category.
+        resolved_cat = taxonomy.find_category_for_subcategory(subcategory)
+        if resolved_cat:
+            logger.info(
+                f"LLM returned category='{category}' but subcategory='{subcategory}' "
+                f"belongs to '{resolved_cat}' — correcting category"
+            )
+            category = resolved_cat
+        else:
+            # Subcategory not in taxonomy at all; try to keep valid category
+            valid_subs = taxonomy.valid_subcategories(category)
+            if valid_subs:
+                logger.warning(
+                    f"LLM subcategory '{subcategory}' not in taxonomy for '{category}'; "
+                    f"using first valid subcategory '{valid_subs[0]}'"
+                )
+                subcategory = valid_subs[0]
+                confidence_str = "low"
+            else:
+                logger.warning(
+                    f"LLM returned unknown pair ({category}, {subcategory}), using fallback"
+                )
+                fallback_cat, fallback_sub = (
+                    TAXONOMY_FALLBACK_EXPENSE if amount < 0 else TAXONOMY_FALLBACK_INCOME
+                )
+                category, subcategory = fallback_cat, fallback_sub
+                confidence_str = "low"
 
     return CategorizationResult(
         category=category,
@@ -285,10 +352,13 @@ def categorize_batch(
     sanitize_config: SanitizationConfig | None = None,
     fallback_backend: LLMBackend | None = None,
     confidence_threshold: float = 0.8,
+    description_language: str = "it",
+    progress_callback=None,  # Callable[[float], None] — 0.0..1.0 within batch
 ) -> list[CategorizationResult]:
     """Categorize a list of transaction dicts (row-by-row)."""
     results = []
-    for tx in transactions:
+    n = len(transactions)
+    for i, tx in enumerate(transactions):
         description = tx.get("description", "")
         amount = tx.get("amount", Decimal(0))
         if not isinstance(amount, Decimal):
@@ -304,6 +374,9 @@ def categorize_batch(
             sanitize_config=sanitize_config,
             fallback_backend=fallback_backend,
             confidence_threshold=confidence_threshold,
+            description_language=description_language,
         )
         results.append(result)
+        if progress_callback:
+            progress_callback((i + 1) / n if n else 1.0)
     return results

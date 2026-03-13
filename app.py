@@ -1,10 +1,13 @@
 """Spendify – Streamlit entrypoint (RF-08).
 
-Four pages:
-  📥 Import   – upload + pipeline processing
-  📋 Ledger   – filterable transaction table + export
+Seven pages:
+  📥 Import    – upload + pipeline processing
+  📋 Ledger    – filterable transaction table + export
   📊 Analytics – interactive charts (Plotly)
-  🔍 Review   – manual review of low-confidence items
+  🔍 Review    – manual review of low-confidence items
+  📏 Regole    – manage category rules (edit / delete / create)
+  🗂️ Tassonomia – manage categories and subcategories in taxonomy.yaml
+  ⚙️ Settings  – locale and language preferences
 """
 import os
 
@@ -51,3 +54,15 @@ elif page == "analytics":
 elif page == "review":
     from ui.review_page import render_review_page
     render_review_page(engine)
+
+elif page == "rules":
+    from ui.rules_page import render_rules_page
+    render_rules_page(engine)
+
+elif page == "taxonomy":
+    from ui.taxonomy_page import render_taxonomy_page
+    render_taxonomy_page(engine)
+
+elif page == "settings":
+    from ui.settings_page import render_settings_page
+    render_settings_page(engine)

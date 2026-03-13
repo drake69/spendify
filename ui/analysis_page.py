@@ -9,8 +9,9 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from db.models import get_session
-from db.repository import get_transactions
+from db.repository import get_all_user_settings, get_transactions
 from reports.generator import generate_html_report
+from support.formatting import format_amount_display
 from support.logging import setup_logging
 
 logger = setup_logging()
@@ -23,6 +24,10 @@ def render_analysis_page(engine):
 
     session = get_session(engine)
     with session:
+        settings = get_all_user_settings(session)
+        _dec = settings.get("amount_decimal_sep", ",")
+        _thou = settings.get("amount_thousands_sep", ".")
+
         # ── Date filter ───────────────────────────────────────────────────────
         col1, col2 = st.columns(2)
         with col1:
@@ -94,19 +99,126 @@ def render_analysis_page(engine):
         fig2.update_layout(xaxis_title="Data", yaxis_title="€")
         st.plotly_chart(fig2, use_container_width=True)
 
-        # ── 3. Category treemap ───────────────────────────────────────────────
+        # ── 3. Category pie + treemap ─────────────────────────────────────────
         st.subheader("Distribuzione categorie — Uscite")
         expenses_df = df[df["amount"] < 0].copy()
         expenses_df["abs_amount"] = expenses_df["amount"].abs()
         if not expenses_df.empty:
+            # Pie chart by top-level category
+            pie_data = expenses_df.groupby("category")["abs_amount"].sum().reset_index()
+            pie_data = pie_data.sort_values("abs_amount", ascending=False)
+            total_expenses = pie_data["abs_amount"].sum()
+            fig_pie = px.pie(
+                pie_data, names="category", values="abs_amount",
+                title=f"Uscite per categoria — totale {format_amount_display(total_expenses, _dec, _thou)}",
+                hole=0.35,
+            )
+            fig_pie.update_traces(
+                textposition="inside",
+                textinfo="percent+label",
+                hovertemplate="<b>%{label}</b><br>%{value:.2f} €<br>%{percent}<extra></extra>",
+            )
+            fig_pie.update_layout(showlegend=True, legend=dict(orientation="v"))
+            st.plotly_chart(fig_pie, use_container_width=True)
+
+            # Treemap with category → subcategory drill-down
             cat_sum = expenses_df.groupby(["category", "subcategory"])["abs_amount"].sum().reset_index()
             fig3 = px.treemap(
                 cat_sum, path=["category", "subcategory"], values="abs_amount",
-                title="Uscite per categoria",
+                title="Dettaglio uscite per categoria / sottocategoria",
+            )
+            fig3.update_traces(
+                hovertemplate="<b>%{label}</b><br>%{value:.2f} €<br>%{percentRoot:.1%} del totale<extra></extra>"
             )
             st.plotly_chart(fig3, use_container_width=True)
 
-        # ── 4. Top-N merchant ─────────────────────────────────────────────────
+        # ── 4. Category drill-down (interactive) ─────────────────────────────
+        st.subheader("Drill-down per categoria")
+
+        all_cats_with_data = sorted(df["category"].unique().tolist())
+        selected_cat = st.selectbox(
+            "Seleziona categoria",
+            ["— tutte le uscite —"] + all_cats_with_data,
+            key="analytics_cat_filter",
+        )
+
+        if selected_cat == "— tutte le uscite —":
+            drill_df = expenses_df.copy() if not expenses_df.empty else pd.DataFrame()
+            drill_title = "Uscite per sottocategoria — tutte le categorie"
+        else:
+            drill_df = df[(df["category"] == selected_cat)].copy()
+            drill_df["abs_amount"] = drill_df["amount"].abs()
+            drill_title = f"Dettaglio: {selected_cat}"
+
+        if not drill_df.empty and "abs_amount" in drill_df.columns:
+            sub_data = (
+                drill_df.groupby("subcategory")["abs_amount"]
+                .sum()
+                .reset_index()
+                .sort_values("abs_amount", ascending=True)
+            )
+            if not sub_data.empty:
+                fig_drill = px.bar(
+                    sub_data, x="abs_amount", y="subcategory", orientation="h",
+                    title=drill_title,
+                    labels={"abs_amount": "€", "subcategory": "Sottocategoria"},
+                    color="abs_amount",
+                    color_continuous_scale="Blues",
+                )
+                fig_drill.update_layout(coloraxis_showscale=False, showlegend=False)
+                fig_drill.update_traces(
+                    hovertemplate="<b>%{y}</b><br>%{x:.2f} €<extra></extra>"
+                )
+                st.plotly_chart(fig_drill, use_container_width=True)
+
+                # Monthly trend for selected category
+                if selected_cat != "— tutte le uscite —":
+                    monthly_cat = (
+                        drill_df.groupby("month")["abs_amount"]
+                        .sum()
+                        .reset_index()
+                    )
+                    fig_trend = px.line(
+                        monthly_cat, x="month", y="abs_amount",
+                        title=f"Trend mensile: {selected_cat}",
+                        labels={"abs_amount": "€", "month": "Mese"},
+                        markers=True,
+                    )
+                    st.plotly_chart(fig_trend, use_container_width=True)
+        else:
+            st.info("Nessun dato per la selezione corrente.")
+
+        # ── 5. Income breakdown ───────────────────────────────────────────────
+        st.subheader("Distribuzione categorie — Entrate")
+        income_df = df[df["amount"] > 0].copy()
+        income_df["abs_amount"] = income_df["amount"]
+        if not income_df.empty:
+            inc_pie = income_df.groupby("category")["abs_amount"].sum().reset_index()
+            inc_pie = inc_pie.sort_values("abs_amount", ascending=False)
+            total_income = inc_pie["abs_amount"].sum()
+            fig_inc_pie = px.pie(
+                inc_pie, names="category", values="abs_amount",
+                title=f"Entrate per categoria — totale {format_amount_display(total_income, _dec, _thou)}",
+                hole=0.35,
+                color_discrete_sequence=px.colors.sequential.Greens_r,
+            )
+            fig_inc_pie.update_traces(
+                textposition="inside",
+                textinfo="percent+label",
+                hovertemplate="<b>%{label}</b><br>%{value:.2f} €<br>%{percent}<extra></extra>",
+            )
+            st.plotly_chart(fig_inc_pie, use_container_width=True)
+
+            inc_tree = income_df.groupby(["category", "subcategory"])["abs_amount"].sum().reset_index()
+            if not inc_tree.empty and len(inc_tree) > 1:
+                fig_inc_tree = px.treemap(
+                    inc_tree, path=["category", "subcategory"], values="abs_amount",
+                    title="Dettaglio entrate per categoria / sottocategoria",
+                    color_discrete_sequence=px.colors.sequential.Greens_r,
+                )
+                st.plotly_chart(fig_inc_tree, use_container_width=True)
+
+        # ── 6. Top-N merchant ─────────────────────────────────────────────────
         st.subheader("Top 10 descrizioni per importo assoluto")
         top_n = (
             df.assign(abs_amount=df["amount"].abs())
@@ -120,7 +232,7 @@ def render_analysis_page(engine):
                           labels={"abs_amount": "€", "description": ""})
             st.plotly_chart(fig4, use_container_width=True)
 
-        # ── 5. Account breakdown ──────────────────────────────────────────────
+        # ── 7. Account breakdown ──────────────────────────────────────────────
         st.subheader("Composizione per conto")
         acc_monthly = (
             df.assign(abs_amount=df["amount"].abs())

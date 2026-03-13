@@ -14,11 +14,14 @@ from core.categorizer import CategoryRule as CoreCategoryRule
 from core.schemas import DocumentSchema
 from db.models import (
     CategoryRule,
+    DEFAULT_USER_SETTINGS,
     DocumentSchemaModel,
     ImportBatch,
+    ImportJob,
     InternalTransferLink,
     ReconciliationLink,
     Transaction,
+    UserSettings,
 )
 from support.logging import setup_logging
 
@@ -43,6 +46,9 @@ def create_import_batch(
     n_transactions: int = 0,
     errors: Optional[str] = None,
 ) -> ImportBatch:
+    existing = session.query(ImportBatch).filter_by(sha256=sha256).first()
+    if existing:
+        return existing
     batch = ImportBatch(
         sha256=sha256,
         filename=filename,
@@ -85,6 +91,7 @@ def upsert_document_schema(session: Session, schema: DocumentSchema) -> Document
     row.date_format = schema.date_format
     row.sign_convention = schema.sign_convention.value if hasattr(schema.sign_convention, 'value') else schema.sign_convention
     row.is_zero_sum = schema.is_zero_sum
+    row.invert_sign = schema.invert_sign
     row.internal_transfer_patterns = json.dumps(schema.internal_transfer_patterns)
     row.account_label = schema.account_label
     row.encoding = schema.encoding
@@ -112,6 +119,7 @@ def _row_to_schema(row: DocumentSchemaModel) -> DocumentSchema:
         date_format=row.date_format or "%d/%m/%Y",
         sign_convention=SignConvention(row.sign_convention or "signed_single"),
         is_zero_sum=bool(row.is_zero_sum),
+        invert_sign=bool(row.invert_sign) if row.invert_sign is not None else False,
         internal_transfer_patterns=json.loads(row.internal_transfer_patterns or "[]"),
         account_label=row.account_label or "",
         encoding=row.encoding or "utf-8",
@@ -301,6 +309,68 @@ def create_category_rule(
     return rule
 
 
+def update_category_rule(
+    session: Session,
+    rule_id: int,
+    pattern: Optional[str] = None,
+    match_type: Optional[str] = None,
+    category: Optional[str] = None,
+    subcategory: Optional[str] = None,
+    priority: Optional[int] = None,
+) -> bool:
+    rule = session.get(CategoryRule, rule_id)
+    if rule is None:
+        return False
+    if pattern is not None:
+        rule.pattern = pattern
+    if match_type is not None:
+        rule.match_type = match_type
+    if category is not None:
+        rule.category = category
+    if subcategory is not None:
+        rule.subcategory = subcategory
+    if priority is not None:
+        rule.priority = priority
+    session.flush()
+    return True
+
+
+def delete_category_rule(session: Session, rule_id: int) -> bool:
+    rule = session.get(CategoryRule, rule_id)
+    if rule is None:
+        return False
+    session.delete(rule)
+    session.flush()
+    return True
+
+
+def get_transactions_by_rule_pattern(
+    session: Session,
+    pattern: str,
+    match_type: str,
+) -> list[Transaction]:
+    """Return transactions whose description matches the rule pattern."""
+    import re
+    txs = session.query(Transaction).filter(
+        Transaction.category_source.in_(["rule", "manual"])
+    ).all()
+    result = []
+    pat_lower = pattern.lower()
+    for tx in txs:
+        desc = (tx.description or "").lower()
+        if match_type == "exact" and desc == pat_lower:
+            result.append(tx)
+        elif match_type == "contains" and pat_lower in desc:
+            result.append(tx)
+        elif match_type == "regex":
+            try:
+                if re.search(pattern, tx.description or "", re.IGNORECASE):
+                    result.append(tx)
+            except re.error:
+                pass
+    return result
+
+
 # ── Persistence of ImportResult ───────────────────────────────────────────────
 
 def persist_import_result(session: Session, result) -> None:
@@ -359,3 +429,156 @@ def persist_import_result(session: Session, result) -> None:
         f"{len(result.reconciliations)} reconciliations, "
         f"{len(result.transfer_links)} transfer links)"
     )
+
+
+# ── ImportJob ─────────────────────────────────────────────────────────────────
+
+def create_import_job(session: Session, n_files: int) -> ImportJob:
+    from datetime import datetime, timezone
+    job = ImportJob(status="running", progress=0.0, n_files=n_files,
+                    started_at=datetime.now(timezone.utc))
+    session.add(job)
+    session.flush()
+    return job
+
+
+def update_import_job(session: Session, job_id: int, **kwargs) -> None:
+    job = session.get(ImportJob, job_id)
+    if job is None:
+        return
+    for k, v in kwargs.items():
+        setattr(job, k, v)
+    session.flush()
+    session.commit()
+
+
+def get_latest_import_job(session: Session) -> Optional[ImportJob]:
+    return session.query(ImportJob).order_by(ImportJob.id.desc()).first()
+
+
+# ── UserSettings ──────────────────────────────────────────────────────────────
+
+def get_user_setting(session: Session, key: str, default: Optional[str] = None) -> Optional[str]:
+    row = session.get(UserSettings, key)
+    if row is None:
+        return default or DEFAULT_USER_SETTINGS.get(key)
+    return row.value
+
+
+def set_user_setting(session: Session, key: str, value: str) -> None:
+    row = session.get(UserSettings, key)
+    if row is None:
+        row = UserSettings(key=key, value=value)
+        session.add(row)
+    else:
+        row.value = value
+    session.flush()
+
+
+def get_all_user_settings(session: Session) -> dict[str, str]:
+    rows = session.query(UserSettings).all()
+    result = dict(DEFAULT_USER_SETTINGS)  # start with defaults
+    result.update({r.key: r.value for r in rows if r.value is not None})
+    return result
+
+
+# ── Taxonomy ───────────────────────────────────────────────────────────────────
+
+def get_taxonomy_config(session: Session):
+    """Build a TaxonomyConfig from the DB taxonomy tables."""
+    from core.categorizer import TaxonomyConfig
+    from db.models import TaxonomyCategory
+
+    cats = (
+        session.query(TaxonomyCategory)
+        .order_by(TaxonomyCategory.type, TaxonomyCategory.sort_order)
+        .all()
+    )
+    expenses: dict[str, list[str]] = {}
+    income: dict[str, list[str]] = {}
+    for cat in cats:
+        subs = [s.name for s in sorted(cat.subcategories, key=lambda x: x.sort_order)]
+        if cat.type == "expense":
+            expenses[cat.name] = subs
+        else:
+            income[cat.name] = subs
+
+    # Ensure fallback categories always exist
+    if not expenses:
+        expenses = {"Altro": ["Spese non classificate"]}
+    if not income:
+        income = {"Altro entrate": ["Entrate non classificate"]}
+    return TaxonomyConfig(expenses=expenses, income=income)
+
+
+def get_taxonomy_categories(session: Session, type_filter: Optional[str] = None):
+    """Return TaxonomyCategory rows, optionally filtered by type ('expense'/'income').
+
+    Subcategories are eagerly loaded so they remain accessible after the session closes.
+    """
+    from db.models import TaxonomyCategory
+    from sqlalchemy.orm import joinedload
+    q = session.query(TaxonomyCategory).options(joinedload(TaxonomyCategory.subcategories))
+    if type_filter:
+        q = q.filter_by(type=type_filter)
+    return q.order_by(TaxonomyCategory.sort_order).all()
+
+
+def create_taxonomy_category(session: Session, name: str, type_: str) -> "TaxonomyCategory":
+    from db.models import TaxonomyCategory
+    from sqlalchemy import func
+    max_order = session.query(func.max(TaxonomyCategory.sort_order)).filter_by(type=type_).scalar() or 0
+    cat = TaxonomyCategory(name=name.strip(), type=type_, sort_order=max_order + 1)
+    session.add(cat)
+    session.flush()
+    return cat
+
+
+def update_taxonomy_category(session: Session, cat_id: int, name: str) -> bool:
+    from db.models import TaxonomyCategory
+    cat = session.get(TaxonomyCategory, cat_id)
+    if cat is None:
+        return False
+    cat.name = name.strip()
+    session.flush()
+    return True
+
+
+def delete_taxonomy_category(session: Session, cat_id: int) -> bool:
+    from db.models import TaxonomyCategory
+    cat = session.get(TaxonomyCategory, cat_id)
+    if cat is None:
+        return False
+    session.delete(cat)
+    session.flush()
+    return True
+
+
+def create_taxonomy_subcategory(session: Session, cat_id: int, name: str) -> "TaxonomySubcategory":
+    from db.models import TaxonomySubcategory
+    from sqlalchemy import func
+    max_order = session.query(func.max(TaxonomySubcategory.sort_order)).filter_by(category_id=cat_id).scalar() or 0
+    sub = TaxonomySubcategory(category_id=cat_id, name=name.strip(), sort_order=max_order + 1)
+    session.add(sub)
+    session.flush()
+    return sub
+
+
+def update_taxonomy_subcategory(session: Session, sub_id: int, name: str) -> bool:
+    from db.models import TaxonomySubcategory
+    sub = session.get(TaxonomySubcategory, sub_id)
+    if sub is None:
+        return False
+    sub.name = name.strip()
+    session.flush()
+    return True
+
+
+def delete_taxonomy_subcategory(session: Session, sub_id: int) -> bool:
+    from db.models import TaxonomySubcategory
+    sub = session.get(TaxonomySubcategory, sub_id)
+    if sub is None:
+        return False
+    session.delete(sub)
+    session.flush()
+    return True

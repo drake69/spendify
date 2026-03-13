@@ -68,6 +68,7 @@ class ProcessingConfig:
     llm_timeout_s: int = 30
     batch_size_llm: int = 1
     sanitize_config: SanitizationConfig = field(default_factory=SanitizationConfig)
+    description_language: str = "it"  # language of transaction descriptions (ISO 639-1)
 
     # Backend kwargs
     ollama_base_url: str = "http://localhost:11434"
@@ -189,6 +190,11 @@ def _normalize_df_with_schema(
         if amount is None:
             continue
 
+        # Card files often store expenses as positive values.
+        # invert_sign=True means "negate all amounts so expenses become negative".
+        if getattr(schema, "invert_sign", False) and amount is not None:
+            amount = -amount
+
         # Description — keep raw string before normalisation
         desc_raw = str(row.get(schema.description_col or "", "")) if schema.description_col else ""
         description = normalize_description(desc_raw)
@@ -249,6 +255,13 @@ def _infer_tx_type(
     return TransactionType.expense
 
 
+def _schema_is_usable(schema: "DocumentSchema") -> bool:
+    """Return True if the schema has the minimum fields needed to parse transactions."""
+    has_date = bool(schema.date_col)
+    has_amount = bool(schema.amount_col) or (bool(schema.debit_col) and bool(schema.credit_col))
+    return has_date and has_amount
+
+
 def process_file(
     raw_bytes: bytes,
     filename: str,
@@ -256,6 +269,7 @@ def process_file(
     taxonomy: TaxonomyConfig,
     user_rules: list[CategoryRule],
     known_schema: Optional[DocumentSchema] = None,
+    progress_callback=None,  # Callable[[float], None] — 0.0..1.0 within this file
 ) -> ImportResult:
     """
     Process a single file through Flow 1 or Flow 2.
@@ -275,12 +289,18 @@ def process_file(
     Returns:
         ImportResult.
     """
+    def _progress(p: float):
+        if progress_callback:
+            progress_callback(max(0.0, min(1.0, p)))
+
     batch_sha256 = compute_file_hash(raw_bytes)
     backend = _build_backend(config)
     fallback = _get_fallback_backend(config)
 
     # Load raw data
+    _progress(0.0)
     df_raw, encoding = load_raw_dataframe(raw_bytes, filename)
+    _progress(0.05)
     if df_raw.empty:
         return ImportResult(
             batch_sha256=batch_sha256,
@@ -295,6 +315,14 @@ def process_file(
     flow_used = "flow1"
     doc_schema = known_schema
 
+    # Validate cached schema has the critical fields; re-classify if not
+    if doc_schema is not None and not _schema_is_usable(doc_schema):
+        logger.warning(
+            f"process_file: cached schema for {filename} is missing critical fields "
+            f"(amount_col={doc_schema.amount_col!r}, date_col={doc_schema.date_col!r}) — re-classifying"
+        )
+        doc_schema = None
+
     # Flow 2: classify document if no known schema
     if doc_schema is None:
         flow_used = "flow2"
@@ -307,6 +335,7 @@ def process_file(
             sanitize_config=config.sanitize_config,
             fallback_backend=fallback,
         )
+        _progress(0.25)
         if doc_schema is None or doc_schema.confidence == Confidence.low:
             logger.warning(f"process_file: classification failed or low confidence for {filename}")
             return ImportResult(
@@ -319,9 +348,12 @@ def process_file(
                 errors=["Document classification failed or low confidence; needs manual review"],
                 flow_used=flow_used,
             )
+    else:
+        _progress(0.10)
 
     # Apply schema → canonical transactions
     transactions = _normalize_df_with_schema(df_raw, doc_schema, filename)
+    _progress(0.35)
     if not transactions:
         return ImportResult(
             batch_sha256=batch_sha256,
@@ -395,6 +427,11 @@ def process_file(
         TransactionType.unknown.value,
     }
     to_categorize = tx_df[tx_df["tx_type"].isin(categorizable_types)].to_dict("records")
+
+    def _cat_cb(frac: float):
+        # Map categorization progress (0..1) → file progress (0.40..1.0)
+        _progress(0.40 + 0.60 * frac)
+
     cat_results = categorize_batch(
         transactions=to_categorize,
         taxonomy=taxonomy,
@@ -403,6 +440,8 @@ def process_file(
         sanitize_config=config.sanitize_config,
         fallback_backend=fallback,
         confidence_threshold=config.confidence_threshold,
+        description_language=config.description_language,
+        progress_callback=_cat_cb,
     )
     cat_map = {tx["id"]: result for tx, result in zip(to_categorize, cat_results)}
 
