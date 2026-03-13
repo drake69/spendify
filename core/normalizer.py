@@ -463,3 +463,47 @@ def _subset_sum_match(
             if abs(total - target) <= epsilon:
                 return [transactions[i] for i in subset]
     return None
+
+
+# ── Card within-file balance row removal (Case 5) ────────────────────────────
+
+def remove_card_balance_row(
+    transactions: list[dict],
+    epsilon: Decimal = Decimal("0.01"),
+) -> tuple[list[dict], bool]:
+    """Remove the single balance/totale summary row from a card file if present.
+
+    Some card exports include a row whose |amount| equals the sum of |all other
+    amounts| (the statement total). Including it would double-count every expense.
+
+    Detection rule (requires ≥ 3 transactions):
+        For each candidate row i:
+            sum_others = Σ |amount_j| for j ≠ i
+            if ||amount_i| - sum_others| ≤ epsilon  →  row i is the balance row
+
+    Only the FIRST such row is removed (there should be at most one).
+
+    Returns:
+        (filtered_transactions, was_removed)
+    """
+    if len(transactions) < 3:
+        return transactions, False
+
+    amounts = [
+        abs(tx["amount"]) if isinstance(tx["amount"], Decimal) else Decimal(str(abs(tx["amount"])))
+        for tx in transactions
+    ]
+    total = sum(amounts)
+
+    for i, tx in enumerate(transactions):
+        amt_i = amounts[i]
+        sum_others = total - amt_i
+        if abs(amt_i - sum_others) <= epsilon:
+            logger.info(
+                f"remove_card_balance_row: removed balance/totale row "
+                f"id={tx.get('id', '?')} amount={amt_i} ≈ sum_others={sum_others} "
+                f"(source={tx.get('source_file', '?')})"
+            )
+            return transactions[:i] + transactions[i + 1:], True
+
+    return transactions, False
