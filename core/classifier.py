@@ -103,6 +103,10 @@ def classify_document(
     # Tries case-insensitive match before nullifying.
     result = _coerce_column_names(result, list(df_raw.columns), source_name)
 
+    # Step 0: deterministic override of invert_sign based on column name semantics.
+    # This runs AFTER the LLM so it cannot be ignored by weaker local models.
+    result = _apply_step0_invert_sign(result, source_name)
+
     try:
         doc_schema = DocumentSchema(**result)
         # Use columns fingerprint as cache key, not the filename, so the same
@@ -121,6 +125,75 @@ _COLUMN_FIELDS = (
     "amount_col", "debit_col", "credit_col",
     "description_col", "currency_col",
 )
+
+
+# ── Step 0: deterministic invert_sign override ────────────────────────────────
+
+# Partial, case-insensitive matches. A column name is "outflow" if any of these
+# strings appear in it (e.g. "Addebiti carta" matches "addebito").
+_OUTFLOW_SYNONYMS: frozenset[str] = frozenset({
+    "uscita", "uscite",
+    "addebito", "addebiti",
+    "pagamento", "pagamenti",
+    "importo addebitato",
+    "spesa", "spese",
+    "dare",
+})
+_INFLOW_SYNONYMS: frozenset[str] = frozenset({
+    "entrata", "entrate",
+    "accredito", "accrediti",
+    "importo accreditato",
+    "avere",
+    "credito",
+})
+_BANK_DOC_TYPES: frozenset[str] = frozenset({"bank_account", "savings"})
+
+
+def _apply_step0_invert_sign(result: dict, source_name: str) -> dict:
+    """Deterministic Step 0: override invert_sign based on amount column name.
+
+    Called after LLM output so it prevails over any model misclassification.
+    Only applies when sign_convention == signed_single (debit/credit columns
+    already encode directionality; invert_sign is irrelevant for them).
+
+    Outflow synonyms  (Uscita, Addebito, Dare …) → invert_sign = True
+        (expenses stored as positive absolute values → must be negated)
+        Exception: bank_account / savings always keep invert_sign = False.
+    Inflow synonyms   (Entrata, Accredito, Avere …) → invert_sign = False
+        (incomes stored as positive values → no negation needed)
+    Neutral names     (Importo, Amount …) → keep LLM decision unchanged.
+    """
+    out = dict(result)
+
+    # Step 0 only applies to signed_single (one amount column)
+    convention = str(out.get("sign_convention", "")).lower()
+    if convention not in ("signed_single", ""):
+        return out
+
+    doc_type = str(out.get("doc_type", "")).lower()
+    amount_col = str(out.get("amount_col") or "").strip().lower()
+
+    is_outflow = any(syn in amount_col for syn in _OUTFLOW_SYNONYMS)
+    is_inflow = any(syn in amount_col for syn in _INFLOW_SYNONYMS)
+
+    if is_outflow and doc_type not in _BANK_DOC_TYPES:
+        if not out.get("invert_sign"):
+            logger.info(
+                f"classify_document [{source_name}]: Step 0 override — "
+                f"amount_col='{out.get('amount_col')}' is an outflow synonym "
+                f"→ invert_sign=True"
+            )
+            out["invert_sign"] = True
+    elif is_inflow:
+        if out.get("invert_sign"):
+            logger.info(
+                f"classify_document [{source_name}]: Step 0 override — "
+                f"amount_col='{out.get('amount_col')}' is an inflow synonym "
+                f"→ invert_sign=False"
+            )
+            out["invert_sign"] = False
+
+    return out
 
 
 def _coerce_column_names(result: dict, available: list[str], source_name: str) -> dict:
