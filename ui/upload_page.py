@@ -17,6 +17,7 @@ from db.repository import (
     get_all_user_settings,
     get_category_rules,
     get_document_schema,
+    get_existing_tx_ids,
     get_latest_import_job,
     get_taxonomy_config,
     persist_import_result,
@@ -106,10 +107,14 @@ def _render_last_import_summary():
                 st.error("Errori: " + "; ".join(result.errors))
             else:
                 col1, col2, col3, col4 = st.columns(4)
-                col1.metric("Transazioni", len(result.transactions))
-                col2.metric("Riconciliazioni", len(result.reconciliations))
-                col3.metric("Giroconti", len(result.transfer_links))
-                col4.metric("Flusso", result.flow_used.upper())
+                col1.metric("Nuove transazioni", len(result.transactions))
+                col2.metric("Già importate (saltate)", result.skipped_count)
+                col3.metric("Riconciliazioni", len(result.reconciliations))
+                col4.metric("Flusso", result.flow_used.upper() if result.flow_used != "unknown" else "—")
+
+                if result.skipped_count and not result.transactions:
+                    st.info("⏭️ Tutte le transazioni erano già presenti nel database.")
+                    continue
 
                 to_review = sum(1 for tx in result.transactions if tx.get("to_review"))
                 if to_review:
@@ -207,6 +212,12 @@ def render_upload_page(engine):
                                 )
                     return _cb
 
+                def _make_existing_checker(eng):
+                    def _checker(tx_ids: list[str]) -> set[str]:
+                        with get_session(eng) as s:
+                            return get_existing_tx_ids(s, tx_ids)
+                    return _checker
+
                 from core.orchestrator import process_file
                 result = process_file(
                     raw_bytes=raw_bytes,
@@ -219,6 +230,7 @@ def render_upload_page(engine):
                         file_start, file_end, filename, i, total_files,
                         job_id, _last_db_write,
                     ),
+                    existing_tx_ids_checker=_make_existing_checker(engine),
                 )
                 persist_import_result(session2, result)
                 results.append(result)
@@ -229,7 +241,10 @@ def render_upload_page(engine):
                     update_import_job(s, job_id, progress=file_end)
 
         n_tx = sum(len(r.transactions) for r in results)
-        final_msg = f"✅ Completato — {n_tx:,} transazioni importate"
+        n_skipped = sum(r.skipped_count for r in results)
+        final_msg = f"✅ Completato — {n_tx:,} nuove transazioni"
+        if n_skipped:
+            final_msg += f" · {n_skipped:,} già presenti (saltate)"
         final_detail = (
             f"{total_files} file elaborati · "
             f"{datetime.now(timezone.utc).strftime('%H:%M:%S')} UTC"

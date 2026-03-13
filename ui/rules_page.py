@@ -21,8 +21,10 @@ _MATCH_TYPES = ["contains", "exact", "regex"]
 
 
 def _subcategory_widget(taxonomy, category: str,
-                        current: str, key: str) -> str:
+                        current: str, base_key: str) -> str:
     subs = taxonomy.valid_subcategories(category)
+    # Embed category in key so Streamlit resets widget when category changes
+    key = f"{base_key}__{category}"
     if not subs:
         return st.text_input("Sottocategoria", value=current, key=key)
     idx = subs.index(current) if current in subs else 0
@@ -76,19 +78,21 @@ def render_rules_page(engine):
 
         with col_edit:
             with st.expander("✏️ Modifica regola", expanded=False):
+                # Keys embed sel_rule.id so widgets reset when a different rule is selected
+                rid = sel_rule.id
                 new_pattern = st.text_input("Pattern", value=sel_rule.pattern,
-                                            key="rule_edit_pattern")
+                                            key=f"rule_edit_pattern_{rid}")
                 new_match = st.selectbox("Tipo match", _MATCH_TYPES,
                                          index=_MATCH_TYPES.index(sel_rule.match_type),
-                                         key="rule_edit_match")
+                                         key=f"rule_edit_match_{rid}")
                 all_idx = all_categories.index(sel_rule.category) if sel_rule.category in all_categories else 0
                 new_cat = st.selectbox("Categoria", all_categories, index=all_idx,
-                                       key="rule_edit_cat")
+                                       key=f"rule_edit_cat_{rid}")
                 new_sub = _subcategory_widget(taxonomy, new_cat,
-                                              sel_rule.subcategory or "", "rule_edit_sub")
+                                              sel_rule.subcategory or "", f"rule_edit_sub_{rid}")
                 new_prio = st.number_input("Priorità", value=int(sel_rule.priority or 0),
                                            min_value=0, max_value=100, step=1,
-                                           key="rule_edit_prio")
+                                           key=f"rule_edit_prio_{rid}")
 
                 # How many transactions would be affected
                 with get_session(engine) as session:
@@ -99,10 +103,10 @@ def render_rules_page(engine):
                     f"Aggiorna anche le {n_affected} transazioni già categorizzate da questa regola",
                     value=(n_affected > 0),
                     disabled=(n_affected == 0),
-                    key="rule_edit_fix_txs",
+                    key=f"rule_edit_fix_txs_{rid}",
                 )
 
-                if st.button("💾 Salva modifiche", type="primary", key="rule_edit_save"):
+                if st.button("💾 Salva modifiche", type="primary", key=f"rule_edit_save_{rid}"):
                     with get_session(engine) as session:
                         ok = update_category_rule(
                             session, sel_rule.id,
@@ -139,8 +143,8 @@ def render_rules_page(engine):
             if n_del > 0:
                 st.warning(f"⚠️ Questa regola ha categorizzato {n_del} transazioni.")
 
-            confirm_del = st.checkbox("Conferma eliminazione", key="rule_del_confirm")
-            if st.button("🗑️ Elimina", type="secondary", key="rule_del_btn",
+            confirm_del = st.checkbox("Conferma eliminazione", key=f"rule_del_confirm_{rid}")
+            if st.button("🗑️ Elimina", type="secondary", key=f"rule_del_btn_{rid}",
                          disabled=not confirm_del):
                 with get_session(engine) as session:
                     ok = delete_category_rule(session, sel_rule.id)
@@ -156,23 +160,26 @@ def render_rules_page(engine):
     st.divider()
     st.subheader("➕ Nuova regola")
 
-    with st.form("new_rule_form", clear_on_submit=True):
-        nr_pattern = st.text_input("Pattern (testo da cercare nella descrizione)",
-                                   placeholder="es. ESSELUNGA, Netflix, stipendio…")
-        nr_match = st.selectbox("Tipo match", _MATCH_TYPES)
-        nr_cat = st.selectbox("Categoria", all_categories, key="new_rule_cat")
-        nr_subs = taxonomy.valid_subcategories(nr_cat)
-        nr_sub = st.selectbox("Sottocategoria", nr_subs) if nr_subs else st.text_input("Sottocategoria")
-        nr_prio = st.number_input("Priorità", value=10, min_value=0, max_value=100, step=1)
+    nr_pattern = st.text_input("Pattern (testo da cercare nella descrizione)",
+                               placeholder="es. ESSELUNGA, Netflix, stipendio…",
+                               key="new_rule_pattern")
+    nr_match = st.selectbox("Tipo match", _MATCH_TYPES, key="new_rule_match")
+    nr_cat = st.selectbox("Categoria", all_categories, key="new_rule_cat")
+    nr_subs = taxonomy.valid_subcategories(nr_cat)
+    # Key includes nr_cat so subcategory widget resets when category changes
+    if nr_subs:
+        nr_sub = st.selectbox("Sottocategoria", nr_subs, key=f"new_rule_sub__{nr_cat}")
+    else:
+        nr_sub = st.text_input("Sottocategoria", key=f"new_rule_sub__{nr_cat}")
+    nr_prio = st.number_input("Priorità", value=10, min_value=0, max_value=100, step=1,
+                              key="new_rule_prio")
 
-        submitted = st.form_submit_button("💾 Crea regola", type="primary")
-
-    if submitted:
+    if st.button("💾 Crea regola", type="primary", key="new_rule_submit"):
         if not nr_pattern.strip():
             st.error("Il pattern non può essere vuoto.")
         else:
             with get_session(engine) as session:
-                create_category_rule(
+                _, created = create_category_rule(
                     session=session,
                     pattern=nr_pattern.strip(),
                     match_type=nr_match,
@@ -181,6 +188,10 @@ def render_rules_page(engine):
                     priority=nr_prio,
                 )
                 session.commit()
-            st.success(f"Regola creata: '{nr_pattern}' → {nr_cat} / {nr_sub}")
-            logger.info(f"rules_page: created rule pattern={nr_pattern!r} cat={nr_cat!r}")
+            if created:
+                st.success(f"Regola creata: '{nr_pattern}' → {nr_cat} / {nr_sub}")
+                logger.info(f"rules_page: created rule pattern={nr_pattern!r} cat={nr_cat!r}")
+            else:
+                st.warning(f"Regola esistente aggiornata: '{nr_pattern}' → {nr_cat} / {nr_sub}")
+                logger.info(f"rules_page: updated existing rule pattern={nr_pattern!r} cat={nr_cat!r}")
             st.rerun()
