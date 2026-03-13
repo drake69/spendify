@@ -33,6 +33,12 @@ class DocumentSchema(BaseModel):
     skip_rows: int = 0
     delimiter: Optional[str] = None
 
+    # classifier diagnostics — persisted for audit/debug; not used by normalizer
+    positive_ratio: Optional[float] = None   # fraction of amount-column values > 0 in the sample
+    negative_ratio: Optional[float] = None   # fraction of amount-column values < 0 in the sample
+    semantic_evidence: list[str] = Field(default_factory=list)  # LLM reasoning sentences
+    normalization_case_id: Optional[str] = None  # e.g. "C1", "C2" — matches classifier taxonomy
+
     # source tracking
     source_identifier: Optional[str] = None  # sha256 prefix of the file or institution key
 
@@ -86,6 +92,23 @@ class DocumentSchema(BaseModel):
                 "confidence": {
                     "type": "string",
                     "enum": [c.value for c in Confidence],
+                },
+                "positive_ratio": {
+                    "type": ["number", "null"],
+                    "description": "Fraction of amount-column values > 0 in the sample (0.0–1.0).",
+                },
+                "negative_ratio": {
+                    "type": ["number", "null"],
+                    "description": "Fraction of amount-column values < 0 in the sample (0.0–1.0).",
+                },
+                "semantic_evidence": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Short sentences explaining why this schema was chosen (for audit/debug).",
+                },
+                "normalization_case_id": {
+                    "type": ["string", "null"],
+                    "description": "Short case identifier, e.g. C1=bank signed_single, C2=card inverted, C3=debit/credit columns.",
                 },
             },
         }
