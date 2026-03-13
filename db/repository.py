@@ -172,6 +172,14 @@ def upsert_transaction(session: Session, tx: dict, batch_id: Optional[int] = Non
     return row
 
 
+def get_existing_tx_ids(session: Session, tx_ids: list[str]) -> set[str]:
+    """Return the subset of tx_ids that already exist in the DB."""
+    if not tx_ids:
+        return set()
+    rows = session.query(Transaction.id).filter(Transaction.id.in_(tx_ids)).all()
+    return {row.id for row in rows}
+
+
 def update_transaction_category(
     session: Session,
     tx_id: str,
@@ -187,6 +195,56 @@ def update_transaction_category(
     tx.category_source = "manual"
     tx.to_review = False
     return True
+
+
+def toggle_transaction_giroconto(session: Session, tx_id: str) -> tuple[bool, str]:
+    """Toggle a transaction's tx_type between giroconto and expense/income.
+
+    If currently internal_out / internal_in → revert to expense or income based on sign.
+    Otherwise → mark as internal_out (negative amount) or internal_in (positive amount).
+
+    Returns (ok, new_tx_type).
+    """
+    tx = session.get(Transaction, tx_id)
+    if tx is None:
+        return False, ""
+    internal = {"internal_out", "internal_in"}
+    if tx.tx_type in internal:
+        # Revert to normal
+        new_type = "income" if float(tx.amount or 0) >= 0 else "expense"
+    else:
+        # Mark as giroconto
+        new_type = "internal_in" if float(tx.amount or 0) >= 0 else "internal_out"
+    tx.tx_type = new_type
+    return True, new_type
+
+
+def bulk_set_giroconto_by_description(
+    session: Session, description: str, make_giroconto: bool, exclude_id: str = ""
+) -> int:
+    """Set giroconto status for all transactions matching description.
+
+    make_giroconto=True  → internal_in / internal_out based on sign
+    make_giroconto=False → income / expense based on sign
+
+    Returns count of transactions actually changed.
+    """
+    txs = session.query(Transaction).filter(Transaction.description == description).all()
+    internal = {"internal_out", "internal_in"}
+    updated = 0
+    for tx in txs:
+        if tx.id == exclude_id:
+            continue
+        is_internal = tx.tx_type in internal
+        if make_giroconto and not is_internal:
+            tx.tx_type = "internal_in" if float(tx.amount or 0) >= 0 else "internal_out"
+            updated += 1
+        elif not make_giroconto and is_internal:
+            tx.tx_type = "income" if float(tx.amount or 0) >= 0 else "expense"
+            updated += 1
+    if updated:
+        session.flush()
+    return updated
 
 
 def get_transactions(
@@ -209,6 +267,8 @@ def get_transactions(
             q = q.filter(Transaction.to_review == filters["to_review"])
         if "account_label" in filters:
             q = q.filter(Transaction.account_label == filters["account_label"])
+        if "description" in filters:
+            q = q.filter(Transaction.description.ilike(f"%{filters['description']}%"))
     q = q.order_by(Transaction.date.desc())
     if offset:
         q = q.offset(offset)
@@ -287,6 +347,42 @@ def get_category_rules(session: Session) -> list[CoreCategoryRule]:
     ]
 
 
+def apply_rules_to_review_transactions(
+    session: Session,
+    user_rules: list[CoreCategoryRule],
+) -> int:
+    """Apply category rules (highest priority first) to all to_review=True transactions.
+
+    For each transaction, the first matching rule wins.
+    Matched transactions get their category/subcategory updated and to_review cleared.
+
+    Returns the number of transactions updated.
+    """
+    if not user_rules:
+        return 0
+
+    txs = session.query(Transaction).filter(Transaction.to_review.is_(True)).all()
+    if not txs:
+        return 0
+
+    rules = sorted(user_rules, key=lambda r: -(r.priority or 0))
+    updated = 0
+    for tx in txs:
+        desc = tx.description or ""
+        for rule in rules:
+            if rule.matches(desc, tx.doc_type):
+                tx.category = rule.category
+                tx.subcategory = rule.subcategory
+                tx.category_source = "rule"
+                tx.category_confidence = "high"
+                tx.to_review = False
+                updated += 1
+                break
+    if updated:
+        session.flush()
+    return updated
+
+
 def create_category_rule(
     session: Session,
     pattern: str,
@@ -295,7 +391,26 @@ def create_category_rule(
     subcategory: Optional[str] = None,
     doc_type: Optional[str] = None,
     priority: int = 0,
-) -> CategoryRule:
+) -> tuple[CategoryRule, bool]:
+    """Create or update a category rule.
+
+    If a rule with the same pattern + match_type already exists it is updated
+    in-place (upsert) to avoid duplicates.
+
+    Returns (rule, created) where created=False means an existing rule was updated.
+    """
+    existing = (
+        session.query(CategoryRule)
+        .filter(CategoryRule.pattern == pattern, CategoryRule.match_type == match_type)
+        .first()
+    )
+    if existing is not None:
+        existing.category = category
+        existing.subcategory = subcategory
+        existing.priority = priority
+        session.flush()
+        return existing, False
+
     rule = CategoryRule(
         pattern=pattern,
         match_type=match_type,
@@ -306,7 +421,7 @@ def create_category_rule(
     )
     session.add(rule)
     session.flush()
-    return rule
+    return rule, True
 
 
 def update_category_rule(
@@ -351,9 +466,7 @@ def get_transactions_by_rule_pattern(
 ) -> list[Transaction]:
     """Return transactions whose description matches the rule pattern."""
     import re
-    txs = session.query(Transaction).filter(
-        Transaction.category_source.in_(["rule", "manual"])
-    ).all()
+    txs = session.query(Transaction).all()
     result = []
     pat_lower = pattern.lower()
     for tx in txs:

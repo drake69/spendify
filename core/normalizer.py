@@ -101,15 +101,33 @@ def _is_numeric_cell(value) -> bool:
 
 # ── Date normalization ────────────────────────────────────────────────────────
 
+_DATE_FORMATS_FALLBACK = [
+    "%d/%m/%Y", "%d-%m-%Y", "%d/%m/%y", "%d-%m-%y",
+    "%Y-%m-%d", "%Y/%m/%d", "%m/%d/%Y", "%m/%d/%y",
+]
+
+
 def parse_date_safe(value: str, fmt: str) -> Optional[date]:
-    """Parse a date string with the given strftime format. Returns None on failure."""
+    """Parse a date string. Tries fmt first, then common Italian/ISO fallbacks."""
     if not value or not isinstance(value, str):
         return None
-    try:
-        import datetime
-        return datetime.datetime.strptime(value.strip(), fmt).date()
-    except ValueError:
-        return None
+    import datetime
+    v = value.strip()
+    # Try the specified format first
+    if fmt:
+        try:
+            return datetime.datetime.strptime(v, fmt).date()
+        except ValueError:
+            pass
+    # Fallback: try common formats
+    for fallback in _DATE_FORMATS_FALLBACK:
+        if fallback == fmt:
+            continue
+        try:
+            return datetime.datetime.strptime(v, fallback).date()
+        except ValueError:
+            continue
+    return None
 
 
 # ── Amount normalization ──────────────────────────────────────────────────────

@@ -86,6 +86,7 @@ class ImportResult:
     reconciliations: list[dict]
     transfer_links: list[dict]
     skipped_duplicate: bool = False
+    skipped_count: int = 0   # number of transactions already in DB (skipped before LLM)
     errors: list[str] = field(default_factory=list)
     flow_used: str = "unknown"  # "flow1" or "flow2"
 
@@ -160,11 +161,13 @@ def _normalize_df_with_schema(
     Apply DocumentSchema to produce a list of canonical transaction dicts.
     """
     transactions = []
+    skip_date_nan = skip_date_parse = skip_amount = 0
 
     for _, row in df.iterrows():
         # Parse date — Excel cells arrive as datetime/date objects, not strings
         raw_date = row.get(schema.date_col, "")
         if raw_date is None or (isinstance(raw_date, float) and pd.isna(raw_date)):
+            skip_date_nan += 1
             continue
         if hasattr(raw_date, "date"):          # datetime → date
             tx_date = raw_date.date()
@@ -175,6 +178,7 @@ def _normalize_df_with_schema(
         else:
             tx_date = None
         if tx_date is None:
+            skip_date_parse += 1
             continue  # skip rows with unparseable date
 
         # Parse accounting date
@@ -197,6 +201,7 @@ def _normalize_df_with_schema(
             schema.sign_convention,
         )
         if amount is None:
+            skip_amount += 1
             continue
 
         # Card files often store expenses as positive values.
@@ -240,6 +245,13 @@ def _normalize_df_with_schema(
             "transfer_confidence": None,
         })
 
+    total_skipped = skip_date_nan + skip_date_parse + skip_amount
+    if total_skipped or not transactions:
+        logger.warning(
+            f"_normalize_df_with_schema [{source_name}]: "
+            f"{len(transactions)} parsed, {total_skipped} skipped "
+            f"(date_nan={skip_date_nan}, date_parse_fail={skip_date_parse}, amount_none={skip_amount})"
+        )
     return transactions
 
 
@@ -279,6 +291,7 @@ def process_file(
     user_rules: list[CategoryRule],
     known_schema: Optional[DocumentSchema] = None,
     progress_callback=None,  # Callable[[float], None] — 0.0..1.0 within this file
+    existing_tx_ids_checker=None,  # Callable[[list[str]], set[str]] — returns already-imported tx ids
 ) -> ImportResult:
     """
     Process a single file through Flow 1 or Flow 2.
@@ -303,12 +316,17 @@ def process_file(
             progress_callback(max(0.0, min(1.0, p)))
 
     batch_sha256 = compute_file_hash(raw_bytes)
+    logger.info(f"process_file: loading {filename} ({len(raw_bytes)} bytes)")
     backend = _build_backend(config)
     fallback = _get_fallback_backend(config)
 
     # Load raw data
     _progress(0.0)
     df_raw, encoding = load_raw_dataframe(raw_bytes, filename)
+    logger.info(
+        f"process_file: loaded {filename} | rows={len(df_raw)} "
+        f"ncols={len(df_raw.columns)} | known_schema={'yes' if known_schema else 'no'}"
+    )
     _progress(0.05)
     if df_raw.empty:
         return ImportResult(
@@ -374,6 +392,31 @@ def process_file(
             errors=["No transactions could be parsed with the schema"],
             flow_used=flow_used,
         )
+
+    # Per-transaction dedup: skip transactions already in DB before running LLM
+    skipped_count = 0
+    if existing_tx_ids_checker is not None:
+        all_ids = [t["id"] for t in transactions]
+        existing = existing_tx_ids_checker(all_ids)
+        if existing:
+            skipped_count = len(existing)
+            transactions = [t for t in transactions if t["id"] not in existing]
+            logger.info(
+                f"process_file: {skipped_count} transactions already in DB, "
+                f"{len(transactions)} new for {filename}"
+            )
+        if not transactions:
+            logger.info(f"process_file: all transactions already imported for {filename}, skipping")
+            return ImportResult(
+                batch_sha256=batch_sha256,
+                source_name=filename,
+                transactions=[],
+                doc_schema=doc_schema,
+                reconciliations=[],
+                transfer_links=[],
+                skipped_count=skipped_count,
+                flow_used=flow_used,
+            )
 
     # Build DataFrame for transfer detection
     tx_df = pd.DataFrame(transactions)
@@ -476,6 +519,7 @@ def process_file(
         doc_schema=doc_schema,
         reconciliations=reconciliations,
         transfer_links=transfer_links,
+        skipped_count=skipped_count,
         flow_used=flow_used,
     )
 
