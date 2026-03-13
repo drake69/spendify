@@ -44,6 +44,7 @@ from core.normalizer import (
     normalize_description,
     parse_amount,
     parse_date_safe,
+    remove_card_balance_row,
 )
 from core.sanitizer import SanitizationConfig, redact_pii
 from core.schemas import DocumentSchema
@@ -69,6 +70,10 @@ class ProcessingConfig:
     batch_size_llm: int = 1
     sanitize_config: SanitizationConfig = field(default_factory=SanitizationConfig)
     description_language: str = "it"  # language of transaction descriptions (ISO 639-1)
+
+    # Test mode: limit rows for quick classifier verification
+    test_mode: bool = False
+    test_mode_rows: int = 20
 
     # Backend kwargs
     ollama_base_url: str = "http://localhost:11434"
@@ -209,8 +214,15 @@ def _normalize_df_with_schema(
         if getattr(schema, "invert_sign", False) and amount is not None:
             amount = -amount
 
-        # Description — keep raw string before normalisation
-        desc_raw = str(row.get(schema.description_col or "", "")) if schema.description_col else ""
+        # Description — concatenate all descriptive columns when available
+        _desc_cols = getattr(schema, "description_cols", None)
+        if _desc_cols:
+            parts = [str(row.get(c, "") or "").strip() for c in _desc_cols if c in row]
+            desc_raw = " ".join(p for p in parts if p)
+        elif schema.description_col:
+            desc_raw = str(row.get(schema.description_col, "") or "")
+        else:
+            desc_raw = ""
         description = normalize_description(desc_raw)
 
         # Currency
@@ -269,7 +281,8 @@ def _infer_tx_type(
             return TransactionType.internal_out if amount < 0 else TransactionType.internal_in
 
     doc_str = doc_type.value if hasattr(doc_type, 'value') else str(doc_type)
-    if doc_str == DocumentType.credit_card.value:
+    _card_types = {DocumentType.credit_card.value, DocumentType.debit_card.value, DocumentType.prepaid_card.value}
+    if doc_str in _card_types:
         return TransactionType.card_tx
     if amount > 0:
         return TransactionType.income
@@ -328,6 +341,14 @@ def process_file(
         f"ncols={len(df_raw.columns)} | known_schema={'yes' if known_schema else 'no'}"
     )
     _progress(0.05)
+
+    # Test mode: truncate to first N rows for quick pipeline verification
+    if config.test_mode and len(df_raw) > config.test_mode_rows:
+        df_raw = df_raw.head(config.test_mode_rows).copy()
+        logger.info(
+            f"process_file: TEST MODE — truncated {filename} to first {config.test_mode_rows} rows"
+        )
+
     if df_raw.empty:
         return ImportResult(
             batch_sha256=batch_sha256,
@@ -381,6 +402,15 @@ def process_file(
     # Apply schema → canonical transactions
     transactions = _normalize_df_with_schema(df_raw, doc_schema, filename)
     _progress(0.35)
+
+    # Case 5: remove within-file card balance/totale summary row (double-counting guard)
+    _card_doc_types = {DocumentType.credit_card.value, DocumentType.debit_card.value, DocumentType.prepaid_card.value}
+    _doc_str = doc_schema.doc_type.value if hasattr(doc_schema.doc_type, 'value') else str(doc_schema.doc_type)
+    if _doc_str in _card_doc_types and transactions:
+        transactions, _balance_removed = remove_card_balance_row(transactions, epsilon=config.tolerance)
+        if _balance_removed:
+            logger.info(f"process_file: balance/totale row removed from {filename}")
+
     if not transactions:
         return ImportResult(
             batch_sha256=batch_sha256,
