@@ -140,7 +140,7 @@ _STATIC_RULES: list[tuple[str, str, str, str]] = [
     (r'(telepass|autostrad)', "Trasporti", "Parcheggio / ZTL", "regex"),
     (r'(trenitalia|italo|frecciarossa|frecciargento)', "Trasporti", "Trasporto pubblico", "regex"),
     (r'(enel\b|iren\b|a2a\b|hera\b|eni gas)', "Casa", "Energia elettrica", "regex"),
-    (r'(netflix|spotify|amazon prime|disney\+|apple tv)', "Comunicazioni", "Streaming / abbonamenti digitali", "regex"),
+    (r'(netflix|spotify|amazon prime|disney\+|apple tv)', "Svago e tempo libero", "Streaming / abbonamenti digitali", "regex"),
     (r'(stipendio|salary|busta paga)', "Lavoro dipendente", "Stipendio", "regex"),
     (r'(pensione|inps rendita)', "Prestazioni sociali", "Pensione / rendita", "regex"),
     (r'(commissione|canone conto|spese tenuta)', "Finanza e assicurazioni", "Commissioni bancarie", "regex"),
@@ -218,11 +218,13 @@ def categorize_transaction(
             source=CategorySource.rule,
         )
 
-    # Step 3: LLM
+    # Step 3: LLM — only show categories that match the transaction direction
     if llm_backend is not None:
+        categories = taxonomy.income if amount > 0 else taxonomy.expenses
         llm_result = _categorize_with_llm(
             description=description,
             amount=amount,
+            categories=categories,
             taxonomy=taxonomy,
             llm_backend=llm_backend,
             sanitize_config=sanitize_config,
@@ -251,6 +253,7 @@ def _ml_predict(description: str, amount: Decimal) -> Optional[tuple[str, str, f
 def _categorize_with_llm(
     description: str,
     amount: Decimal,
+    categories: dict[str, list[str]],
     taxonomy: TaxonomyConfig,
     llm_backend: LLMBackend,
     sanitize_config: SanitizationConfig | None,
@@ -262,21 +265,22 @@ def _categorize_with_llm(
     else:
         safe_desc = description
 
-    expense_cats = taxonomy.all_expense_categories
-    income_cats = taxonomy.all_income_categories
-    json_schema = build_categorization_schema(expense_cats, income_cats)
+    # Only expose the relevant category direction to the LLM
+    cat_keys = list(categories.keys())
+    is_expense_direction = categories is taxonomy.expenses
+    json_schema = build_categorization_schema(
+        expense_categories=cat_keys if is_expense_direction else [],
+        income_categories=cat_keys if not is_expense_direction else [],
+    )
 
-    # Inject flat subcategory enum for JSON schema (structural constraint only)
-    all_subs = []
-    for subs in list(taxonomy.expenses.values()) + list(taxonomy.income.values()):
-        all_subs.extend(subs)
-    json_schema["properties"]["subcategory"]["enum"] = all_subs
+    # Inject flat subcategory enum constrained to the relevant direction
+    dir_subs: list[str] = []
+    for subs in categories.values():
+        dir_subs.extend(subs)
+    json_schema["properties"]["subcategory"]["enum"] = dir_subs
 
-    # Build a compact taxonomy map for the prompt so the LLM knows which
-    # subcategories belong to which category
-    tax_lines = []
-    for cat, subs in {**taxonomy.expenses, **taxonomy.income}.items():
-        tax_lines.append(f"  {cat}: {', '.join(subs)}")
+    # Build compact taxonomy hint (only relevant direction)
+    tax_lines = [f"  {cat}: {', '.join(subs)}" for cat, subs in categories.items()]
     taxonomy_hint = "\n".join(tax_lines)
 
     currency = "EUR"
