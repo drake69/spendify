@@ -109,10 +109,8 @@ def render_registry_page(engine):
             {
                 "Data": format_date_display(tx.date, _date_fmt),
                 "Descrizione": (tx.description or "")[:80],
-                "Entrata": format_amount_display(float(tx.amount), _dec, _thou, symbol="")
-                           if float(tx.amount) > 0 else "",
-                "Uscita": format_amount_display(abs(float(tx.amount)), _dec, _thou, symbol="")
-                          if float(tx.amount) < 0 else "",
+                "Entrata": float(tx.amount) if float(tx.amount) > 0 else None,
+                "Uscita": abs(float(tx.amount)) if float(tx.amount) < 0 else None,
                 "Valuta": tx.currency,
                 "Tipo": ("🔄 " + tx.tx_type) if tx.tx_type in ("internal_out", "internal_in") else tx.tx_type,
                 "Categoria": tx.category or "",
@@ -133,15 +131,17 @@ def render_registry_page(engine):
             hide_cols += ["Desc. originale", "Importo originale"]
 
         display_df = df.drop(columns=hide_cols)
-        _amount_cols = [c for c in ["Entrata", "Uscita"] if c in display_df.columns]
+        _num_fmt = f"%.2f"
         table_event = st.dataframe(
-            display_df.style.set_properties(
-                subset=_amount_cols, **{"text-align": "right", "font-variant-numeric": "tabular-nums"}
-            ),
+            display_df,
             use_container_width=True,
             height=500,
             on_select="rerun",
             selection_mode="single-row",
+            column_config={
+                "Entrata": st.column_config.NumberColumn("Entrata", format=_num_fmt),
+                "Uscita": st.column_config.NumberColumn("Uscita", format=_num_fmt),
+            },
         )
 
         # ── Export ────────────────────────────────────────────────────────────
