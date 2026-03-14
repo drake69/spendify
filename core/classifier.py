@@ -204,6 +204,7 @@ _AMOUNT_NEUTRAL_SYNONYMS: frozenset[str] = frozenset({
 })
 
 _BANK_DOC_TYPES: frozenset[str] = frozenset({"bank_account", "savings"})
+_CREDIT_CARD_DOC_TYPES: frozenset[str] = frozenset({"credit_card"})
 
 
 # ── Phase 0 result dataclass ──────────────────────────────────────────────────
@@ -483,11 +484,17 @@ _INFLOW_SYNONYMS: frozenset[str] = _CREDIT_COLUMN_SYNONYMS
 
 
 def _apply_step0_invert_sign(result: dict, source_name: str) -> dict:
-    """Post-merge safety net: re-enforce invert_sign from amount column semantics.
+    """Post-merge safety net: re-enforce invert_sign from doc_type + amount column semantics.
 
-    Runs after _merge_step0_into_result to catch any residual LLM override of a
-    field that Phase 0 had already resolved.
-    Only applies when sign_convention == signed_single.
+    Runs after _merge_step0_into_result so both the LLM's doc_type and Phase 0
+    column findings are available.  Only applies when sign_convention == signed_single.
+
+    Rules (in priority order):
+    1. credit_card doc_type → invert_sign=True always (positive=charge, negative=payment).
+       Breaks the circular dependency: doc_type comes from LLM, invert_sign is then
+       resolved deterministically here without needing it during Phase 0.
+    2. Outflow column name → invert_sign=True (unless it's a bank account).
+    3. Inflow column name → invert_sign=False.
     """
     out = dict(result)
 
@@ -498,6 +505,17 @@ def _apply_step0_invert_sign(result: dict, source_name: str) -> dict:
     doc_type = str(out.get("doc_type", "")).lower()
     amount_col = str(out.get("amount_col") or "").strip().lower()
 
+    # Rule 1: credit card → charges are positive → must invert
+    if doc_type in _CREDIT_CARD_DOC_TYPES:
+        if not out.get("invert_sign"):
+            logger.info(
+                f"classify_document [{source_name}]: safety-net — "
+                f"doc_type=credit_card → invert_sign=True"
+            )
+            out["invert_sign"] = True
+        return out
+
+    # Rule 2/3: column-name semantics
     is_outflow = any(syn in amount_col for syn in _OUTFLOW_SYNONYMS)
     is_inflow = any(syn in amount_col for syn in _INFLOW_SYNONYMS)
 
