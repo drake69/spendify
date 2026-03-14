@@ -330,13 +330,31 @@ def _inspect_neutral_column_sign(step0: _Step0Result, df: pd.DataFrame, source_n
     if len(vals) == 0:
         return step0
 
-    if (vals < 0).any():
+    n_negative = (vals < 0).sum()
+    n_positive = (vals > 0).sum()
+    total = n_negative + n_positive
+
+    if total == 0:
+        return step0
+
+    # Resolve only when the majority of non-zero values are negative:
+    # → expenses already negative (standard bank account style) → invert_sign=False.
+    # When positive values dominate (credit-card style: positive=expense,
+    # negative=payment) or the split is ambiguous, leave UNRESOLVED for the LLM.
+    pct_negative = n_negative / total
+    if pct_negative > 0.5:
         logger.info(
             f"classify_document [{source_name}]: Step 0 data inspection — "
-            f"neutral column '{col}' contains negative values → invert_sign=False [RESOLVED]"
+            f"neutral column '{col}': {pct_negative:.0%} negative → invert_sign=False [RESOLVED]"
         )
         step0.invert_sign = False
         step0.amount_semantics = "signed_neutral"
+    else:
+        logger.info(
+            f"classify_document [{source_name}]: Step 0 data inspection — "
+            f"neutral column '{col}': {pct_negative:.0%} negative, majority positive → "
+            f"invert_sign UNRESOLVED (LLM will decide)"
+        )
 
     return step0
 

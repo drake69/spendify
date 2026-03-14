@@ -232,7 +232,8 @@ def _normalize_df_with_schema(
             # Filter out empty strings and bare "nan" (pandas NaN → str)
             desc_raw = " ".join(p for p in parts if p and p.lower() != "nan")
         elif schema.description_col:
-            desc_raw = str(row.get(schema.description_col, "") or "")
+            _v = str(row.get(schema.description_col, "") or "").strip()
+            desc_raw = "" if _v.lower() == "nan" else _v
         else:
             desc_raw = ""
         description = normalize_description(desc_raw)
