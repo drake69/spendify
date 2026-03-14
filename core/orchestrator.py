@@ -174,8 +174,7 @@ def _normalize_df_with_schema(
     Apply DocumentSchema to produce a list of canonical transaction dicts.
     """
     transactions = []
-    seen_ids: set[str] = set()   # intra-file dedup: skip rows that hash to an already-seen ID
-    skip_date_nan = skip_date_parse = skip_amount = skip_intrafile_dup = 0
+    skip_date_nan = skip_date_parse = skip_amount = 0
 
     for _, row in df.iterrows():
         # Parse date — Excel cells arrive as datetime/date objects, not strings
@@ -254,13 +253,6 @@ def _normalize_df_with_schema(
             account_label=schema.account_label or "",
         )
 
-        # Intra-file dedup: two rows with identical date+amount+description collapse
-        # to the same hash — keep only the first occurrence.
-        if tx_id in seen_ids:
-            skip_intrafile_dup += 1
-            continue
-        seen_ids.add(tx_id)
-
         # Infer tx_type from doc_type
         tx_type = _infer_tx_type(amount, schema.doc_type, description, schema.internal_transfer_patterns)
 
@@ -287,15 +279,54 @@ def _normalize_df_with_schema(
             "transfer_confidence": None,
         })
 
-    total_skipped = skip_date_nan + skip_date_parse + skip_amount + skip_intrafile_dup
+    total_skipped = skip_date_nan + skip_date_parse + skip_amount
     if total_skipped or not transactions:
         logger.warning(
             f"_normalize_df_with_schema [{source_name}]: "
             f"{len(transactions)} parsed, {total_skipped} skipped "
-            f"(date_nan={skip_date_nan}, date_parse_fail={skip_date_parse}, "
-            f"amount_none={skip_amount}, intrafile_dup={skip_intrafile_dup})"
+            f"(date_nan={skip_date_nan}, date_parse_fail={skip_date_parse}, amount_none={skip_amount})"
         )
-    return transactions
+
+    # --- Intra-file aggregation ---
+    # Rows that share the same hash (same account + date + amount + description)
+    # are genuine repetitions of the same transaction in the bank export (e.g. 3×
+    # identical POS charges on the same day).  Rather than discarding duplicates,
+    # we sum their amounts so the daily total is preserved, then re-hash with the
+    # aggregated amount so cross-file dedup still works correctly.
+    id_index: dict[str, int] = {}   # id → position in transactions list
+    merged: list[dict] = []
+    merge_count = 0
+    for tx in transactions:
+        tid = tx["id"]
+        if tid in id_index:
+            # Sum amounts for subsequent occurrences
+            existing = merged[id_index[tid]]
+            existing["amount"] = existing["amount"] + tx["amount"]
+            # Re-compute hash with the new aggregated amount so the DB key is
+            # deterministic regardless of how many occurrences were in this file.
+            _new_amount_key = (
+                str(existing["amount"].normalize())
+                if isinstance(existing["amount"], Decimal)
+                else str(float(str(existing["amount"] or 0)))
+            )
+            existing["id"] = compute_transaction_id(
+                source_name,
+                existing["date"].isoformat(),
+                _new_amount_key,
+                existing["raw_description"] or "",
+                account_label=existing["account_label"] or "",
+            )
+            merge_count += 1
+        else:
+            id_index[tid] = len(merged)
+            merged.append(tx)
+
+    if merge_count:
+        logger.info(
+            f"_normalize_df_with_schema [{source_name}]: "
+            f"merged {merge_count} duplicate row(s) into {len(merged)} unique transactions"
+        )
+    return merged
 
 
 def _infer_tx_type(
