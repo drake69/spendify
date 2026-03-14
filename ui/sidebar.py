@@ -27,10 +27,4 @@ def render_sidebar() -> str:
             st.session_state["page"] = key
             st.rerun()
 
-    st.sidebar.divider()
-    st.sidebar.subheader("🔄 Modalità Giroconti")
-    mode = st.sidebar.radio("Giroconti nel registro", ["neutral", "exclude"], index=0,
-                            label_visibility="collapsed")
-    st.session_state["giroconto_mode"] = mode
-
     return st.session_state["page"]

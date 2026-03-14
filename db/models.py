@@ -1,6 +1,6 @@
 """SQLAlchemy ORM models (RF-07).
 
-Nine tables:
+Ten tables:
   import_batch            – one record per imported file
   document_schema         – parsing template (Flow 2 → Flow 1 promotion)
   transaction             – canonical transaction with all fields
@@ -10,6 +10,7 @@ Nine tables:
   user_settings           – persistent user preferences (locale, language)
   taxonomy_category       – category definitions (expense / income)
   taxonomy_subcategory    – subcategory definitions (FK → taxonomy_category)
+  account                 – user-defined bank accounts (stable dedup key)
 """
 from __future__ import annotations
 
@@ -68,6 +69,7 @@ def create_tables(engine=None):
     _migrate_add_import_job(engine)
     _migrate_add_invert_sign(engine)
     _migrate_add_taxonomy(engine)
+    _migrate_add_accounts(engine)
     return engine
 
 
@@ -283,6 +285,17 @@ class TaxonomySubcategory(Base):
     category = relationship("TaxonomyCategory", back_populates="subcategories")
 
 
+class Account(Base):
+    """User-defined bank account.  Provides a stable dedup key (name) that is
+    independent of the filename used when importing the file."""
+    __tablename__ = "account"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(256), unique=True, nullable=False)   # e.g. "Conto POPSO", "Carta CartaSI"
+    bank_name = Column(String(256))                           # optional free-text bank name
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
 def _migrate_add_import_job(engine) -> None:
     """Create import_job table if not present (idempotent)."""
     from sqlalchemy import text as _text
@@ -372,6 +385,20 @@ def _seed_taxonomy(conn) -> None:
                 _text("INSERT INTO taxonomy_subcategory (category_id, name, sort_order) VALUES (:c,:n,:s)"),
                 {"c": cat_id, "n": sub, "s": sort_j},
             )
+
+
+def _migrate_add_accounts(engine) -> None:
+    """Create account table if not present (idempotent)."""
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        conn.execute(_text(
+            'CREATE TABLE IF NOT EXISTS account '
+            '(id INTEGER PRIMARY KEY AUTOINCREMENT, '
+            ' name TEXT UNIQUE NOT NULL, '
+            ' bank_name TEXT, '
+            ' created_at DATETIME)'
+        ))
+        conn.commit()
 
 
 def _migrate_add_invert_sign(engine) -> None:

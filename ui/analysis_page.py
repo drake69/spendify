@@ -16,7 +16,10 @@ from support.logging import setup_logging
 
 logger = setup_logging()
 
-EXCLUDED = {"internal_out", "internal_in", "card_settlement", "aggregate_debit"}
+# Always excluded from analytics (technical/settlement types, never meaningful)
+_ALWAYS_EXCLUDED = {"card_settlement", "aggregate_debit"}
+# Excluded only when giroconto_mode == "exclude"
+_GIROCONTO_TYPES = {"internal_out", "internal_in"}
 
 
 def render_analysis_page(engine):
@@ -27,6 +30,7 @@ def render_analysis_page(engine):
         settings = get_all_user_settings(session)
         _dec = settings.get("amount_decimal_sep", ",")
         _thou = settings.get("amount_thousands_sep", ".")
+        giroconto_mode = settings.get("giroconto_mode", "neutral")
 
         # ── Date filter ───────────────────────────────────────────────────────
         col1, col2 = st.columns(2)
@@ -47,10 +51,20 @@ def render_analysis_page(engine):
             st.info("Nessuna transazione disponibile.")
             return
 
+        # Determine which tx_types to exclude based on giroconto_mode setting
+        excluded = set(_ALWAYS_EXCLUDED)
+        if giroconto_mode == "exclude":
+            excluded |= _GIROCONTO_TYPES
+
+        if giroconto_mode == "exclude":
+            st.caption("ℹ️ Giroconti esclusi dall'analisi (modalità *Escludi giroconti*).")
+        elif giroconto_mode == "neutral":
+            st.caption("ℹ️ Giroconti inclusi nell'analisi (modalità *Neutrale*). Puoi cambiarla in ⚙️ Impostazioni.")
+
         # Build DataFrames
         rows = []
         for tx in txs:
-            if tx.tx_type in EXCLUDED:
+            if tx.tx_type in excluded:
                 continue
             amt = float(tx.amount)
             rows.append({

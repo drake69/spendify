@@ -695,3 +695,33 @@ def delete_taxonomy_subcategory(session: Session, sub_id: int) -> bool:
     session.delete(sub)
     session.flush()
     return True
+
+
+# ── Account CRUD ──────────────────────────────────────────────────────────────
+
+def get_accounts(session: Session) -> list:
+    from db.models import Account
+    return session.query(Account).order_by(Account.name).all()
+
+
+def create_account(session: Session, name: str, bank_name: str = "") -> object:
+    from db.models import Account
+    from sqlalchemy.exc import IntegrityError
+    acc = Account(name=name.strip(), bank_name=bank_name.strip() or None)
+    session.add(acc)
+    try:
+        session.flush()
+    except IntegrityError:
+        session.rollback()
+        raise ValueError(f"Conto '{name}' già esistente")
+    return acc
+
+
+def delete_account(session: Session, account_id: int) -> bool:
+    from db.models import Account
+    acc = session.get(Account, account_id)
+    if acc is None:
+        return False
+    session.delete(acc)
+    session.flush()
+    return True

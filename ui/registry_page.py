@@ -131,11 +131,42 @@ def render_registry_page(engine):
             hide_cols += ["Desc. originale", "Importo originale"]
 
         display_df = df.drop(columns=hide_cols)
+
+        # ── Pagination ────────────────────────────────────────────────────────
+        _page_sizes = [25, 50, 100, 200]
+        _pg_col1, _pg_col2 = st.columns([1, 3])
+        with _pg_col1:
+            rows_per_page = st.selectbox(
+                "Righe per pagina", _page_sizes, index=1, key="ledger_page_size"
+            )
+
+        total_rows = len(display_df)
+        total_pages = max(1, -(-total_rows // rows_per_page))  # ceiling division
+
+        # Reset page if filters changed (fingerprint = total rows + filter keys)
+        _filter_fp = f"{total_rows}_{sorted(filters.items())}"
+        if st.session_state.get("_ledger_filter_fp") != _filter_fp:
+            st.session_state["_ledger_filter_fp"] = _filter_fp
+            st.session_state["ledger_page"] = 0
+
+        page_num = st.session_state.get("ledger_page", 0)
+        page_num = max(0, min(page_num, total_pages - 1))
+
+        with _pg_col2:
+            st.caption(
+                f"Pagina **{page_num + 1}** di **{total_pages}** "
+                f"· {total_rows} transazioni totali"
+            )
+
+        page_start = page_num * rows_per_page
+        page_end = min(page_start + rows_per_page, total_rows)
+        page_df = display_df.iloc[page_start:page_end].reset_index(drop=True)
+
         _num_fmt = f"%.2f"
         table_event = st.dataframe(
-            display_df,
+            page_df,
             use_container_width=True,
-            height=500,
+            height=min(500, 36 + len(page_df) * 35),
             on_select="rerun",
             selection_mode="single-row",
             column_config={
@@ -143,6 +174,17 @@ def render_registry_page(engine):
                 "Uscita": st.column_config.NumberColumn("Uscita", format=_num_fmt),
             },
         )
+
+        # Navigation buttons
+        _nav1, _nav2, _nav3 = st.columns([1, 1, 4])
+        with _nav1:
+            if st.button("◀ Precedente", disabled=(page_num == 0), key="ledger_prev"):
+                st.session_state["ledger_page"] = page_num - 1
+                st.rerun()
+        with _nav2:
+            if st.button("Successiva ▶", disabled=(page_num >= total_pages - 1), key="ledger_next"):
+                st.session_state["ledger_page"] = page_num + 1
+                st.rerun()
 
         # ── Export ────────────────────────────────────────────────────────────
         st.divider()
@@ -160,7 +202,6 @@ def render_registry_page(engine):
         # ── Correction panel ──────────────────────────────────────────────────
         st.divider()
         taxonomy = get_taxonomy_config(session)
-        all_categories = taxonomy.all_expense_categories + taxonomy.all_income_categories
 
     # ── Transaction selector ───────────────────────────────────────────────────
     st.subheader("Azioni transazione")
@@ -174,9 +215,10 @@ def render_registry_page(engine):
     _keys = list(tx_options.keys())
 
     # Sync selectbox when a table row is clicked
+    # Row index is relative to the current page → map back to full list
     _sel_rows = table_event.selection.rows if table_event and table_event.selection.rows else []
     if _sel_rows:
-        _idx = _sel_rows[0]
+        _idx = page_start + _sel_rows[0]
         if _idx < len(_keys):
             st.session_state["ledger_correct_tx"] = _keys[_idx]
 
@@ -233,6 +275,11 @@ def render_registry_page(engine):
 
     # ── Correzione categoria ───────────────────────────────────────────────────
     if not is_giroconto:
+        # Show only the relevant direction's categories based on amount sign
+        _is_expense = float(selected_tx.amount) < 0
+        all_categories = (
+            taxonomy.all_expense_categories if _is_expense else taxonomy.all_income_categories
+        )
         with st.expander("✏️ Correggi categoria transazione", expanded=False):
             col1, col2 = st.columns(2)
             with col1:
