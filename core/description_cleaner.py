@@ -47,8 +47,10 @@ SEMANTIC GUIDE — payment types and where to look:
         the keyword (ignore the card number)
       → e.g. "vietgnam srl pagamento con carta 5179090003789315 vietgnam srl milan"
               → "Vietgnam SRL"
-  • "Bonif. v/terzi" / "Disposizione" / "Vostra disposizione" / "Disposizione bonifico SCT"
-      → outgoing wire transfer; counterpart = beneficiary name that follows "ORD." or the prefix
+  • "Bonifico eseguito" / "Bonif. v/terzi" / "Disposizione" / "Vostra disposizione" / "Disposizione bonifico SCT"
+      → outgoing wire transfer; counterpart = beneficiary name that follows "ORD." or appears after
+        the payment keyword; if only reference numbers / codes follow (e.g. "Rapporto 06 77 …",
+        "Codice cliente …") and no person/company name can be identified, return "Bonifico"
   • "Addebito diretto SDD" / "RID"
       → direct debit; counterpart = creditor/company name that follows
   • "Delega Unica" / "F24 web" / "F24"
@@ -75,8 +77,10 @@ STRIP completely from the result:
 KEEP: only the merchant name, business name, or beneficiary person (first + last name).
 If the description is already clean (e.g. "Netflix", "Esselunga"), return it as-is.
 
-FALLBACK: if nothing meaningful can be extracted, return the original string unchanged.
-Never return an empty string.
+FALLBACK: if nothing meaningful can be extracted, return a short descriptive Italian label
+based on the payment type (e.g. "Bonifico", "Addebito diretto", "Pagamento") or return the
+original string unchanged.
+NEVER return "null", "none", "n/a", empty string, or any placeholder — always return text.
 
 Output: a JSON object {"results": ["recipient1", "recipient2", ...]} — same order as input.
 """
@@ -137,8 +141,9 @@ STRIP completely from the result:
 KEEP: only the sender's name — person (first + last), company name, or institution name.
 If the description is already clean (e.g. "Giovanni Bianchi", "Azienda SRL"), return it as-is.
 
-FALLBACK: if nothing meaningful can be extracted, return the original string unchanged.
-Never return an empty string.
+FALLBACK: if nothing meaningful can be extracted, return a short descriptive Italian label
+(e.g. "Accredito", "Bonifico ricevuto") or return the original string unchanged.
+NEVER return "null", "none", "n/a", empty string, or any placeholder — always return text.
 
 Output: a JSON object {"results": ["sender1", "sender2", ...]} — same order as input.
 """
@@ -297,6 +302,9 @@ def _process_group(
                 # Restore <OWNER_N> → real name before storing
                 result = restore_owner_placeholders(result, sanitize_config)
                 result = result.strip()
+                # Discard known bad LLM outputs: "null", "none", "n/a", etc.
+                if result.lower() in {"null", "none", "n/a", "na", "nan", "-", "—"}:
+                    result = None
             if result and len(result) >= 2 and result != original:
                 txs[idx]["description"] = result
                 cleaned_count += 1
