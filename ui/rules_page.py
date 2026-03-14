@@ -61,7 +61,7 @@ def render_rules_page(engine):
             for r in sorted(rules, key=lambda x: -x.priority)
         ]
         df_rules = pd.DataFrame(table_data)
-        st.dataframe(df_rules.set_index("ID"), use_container_width=True)
+        st.dataframe(df_rules.set_index("ID"), width="stretch")
 
         st.divider()
 

@@ -31,19 +31,24 @@ logger = setup_logging()
 _DB_WRITE_INTERVAL = 1.5
 
 
-def _build_config(engine, test_mode: bool = False) -> ProcessingConfig:
+def _build_config(engine, test_mode: bool | None = None) -> ProcessingConfig:
     mode_str = st.session_state.get("giroconto_mode", "neutral")
-    use_owner_giroconto = st.session_state.get("use_owner_names_giroconto", False)
     with get_session(engine) as _s:
         s = get_all_user_settings(_s)
 
+    use_owner_giroconto = s.get("use_owner_names_giroconto", "false").lower() == "true"
+    if test_mode is None:
+        test_mode = s.get("import_test_mode", "false").lower() == "true"
     owner_names = [n.strip() for n in s.get("owner_names", "").split(",") if n.strip()]
 
     return ProcessingConfig(
         llm_backend=s.get("llm_backend", "local_ollama"),
         giroconto_mode=GirocontoMode(mode_str),
         use_owner_names_for_giroconto=use_owner_giroconto,
-        sanitize_config=SanitizationConfig(owner_names=owner_names),
+        sanitize_config=SanitizationConfig(
+            owner_names=owner_names,
+            description_language=s.get("description_language", "it"),
+        ),
         ollama_base_url=s.get("ollama_base_url", "http://localhost:11434"),
         ollama_model=s.get("ollama_model", "gemma3:12b"),
         openai_model=s.get("openai_model", "gpt-4o-mini"),
@@ -149,37 +154,19 @@ def render_upload_page(engine):
         accept_multiple_files=True,
     )
 
-    test_mode = st.toggle(
-        "🧪 Modalità test (solo prime 20 righe)",
-        value=True,
-        key="import_test_mode",
-        help="Importa solo le prime 20 righe di ogni file per verificare rapidamente la classificazione dello schema.",
-    )
-    if test_mode:
-        st.caption("⚠️ Modalità test attiva — solo le prime 20 righe verranno elaborate.")
-
-    with get_session(engine) as _s2:
-        _owner_names_cfg = get_all_user_settings(_s2).get("owner_names", "").strip()
-    _owner_names_list = [n.strip() for n in _owner_names_cfg.split(",") if n.strip()]
-    st.toggle(
-        "🔄 Usa nomi titolari per identificare giroconti",
-        value=False,
-        key="use_owner_names_giroconto",
-        disabled=not _owner_names_list,
-        help=(
-            f"Se attivo, le transazioni la cui descrizione contiene un nome titolare "
-            f"({', '.join(_owner_names_list) if _owner_names_list else 'nessun titolare configurato'}) "
-            "vengono marcate automaticamente come giroconto. "
-            "La riga di saldo nelle carte viene rinominata col nome titolare anziché eliminata."
-        ),
-    )
-
     if not uploaded_files:
         st.info("Carica uno o più file per avviare l'elaborazione.")
         # Show job status for any connected session (including other browsers)
         # that didn't originate the import — reads live state from DB.
-        _render_job_status(engine)
+        with get_session(engine) as _idle_s:
+            _idle_job = get_latest_import_job(_idle_s)
+        _render_job_status(engine, job=_idle_job)
         _render_last_import_summary()
+        # If no running job is visible, poll every 5 s to detect a job started
+        # from another browser session (Streamlit has no push mechanism).
+        if _idle_job is None or _idle_job.status != "running":
+            time.sleep(5)
+            st.rerun()
         return
 
     # Per-file account selector
@@ -208,7 +195,7 @@ def render_upload_page(engine):
         _file_account_map[uf.name] = sel if sel != "— rilevamento automatico —" else None
 
     if st.button("▶️ Elabora file", type="primary"):
-        config = _build_config(engine, test_mode=test_mode)
+        config = _build_config(engine)
 
         # Prepare file list and load known schemas
         files = []

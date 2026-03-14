@@ -62,9 +62,9 @@ def classify_document(
     Returns:
         DocumentSchema or None if classification failed.
     """
-    if llm_backend.is_remote and not sanitize:
+    if not sanitize:
         raise SanitizationRequiredError(
-            "Sanitization is mandatory for remote LLM backends (RF-10)."
+            "Sanitization is mandatory before any LLM call (RF-10)."
         )
 
     # Build a compact sample for the prompt (max 20 rows)
@@ -149,58 +149,88 @@ _COLUMN_FIELDS = (
 )
 
 
-# ── Phase 0 synonym tables ────────────────────────────────────────────────────
+# ── Phase 0 synonym tables (multilingual) ─────────────────────────────────────
 
 # Ordered list — earlier entry = higher priority for description_col selection.
 _DESCRIPTION_PRIORITY: list[str] = [
-    "causale",
-    "descrizione",
-    "dettagli operazione",
-    "dettagli",
-    "note",
-    "memo",
-    "tipo operazione",
-    "tipo",
+    # Italian
+    "causale", "dettagli operazione", "descrizione", "dettagli",
+    "tipo operazione", "tipo", "note", "memo",
+    # English
+    "description", "narrative", "transaction type", "details", "reference", "remarks",
+    # French
+    "libellé", "libelle", "opération", "operation", "détails", "motif",
+    # German
+    "buchungstext", "verwendungszweck", "beschreibung", "betreff",
+    # Spanish
+    "concepto", "descripción", "descripcion",
 ]
 
 _DATE_OP_SYNONYMS: frozenset[str] = frozenset({
-    "data operazione",
-    "data movimento",
-    "data transazione",
-    "data addebito",
+    # Italian
+    "data operazione", "data movimento", "data transazione", "data addebito",
+    # English
+    "transaction date", "posting date", "booking date",
+    # French
+    "date opération", "date operation", "date de transaction",
+    # German
+    "buchungsdatum", "buchungstag",
+    # Spanish
+    "fecha operación", "fecha operacion", "fecha transacción", "fecha transaccion",
 })
 
 _DATE_ACC_SYNONYMS: frozenset[str] = frozenset({
-    "data valuta",
-    "data contabile",
-    "data regolamento",
-    # standalone "valuta" in Italian bank exports almost always means
-    # "data di valuta" (value date), NOT currency type (which is "divisa").
-    "valuta",
+    # Italian — standalone "valuta" almost always means "data di valuta"
+    # (value date), NOT currency type (which is "divisa" in Italian).
+    "data valuta", "data contabile", "data regolamento", "valuta",
+    # English
+    "value date", "settlement date", "accounting date",
+    # French
+    "date de valeur", "date valeur", "date comptable",
+    # German
+    "wertstellungsdatum", "wertstellung",
+    # Spanish
+    "fecha valor",
 })
 
 # Outflow-only column → expenses stored as positive → invert_sign=True
 _DEBIT_COLUMN_SYNONYMS: frozenset[str] = frozenset({
-    "uscita", "uscite",
-    "addebito", "addebiti",
-    "pagamento", "pagamenti",
-    "importo addebitato",
-    "spesa", "spese",
-    "dare",
+    # Italian
+    "uscita", "uscite", "addebito", "addebiti",
+    "pagamento", "pagamenti", "importo addebitato", "spesa", "spese", "dare",
+    # English
+    "debit", "withdrawal", "withdrawals", "charge", "charges", "outflow",
+    # French
+    "débit", "debit", "sortie", "sorties", "dépense", "dépenses",
+    "retrait", "retraits", "prélèvement",
+    # German
+    "soll", "ausgabe", "ausgaben", "belastung", "lastschrift",
+    # Spanish
+    "cargo", "cargos", "débito", "salida", "salidas", "gasto", "gastos",
 })
 
 # Inflow-only column → incomes stored as positive → invert_sign=False
 _CREDIT_COLUMN_SYNONYMS: frozenset[str] = frozenset({
-    "entrata", "entrate",
-    "accredito", "accrediti",
-    "importo accreditato",
-    "avere",
-    "credito",
+    # Italian
+    "entrata", "entrate", "accredito", "accrediti",
+    "importo accreditato", "avere", "credito",
+    # English
+    "credit", "credits", "deposit", "deposits", "income", "inflow", "receipt",
+    # French
+    "crédit", "credit", "entrée", "entrées", "recette", "recettes",
+    # German
+    "haben", "einnahme", "einnahmen", "gutschrift", "einzahlung",
+    # Spanish
+    "abono", "abonos", "crédito", "entrada", "entradas", "ingreso", "ingresos",
 })
 
 # Neutral amount column → sign direction unknown → needs LLM (Phase 1)
 _AMOUNT_NEUTRAL_SYNONYMS: frozenset[str] = frozenset({
+    # Italian / English / French / German / Spanish
     "importo", "amount", "valore", "totale",
+    "montant", "valeur", "total",
+    "betrag", "wert", "summe",
+    "importe", "monto", "valor",
 })
 
 _BANK_DOC_TYPES: frozenset[str] = frozenset({"bank_account", "savings"})
@@ -266,9 +296,12 @@ def _run_step0_analysis(columns: list[str]) -> _Step0Result:
             r.date_accounting_col = col_orig
 
     if r.date_col is None:
-        for col_low, col_orig in lower_to_orig.items():
-            if col_low.startswith("data"):
-                r.date_col = col_orig
+        for prefix in ("data", "date", "datum", "fecha"):
+            for col_low, col_orig in lower_to_orig.items():
+                if col_low.startswith(prefix):
+                    r.date_col = col_orig
+                    break
+            if r.date_col:
                 break
 
     # ── Amount / sign columns ─────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-# Spendify v2.3
+# Spendify v2.4
 
 > 🇮🇹 [Leggi in italiano](README.it.md)
 
@@ -42,7 +42,11 @@ Aggregates heterogeneous bank statements (current accounts, credit cards, debit 
 | **LLM config in UI** | Backend, model and API keys are configurable from the Settings page without editing `.env` |
 | **PII sanitization (RF-10)** | IBAN, PAN, fiscal codes, owner names redacted before any remote call |
 | **Circuit breaker** | Automatic fallback to local Ollama; quarantine (`to_review=True`) if all backends fail |
-| **SQLAlchemy persistence** | 9 ORM tables; idempotent CRUD; automatic migrations on startup |
+| **Life contexts** | User-configurable orthogonal dimension (e.g. Quotidianità / Lavoro / Vacanza) assignable to any transaction; Jaccard-based similarity suggestions pre-fill context from past transactions |
+| **LLM re-run on failures** | Review page button re-runs description cleaning + categorization only on transactions where the LLM previously failed (`description == raw_description`) |
+| **Cross-account giroconto re-detection** | Review page button re-runs `detect_internal_transfers` globally on all transactions to catch pairs missed because the counterpart file was imported later |
+| **Owner-name permutation matching** | All token permutations of account-holder names are checked for giroconto detection, preventing missed matches when the name order varies across bank files |
+| **SQLAlchemy persistence** | 10 ORM tables; idempotent CRUD; automatic migrations on startup |
 | **Cross-session import progress** | Import job state stored in DB; all browser sessions see live progress |
 | **Report export** | Standalone HTML (Plotly), CSV, XLSX |
 | **8-page Streamlit UI** | Import → Ledger → Analytics → Review → Regole → Tassonomia → Impostazioni |
@@ -258,12 +262,12 @@ The app opens at `http://localhost:8501` with 8 pages:
 | Page | Description |
 |---|---|
 | **📥 Import** | Upload one or more files (CSV / XLSX). Shows live progress (visible across all browser sessions). Summary: imported transactions, reconciliations, transfer links, flow used (1/2). |
-| **📋 Ledger** | Filterable table (date, type, description, category, review flag). Click any row to select it instantly. Split Entrata/Uscita columns, right-aligned. Net/income/expense metrics. Always-visible giroconto toggle with one-click bulk-apply to all transactions sharing the same description. CSV/XLSX download. |
+| **📋 Ledger** | Filterable table (date, type, description, category, context, review flag). Click any row to select it instantly. Split Entrata/Uscita columns, right-aligned. Net/income/expense metrics. Context filter + assignment expander with Jaccard similarity suggestions. Giroconto toggle with bulk-apply. CSV/XLSX download. |
 | **📊 Analytics** | 7 interactive Plotly charts: monthly bar chart, cumulative balance, expense pie+treemap, interactive category drill-down with subcategory bar + monthly trend, income pie+treemap, top-10 descriptions, stacked by account. HTML export. |
-| **🔍 Review** | Transactions with `to_review=True`. Giroconto toggle (with bulk-apply). Category/subcategory correction + optional save as permanent rule that is immediately applied to all existing matching transactions. |
+| **🔍 Review** | Transactions with `to_review=True`. Giroconto toggle (with bulk-apply). Category/subcategory correction + optional save as permanent rule applied immediately. "Re-run LLM" button for uncleaned transactions. "Re-detect cross-account giroconti" button. |
 | **📏 Regole** | Full CRUD for category rules. Edit/delete existing rules + optional bulk re-categorization of already-matched transactions. |
 | **🗂️ Tassonomia** | DB-backed CRUD for categories and subcategories (expenses and income). Changes take effect immediately without restarting. |
-| **⚙️ Impostazioni** | Date format, amount separators, description language, LLM backend (model + API keys). All persisted in DB. |
+| **⚙️ Impostazioni** | Date format, amount separators, description language, life contexts, bank account list, LLM backend (model + API keys). All persisted in DB. |
 
 ---
 
@@ -324,7 +328,15 @@ Both types are excluded from net balance, income, and expense metrics.
 
 ### Automatic detection (RF-04)
 
-The pipeline tries to match transfers automatically using symbolic amount + time-window matching during import.
+The pipeline tries to match transfers automatically during import using three passes:
+
+1. **Keyword regex** — description matches a configured keyword pattern (e.g. "Giroconto", "Bonifico tra i miei conti") → high confidence
+2. **Amount + date matching** — same absolute amount within a ±3-day window, on different `account_label` values → medium/high confidence
+3. **Owner-name permutation** — description contains any permutation of the account-holder name tokens → high confidence (catches "Corsaro Luigi Gerotti Elena" and "Luigi Corsaro Elena Gerotti" equally)
+
+### Cross-account re-detection
+
+When two counterpart transactions belong to files imported at different times, the first import cannot find the pair. Use the **"🔁 Riesegui rilevamento giroconti"** button on the **🔍 Review** page to re-run detection globally on all non-giroconto transactions and update newly detectable pairs.
 
 ### Manual toggle
 
@@ -334,6 +346,33 @@ From the **Ledger** or **Review** pages you can manually mark any transaction as
 - **Bulk apply** — if other transactions share the same description, a checkbox (default: enabled) offers to apply the same change to all of them in one click. The count of affected transactions is shown before confirming.
 
 `bulk_set_giroconto_by_description` in `db/repository.py` implements the bulk operation: it updates all transactions with the given description except the one already toggled, and returns the number of rows changed.
+
+---
+
+## Life contexts
+
+Life contexts are an orthogonal classification dimension that complements the category taxonomy. Where a category answers *what was bought*, a context answers *for which area of life*.
+
+### Design
+
+| Aspect | Detail |
+|---|---|
+| **Storage** | Nullable `VARCHAR(64)` column `context` on the `Transaction` table |
+| **Orthogonality** | Independent of category/subcategory — any combination is valid |
+| **User-configurable** | Add, rename, or remove contexts from the **⚙️ Impostazioni** page (stored as JSON in `user_settings`) |
+| **Default contexts** | Quotidianità · Lavoro · Vacanza |
+
+### Assignment
+
+From the **📋 Ledger** page, select any transaction and open the "🌍 Assegna contesto" expander:
+
+1. Choose a context from the dropdown (or clear it)
+2. Optionally enable **"Applica anche a transazioni simili"** — Jaccard token similarity (threshold 0.35) finds other transactions whose cleaned description is semantically close and pre-fills the same context
+3. Click **Applica**
+
+### Filtering
+
+The ledger's filter bar includes a context selector: *tutti*, individual context values, or *— nessuno —* (transactions with no context assigned).
 
 ---
 

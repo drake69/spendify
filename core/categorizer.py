@@ -84,14 +84,14 @@ class TaxonomyConfig:
 
     @property
     def all_expense_categories(self) -> list[str]:
-        return list(self.expenses.keys())
+        return sorted(self.expenses.keys())
 
     @property
     def all_income_categories(self) -> list[str]:
-        return list(self.income.keys())
+        return sorted(self.income.keys())
 
     def valid_subcategories(self, category: str) -> list[str]:
-        return self.expenses.get(category, self.income.get(category, []))
+        return sorted(self.expenses.get(category, self.income.get(category, [])))
 
     def is_valid_pair(self, category: str, subcategory: str) -> bool:
         subs = self.valid_subcategories(category)
@@ -263,8 +263,8 @@ def _run_llm_batch_group(
         for idx in batch_indices:
             tx = transactions[idx]
             desc = tx.get("description", "") or ""
-            if llm_backend.is_remote:
-                desc = redact_pii(desc, sanitize_config)
+            # Always redact before any LLM call (local or remote) — permutation-aware
+            desc = redact_pii(desc, sanitize_config)
             items.append({"amount": str(tx.get("amount", 0)), "description": desc})
 
         n = len(items)
