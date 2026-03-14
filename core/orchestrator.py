@@ -229,11 +229,19 @@ def _normalize_df_with_schema(
                 str(row.get(c, "") or "").strip()
                 for c in _desc_cols if c in row
             ]
-            # Filter out empty strings and bare "nan" (pandas NaN → str)
-            desc_raw = " ".join(p for p in parts if p and p.lower() != "nan")
+            # Filter empty / nan, then skip parts already contained in the
+            # accumulated string (case-insensitive) to avoid duplication when
+            # banks repeat text across multiple columns or within one cell.
+            accumulated = ""
+            for p in parts:
+                if not p or p.lower() in ("nan", "null"):
+                    continue
+                if p.lower() not in accumulated.lower():
+                    accumulated = (accumulated + " " + p).strip()
+            desc_raw = accumulated
         elif schema.description_col:
             _v = str(row.get(schema.description_col, "") or "").strip()
-            desc_raw = "" if _v.lower() == "nan" else _v
+            desc_raw = "" if _v.lower() in ("nan", "null") else _v
         else:
             desc_raw = ""
         description = normalize_description(desc_raw)
@@ -505,6 +513,9 @@ def process_file(
     # Sends descriptions to LLM to strip payment-method boilerplate and keep
     # only the merchant / beneficiary / payer name.
     # raw_description is never modified — it stays as the SHA-256 dedup key.
+    # Owner names are replaced with fake but plausible aliases (e.g. "Carlo
+    # Brambilla") so the LLM extracts them as real names; aliases are restored
+    # to the real owner names after extraction.
     transactions = clean_descriptions_batch(
         transactions,
         llm_backend=backend,

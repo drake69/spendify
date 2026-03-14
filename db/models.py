@@ -1,6 +1,6 @@
 """SQLAlchemy ORM models (RF-07).
 
-Ten tables:
+Eleven tables:
   import_batch            – one record per imported file
   document_schema         – parsing template (Flow 2 → Flow 1 promotion)
   transaction             – canonical transaction with all fields
@@ -11,6 +11,7 @@ Ten tables:
   taxonomy_category       – category definitions (expense / income)
   taxonomy_subcategory    – subcategory definitions (FK → taxonomy_category)
   account                 – user-defined bank accounts (stable dedup key)
+  description_rule        – bulk description replacement rules (raw_description → cleaned)
 """
 from __future__ import annotations
 
@@ -53,6 +54,10 @@ DEFAULT_USER_SETTINGS = {
     "openai_model": "gpt-4o-mini",
     "anthropic_api_key": "",
     "anthropic_model": "claude-3-5-haiku-20241022",
+    "use_owner_names_giroconto": "false",
+    "import_test_mode": "false",
+    "contexts": '["Quotidianità", "Lavoro", "Vacanza"]',
+    "giroconto_mode": "neutral",
 }
 
 
@@ -70,6 +75,9 @@ def create_tables(engine=None):
     _migrate_add_invert_sign(engine)
     _migrate_add_taxonomy(engine)
     _migrate_add_accounts(engine)
+    _migrate_add_description_cols(engine)
+    _migrate_add_context(engine)
+    _migrate_add_description_rules(engine)
     return engine
 
 
@@ -88,6 +96,14 @@ def _migrate_add_user_settings(engine) -> None:
             for k, v in DEFAULT_USER_SETTINGS.items():
                 conn.execute(
                     _text("INSERT INTO user_settings (key, value) VALUES (:k, :v)"),
+                    {"k": k, "v": v},
+                )
+            conn.commit()
+        else:
+            # Insert any missing keys (for existing DBs upgrading)
+            for k, v in DEFAULT_USER_SETTINGS.items():
+                conn.execute(
+                    _text("INSERT OR IGNORE INTO user_settings (key, value) VALUES (:k, :v)"),
                     {"k": k, "v": v},
                 )
             conn.commit()
@@ -152,6 +168,7 @@ class DocumentSchemaModel(Base):
     debit_col = Column(String(128))
     credit_col = Column(String(128))
     description_col = Column(String(128))
+    description_cols = Column(Text)  # JSON array of column names for multi-col concat
     currency_col = Column(String(128))
     default_currency = Column(String(3), default="EUR")
     date_format = Column(String(64))
@@ -193,6 +210,7 @@ class Transaction(Base):
     transfer_confidence = Column(String(10))
     raw_description = Column(Text, nullable=True)   # original text before normalize_description
     raw_amount = Column(String(64), nullable=True)  # original string from source file
+    context = Column(String(64), nullable=True)     # user-defined life context (e.g. Vacanza, Lavoro)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     batch = relationship("ImportBatch", back_populates="transactions")
@@ -235,6 +253,23 @@ class CategoryRule(Base):
     doc_type = Column(String(32))
     priority = Column(Integer, default=0)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class DescriptionRule(Base):
+    """Bulk description replacement rule.
+
+    When a transaction's raw_description matches raw_pattern (using match_type),
+    its description field is replaced with cleaned_description.
+    """
+    __tablename__ = "description_rule"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    raw_pattern = Column(Text, nullable=False)          # pattern to match in raw_description
+    match_type = Column(String(10), nullable=False)      # exact | contains | regex
+    cleaned_description = Column(Text, nullable=False)  # replacement description
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (UniqueConstraint("raw_pattern", "match_type"),)
 
 
 class UserSettings(Base):
@@ -420,6 +455,36 @@ def _migrate_add_accounts(engine) -> None:
         conn.commit()
 
 
+def _migrate_add_description_cols(engine) -> None:
+    """Add description_cols column to document_schema if not present (idempotent)."""
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        try:
+            conn.execute(_text(
+                'ALTER TABLE document_schema ADD COLUMN description_cols TEXT'
+            ))
+            conn.commit()
+        except Exception as exc:
+            if "duplicate column name" in str(exc).lower():
+                pass  # column already exists
+            else:
+                raise
+
+
+def _migrate_add_context(engine) -> None:
+    """Add context column to transaction table if not present (idempotent)."""
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        try:
+            conn.execute(_text('ALTER TABLE "transaction" ADD COLUMN context VARCHAR(64)'))
+            conn.commit()
+        except Exception as exc:
+            if "duplicate column name" in str(exc).lower():
+                pass
+            else:
+                raise
+
+
 def _migrate_add_invert_sign(engine) -> None:
     """Add invert_sign column to document_schema if not present (idempotent)."""
     from sqlalchemy import text as _text
@@ -434,3 +499,19 @@ def _migrate_add_invert_sign(engine) -> None:
                 pass  # column already exists
             else:
                 raise
+
+
+def _migrate_add_description_rules(engine) -> None:
+    """Create description_rule table if not present (idempotent)."""
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        conn.execute(_text(
+            'CREATE TABLE IF NOT EXISTS description_rule ('
+            'id INTEGER PRIMARY KEY AUTOINCREMENT, '
+            'raw_pattern TEXT NOT NULL, '
+            'match_type VARCHAR(10) NOT NULL, '
+            'cleaned_description TEXT NOT NULL, '
+            'created_at DATETIME, '
+            'UNIQUE(raw_pattern, match_type))'
+        ))
+        conn.commit()

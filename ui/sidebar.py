@@ -23,7 +23,7 @@ def render_sidebar() -> str:
         is_active = st.session_state["page"] == key
         # Highlight active page with a filled button, others secondary
         btn_type = "primary" if is_active else "secondary"
-        if st.sidebar.button(label, key=f"nav_{key}", use_container_width=True, type=btn_type):
+        if st.sidebar.button(label, key=f"nav_{key}", width="stretch", type=btn_type):
             st.session_state["page"] = key
             st.rerun()
 

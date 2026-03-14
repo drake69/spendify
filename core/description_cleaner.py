@@ -1,4 +1,6 @@
-"""Counterpart extraction from verbose Italian bank descriptions (RF-02 pre-categorization).
+"""Counterpart extraction from bank transaction descriptions (RF-02 pre-categorization).
+
+Handles descriptions from banks in any country and language.
 
 Sends two separate LLM batches — one for expenses, one for income — each with a
 prompt tailored to extract the relevant counterpart:
@@ -27,123 +29,153 @@ logger = setup_logging()
 # ── Prompts ───────────────────────────────────────────────────────────────────
 
 _SYSTEM_EXPENSE = """\
-You are a financial transaction description parser specialized in Italian bank exports.
+You are a financial transaction description parser. Descriptions may come from banks
+in any country and language.
 
-These descriptions are EXPENSE transactions (money going OUT).
-Your task: extract ONLY the RECIPIENT / PAYEE — the merchant, business, or person
-that received the payment.
+These are EXPENSE transactions (money going OUT).
+Task: extract ONLY the RECIPIENT — the merchant, business, or person that received the payment.
+The counterpart name can appear anywhere in the string; scan the full description.
 
-IMPORTANT: the counterpart name can appear ANYWHERE in the description — before the
-payment-type keyword, after it, or repeated on both sides. Always scan the full string.
-
-SEMANTIC GUIDE — payment types and where to look:
-  • "POS" / "Pagam. POS" / "PAGAMENTO POS {amount} EUR DEL {date} A ({country})"
-      → POS card payment; counterpart = merchant name (often after country code, but
-        may also appear before the keyword)
-      → e.g. "pagam. pos - pagamento pos 352,00 eur del 23.12.2025 a (ita) NOTORIOUS CINEMAS carta..."
-              → "Notorious Cinemas"
-  • "pagamento con carta {card_number}" / "pagamento con carta"
-      → card payment; counterpart = business/merchant name appearing before or after
-        the keyword (ignore the card number)
-      → e.g. "vietgnam srl pagamento con carta 5179090003789315 vietgnam srl milan"
-              → "Vietgnam SRL"
-  • "Bonifico eseguito" / "Bonif. v/terzi" / "Disposizione" / "Vostra disposizione" / "Disposizione bonifico SCT"
-      → outgoing wire transfer; counterpart = beneficiary name that follows "ORD." or appears after
-        the payment keyword; if only reference numbers / codes follow (e.g. "Rapporto 06 77 …",
-        "Codice cliente …") and no person/company name can be identified, return "Bonifico"
-  • "Addebito diretto SDD" / "RID"
-      → direct debit; counterpart = creditor/company name that follows
-  • "Delega Unica" / "F24 web" / "F24"
-      → tax payment; counterpart = "Agenzia delle Entrate" (unless a specific payee is named)
-  • "Pagamento utenza" / "Bollettino"
-      → utility/bill payment; counterpart = utility company name
-  • "Canone" / "Commissione" / "Spese"
-      → bank fee; counterpart = bank name or fee type (keep concise)
-
-STRIP completely from the result:
-  • All payment-type keywords listed above
-  • Amounts embedded in text: "352,00 EUR", "9.798,76 EUR", "del 5,95 EUR"
-  • Dates: "DEL 23.12.2025", "del 23.12.2025", "2025-12-29/10.41"
-  • Card numbers (any sequence of 13–19 digits)
-  • Card / auth codes: "CARTA ****0178", "CAU 98105", "NDS 824402523"
-  • Reference codes: "RIF:209403494", "/INV/24-2025-FE", "/SEPASCT/"
-  • The word "ORD." and anything after it that is not the counterpart
-  • Country codes: "(ITA)", "(IRL)", "A (ITA)"
+WHAT TO STRIP (language-independent noise):
+  • Payment-type labels (e.g. "POS", "Bonifico", "Virement", "Lastschrift", "wire transfer")
+  • Beneficiary markers (strip the label, keep what follows):
+    "Fv.", "F.V.", "Beg.", "Begünstigter", "Pour", "For the benefit of"
+  • Amounts: "352,00 EUR", "9.798,76 EUR"
+  • Dates: "23.12.2025", "2025-12-29", "29/10.41"
+  • Card numbers (13–19 consecutive digits) and masked card refs ("CARTA ****0178")
+  • Auth/transaction codes: "CAU 98105", "NDS 824402523"
+  • Reference codes and SEPA fields: "RIF:", "CRO:", "/INV/", "/SEPASCT/", "/SEPADD/", BIC
+  • "ORD." and any identifier tokens that follow it (unless the counterpart name follows)
+  • Country codes: "(ITA)", "(IRL)", "(FRA)"
   • City names that appear after the business name
-  • SEPA identifiers, CRO codes, BIC codes, routing references
-  • Duplicate occurrences of the same name (keep only one)
-  • The literal string "nan" (artifact from empty spreadsheet cells)
+  • Repeated phrases — some banks duplicate text within a single field; keep only one
+    occurrence (e.g. "Rimborso spese rimborso spese" → "Rimborso spese",
+    "Luigi Rossi luigi rossi" → "Luigi Rossi")
+  • The literal string "nan"
 
-KEEP: only the merchant name, business name, or beneficiary person (first + last name).
-If the description is already clean (e.g. "Netflix", "Esselunga"), return it as-is.
+BANK-ORIGINATED EXPENSES (no external recipient — the bank itself charges):
+  If the description is a bank interest charge, account fee, commission, or credit-card
+  balance settlement with no identifiable external payee, return a short descriptive label
+  in the same language as the description (e.g. "Interessi bancari", "Frais bancaires",
+  "Bankgebühren", "Bank fees", "Saldo carta").
 
-FALLBACK: if nothing meaningful can be extracted, return a short descriptive Italian label
-based on the payment type (e.g. "Bonifico", "Addebito diretto", "Pagamento") or return the
-original string unchanged.
-NEVER return "null", "none", "n/a", empty string, or any placeholder — always return text.
+FALLBACK: if no name can be identified, return a short label describing the payment type
+in the same language as the description. Never return "null", "none", "n/a", or empty string.
+
+Examples (description → result):
+  "pagam. pos - pagamento pos 352,00 eur del 23.12.2025 a (ita) NOTORIOUS CINEMAS carta..."
+      → "Notorious Cinemas"
+  "vietgnam srl pagamento con carta 5179090003789315 vietgnam srl milan"
+      → "Vietgnam SRL"
+  "Bonifico eseguito Carlo Brambilla Marta Pellegrino carlo brambilla marta pellegrino"
+      → "Carlo Brambilla Marta Pellegrino"
+  "Bonifico eseguito Rimborso spese rimborso spese"
+      → "Bonifico"
+  "VOSTRA DISPOSIZIONE Disposizione bonifico SCT Fv. ARCA FONDI SGR SPA [CF] 00000000031914"
+      → "Arca Fondi SGR SPA"
+  "Disposizione bonifico SCT Fv. MARIO ROSSI [CF] RIF:0012345"
+      → "Mario Rossi"
+  "Disposizione bonifico SCT Rapporto 06 77 Codice cliente 12345"
+      → "Bonifico"
+  "Virement AMAZON EU SARL 14,95 EUR 2025-11-03"
+      → "Amazon EU SARL"
+  "Lastschrift Netflix International 15,99 EUR 2025-10-15"
+      → "Netflix International"
+  "Liquidazione interessi debitori trim. 1,75% a fronte del saldo"
+      → "Interessi bancari"
+  "Saldo carta INARCASSACARD RIF:8834729"
+      → "Saldo carta"
+  "SOTTOSCRIZIONI FONDI E SICAV SOTTOSCRIZIONE ETICA AZIONARIO R DEP.TITOLI 081/663905/000"
+      → "Etica Azionario R"
+  "Subscription funds SICAV SUBSCRIPTION GLOBAL EQUITY FUND DEP.TITOLI 002/123456/000"
+      → "Global Equity Fund"
+  "RID ENEL ENERGIA SPA 00001234567 UTENZA GAS 987654"
+      → "Enel Energia SPA"
+  "Addebito diretto SDD TELECOM ITALIA SPA CID IT12345 RIF:20251201"
+      → "Telecom Italia SPA"
+  "SDD SEPA Direct Debit SPOTIFY AB mandate 0987654321"
+      → "Spotify AB"
+  "ADDEBITO DIRETTO SDD 00001234 /SEPADD/"
+      → "Addebito diretto"
+  "PRELIEVO CONTANTI SPORTELLO 23/12/2025 BANCA XYZ VIA ROMA MILANO"
+      → "Prelievo contanti"
+  "ATM WITHDRAWAL 29/10/2025 BANK OF IRELAND O CONNELL ST DUBLIN"
+      → "Prelievo contanti"
+  "PAGAMENTO F24 IRPEF ACCONTO II RATA 2025 [CF]"
+      → "F24 IRPEF"
+  "F24 IMU COMUNE DI MILANO CODICE TRIBUTO 3912"
+      → "F24 IMU"
+  "PAGAMENTO BOLLETTINO POSTALE 123456789 COMUNE DI MILANO TASSA RIFIUTI"
+      → "Comune di Milano"
+  "BOLLETTINO POSTALE 123456789 REF 20251201"
+      → "Bollettino postale"
 
 Output: a JSON object {"results": ["recipient1", "recipient2", ...]} — same order as input.
 """
 
 _SYSTEM_INCOME = """\
-You are a financial transaction description parser specialized in Italian bank exports.
+You are a financial transaction description parser. Descriptions may come from banks
+in any country and language.
 
-These descriptions are INCOME transactions (money coming IN).
-Your task: extract ONLY the SENDER / PAYER — the person, business, or institution
-that sent the payment.
+These are INCOME transactions (money coming IN).
+Task: extract ONLY the SENDER — the person, business, or institution that sent the payment.
+The counterpart name can appear anywhere in the string; scan the full description.
+It often follows labels like "ORD.", "FROM:", "DA:", "DE:" but not always.
 
-IMPORTANT: the counterpart name can appear ANYWHERE in the description — before the
-payment-type keyword, after it, or repeated on both sides. Always scan the full string.
-
-SEMANTIC GUIDE — payment types and where to look:
-  • "Bonif. v/fav." (= bonifico a vostro favore, received BY you)
-      → incoming wire transfer; counterpart = sender name that follows "ORD." or the prefix
-      → e.g. "bonif. v/fav. - rif:209403494ord. CENTRO DIAGNOSTICO ITALIANO SPA /inv/..."
-              → "Centro Diagnostico Italiano SPA"
-  • "Accredito bonifico" / "Accredito da"
-      → generic incoming transfer; counterpart = sender name
-  • "Accredito stipendio" / "Stipendio"
-      → salary credit; counterpart = employer name
-  • "Girofondo" / "Giro interno" / "Giro conto"
-      → internal transfer; counterpart = source account label or bank name
-  • "Rimborso"
-      → refund; counterpart = company issuing the refund
-  • "Incasso" / "Accredito SDD"
-      → direct credit collection; counterpart = payer name
-
-BANK-ORIGINATED TRANSACTIONS — no external sender exists; return a short, clean Italian label:
-  • "Liquidazione interessi" / "Maturazione interessi" / "Accredito interessi"
-      → bank crediting accrued interest → return "Interessi bancari"
-  • "Liquidazione commissioni" / "Liquidazione spese" / "Liquidazione interessi-commissioni-spese"
-      → bank settling fees/commissions → return "Liquidazione bancaria"
-  • "Competenze" / "Capitalizzazione"
-      → bank charges/capitalisation → return "Competenze bancarie"
-  • "Canone" / "Spese tenuta conto"
-      → account maintenance fee (but this is an expense, classify as bank fee if income it's a reversal)
-      → return "Rimborso spese bancarie"
-  These are self-contained bank entries; strip all rate info ("1,75%"), period references
-  ("a fronte del saldo", "trim.", "semestre"), and return only the label above.
-
-STRIP completely from the result:
-  • All payment-type keywords listed above
-  • Amounts embedded in text: "300,00 EUR", "9.798,76 EUR"
+WHAT TO STRIP (language-independent noise):
+  • Payment-type labels (e.g. "Bonifico", "Accredito", "Virement", "Gutschrift", "wire transfer")
+  • Amounts: "300,00 EUR", "9.798,76 EUR"
   • Interest rates: "1,75%", "0,50% annuo"
-  • Period/condition qualifiers: "a fronte del saldo", "trim.", "semestre", "annuo"
-  • Dates: "DEL 23.12.2025", "del 23.12.2025", "2025-12-29"
-  • Card numbers (any sequence of 13–19 digits)
-  • Reference codes: "RIF:", "CRO:", "/INV/", "/SEPASCT/"
-  • The word "ORD." and reference identifiers before the name
+  • Period/condition qualifiers: "trim.", "semestre", "annuo", "a fronte del saldo"
+  • Dates: "23.12.2025", "2025-12-29"
+  • Card numbers (13–19 consecutive digits)
+  • Reference codes and SEPA fields: "RIF:", "CRO:", "/INV/", "/SEPASCT/", BIC
+  • "ORD." and any reference identifier tokens before the name
   • City names that appear after the sender name
-  • SEPA identifiers, BIC codes, routing references
-  • Duplicate occurrences of the same name (keep only one)
-  • The literal string "nan" (artifact from empty spreadsheet cells)
+  • Repeated phrases — some banks duplicate text within a single field; keep only one
+    occurrence (e.g. "Mario Rossi mario rossi" → "Mario Rossi")
+  • The literal string "nan"
 
-KEEP: only the sender's name — person (first + last), company name, or institution name.
-If the description is already clean (e.g. "Giovanni Bianchi", "Azienda SRL"), return it as-is.
+BANK-ORIGINATED INCOME (no external sender — the bank itself is the source):
+  If the description is an interest credit, fee reversal, or capitalisation with no
+  identifiable external sender, return a short descriptive label in the same language
+  as the description (e.g. "Interessi bancari", "Intérêts bancaires", "Bankzinsen",
+  "Bank interest", "Liquidazione bancaria"). Strip all rate and period information.
 
-FALLBACK: if nothing meaningful can be extracted, return a short descriptive Italian label
-(e.g. "Accredito", "Bonifico ricevuto") or return the original string unchanged.
-NEVER return "null", "none", "n/a", empty string, or any placeholder — always return text.
+FALLBACK: if no name can be identified, return a short label describing the transaction
+type in the same language as the description. Never return "null", "none", "n/a", or empty string.
+
+Examples (description → result):
+  "bonif. v/fav. - rif:209403494ord. CENTRO DIAGNOSTICO ITALIANO SPA /inv/24-2025-FE"
+      → "Centro Diagnostico Italiano SPA"
+  "Bonifico ricevuto Corsaro luigi gerotti elena CORSARO LUIGI GEROTTI ELENA"
+      → "Corsaro Luigi Gerotti Elena"
+  "Virement reçu MARTIN DUPONT 500,00 EUR 2025-11-15"
+      → "Martin Dupont"
+  "Gutschrift MUSTER GMBH Überweisung 1.250,00 EUR"
+      → "Muster GmbH"
+  "Liquidazione interessi attivi a fronte del saldo trim. 0,50% annuo"
+      → "Interessi bancari"
+  "Liquidazione interessi-commissioni-spese semestre"
+      → "Liquidazione bancaria"
+  "ACCREDITO STIPENDIO ORD. ACME SRL [CF] CRO:12345678"
+      → "Acme SRL"
+  "Salary payment JOHNSON & JOHNSON LTD ref 2025-DEC"
+      → "Johnson & Johnson Ltd"
+  "RIMBORSO RID ENEL ENERGIA SPA 00001234567"
+      → "Enel Energia SPA"
+  "Rimborso spese trasferta ORD. MARIO ROSSI"
+      → "Mario Rossi"
+  "ACCREDITO PENSIONE INPS CRO:987654321 [CF]"
+      → "INPS"
+  "Pension payment SOCIAL SECURITY ADMINISTRATION ref 2025-12"
+      → "Social Security Administration"
+  "Rimborso fiscale Agenzia delle Entrate CRO:123456789"
+      → "Agenzia delle Entrate"
+  "Bonifico ricevuto <CARD_ID>   20250923"
+      → "Bonifico da carta"
+  "Bonifico ricevuto <CARD_ID>   <CARD_ID> 017   20241216"
+      → "Bonifico da carta"
 
 Output: a JSON object {"results": ["sender1", "sender2", ...]} — same order as input.
 """
@@ -284,11 +316,8 @@ def _process_group(
             for i in batch_indices
         ]
 
-        # Redact owner names before sending to LLM
-        if sanitize_config and sanitize_config.owner_names:
-            llm_descs = [redact_pii(d, sanitize_config) for d in raw_descs]
-        else:
-            llm_descs = raw_descs
+        # Always redact before LLM (owner names + IBAN/PAN/fiscal code)
+        llm_descs = [redact_pii(d, sanitize_config) for d in raw_descs]
 
         cleaned = _call_llm_batch(
             llm_descs, system_prompt, llm_backend, fallback_backend,
@@ -343,17 +372,27 @@ def _call_llm_batch(
         return descriptions
 
     results = result.get("results")
-    if not isinstance(results, list) or len(results) != n:
+    if not isinstance(results, list):
         logger.warning(
             f"clean_descriptions_batch [{source_name}] {label}: "
-            f"unexpected response shape "
-            f"(expected {n}, got {len(results) if isinstance(results, list) else type(results)!r})"
-            f" — keeping originals"
+            f"unexpected response type {type(results)!r} — keeping originals"
         )
         return descriptions
+
+    if len(results) != n:
+        logger.warning(
+            f"clean_descriptions_batch [{source_name}] {label}: "
+            f"unexpected response shape (expected {n}, got {len(results)})"
+            f" — using partial results, keeping originals for missing entries"
+        )
+        # Pad or truncate: use what we have, fall back to original for the rest
+        results = list(results[:n]) + [None] * max(0, n - len(results))
 
     logger.debug(
         f"clean_descriptions_batch [{source_name}] {label}: "
         f"batch of {n} via {backend_used}"
     )
-    return [str(r) if r else descriptions[i] for i, r in enumerate(results)]
+    mapped = [str(r) if r else descriptions[i] for i, r in enumerate(results)]
+    for i, (inp, out) in enumerate(zip(descriptions, mapped)):
+        logger.debug(f"  [{label}] #{i}: {inp!r} → {out!r}")
+    return mapped

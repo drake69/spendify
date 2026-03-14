@@ -26,6 +26,19 @@ logger.info("Starting Spendify")
 DB_URL = os.getenv("SPENDIFY_DB", "sqlite:///ledger.db")
 engine = create_tables(get_engine(DB_URL))
 
+# ── Startup cleanup ───────────────────────────────────────────────────────────
+# Reset any import jobs left in "running" state from a previous server process.
+# Runs once per browser session (session_state is empty on first connection
+# after a server restart, so the guard fires exactly once per new session).
+if "stale_jobs_reset" not in st.session_state:
+    st.session_state["stale_jobs_reset"] = True
+    from db.models import get_session
+    from db.repository import reset_stale_jobs
+    with get_session(engine) as _startup_s:
+        _n_stale = reset_stale_jobs(_startup_s)
+    if _n_stale:
+        logger.info(f"startup: reset {_n_stale} stale running job(s) to error")
+
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Spendify",
