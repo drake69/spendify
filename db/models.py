@@ -334,7 +334,26 @@ def _migrate_add_taxonomy(engine) -> None:
             'sort_order INTEGER DEFAULT 0)'
         ))
         conn.commit()
-        # Seed only if empty
+
+        # Deduplicate any rows that crept in via race conditions at first startup
+        # (Streamlit can run app.py twice concurrently before the first commit).
+        # Keep only the lowest-id row per (name, type).
+        conn.execute(_text(
+            "DELETE FROM taxonomy_category WHERE id NOT IN ("
+            "  SELECT MIN(id) FROM taxonomy_category GROUP BY name, type"
+            ")"
+        ))
+        conn.commit()
+
+        # Unique index prevents future duplicates (CREATE … IF NOT EXISTS is safe
+        # even when the index already exists).
+        conn.execute(_text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_taxonomy_category_name_type "
+            "ON taxonomy_category(name, type)"
+        ))
+        conn.commit()
+
+        # Seed only if still empty (INSERT OR IGNORE makes it race-safe).
         count = conn.execute(_text("SELECT COUNT(*) FROM taxonomy_category")).scalar()
         if count == 0:
             _seed_taxonomy(conn)
@@ -364,7 +383,7 @@ def _seed_taxonomy(conn) -> None:
 
     for sort_i, entry in enumerate(expenses):
         r = conn.execute(
-            _text("INSERT INTO taxonomy_category (name, type, sort_order) VALUES (:n,:t,:s)"),
+            _text("INSERT OR IGNORE INTO taxonomy_category (name, type, sort_order) VALUES (:n,:t,:s)"),
             {"n": entry["category"], "t": "expense", "s": sort_i},
         )
         cat_id = r.lastrowid
@@ -376,7 +395,7 @@ def _seed_taxonomy(conn) -> None:
 
     for sort_i, entry in enumerate(income):
         r = conn.execute(
-            _text("INSERT INTO taxonomy_category (name, type, sort_order) VALUES (:n,:t,:s)"),
+            _text("INSERT OR IGNORE INTO taxonomy_category (name, type, sort_order) VALUES (:n,:t,:s)"),
             {"n": entry["category"], "t": "income", "s": sort_i},
         )
         cat_id = r.lastrowid
