@@ -133,6 +133,17 @@ def render_upload_page(engine):
         )
         return
 
+    # Check for an active or recently-completed job *before* rendering the form.
+    # If a job is running: show only the progress view (block the form).
+    # If completed/error: fall through and show form + summary below.
+    with get_session(engine) as _js:
+        _active_job = get_latest_import_job(_js)
+
+    if _active_job and _active_job.status == "running":
+        st.info("⏳ Importazione in corso — attendere il completamento prima di caricare nuovi file.")
+        _render_job_status(engine)
+        return
+
     uploaded_files = st.file_uploader(
         "Carica uno o più file (CSV, XLSX, PDF)",
         type=["csv", "xls", "xlsx"],
@@ -166,7 +177,6 @@ def render_upload_page(engine):
 
     if not uploaded_files:
         st.info("Carica uno o più file per avviare l'elaborazione.")
-        _render_job_status(engine)
         _render_last_import_summary()
         return
 
