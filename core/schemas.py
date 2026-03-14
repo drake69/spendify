@@ -143,3 +143,42 @@ def build_categorization_schema(expense_categories: list[str], income_categories
             },
         },
     }
+
+
+def build_categorization_batch_schema(categories: list[str], dir_subs: list[str]) -> dict[str, Any]:
+    """Build the JSON schema for batched LLM categorization (array response)."""
+    item_schema = {
+        "type": "object",
+        "required": ["category", "subcategory", "confidence"],
+        "additionalProperties": False,
+        "properties": {
+            "category": {
+                "type": "string",
+                "enum": categories,
+            },
+            "subcategory": {
+                "type": "string",
+                "enum": dir_subs,
+            },
+            "confidence": {
+                "type": "string",
+                "enum": ["high", "medium", "low"],
+            },
+            "rationale": {
+                "type": "string",
+                "maxLength": 120,
+            },
+        },
+    }
+    return {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "required": ["results"],
+        "additionalProperties": False,
+        "properties": {
+            "results": {
+                "type": "array",
+                "items": item_schema,
+            }
+        },
+    }

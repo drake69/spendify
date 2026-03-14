@@ -6,7 +6,6 @@ Flow 2 (LLM-first / schema-on-read).
 from __future__ import annotations
 
 import io
-import os
 from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
@@ -22,6 +21,7 @@ from core.categorizer import (
     TaxonomyConfig,
     categorize_batch,
 )
+from core.description_cleaner import clean_descriptions_batch
 from core.classifier import classify_document
 from core.llm_backends import LLMBackend, BackendFactory, OllamaBackend
 from core.models import (
@@ -66,7 +66,11 @@ class ProcessingConfig:
     boundary_pre_post: int = 10
     confidence_threshold: float = 0.80
     require_keyword_confirmation: bool = True
-    llm_timeout_s: int = 30
+    # When True: transactions whose description matches an owner name are marked
+    # as internal transfer (giroconto), and the card balance row (if present) is
+    # relabelled with the owner name instead of removed.
+    use_owner_names_for_giroconto: bool = False
+    llm_timeout_s: int = 120
     batch_size_llm: int = 1
     sanitize_config: SanitizationConfig = field(default_factory=SanitizationConfig)
     description_language: str = "it"  # language of transaction descriptions (ISO 639-1)
@@ -79,7 +83,9 @@ class ProcessingConfig:
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "gemma3:12b"
     openai_model: str = "gpt-4o-mini"
+    openai_api_key: str = ""
     claude_model: str = "claude-3-5-haiku-20241022"
+    anthropic_api_key: str = ""
 
 
 @dataclass
@@ -103,8 +109,10 @@ def _build_backend(config: ProcessingConfig) -> LLMBackend:
         kwargs["model"] = config.ollama_model
     elif config.llm_backend == "openai":
         kwargs["model"] = config.openai_model
+        kwargs["api_key"] = config.openai_api_key
     elif config.llm_backend == "claude":
         kwargs["model"] = config.claude_model
+        kwargs["api_key"] = config.anthropic_api_key
     return BackendFactory.create(config.llm_backend, **kwargs)
 
 
@@ -217,8 +225,12 @@ def _normalize_df_with_schema(
         # Description — concatenate all descriptive columns when available
         _desc_cols = getattr(schema, "description_cols", None)
         if _desc_cols:
-            parts = [str(row.get(c, "") or "").strip() for c in _desc_cols if c in row]
-            desc_raw = " ".join(p for p in parts if p)
+            parts = [
+                str(row.get(c, "") or "").strip()
+                for c in _desc_cols if c in row
+            ]
+            # Filter out empty strings and bare "nan" (pandas NaN → str)
+            desc_raw = " ".join(p for p in parts if p and p.lower() != "nan")
         elif schema.description_col:
             desc_raw = str(row.get(schema.description_col, "") or "")
         else:
@@ -228,8 +240,18 @@ def _normalize_df_with_schema(
         # Currency
         currency = str(row.get(schema.currency_col, schema.default_currency)) if schema.currency_col else schema.default_currency
 
-        # Idempotency key — hashed on raw strings so it survives normalisation changes
-        tx_id = compute_transaction_id(source_name, str(raw_date), raw_amount_str, desc_raw)
+        # Idempotency key — hashed on PARSED/NORMALISED values so the same logical
+        # transaction deduplicates across different file formats (CSV vs XLSX, Italian
+        # date strings vs Excel datetime objects, comma vs dot decimals).
+        # Uses account_label (stable per bank account) as the primary namespace.
+        # Falls back to source_file when account_label is empty.
+        _date_key = tx_date.isoformat()   # always "YYYY-MM-DD"
+        _amount_key = str(amount.normalize()) if isinstance(amount, Decimal) else str(float(str(amount or 0)))
+        _desc_key = desc_raw.strip()      # strip leading/trailing whitespace only
+        tx_id = compute_transaction_id(
+            source_name, _date_key, _amount_key, _desc_key,
+            account_label=schema.account_label or "",
+        )
 
         # Infer tx_type from doc_type
         tx_type = _infer_tx_type(amount, schema.doc_type, description, schema.internal_transfer_patterns)
@@ -305,6 +327,7 @@ def process_file(
     known_schema: Optional[DocumentSchema] = None,
     progress_callback=None,  # Callable[[float], None] — 0.0..1.0 within this file
     existing_tx_ids_checker=None,  # Callable[[list[str]], set[str]] — returns already-imported tx ids
+    account_label_override: Optional[str] = None,  # user-selected account name; overrides LLM-assigned label
 ) -> ImportResult:
     """
     Process a single file through Flow 1 or Flow 2.
@@ -399,6 +422,14 @@ def process_file(
     else:
         _progress(0.10)
 
+    # User-selected account overrides the LLM-assigned label — provides a
+    # stable, human-readable dedup key independent of the filename.
+    if account_label_override and account_label_override.strip():
+        doc_schema.account_label = account_label_override.strip()
+        logger.info(
+            f"process_file: account_label overridden to '{doc_schema.account_label}' for {filename}"
+        )
+
     # Apply schema → canonical transactions
     transactions = _normalize_df_with_schema(df_raw, doc_schema, filename)
     _progress(0.35)
@@ -407,9 +438,15 @@ def process_file(
     _card_doc_types = {DocumentType.credit_card.value, DocumentType.debit_card.value, DocumentType.prepaid_card.value}
     _doc_str = doc_schema.doc_type.value if hasattr(doc_schema.doc_type, 'value') else str(doc_schema.doc_type)
     if _doc_str in _card_doc_types and transactions:
-        transactions, _balance_removed = remove_card_balance_row(transactions, epsilon=config.tolerance)
+        _owner_label: str | None = None
+        if config.use_owner_names_for_giroconto and config.sanitize_config.owner_names:
+            _owner_label = ", ".join(config.sanitize_config.owner_names)
+        transactions, _balance_removed = remove_card_balance_row(
+            transactions, epsilon=config.tolerance, owner_name_label=_owner_label
+        )
         if _balance_removed:
-            logger.info(f"process_file: balance/totale row removed from {filename}")
+            action = "relabelled" if _owner_label else "removed"
+            logger.info(f"process_file: balance/totale row {action} from {filename}")
 
     if not transactions:
         return ImportResult(
@@ -422,6 +459,19 @@ def process_file(
             errors=["No transactions could be parsed with the schema"],
             flow_used=flow_used,
         )
+
+    # ── Description cleaning: extract counterpart name (pre-categorization) ──
+    # Sends descriptions to LLM to strip payment-method boilerplate and keep
+    # only the merchant / beneficiary / payer name.
+    # raw_description is never modified — it stays as the SHA-256 dedup key.
+    transactions = clean_descriptions_batch(
+        transactions,
+        llm_backend=backend,
+        fallback_backend=fallback,
+        source_name=filename,
+        sanitize_config=config.sanitize_config,
+    )
+    _progress(0.38)
 
     # Per-transaction dedup: skip transactions already in DB before running LLM
     skipped_count = 0
@@ -453,6 +503,11 @@ def process_file(
 
     # Internal transfer detection (RF-04)
     keyword_patterns = doc_schema.internal_transfer_patterns or []
+    _owner_names_giroconto = (
+        config.sanitize_config.owner_names
+        if config.use_owner_names_for_giroconto
+        else None
+    )
     tx_df = detect_internal_transfers(
         tx_df,
         epsilon=config.tolerance,
@@ -461,6 +516,7 @@ def process_file(
         delta_days_strict=config.settlement_days_strict,
         keyword_patterns=keyword_patterns,
         require_keyword_confirmation=config.require_keyword_confirmation,
+        owner_names=_owner_names_giroconto,
     )
 
     # Card settlement reconciliation (RF-03)
@@ -524,11 +580,27 @@ def process_file(
         confidence_threshold=config.confidence_threshold,
         description_language=config.description_language,
         progress_callback=_cat_cb,
+        source_name=filename,
     )
     cat_map = {tx["id"]: result for tx, result in zip(to_categorize, cat_results)}
 
-    # Merge categorization back
+    # Build tx_type / transfer map from tx_df so that changes made by
+    # detect_internal_transfers (owner-name pass, keyword pass) are propagated
+    # back to the original transactions list before DB persistence.
+    tx_df_map = tx_df.set_index("id")[
+        ["tx_type", "transfer_pair_id", "transfer_confidence"]
+    ].to_dict("index")
+
+    # Merge categorization + tx_type back
     for tx in transactions:
+        # tx_type and transfer fields from detect_internal_transfers
+        df_row = tx_df_map.get(tx["id"])
+        if df_row:
+            tx["tx_type"] = df_row["tx_type"]
+            tx["transfer_pair_id"] = df_row["transfer_pair_id"]
+            tx["transfer_confidence"] = df_row["transfer_confidence"]
+
+        # Categorization (only for categorizable types)
         result: Optional[CategorizationResult] = cat_map.get(tx["id"])
         if result:
             tx["category"] = result.category

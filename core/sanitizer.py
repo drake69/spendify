@@ -34,22 +34,27 @@ def redact_pii(text: str, config: SanitizationConfig | None = None) -> str:
     """Replace sensitive tokens with semantic placeholders.
 
     Replacements:
-      IBAN → <ACCOUNT_ID>
-      PAN/card number → <CARD_ID>
-      Owner names → <OWNER>
-      Bank codes → <TX_CODE>
-      Fiscal code → <FISCAL_ID>
+      IBAN           → <ACCOUNT_ID>
+      PAN/card number→ <CARD_ID>
+      Owner names    → <OWNER_0>, <OWNER_1>, … (indexed so they can be restored)
+      Bank codes     → <TX_CODE>
+      Fiscal code    → <FISCAL_ID>
+
+    Owner names are replaced with indexed placeholders (<OWNER_0>, <OWNER_1>, …)
+    so that restore_owner_placeholders() can put the real names back after the
+    LLM has processed the text.  This preserves counterpart-detection logic even
+    when using remote (API) backends where the real name must not be sent.
     """
     if not text:
         return text
 
     config = config or SanitizationConfig()
 
-    # Owner names (case-insensitive whole-word)
-    for name in config.owner_names:
+    # Owner names — indexed placeholders for lossless restore
+    for i, name in enumerate(config.owner_names):
         if name.strip():
             pattern = re.compile(r'\b' + re.escape(name.strip()) + r'\b', re.IGNORECASE)
-            text = pattern.sub('<OWNER>', text)
+            text = pattern.sub(f'<OWNER_{i}>', text)
 
     text = _IBAN_RE.sub('<ACCOUNT_ID>', text)
     text = _PAN_RE.sub('<CARD_ID>', text)
@@ -59,6 +64,29 @@ def redact_pii(text: str, config: SanitizationConfig | None = None) -> str:
 
     for pattern in config.compiled_extras():
         text = pattern.sub('<REDACTED>', text)
+
+    return text
+
+
+def restore_owner_placeholders(text: str, config: SanitizationConfig | None = None) -> str:
+    """Replace <OWNER_N> placeholders with the corresponding real owner name.
+
+    Call this on any text returned by the LLM that was previously processed by
+    redact_pii(), so that the real names are reinstated for downstream logic
+    (e.g. giroconto detection that matches on owner names).
+
+    Also handles the legacy single <OWNER> placeholder (replaced with the first
+    owner name if available).
+    """
+    if not text or not config or not config.owner_names:
+        return text
+
+    for i, name in enumerate(config.owner_names):
+        text = text.replace(f'<OWNER_{i}>', name.strip())
+
+    # Legacy fallback — in case old <OWNER> tokens survive
+    if config.owner_names:
+        text = text.replace('<OWNER>', config.owner_names[0].strip())
 
     return text
 

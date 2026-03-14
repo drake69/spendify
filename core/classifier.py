@@ -2,12 +2,22 @@
 
 Given raw tabular data from an unknown source, uses LLM structured output to
 produce a DocumentSchema that can be persisted as a template for Flow 1.
+
+Architecture: two-phase classification
+  Phase 0 (Python, pre-LLM): deterministic synonym matching on column names.
+    Always resolves: description_col, description_cols, date_col candidates.
+    Sometimes resolves: amount semantics (outflow/inflow/debit_positive),
+      invert_sign, debit_col, credit_col.
+  Phase 1 (LLM): receives Phase 0 findings as facts; focuses on genuinely
+    ambiguous fields (doc_type, date_format, sign_convention for neutral amounts).
+  Post-LLM (Python): merge Phase 0 results (Phase 0 wins), coerce column names,
+    safety-net re-enforcement of invert_sign.
 """
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass, field as dc_field
 from pathlib import Path
-from typing import Any
 
 import pandas as pd
 
@@ -21,9 +31,11 @@ logger = setup_logging()
 
 _PROMPTS_FILE = Path(__file__).parent.parent / "prompts" / "classifier.json"
 
+
 def _load_prompts() -> dict:
     with open(_PROMPTS_FILE, encoding="utf-8") as f:
         return json.load(f)
+
 
 _PROMPTS = _load_prompts()
 
@@ -59,7 +71,6 @@ def classify_document(
     sample = df_raw.head(20).copy()
 
     if sanitize:
-        # Sanitize all string columns
         for col in sample.select_dtypes(include="object").columns:
             sample[col] = sanitize_dataframe_descriptions(
                 sample[col].astype(str).tolist(), sanitize_config
@@ -68,10 +79,15 @@ def classify_document(
     sample_json = sample.to_json(orient="records", force_ascii=False)
     columns_list = df_raw.columns.tolist()
 
+    # ── Phase 0: Python deterministic pre-analysis (before LLM) ──────────────
+    step0 = _run_step0_analysis(list(df_raw.columns))
+    step0_text = _format_step0_for_prompt(step0)
+
     user_prompt = _PROMPTS["user_template"].format(
         source_name=source_name,
         columns_list=columns_list,
         sample_json=sample_json,
+        step0_analysis=step0_text,
     )
 
     schema = DocumentSchema(
@@ -100,11 +116,12 @@ def classify_document(
     logger.info(f"classify_document: classified via {backend_used} (confidence={result.get('confidence')})")
 
     # Validate that column names returned by the LLM actually exist in the DataFrame.
-    # Tries case-insensitive match before nullifying.
     result = _coerce_column_names(result, list(df_raw.columns), source_name)
 
-    # Step 0: deterministic override of invert_sign based on column name semantics.
-    # This runs AFTER the LLM so it cannot be ignored by weaker local models.
+    # Merge Phase 0 deterministic findings — Phase 0 wins for all resolved fields.
+    result = _merge_step0_into_result(result, step0, source_name)
+
+    # Safety net: re-enforce invert_sign after merge (catches any LLM re-override).
     result = _apply_step0_invert_sign(result, source_name)
 
     try:
@@ -118,7 +135,7 @@ def classify_document(
         return None
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+# ── Column fields ─────────────────────────────────────────────────────────────
 
 _COLUMN_FIELDS = (
     "date_col", "date_accounting_col",
@@ -127,11 +144,38 @@ _COLUMN_FIELDS = (
 )
 
 
-# ── Step 0: deterministic invert_sign override ────────────────────────────────
+# ── Phase 0 synonym tables ────────────────────────────────────────────────────
 
-# Partial, case-insensitive matches. A column name is "outflow" if any of these
-# strings appear in it (e.g. "Addebiti carta" matches "addebito").
-_OUTFLOW_SYNONYMS: frozenset[str] = frozenset({
+# Ordered list — earlier entry = higher priority for description_col selection.
+_DESCRIPTION_PRIORITY: list[str] = [
+    "causale",
+    "descrizione",
+    "dettagli operazione",
+    "dettagli",
+    "note",
+    "memo",
+    "tipo operazione",
+    "tipo",
+]
+
+_DATE_OP_SYNONYMS: frozenset[str] = frozenset({
+    "data operazione",
+    "data movimento",
+    "data transazione",
+    "data addebito",
+})
+
+_DATE_ACC_SYNONYMS: frozenset[str] = frozenset({
+    "data valuta",
+    "data contabile",
+    "data regolamento",
+    # standalone "valuta" in Italian bank exports almost always means
+    # "data di valuta" (value date), NOT currency type (which is "divisa").
+    "valuta",
+})
+
+# Outflow-only column → expenses stored as positive → invert_sign=True
+_DEBIT_COLUMN_SYNONYMS: frozenset[str] = frozenset({
     "uscita", "uscite",
     "addebito", "addebiti",
     "pagamento", "pagamenti",
@@ -139,33 +183,253 @@ _OUTFLOW_SYNONYMS: frozenset[str] = frozenset({
     "spesa", "spese",
     "dare",
 })
-_INFLOW_SYNONYMS: frozenset[str] = frozenset({
+
+# Inflow-only column → incomes stored as positive → invert_sign=False
+_CREDIT_COLUMN_SYNONYMS: frozenset[str] = frozenset({
     "entrata", "entrate",
     "accredito", "accrediti",
     "importo accreditato",
     "avere",
     "credito",
 })
+
+# Neutral amount column → sign direction unknown → needs LLM (Phase 1)
+_AMOUNT_NEUTRAL_SYNONYMS: frozenset[str] = frozenset({
+    "importo", "amount", "valore", "totale",
+})
+
 _BANK_DOC_TYPES: frozenset[str] = frozenset({"bank_account", "savings"})
 
 
-def _apply_step0_invert_sign(result: dict, source_name: str) -> dict:
-    """Deterministic Step 0: override invert_sign based on amount column name.
+# ── Phase 0 result dataclass ──────────────────────────────────────────────────
 
-    Called after LLM output so it prevails over any model misclassification.
-    Only applies when sign_convention == signed_single (debit/credit columns
-    already encode directionality; invert_sign is irrelevant for them).
+@dataclass
+class _Step0Result:
+    """Output of the deterministic pre-LLM column analysis."""
+    # Description
+    description_col: str | None = None
+    description_cols: list[str] = dc_field(default_factory=list)
 
-    Outflow synonyms  (Uscita, Addebito, Dare …) → invert_sign = True
-        (expenses stored as positive absolute values → must be negated)
-        Exception: bank_account / savings always keep invert_sign = False.
-    Inflow synonyms   (Entrata, Accredito, Avere …) → invert_sign = False
-        (incomes stored as positive values → no negation needed)
-    Neutral names     (Importo, Amount …) → keep LLM decision unchanged.
+    # Date
+    date_col: str | None = None
+    date_accounting_col: str | None = None
+
+    # Amount / sign
+    amount_col: str | None = None        # single-column (signed_single)
+    debit_col: str | None = None         # debit_positive convention
+    credit_col: str | None = None        # debit_positive convention
+    amount_semantics: str = "unclear"    # "outflow"|"inflow"|"neutral"|"debit_positive"|"unclear"
+    invert_sign: bool | None = None      # None = unresolved → LLM must decide
+
+
+def _run_step0_analysis(columns: list[str]) -> _Step0Result:
+    """Deterministic pre-LLM column analysis.
+
+    Matches column names against synonym tables for description, date, and
+    amount/sign semantics.  Returns a _Step0Result; unresolved fields stay
+    None / "unclear" for the LLM (Phase 1) to determine.
+    """
+    r = _Step0Result()
+    lower_to_orig: dict[str, str] = {c.lower(): c for c in columns}
+
+    # ── Description columns ───────────────────────────────────────────────────
+    desc_candidates: list[str] = []
+    for col_low, col_orig in lower_to_orig.items():
+        if any(syn in col_low for syn in _DESCRIPTION_PRIORITY):
+            desc_candidates.append(col_orig)
+
+    if desc_candidates:
+        def _desc_rank(col: str) -> int:
+            cl = col.lower()
+            for i, syn in enumerate(_DESCRIPTION_PRIORITY):
+                if syn in cl:
+                    return i
+            return len(_DESCRIPTION_PRIORITY)
+
+        desc_candidates.sort(key=_desc_rank)
+        r.description_col = desc_candidates[0]
+        r.description_cols = desc_candidates
+
+    # ── Date columns ──────────────────────────────────────────────────────────
+    # Check known multi-word synonyms first (e.g. "Data Operazione"),
+    # then fall back to any column whose name starts with "data".
+    for col_low, col_orig in lower_to_orig.items():
+        if r.date_col is None and any(syn in col_low for syn in _DATE_OP_SYNONYMS):
+            r.date_col = col_orig
+        if r.date_accounting_col is None and any(syn in col_low for syn in _DATE_ACC_SYNONYMS):
+            r.date_accounting_col = col_orig
+
+    if r.date_col is None:
+        for col_low, col_orig in lower_to_orig.items():
+            if col_low.startswith("data"):
+                r.date_col = col_orig
+                break
+
+    # ── Amount / sign columns ─────────────────────────────────────────────────
+    debit_candidates: list[str] = []
+    credit_candidates: list[str] = []
+    neutral_candidates: list[str] = []
+
+    for col_low, col_orig in lower_to_orig.items():
+        if any(syn in col_low for syn in _DEBIT_COLUMN_SYNONYMS):
+            debit_candidates.append(col_orig)
+        elif any(syn in col_low for syn in _CREDIT_COLUMN_SYNONYMS):
+            credit_candidates.append(col_orig)
+        elif any(syn in col_low for syn in _AMOUNT_NEUTRAL_SYNONYMS):
+            neutral_candidates.append(col_orig)
+
+    if debit_candidates and credit_candidates:
+        # Two separate columns → debit_positive convention (e.g. Dare/Avere)
+        r.debit_col = debit_candidates[0]
+        r.credit_col = credit_candidates[0]
+        r.amount_semantics = "debit_positive"
+        # invert_sign not applicable for debit_positive
+    elif debit_candidates:
+        # Single outflow column (e.g. Uscita, Addebito) → expenses stored as positive
+        r.amount_col = debit_candidates[0]
+        r.amount_semantics = "outflow"
+        r.invert_sign = True
+    elif credit_candidates:
+        # Single inflow column alone (e.g. Accredito without a paired Addebito)
+        r.amount_col = credit_candidates[0]
+        r.amount_semantics = "inflow"
+        r.invert_sign = False
+    elif neutral_candidates:
+        # Neutral column (Importo, Amount…) → LLM must decide invert_sign from data
+        r.amount_col = neutral_candidates[0]
+        r.amount_semantics = "neutral"
+        # r.invert_sign remains None
+
+    return r
+
+
+def _format_step0_for_prompt(r: _Step0Result) -> str:
+    """Render _Step0Result as a prompt section injected before the LLM call."""
+    lines = [
+        "## Step 0 — Python deterministic pre-analysis",
+        "Fields marked [RESOLVED] were identified by exact synonym matching on column names.",
+        "Treat them as facts; only override if the sample data clearly contradicts.",
+        "",
+    ]
+
+    # Description
+    if r.description_col:
+        lines.append(f"- description_col = '{r.description_col}'  [RESOLVED]")
+    else:
+        lines.append("- description_col = UNRESOLVED — infer from column names / sample")
+
+    if r.description_cols:
+        cols_str = ", ".join(f"'{c}'" for c in r.description_cols)
+        lines.append(f"- description_cols = [{cols_str}]  [RESOLVED]")
+    else:
+        lines.append("- description_cols = UNRESOLVED")
+
+    # Date
+    if r.date_col:
+        lines.append(f"- date_col = '{r.date_col}'  [RESOLVED]")
+    else:
+        lines.append("- date_col = UNRESOLVED — infer from column names")
+
+    if r.date_accounting_col:
+        lines.append(f"- date_accounting_col = '{r.date_accounting_col}'  [RESOLVED]")
+
+    # Amount / sign
+    if r.amount_semantics == "debit_positive":
+        lines.append("- sign_convention = 'debit_positive'  [RESOLVED]")
+        lines.append(f"- debit_col = '{r.debit_col}'  [RESOLVED]")
+        lines.append(f"- credit_col = '{r.credit_col}'  [RESOLVED]")
+        lines.append("- invert_sign: not applicable (debit_positive convention)")
+    elif r.amount_col:
+        lines.append(
+            f"- amount_col = '{r.amount_col}'  "
+            f"[RESOLVED, semantics={r.amount_semantics}]"
+        )
+        if r.invert_sign is not None:
+            lines.append(
+                f"- invert_sign = {str(r.invert_sign).lower()}  "
+                f"[RESOLVED — column is {r.amount_semantics}]"
+            )
+        else:
+            lines.append(
+                "- invert_sign = UNRESOLVED — determine from sample sign distribution (Step 1)"
+            )
+    else:
+        lines.append("- amount_col = UNRESOLVED — identify from column names / sample")
+        lines.append("- invert_sign = UNRESOLVED — determine from sample sign distribution (Step 1)")
+
+    return "\n".join(lines)
+
+
+def _merge_step0_into_result(result: dict, step0: _Step0Result, source_name: str) -> dict:
+    """Merge Phase 0 deterministic findings into the LLM result dict.
+
+    Phase 0 always wins for resolved fields.  Fields that Step 0 left as
+    None / "unclear" are taken from the LLM as-is.
     """
     out = dict(result)
 
-    # Step 0 only applies to signed_single (one amount column)
+    def _set(fld: str, val, reason: str) -> None:
+        if out.get(fld) != val:
+            logger.info(
+                f"classify_document [{source_name}]: Step 0 merge "
+                f"{fld} '{out.get(fld)}' → '{val}' ({reason})"
+            )
+        out[fld] = val
+
+    # Description — always override (deterministic synonym match)
+    if step0.description_col:
+        _set("description_col", step0.description_col, "deterministic match")
+    if step0.description_cols:
+        _set("description_cols", step0.description_cols, "deterministic match")
+
+    # Date — fill in only if LLM left them empty (LLM may recognise unusual names)
+    if step0.date_col and not out.get("date_col"):
+        _set("date_col", step0.date_col, "deterministic match")
+    # date_accounting_col: always override — the LLM may confuse "Valuta" (value
+    # date) with currency_col; Step 0 synonym matching is authoritative here.
+    if step0.date_accounting_col:
+        _set("date_accounting_col", step0.date_accounting_col, "deterministic match")
+        # If the LLM assigned the same column to currency_col, clear it to avoid
+        # using a date column as currency (e.g. POPSO "Valuta" column).
+        if out.get("currency_col", "").lower() == step0.date_accounting_col.lower():
+            logger.info(
+                f"classify_document [{source_name}]: clearing currency_col "
+                f"'{out['currency_col']}' — it's the value-date column"
+            )
+            out["currency_col"] = None
+
+    # Amount / sign — override when Phase 0 resolved it
+    if step0.amount_semantics == "debit_positive":
+        _set("sign_convention", "debit_positive", "debit+credit columns found")
+        if step0.debit_col:
+            _set("debit_col", step0.debit_col, "deterministic match")
+        if step0.credit_col:
+            _set("credit_col", step0.credit_col, "deterministic match")
+    else:
+        if step0.invert_sign is not None:
+            _set("invert_sign", step0.invert_sign, f"semantics={step0.amount_semantics}")
+        if step0.amount_col and not out.get("amount_col"):
+            _set("amount_col", step0.amount_col, "deterministic match")
+
+    return out
+
+
+# ── Post-LLM safety net ───────────────────────────────────────────────────────
+
+# Aliases so the safety-net function reuses the same synonym tables as Phase 0.
+_OUTFLOW_SYNONYMS: frozenset[str] = _DEBIT_COLUMN_SYNONYMS
+_INFLOW_SYNONYMS: frozenset[str] = _CREDIT_COLUMN_SYNONYMS
+
+
+def _apply_step0_invert_sign(result: dict, source_name: str) -> dict:
+    """Post-merge safety net: re-enforce invert_sign from amount column semantics.
+
+    Runs after _merge_step0_into_result to catch any residual LLM override of a
+    field that Phase 0 had already resolved.
+    Only applies when sign_convention == signed_single.
+    """
+    out = dict(result)
+
     convention = str(out.get("sign_convention", "")).lower()
     if convention not in ("signed_single", ""):
         return out
@@ -179,17 +443,15 @@ def _apply_step0_invert_sign(result: dict, source_name: str) -> dict:
     if is_outflow and doc_type not in _BANK_DOC_TYPES:
         if not out.get("invert_sign"):
             logger.info(
-                f"classify_document [{source_name}]: Step 0 override — "
-                f"amount_col='{out.get('amount_col')}' is an outflow synonym "
-                f"→ invert_sign=True"
+                f"classify_document [{source_name}]: safety-net — "
+                f"amount_col='{out.get('amount_col')}' is outflow → invert_sign=True"
             )
             out["invert_sign"] = True
     elif is_inflow:
         if out.get("invert_sign"):
             logger.info(
-                f"classify_document [{source_name}]: Step 0 override — "
-                f"amount_col='{out.get('amount_col')}' is an inflow synonym "
-                f"→ invert_sign=False"
+                f"classify_document [{source_name}]: safety-net — "
+                f"amount_col='{out.get('amount_col')}' is inflow → invert_sign=False"
             )
             out["invert_sign"] = False
 
@@ -197,31 +459,29 @@ def _apply_step0_invert_sign(result: dict, source_name: str) -> dict:
 
 
 def _coerce_column_names(result: dict, available: list[str], source_name: str) -> dict:
-    """
-    For every column-mapping field in result, ensure the value is an actual column
+    """For every column-mapping field in result, ensure the value is an actual column
     in `available`. Tries case-insensitive match first; nullifies on no match.
     Logs a warning for each correction so debugging is easy.
     """
     lower_map = {c.lower(): c for c in available}
     out = dict(result)
-    for field in _COLUMN_FIELDS:
-        val = out.get(field)
+    for col_field in _COLUMN_FIELDS:
+        val = out.get(col_field)
         if not val:
             continue
         if val in available:
             continue  # exact match, keep as-is
-        # try case-insensitive
         canonical = lower_map.get(val.lower())
         if canonical:
             logger.info(
-                f"classify_document [{source_name}]: coerced {field} "
+                f"classify_document [{source_name}]: coerced {col_field} "
                 f"'{val}' → '{canonical}' (case-insensitive match)"
             )
-            out[field] = canonical
+            out[col_field] = canonical
         else:
             logger.warning(
-                f"classify_document [{source_name}]: {field}='{val}' not found in "
+                f"classify_document [{source_name}]: {col_field}='{val}' not found in "
                 f"columns {available!r} — setting to null"
             )
-            out[field] = None
+            out[col_field] = None
     return out

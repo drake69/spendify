@@ -1,7 +1,6 @@
 """Import page (RF-08): upload files, run pipeline, show summary."""
 from __future__ import annotations
 
-import os
 import time
 from datetime import datetime, timezone
 
@@ -12,6 +11,7 @@ from core.normalizer import compute_columns_key
 from core.orchestrator import ProcessingConfig, load_raw_dataframe, process_files
 from core.sanitizer import SanitizationConfig
 from db.models import get_session
+from db.repository import get_accounts
 from db.repository import (
     create_import_job,
     get_all_user_settings,
@@ -33,32 +33,23 @@ _DB_WRITE_INTERVAL = 1.5
 
 def _build_config(engine, test_mode: bool = False) -> ProcessingConfig:
     mode_str = st.session_state.get("giroconto_mode", "neutral")
-    owner_names = [n.strip() for n in os.getenv("OWNER_NAMES", "").split(",") if n.strip()]
-
+    use_owner_giroconto = st.session_state.get("use_owner_names_giroconto", False)
     with get_session(engine) as _s:
         s = get_all_user_settings(_s)
 
-    backend = s.get("llm_backend", os.getenv("LLM_BACKEND", "local_ollama"))
-    ollama_url = s.get("ollama_base_url", os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"))
-    ollama_model = s.get("ollama_model", os.getenv("OLLAMA_MODEL", "gemma3:12b"))
-    openai_model = s.get("openai_model", os.getenv("OPENAI_MODEL", "gpt-4o-mini"))
-    claude_model = s.get("anthropic_model", os.getenv("CLAUDE_MODEL", "claude-3-5-haiku-20241022"))
-
-    openai_key = s.get("openai_api_key", "")
-    if openai_key:
-        os.environ["OPENAI_API_KEY"] = openai_key
-    anthropic_key = s.get("anthropic_api_key", "")
-    if anthropic_key:
-        os.environ["ANTHROPIC_API_KEY"] = anthropic_key
+    owner_names = [n.strip() for n in s.get("owner_names", "").split(",") if n.strip()]
 
     return ProcessingConfig(
-        llm_backend=backend,
+        llm_backend=s.get("llm_backend", "local_ollama"),
         giroconto_mode=GirocontoMode(mode_str),
+        use_owner_names_for_giroconto=use_owner_giroconto,
         sanitize_config=SanitizationConfig(owner_names=owner_names),
-        openai_model=openai_model,
-        claude_model=claude_model,
-        ollama_model=ollama_model,
-        ollama_base_url=ollama_url,
+        ollama_base_url=s.get("ollama_base_url", "http://localhost:11434"),
+        ollama_model=s.get("ollama_model", "gemma3:12b"),
+        openai_model=s.get("openai_model", "gpt-4o-mini"),
+        openai_api_key=s.get("openai_api_key", ""),
+        claude_model=s.get("anthropic_model", "claude-3-5-haiku-20241022"),
+        anthropic_api_key=s.get("anthropic_api_key", ""),
         description_language=s.get("description_language", "it"),
         test_mode=test_mode,
     )
@@ -132,6 +123,16 @@ def _render_last_import_summary():
 def render_upload_page(engine):
     st.header("📥 Import — Caricamento Estratti Conto")
 
+    # Guard: owner names must be configured before any import
+    with get_session(engine) as _s:
+        _owner_names = get_all_user_settings(_s).get("owner_names", "").strip()
+    if not _owner_names:
+        st.error(
+            "⚠️ **Nomi titolari non configurati.** "
+            "Vai in ⚙️ Impostazioni e compila il campo *Nomi titolari* prima di importare."
+        )
+        return
+
     uploaded_files = st.file_uploader(
         "Carica uno o più file (CSV, XLSX, PDF)",
         type=["csv", "xls", "xlsx"],
@@ -147,11 +148,52 @@ def render_upload_page(engine):
     if test_mode:
         st.caption("⚠️ Modalità test attiva — solo le prime 20 righe verranno elaborate.")
 
+    with get_session(engine) as _s2:
+        _owner_names_cfg = get_all_user_settings(_s2).get("owner_names", "").strip()
+    _owner_names_list = [n.strip() for n in _owner_names_cfg.split(",") if n.strip()]
+    st.toggle(
+        "🔄 Usa nomi titolari per identificare giroconti",
+        value=False,
+        key="use_owner_names_giroconto",
+        disabled=not _owner_names_list,
+        help=(
+            f"Se attivo, le transazioni la cui descrizione contiene un nome titolare "
+            f"({', '.join(_owner_names_list) if _owner_names_list else 'nessun titolare configurato'}) "
+            "vengono marcate automaticamente come giroconto. "
+            "La riga di saldo nelle carte viene rinominata col nome titolare anziché eliminata."
+        ),
+    )
+
     if not uploaded_files:
         st.info("Carica uno o più file per avviare l'elaborazione.")
         _render_job_status(engine)
         _render_last_import_summary()
         return
+
+    # Per-file account selector
+    with get_session(engine) as _acc_s:
+        _accounts = get_accounts(_acc_s)
+    _account_names = [a.name for a in _accounts]
+    _account_options = ["— rilevamento automatico —"] + _account_names
+
+    if not _account_names:
+        st.warning(
+            "⚠️ Nessun conto configurato. Vai in ⚙️ Impostazioni → *Conti bancari* per aggiungere "
+            "i tuoi conti. Puoi importare comunque ma il dedup potrebbe non essere stabile."
+        )
+
+    st.markdown("**Associa ogni file a un conto:**")
+    _file_account_map: dict[str, str | None] = {}
+    for uf in uploaded_files:
+        c1, c2 = st.columns([3, 2])
+        c1.caption(f"📄 {uf.name}")
+        sel = c2.selectbox(
+            "Conto",
+            options=_account_options,
+            key=f"file_account_{uf.name}",
+            label_visibility="collapsed",
+        )
+        _file_account_map[uf.name] = sel if sel != "— rilevamento automatico —" else None
 
     if st.button("▶️ Elabora file", type="primary"):
         config = _build_config(engine, test_mode=test_mode)
@@ -241,6 +283,7 @@ def render_upload_page(engine):
                         job_id, _last_db_write,
                     ),
                     existing_tx_ids_checker=_make_existing_checker(engine),
+                    account_label_override=_file_account_map.get(filename),
                 )
                 persist_import_result(session2, result)
                 results.append(result)
