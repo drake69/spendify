@@ -174,7 +174,8 @@ def _normalize_df_with_schema(
     Apply DocumentSchema to produce a list of canonical transaction dicts.
     """
     transactions = []
-    skip_date_nan = skip_date_parse = skip_amount = 0
+    seen_ids: set[str] = set()   # intra-file dedup: skip rows that hash to an already-seen ID
+    skip_date_nan = skip_date_parse = skip_amount = skip_intrafile_dup = 0
 
     for _, row in df.iterrows():
         # Parse date — Excel cells arrive as datetime/date objects, not strings
@@ -253,6 +254,13 @@ def _normalize_df_with_schema(
             account_label=schema.account_label or "",
         )
 
+        # Intra-file dedup: two rows with identical date+amount+description collapse
+        # to the same hash — keep only the first occurrence.
+        if tx_id in seen_ids:
+            skip_intrafile_dup += 1
+            continue
+        seen_ids.add(tx_id)
+
         # Infer tx_type from doc_type
         tx_type = _infer_tx_type(amount, schema.doc_type, description, schema.internal_transfer_patterns)
 
@@ -279,12 +287,13 @@ def _normalize_df_with_schema(
             "transfer_confidence": None,
         })
 
-    total_skipped = skip_date_nan + skip_date_parse + skip_amount
+    total_skipped = skip_date_nan + skip_date_parse + skip_amount + skip_intrafile_dup
     if total_skipped or not transactions:
         logger.warning(
             f"_normalize_df_with_schema [{source_name}]: "
             f"{len(transactions)} parsed, {total_skipped} skipped "
-            f"(date_nan={skip_date_nan}, date_parse_fail={skip_date_parse}, amount_none={skip_amount})"
+            f"(date_nan={skip_date_nan}, date_parse_fail={skip_date_parse}, "
+            f"amount_none={skip_amount}, intrafile_dup={skip_intrafile_dup})"
         )
     return transactions
 
@@ -587,9 +596,15 @@ def process_file(
     # Build tx_type / transfer map from tx_df so that changes made by
     # detect_internal_transfers (owner-name pass, keyword pass) are propagated
     # back to the original transactions list before DB persistence.
-    tx_df_map = tx_df.set_index("id")[
-        ["tx_type", "transfer_pair_id", "transfer_confidence"]
-    ].to_dict("index")
+    # Use iterrows() instead of set_index().to_dict("index") to gracefully
+    # handle the rare case of duplicate IDs (same date+amount+desc in one file).
+    tx_df_map: dict[str, dict] = {}
+    for _, _row in tx_df[["id", "tx_type", "transfer_pair_id", "transfer_confidence"]].iterrows():
+        tx_df_map[_row["id"]] = {
+            "tx_type": _row["tx_type"],
+            "transfer_pair_id": _row["transfer_pair_id"],
+            "transfer_confidence": _row["transfer_confidence"],
+        }
 
     # Merge categorization + tx_type back
     for tx in transactions:
