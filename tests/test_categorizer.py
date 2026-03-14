@@ -29,17 +29,17 @@ def minimal_taxonomy():
 
 class TestStaticRules:
     def test_supermarket_match(self):
-        result = _apply_static_rules("pagamento esselunga via roma")
+        result = _apply_static_rules("pagamento esselunga via roma", is_expense=True)
         assert result is not None
         assert result[0] == "Alimentari"
 
     def test_fuel_match(self):
-        result = _apply_static_rules("Q8 CARBURANTE 28/03")
+        result = _apply_static_rules("Q8 CARBURANTE 28/03", is_expense=True)
         assert result is not None
         assert result[0] == "Trasporti"
 
     def test_no_match_returns_none(self):
-        assert _apply_static_rules("xyzzy unknown merchant 123") is None
+        assert _apply_static_rules("xyzzy unknown merchant 123", is_expense=True) is None
 
 
 class TestCategoryRule:
