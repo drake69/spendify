@@ -1,0 +1,1587 @@
+\documentclass[11pt, a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{eurosym}
+\usepackage[left=2.5cm, right=2.5cm, top=3cm, bottom=3cm]{geometry}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{parskip}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{tikz}
+\usepackage{mdframed}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds, calc}
+
+% ── Colori ────────────────────────────────────────────────────────────────────
+\definecolor{primary}{RGB}{30, 60, 100}
+\definecolor{accent}{RGB}{41, 128, 185}
+\definecolor{lightgray}{RGB}{245, 245, 245}
+\definecolor{codegray}{RGB}{100, 100, 100}
+\definecolor{codegreen}{RGB}{0, 120, 60}
+\definecolor{codered}{RGB}{160, 30, 30}
+\definecolor{warnorange}{RGB}{200, 100, 0}
+\definecolor{localgreen}{RGB}{0, 130, 70}
+\definecolor{remoteblue}{RGB}{0, 80, 160}
+\definecolor{newfeature}{RGB}{80, 0, 120}
+
+% ── Stile sezioni ─────────────────────────────────────────────────────────────
+\titleformat{\section}{\large\bfseries\color{primary}}{\thesection}{1em}{}[\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries\color{accent}}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalsize\itshape\color{primary}}{\thesubsubsection}{1em}{}
+
+% ── Listings ──────────────────────────────────────────────────────────────────
+\lstdefinelanguage{json}{
+  basicstyle=\small\ttfamily,
+  morestring=[b]",
+  stringstyle=\color{accent},
+  literate=
+    *{:}{{\color{codered}:}}{1}
+     {,}{{\color{codegray},}}{1}
+     {\{}{{\color{primary}\{}}{1}
+     {\}}{{\color{primary}\}}}}{1}
+     {[}{{\color{primary}[}}{1}
+     {]}{{\color{primary}]}}{1},
+}
+
+\lstset{
+  basicstyle=\small\ttfamily,
+  backgroundcolor=\color{lightgray},
+  commentstyle=\color{codegreen},
+  keywordstyle=\color{codered}\bfseries,
+  stringstyle=\color{accent},
+  breaklines=true,
+  frame=single,
+  framerule=0.4pt,
+  rulecolor=\color{gray!40},
+  numbers=left,
+  numberstyle=\tiny\color{codegray},
+  xleftmargin=1.5em,
+  framexleftmargin=1.5em,
+  captionpos=b
+}
+
+% ── Box ───────────────────────────────────────────────────────────────────────
+\newmdenv[
+  linecolor=localgreen,
+  linewidth=1.5pt,
+  frametitle={\color{localgreen}\bfseries Local LLM --- Privacy Constraint},
+  frametitleaboveskip=4pt,
+  innertopmargin=6pt,
+  innerbottommargin=6pt
+]{privacybox}
+
+\newmdenv[
+  linecolor=remoteblue,
+  linewidth=1.5pt,
+  frametitle={\color{remoteblue}\bfseries Remote LLM --- Opt-in con Sanitizzazione Obbligatoria},
+  frametitleaboveskip=4pt,
+  innertopmargin=6pt,
+  innerbottommargin=6pt
+]{remotebox}
+
+\newmdenv[
+  linecolor=warnorange,
+  linewidth=1.5pt,
+  frametitle={\color{warnorange}\bfseries Common Pitfall},
+  frametitleaboveskip=4pt,
+  innertopmargin=6pt,
+  innerbottommargin=6pt
+]{warnbox}
+
+\newmdenv[
+  linecolor=newfeature,
+  linewidth=1.5pt,
+  frametitle={\color{newfeature}\bfseries Nuovo in v3.0},
+  frametitleaboveskip=4pt,
+  innertopmargin=6pt,
+  innerbottommargin=6pt
+]{newbox}
+
+\definecolor{v31color}{RGB}{0, 100, 60}
+\newmdenv[
+  linecolor=v31color,
+  linewidth=1.5pt,
+  frametitle={\color{v31color}\bfseries Nuovo in v3.1},
+  frametitleaboveskip=4pt,
+  innertopmargin=6pt,
+  innerbottommargin=6pt
+]{v31box}
+
+% ── Header/Footer ─────────────────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textcolor{primary}{\textbf{Spendify}}}
+\fancyhead[R]{\small\textcolor{codegray}{Unified Design Document v3.0}}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ── Hyperref ──────────────────────────────────────────────────────────────────
+\hypersetup{
+  colorlinks=true,
+  linkcolor=accent,
+  urlcolor=accent,
+  citecolor=accent,
+  pdftitle={Spendify -- Unified Design Document v3.0},
+  pdfauthor={},
+}
+
+% ── Colonne tabelle ───────────────────────────────────────────────────────────
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\begin{document}
+% ══════════════════════════════════════════════════════════════════════════════
+
+% ── Copertina ────────────────────────────────────────────────────────────────
+\begin{titlepage}
+  \centering
+  \vspace*{2cm}
+  {\Huge\bfseries\color{primary} Spendify\par}
+  \vspace{0.5cm}
+  {\Large\color{accent} Unified Design Document\par}
+  \vspace{2cm}
+  \rule{0.6\linewidth}{0.4pt}\\[1em]
+  {\large Requisiti Funzionali e Non Funzionali\\[0.3em]
+   Architettura Ibrida a Due Flussi\\[0.3em]
+   Integrazione LLM Multi-Backend (Locale + Remoto Opzionale)\\[0.3em]
+   Correzione Segno Deterministica --- Tassonomia DB-backed --- UI 8 Pagine\par}
+  \rule{0.6\linewidth}{0.4pt}
+  \vfill
+  {\normalsize Documento di design consolidato\\[0.5em]
+   Versione 3.0 --- aggiornata da v2.1\\[0.5em]
+   \textit{Versione 3.0 --- \today}}
+  \vspace{1.5cm}
+\end{titlepage}
+
+% ── Changelog ────────────────────────────────────────────────────────────────
+\section*{Changelog rispetto a v2.1}
+\addcontentsline{toc}{section}{Changelog rispetto a v2.1}
+
+\begin{center}
+\small
+\begin{longtable}{@{}L{3cm} L{10.5cm}@{}}
+\toprule
+\textbf{Area} & \textbf{Novità v3.0} \\
+\midrule
+\endhead
+RF-01 / Classifier  & \texttt{invert\_sign} ora determinato in due passi: Step 0 basato su
+                       sinonimi del nome colonna (Python puro, post-LLM) + Step 1 basato
+                       su distribuzione dei valori. Step 0 ha priorità assoluta e non
+                       dipende dall'instruction-following del modello. \\[3pt]
+RF-01 / Schema      & \texttt{DocumentSchema} esteso con: \texttt{description\_cols}
+                       (lista multi-colonna), \texttt{invert\_sign}, e quattro campi
+                       diagnostici: \texttt{positive\_ratio}, \texttt{negative\_ratio},
+                       \texttt{semantic\_evidence}, \texttt{normalization\_case\_id}. \\[3pt]
+RF-01 / Cache       & Chiave cache schema = fingerprint SHA-256[:16] dei nomi colonne
+                       (non del filename), così lo stesso formato è riconosciuto su file
+                       con nomi diversi. \\[3pt]
+RF-02 / Transazione & Aggiunti campi \texttt{raw\_description} e \texttt{raw\_amount}:
+                       valori grezzi pre-normalizzazione, utili per debug e per il calcolo
+                       della chiave SHA-256. \\[3pt]
+RF-02 / SHA-256     & Chiave di idempotenza calcolata sui campi grezzi
+                       (raw date, raw amount, raw description) anziché sui normalizzati,
+                       per resistenza ai cambiamenti di normalizzazione. \\[3pt]
+RF-05 / Cascata     & Categorizzazione riscritta: Step 0 = regole utente (db), Step 1 =
+                       regex statiche, Step 2 = ML stub, Step 3 = LLM direzionale,
+                       Fallback = Altro. \\[3pt]
+RF-05 / LLM direz.  & Il LLM vede solo le categorie di spesa per importi negativi e solo
+                       le categorie di entrata per importi positivi --- no cross-direction
+                       hallucination. \\[3pt]
+RF-05 / Sottocateg. & La sottocategoria è la fonte di verità: se LLM o regola assegnano
+                       una sottocategoria valida in tassonomia, la categoria genitore è
+                       risolta automaticamente (\texttt{find\_category\_for\_subcategory}). \\[3pt]
+RF-05 / Tassonomia  & La tassonomia è persistita nel DB (tabelle \texttt{taxonomy\_category},
+                       \texttt{taxonomy\_subcategory}) e gestita dall'UI senza restart.
+                       \texttt{taxonomy.yaml} è usato solo come seed al primo avvio. \\[3pt]
+RF-05 / Regole      & Motore regole completo: upsert semantico, priorità, applicazione
+                       retroattiva bulk a tutte le transazioni esistenti. \\[3pt]
+RF-05 / Card Case 5 & Rilevamento e rimozione della riga di saldo/totale nei file carta
+                       (\texttt{remove\_card\_balance\_row}): previene il double-counting
+                       quando l'estratto include una riga totale. \\[3pt]
+RF-07 / DB          & Schema DB esteso a 9 tabelle: aggiunte \texttt{taxonomy\_category},
+                       \texttt{taxonomy\_subcategory}, \texttt{user\_settings},
+                       \texttt{import\_job}. \\[3pt]
+RF-08 / UI          & UI estesa da 4 a 8 pagine: aggiunte Regole, Tassonomia,
+                       Impostazioni. Analytics esteso a 7 grafici. Progress bar
+                       cross-session (via \texttt{import\_job}). \\[3pt]
+RF-12 (nuovo)       & Impostazioni utente: formato data visualizzazione, separatori
+                       importo (decimale/migliaia), lingua descrizioni, backend LLM +
+                       chiavi API. Persistite in \texttt{user\_settings} nel DB. \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\subsection*{Changelog rispetto a v3.0 (novità v3.1)}
+\addcontentsline{toc}{subsection}{Changelog rispetto a v3.0 (novità v3.1)}
+
+\begin{center}
+\small
+\begin{longtable}{@{}L{3cm} L{10.5cm}@{}}
+\toprule
+\textbf{Area} & \textbf{Novità v3.1} \\
+\midrule
+\endhead
+RF-04 / Giroconto   & Terzo passaggio di rilevamento: \textbf{permutazioni nome titolare}.
+                       \texttt{\_build\_owner\_name\_regex()} costruisce una regex che
+                       intercetta tutte le permutazioni dei token del nome (es.\
+                       ``Corsaro Luigi'' e ``Luigi Corsaro''), eliminando i falsi negativi
+                       quando l'ordine varia tra estratti di banche diverse. \\[3pt]
+RF-04 / Cross-acc.  & \textbf{Riesecuzione globale giroconti} dalla pagina Review.
+                       \texttt{\_rerun\_transfer\_detection()} carica tutte le transazioni
+                       non-giroconto, aggrega i pattern da tutti gli schema nel DB
+                       (\texttt{get\_all\_transfer\_keyword\_patterns}) e riesegue i
+                       3 passaggi RF-04, intercettando coppie non trovate perché il
+                       file contropartita era importato in un secondo momento. \\[3pt]
+RF-05 / Re-run LLM  & \textbf{Rielaborazione LLM selettiva} dalla pagina Review.
+                       \texttt{\_rerun\_llm\_on\_uncleaned()} filtra le transazioni in cui
+                       \texttt{description == raw\_description} (LLM aveva fallito al
+                       momento dell'import) e riesegue description cleaning +
+                       categorizzazione solo su quelle. \\[3pt]
+RF-07 / DB          & Colonna \texttt{context VARCHAR(64)} aggiunta alla tabella
+                       \texttt{transaction} (migrazione idempotente
+                       \texttt{\_migrate\_add\_context}).
+                       Nuova tabella \texttt{account} per i conti bancari configurati
+                       dall'utente. Schema sale a \textbf{10 tabelle}. \\[3pt]
+RF-08 / Ledger      & Filtro \textbf{sottocategoria a cascata}: selezionando una categoria
+                       nel filtro, il selectbox sottocategoria mostra solo le
+                       sottocategorie di quella categoria (key Streamlit include il nome
+                       categoria). Supporto filtro subcategory in
+                       \texttt{get\_transactions()}. \\[3pt]
+RF-08 / Ledger      & Pannello \textbf{Assegna contesto}: espansore con dropdown contesti,
+                       opzione ``Applica anche a transazioni simili'' tramite
+                       similarità Jaccard token-level (soglia 0.35,
+                       \texttt{get\_similar\_transactions()}). Filtro contesto nel
+                       registro (tutti / valore specifico / ``nessuno'' = NULL). \\[3pt]
+RF-13 (nuovo)       & \textbf{Contesti di vita}: dimensione ortogonale alla tassonomia,
+                       configurabile dall'utente (default: Quotidianità, Lavoro, Vacanza).
+                       Salvati come JSON in \texttt{user\_settings}. \\[3pt]
+RF-12 / Settings    & Nuove chiavi \texttt{user\_settings}: \texttt{owner\_names},
+                       \texttt{use\_owner\_names\_giroconto}, \texttt{contexts},
+                       \texttt{import\_test\_mode}. Sezione conti bancari
+                       (\texttt{account} table). \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+% ── TOC ──────────────────────────────────────────────────────────────────────
+\tableofcontents
+\newpage
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Contesto e Obiettivi}
+% ══════════════════════════════════════════════════════════════════════════════
+
+Il sistema ha lo scopo di aggregare estratti conto eterogenei (conti correnti, carte di
+credito, carte di debito, conti deposito, conti prepagati) in un unico registro
+cronologico di entrate e uscite, eliminando il double-counting originato dai meccanismi
+di addebito periodico e dai giroconti interni. Il processing avviene preferibilmente
+in modalità locale; il ricorso a LLM via API esterne è supportato come opzione
+esplicita con sanitizzazione obbligatoria dei dati (RF-10).
+
+\subsection{Problema}
+
+I dati finanziari personali risiedono tipicamente in file separati esportati da diversi
+istituti, con:
+
+\begin{itemize}[leftmargin=2em]
+  \item schemi eterogenei: nomi colonne, formati data, convenzioni di segno variabili per
+        istituto e per prodotto;
+  \item encoding eterogenei: UTF-8, ISO-8859-1, Windows-1252 a seconda dell'export;
+  \item double-counting strutturale: la stessa spesa compare come singola riga su estratto
+        carta \emph{e} come addebito aggregato mensile su conto corrente;
+  \item riga di saldo/totale nei file carta: alcuni export includono una riga ``Totale''
+        il cui importo è la somma di tutte le transazioni --- includerla duplica ogni spesa;
+  \item giroconti che appaiono sia come uscita nel conto sorgente sia come entrata nel
+        conto destinazione, inclusi trasferimenti ``silenziosi'' senza keyword
+        identificative;
+  \item boundary crossing: addebiti carta contabilizzati nell'estratto del mese successivo
+        rispetto alla data di competenza;
+  \item localizzazioni eterogenee: formati data, separatori decimali e simboli monetari
+        variano per lingua e istituto;
+  \item file XLSX multi-foglio in cui il foglio rilevante non è sempre il primo;
+  \item convenzioni di segno ambigue: le stesse spese possono essere positive o negative
+        a seconda dell'istituto e del tipo di colonna (\texttt{Uscita} vs \texttt{Importo}).
+\end{itemize}
+
+\subsection{Obiettivo Primario}
+
+Produrre un registro unificato in cui ogni operazione economica reale è rappresentata
+\textbf{esattamente una volta}, con importo con segno coerente (negativo = uscita,
+positivo = entrata), categoria semantica e provenienza tracciabile, operando in modalità
+offline-first con possibilità di escalation a LLM remoto previa sanitizzazione.
+
+\subsection{Vincolo di Privacy --- Architettura Offline-First con LLM Remoto Opzionale}
+
+\begin{privacybox}
+Il backend LLM predefinito è \textbf{locale}: Gemma~3 (o compatibile) servito via
+\textbf{Ollama}, che supporta nativamente structured output tramite JSON Schema.
+Nessun dato finanziario non sanitizzato deve uscire dal perimetro del processo locale.
+\end{privacybox}
+
+\begin{remotebox}
+L'utilizzo di LLM remoti (\textbf{OpenAI API} o \textbf{Claude API}) è supportato come
+opt-in configurabile. \textbf{Precondizione non negoziabile}: qualsiasi payload inviato
+a un backend remoto deve essere previamente sanitizzato secondo RF-10.
+La modalità remota è selezionabile via parametro \texttt{llm\_backend} e dalla pagina
+Impostazioni dell'UI (vedi RF-12).
+\end{remotebox}
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Requisiti Funzionali}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{RF-01 --- Classificazione automatica dei documenti e normalizzazione formato}
+\label{sec:rf01}
+
+Il sistema deve classificare ciascun file caricato in una delle seguenti tipologie,
+senza richiedere configurazione preventiva da parte dell'utente:
+
+\begin{center}
+\begin{tabular}{@{}L{3cm} L{9.5cm}@{}}
+\toprule
+\textbf{Tipo} & \textbf{Caratteristiche discriminanti} \\
+\midrule
+\texttt{bank\_account}  & Conto corrente; flussi misti in/out; settlement periodico carte \\
+\texttt{credit\_card}   & Prevalenza uscite; addebito mensile aggregato su c/c \\
+\texttt{debit\_card}    & Addebito immediato; nessun settlement periodico \\
+\texttt{prepaid\_card}  & Carta prepagata; ricariche come entrate; addebito immediato \\
+\texttt{savings}        & Conto deposito; prevalenza giroconti; spesso zero-sum \\
+\texttt{unknown}        & Documento non classificabile; richiede revisione manuale \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsubsection{Pre-processing formato}
+
+Prima della classificazione, il sistema deve risolvere le seguenti ambiguità di formato:
+
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{Encoding detection}: rilevare automaticamente l'encoding del file
+        (UTF-8, ISO-8859-1, Windows-1252) tramite ispezione del BOM e/o euristica
+        char-frequency (\texttt{chardet}). Il \texttt{DocumentSchema} include il
+        campo \texttt{encoding} per la riproducibilità.
+  \item \textbf{Selezione foglio XLSX}: per file con più fogli, selezionare il foglio
+        con il maggior numero di colonne numeriche e il maggior numero di righe,
+        esclusi fogli con nome che corrispondano a pattern di riepilogo
+        (es.\ \texttt{/summary|totale|riepilogo/i}). Il campo \texttt{sheet\_name} è
+        persistito in \texttt{DocumentSchema}.
+  \item \textbf{Header multi-riga}: rilevare automaticamente la prima riga che contiene
+        almeno due campi non-vuoti e non numerici come riga di intestazione.
+        Il numero di righe da saltare è persistito in \texttt{DocumentSchema.skip\_rows}.
+  \item \textbf{CSV delimiter detection}: rilevare automaticamente separatore
+        (\texttt{,} \texttt{;} \texttt{|} \texttt{TAB}) tramite analisi frequenziale.
+\end{itemize}
+
+\subsubsection{DocumentSchema --- struttura}
+
+La classificazione produce uno schema canonico di parsing (\texttt{DocumentSchema}):
+
+\begin{center}
+\small
+\begin{longtable}{@{}L{4.5cm} L{2.5cm} L{6.5cm}@{}}
+\toprule
+\textbf{Campo} & \textbf{Tipo} & \textbf{Note} \\
+\midrule
+\endhead
+\texttt{doc\_type}                & enum      & Vedi tabella tipologie \\
+\texttt{date\_col}                & str       & Colonna data operazione \\
+\texttt{date\_accounting\_col}    & str?      & Colonna data contabile (opz.) \\
+\texttt{amount\_col}              & str       & Colonna importo principale \\
+\texttt{debit\_col}               & str?      & Colonna dare (se separata) \\
+\texttt{credit\_col}              & str?      & Colonna avere (se separata) \\
+\texttt{description\_col}         & str?      & Colonna descrizione principale \\
+\texttt{description\_cols}        & list[str] & \textbf{[v3.0]} Tutte le colonne descrittive;
+                                               concatenate spazio-separato per formare la
+                                               descrizione completa \\
+\texttt{currency\_col}            & str?      & Colonna valuta (opz.) \\
+\texttt{default\_currency}        & str       & Valuta default (default: EUR) \\
+\texttt{date\_format}             & str       & Formato strftime Python \\
+\texttt{sign\_convention}         & enum      & \texttt{signed\_single} | \texttt{debit\_positive} |
+                                               \texttt{credit\_negative} \\
+\texttt{invert\_sign}             & bool      & \textbf{[v3.0]} True = negare tutti gli importi
+                                               (carte con spese come positivi) \\
+\texttt{is\_zero\_sum}            & bool      & True se somma netta $\approx 0$ \\
+\texttt{internal\_transfer\_patterns} & list[str] & Keyword giroconto per descrizione \\
+\texttt{account\_label}           & str       & Etichetta leggibile del conto \\
+\texttt{encoding}                 & str       & Encoding rilevato (es.\ utf-8) \\
+\texttt{sheet\_name}              & str?      & Foglio XLSX selezionato \\
+\texttt{skip\_rows}               & int       & Righe intestazione da saltare \\
+\texttt{delimiter}                & str?      & Separatore CSV \\
+\texttt{confidence}               & enum      & \texttt{high} | \texttt{medium} | \texttt{low} \\
+\texttt{source\_identifier}       & str?      & SHA-256[:16] dei nomi colonne (cache key) \\
+\midrule
+\multicolumn{3}{@{}l}{\textit{Campi diagnostici (v3.0 --- per audit/debug, non usati dal normalizzatore)}} \\
+\midrule
+\texttt{positive\_ratio}          & float?    & Frazione valori > 0 nella colonna importo \\
+\texttt{negative\_ratio}          & float?    & Frazione valori < 0 nella colonna importo \\
+\texttt{semantic\_evidence}       & list[str] & 2--4 frasi LLM che spiegano la decisione \\
+\texttt{normalization\_case\_id}  & str?      & C1--C5 (vedi §\ref{sec:normcases}) \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\subsubsection{Cache key per il template (Flow 1)}
+
+La chiave di lookup del \texttt{DocumentSchema} in DB è il fingerprint SHA-256[:16]
+dei nomi colonne (ordinati e concatenati), \emph{non} il nome del file.
+Questo permette di riconoscere lo stesso formato bancario indipendentemente dal nome
+del file di export (es.\ \texttt{CARTA\_2025.xlsx} vs \texttt{CARTA\_2026.xlsx}).
+
+\subsubsection{Rilevamento e correzione del segno (\texttt{invert\_sign})}
+\label{sec:invertsign}
+
+Il flag \texttt{invert\_sign} istruisce il normalizzatore a negare tutti gli importi
+dopo la lettura. È \texttt{true} quando un file carta salva le spese come valori
+positivi (assoluti). La decisione avviene in due passi applicati \textbf{in ordine},
+con stop al primo esito definitivo.
+
+\begin{newbox}
+\textbf{Step 0 --- Sinonimi del nome colonna (Python deterministico, post-LLM).}
+
+Lo Step 0 è implementato direttamente in Python nella funzione
+\texttt{\_apply\_step0\_invert\_sign()} del modulo \texttt{classifier.py} ed è eseguito
+\emph{dopo} l'output LLM, sovrascrivendo \texttt{invert\_sign} se necessario.
+Non dipende dall'instruction-following del modello locale.
+
+Si applica solo a \texttt{sign\_convention = signed\_single}. Il nome della colonna
+importo è confrontato con tre gruppi di sinonimi (match parziale, case-insensitive):
+
+\begin{center}
+\small
+\begin{tabular}{@{}L{3.2cm} L{6cm} L{3.5cm}@{}}
+\toprule
+\textbf{Gruppo} & \textbf{Esempi di nomi} & \textbf{Decisione} \\
+\midrule
+Sinonimi uscita  & Uscita, Uscite, Addebito, Addebiti, Pagamento,
+                   Spesa, Spese, Dare, Importo addebitato
+                 & \texttt{invert\_sign=true}\\
+                 & & (eccezione: bank\_account e savings sempre false) \\[3pt]
+Sinonimi entrata & Entrata, Entrate, Accredito, Accrediti, Avere,
+                   Credito, Importo accreditato
+                 & \texttt{invert\_sign=false} \\[3pt]
+Nomi neutri      & Importo, Amount, Valore, Totale, \dots
+                 & nessuna decisione $\to$ Step 1 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Se Step 0 dà un esito definitivo, \textbf{Step 1 è saltato completamente}.
+\end{newbox}
+
+\textbf{Step 1 --- Distribuzione dei valori nel campione} (solo nomi neutri).
+
+Il classificatore conta i valori positivi e negativi nella colonna importo e calcola
+\texttt{positive\_ratio} e \texttt{negative\_ratio} (persistiti nel \texttt{DocumentSchema}):
+
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{Bank account / savings}: sempre \texttt{invert\_sign=false},
+        indipendentemente dalla distribuzione.
+  \item \textbf{File carta, maggioranza positivi ($> 60\,\%$)}: spese salvate come
+        positivi (convenzione AMEX / export italiani tipici) $\to$ \texttt{invert\_sign=true}.
+  \item \textbf{File carta, maggioranza negativi ($> 60\,\%$)}: spese già negative
+        $\to$ \texttt{invert\_sign=false}.
+  \item \textbf{Split circa 50/50}: si analizzano le descrizioni (merchant con positivi
+        $\to$ \texttt{true}; ``bonifico ricevuto'' con positivi $\to$ \texttt{false}).
+\end{itemize}
+
+\subsubsection{Casi di normalizzazione (\texttt{normalization\_case\_id})}
+\label{sec:normcases}
+
+\begin{center}
+\begin{tabular}{@{}C{1.5cm} L{11cm}@{}}
+\toprule
+\textbf{Caso} & \textbf{Descrizione} \\
+\midrule
+C1 & bank\_account o savings, signed\_single, invert\_sign=false (standard) \\
+C2 & File carta, signed\_single, invert\_sign=true (spese come positivi) \\
+C3 & File carta, signed\_single, invert\_sign=false (spese già negative) \\
+C4 & Convention debit\_positive o credit\_negative (colonne separate Dare/Avere) \\
+C5 & Ambiguo / non classificabile con certezza \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{RF-02 --- Normalizzazione delle transazioni}
+
+Indipendentemente dalla struttura del file sorgente, ogni transazione deve essere
+ricondotta al seguente schema canonico:
+
+\begin{center}
+\begin{tabular}{@{}L{3.5cm} L{3.5cm} L{5.5cm}@{}}
+\toprule
+\textbf{Campo} & \textbf{Tipo} & \textbf{Note} \\
+\midrule
+\texttt{id}             & \texttt{str[24]}   & SHA-256 deterministico (vedi RF-06) \\
+\texttt{date}           & \texttt{date}      & ISO 8601, data operazione \\
+\texttt{date\_accounting} & \texttt{date?}   & Data contabile/valuta se presente \\
+\texttt{amount}         & \texttt{Decimal}   & Negativo = uscita; mai \texttt{float} \\
+\texttt{raw\_amount}    & \texttt{str?}      & \textbf{[v3.0]} Valore grezzo prima del parsing \\
+\texttt{currency}       & \texttt{str[3]}    & ISO 4217 \\
+\texttt{description}    & \texttt{str}       & Casefold, trim, unicode NFC \\
+\texttt{raw\_description} & \texttt{str?}    & \textbf{[v3.0]} Descrizione grezza pre-normalizzazione \\
+\texttt{source\_file}   & \texttt{str}       & Nome del file sorgente \\
+\texttt{doc\_type}      & \texttt{enum}      & Vedi RF-01 \\
+\texttt{account\_label} & \texttt{str}       & \\
+\texttt{tx\_type}       & \texttt{enum}      & Vedi §\ref{sec:taxonomy} \\
+\texttt{category}       & \texttt{str?}      & Livello 1 tassonomia \\
+\texttt{subcategory}    & \texttt{str?}      & Livello 2 tassonomia \\
+\texttt{category\_confidence} & \texttt{enum?} & \texttt{high|medium|low} \\
+\texttt{category\_source} & \texttt{enum?}  & \texttt{rule|llm|manual} \\
+\texttt{reconciled}     & \texttt{bool}      & True se riconciliata (RF-03) \\
+\texttt{to\_review}     & \texttt{bool}      & True se richiede revisione manuale \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsubsection{Applicazione di \texttt{invert\_sign}}
+
+Dopo aver letto l'importo con \texttt{apply\_sign\_convention()}, se
+\texttt{DocumentSchema.invert\_sign = True} il normalizzatore nega l'importo:
+\texttt{amount = -amount}. Questa operazione è simmetrica: le spese positive diventano
+negative, i rimborsi negativi diventano positivi.
+
+\subsubsection{Concatenazione multi-colonna (\texttt{description\_cols})}
+
+Se \texttt{DocumentSchema.description\_cols} è non vuoto, le colonne in lista vengono
+concatenate con spazio come separatore per formare la descrizione completa. Questo
+permette di unire colonne come \texttt{Tipo operazione}, \texttt{Causale} e \texttt{Note}
+in un'unica stringa informativa. \texttt{description\_col} è la colonna singola più
+informativa usata come chiave primaria per le regole.
+
+\subsubsection{Rimozione della riga saldo carta (Case 5)}
+
+\begin{newbox}
+\textbf{remove\_card\_balance\_row()} --- Prevenzione double-counting.
+
+Alcuni estratti carta includono una riga il cui importo assoluto è uguale alla somma
+degli importi assoluti di tutte le altre righe (la riga ``Totale'' o ``Saldo periodo'').
+Includerla duplicherebbe ogni spesa.
+
+Algoritmo di rilevamento (post-normalizzazione, solo per file carta):
+per ogni riga candidata $i$, se $\bigl| |a_i| - \sum_{j \neq i} |a_j| \bigr| \leq \varepsilon$,
+la riga $i$ è rimossa. Richiede $\geq 3$ transazioni per evitare falsi positivi.
+Solo la prima riga corrispondente è rimossa.
+\end{newbox}
+
+\subsection{RF-03 --- Riconciliazione carta--conto corrente}
+
+Per ogni addebito in conto corrente classificato come \texttt{card\_settlement}, il
+sistema deve identificare il sottoinsieme di transazioni carta che ne costituisce la
+somma, con le seguenti garanzie:
+
+\begin{itemize}[leftmargin=2em]
+  \item le transazioni carta riconciliate sono \textbf{escluse} dal saldo netto;
+  \item è supportato il boundary crossing;
+  \item la tolleranza numerica è configurabile (default $\varepsilon = 0.01$\,\euro).
+\end{itemize}
+
+\subsubsection{Algoritmo di matching a tre fasi}
+
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{Finestra temporale}: candidati con data in
+        $[D_{\text{ref}} - W,\; D_{\text{ref}} + 7]$, dove $W$ è la finestra configurabile
+        (default 45 giorni).
+  \item \textbf{Sliding window contigua} con gap massimo $g$ tra transazioni consecutive
+        (default 5 giorni): complessità $O(n^2)$ con $n$ tipicamente $< 200$.
+  \item \textbf{Subset sum al boundary}: se le fasi precedenti non convergono, ricerca
+        combinatoria sulle ultime $k$ transazioni del mese precedente e le prime $k$ del
+        mese successivo (default $k = 10$). Complessità $O(2^{2k})$ worst case.
+\end{enumerate}
+
+\subsection{RF-04 --- Rilevamento giroconti}
+
+Due transazioni in file distinti sono classificate come giroconto interno se e solo se:
+
+\[
+  |a_i + a_j| \leq \varepsilon
+  \;\wedge\;
+  |d_i - d_j| \leq \delta_{\text{settlement}}
+  \;\wedge\;
+  \bigl(\text{keyword}(t_i) \;\vee\; \text{keyword}(t_j) \;\vee\; \text{high\_sym}(a_i, d_i, a_j, d_j)\bigr)
+\]
+
+Il predicato \texttt{high\_sym} copre giroconti silenziosi senza keyword
+($\varepsilon_{\text{strict}} = 0.005$\,\euro, $\delta_{\text{strict}} = 1$ giorno).
+Le coppie rilevate per sola simmetria ricevono \texttt{confidence=medium} e sono
+inserite in revisione se \texttt{require\_keyword\_confirmation=true} (default).
+
+\subsubsection{Tre passaggi di rilevamento}
+
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{Keyword regex}: la descrizione corrisponde a un pattern configurato
+        in \texttt{DocumentSchema.internal\_transfer\_patterns} (es.\ ``Giroconto'',
+        ``Bonifico tra i miei conti'') $\to$ \texttt{confidence=high}.
+  \item \textbf{Matching importo + finestra temporale}: stesso importo assoluto entro
+        $\pm 3$ giorni, su \texttt{account\_label} diversi $\to$
+        \texttt{confidence=medium/high}.
+  \item \textbf{Permutazioni nome titolare} \textbf{[v3.1]}:
+        \texttt{\_build\_owner\_name\_regex()} costruisce una regex che intercetta
+        tutte le permutazioni dei token del nome (es.\ ``Corsaro Luigi Gerotti Elena''
+        e ``Luigi Corsaro Elena Gerotti'' generano la stessa regex). Questo elimina
+        i falsi negativi quando l'ordine cognome/nome varia tra estratti di banche
+        diverse $\to$ \texttt{confidence=high}.
+\end{enumerate}
+
+\begin{v31box}
+\textbf{Riesecuzione globale cross-account [v3.1].}
+
+Quando le due transazioni di un giroconto appartengono a file importati in momenti
+diversi, il primo import non può trovare la coppia (il file contropartita non esiste
+ancora nel DB). La funzione \texttt{\_rerun\_transfer\_detection()} nella pagina
+Review risolve questo problema:
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item Carica tutte le transazioni con \texttt{tx\_type} non-giroconto.
+  \item Aggrega i pattern keyword da tutti i \texttt{DocumentSchema} nel DB
+        tramite \texttt{get\_all\_transfer\_keyword\_patterns()}.
+  \item Riesegue i 3 passaggi RF-04 sull'intero dataset.
+  \item Aggiorna nel DB solo le righe in cui \texttt{tx\_type} è cambiato.
+\end{enumerate}
+\end{v31box}
+
+Il sistema supporta due modalità operative:
+
+\begin{center}
+\begin{tabular}{@{}L{4cm} L{8.5cm}@{}}
+\toprule
+\textbf{Modalità} & \textbf{Comportamento} \\
+\midrule
+\texttt{neutral} & I giroconti restano nel registro come \texttt{internal\_out} /
+                   \texttt{internal\_in}, con contributo zero al saldo netto. \\
+\texttt{exclude} & I giroconti sono eliminati dal registro. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{RF-05 --- Categorizzazione semantica}
+\label{sec:rf05}
+
+Ogni transazione di tipo \texttt{expense}, \texttt{income} o \texttt{card\_tx} deve
+ricevere una categoria semantica tramite una \textbf{cascata a 4 step + fallback}.
+
+\subsubsection{Cascata di categorizzazione}
+
+\begin{enumerate}[leftmargin=2em, label=\textbf{Step \arabic*.}]
+  \item \textbf{Regole utente} (tabella \texttt{category\_rule}, ordinate per
+        \texttt{priority} decrescente). Un match restituisce \texttt{confidence=high}
+        senza invocare LLM. Supporta tre tipi di matching: \texttt{contains},
+        \texttt{exact}, \texttt{regex} (tutti case-insensitive).
+  \item \textbf{Regole statiche} (\texttt{\_COMPILED\_STATIC} in \texttt{categorizer.py}):
+        pattern regex hardcoded per merchant comuni (supermercati, farmacie, carburante,
+        streaming, ecc.). Restituisce \texttt{confidence=high}.
+  \item \textbf{Modello ML supervisionato} (stub; sempre \texttt{None} nella v3.0).
+  \item \textbf{LLM structured output} --- \textbf{direzionale}:
+        \begin{itemize}
+          \item Per importi negativi (spese): il LLM vede \emph{solo} le categorie
+                di spesa e le relative sottocategorie.
+          \item Per importi positivi (entrate): il LLM vede \emph{solo} le categorie
+                di entrata e le relative sottocategorie.
+          \item Questo elimina la possibilità di cross-direction hallucination
+                (es.\ classificare una spesa come ``Stipendio'').
+        \end{itemize}
+  \item \textbf{Fallback}: categoria \texttt{Altro} / \texttt{Spese non classificate}
+        (spese) o \texttt{Altro entrate} / \texttt{Entrate non classificate} (entrate),
+        con \texttt{to\_review=True}.
+\end{enumerate}
+
+\subsubsection{Sottocategoria come fonte di verità}
+
+\begin{newbox}
+La sottocategoria è la chiave primaria della tassonomia.
+\texttt{TaxonomyConfig.find\_category\_for\_subcategory()} risolve la categoria
+genitore da qualsiasi nome di sottocategoria valido.
+
+Se LLM o una regola assegnano una sottocategoria che esiste in tassonomia sotto una
+categoria diversa da quella indicata, il sistema corregge automaticamente la categoria
+genitore. I due livelli sono sempre consistenti nel DB.
+\end{newbox}
+
+\subsubsection{Tassonomia a 2 livelli --- gestione DB}
+
+\begin{newbox}
+La tassonomia è persistita nelle tabelle \texttt{taxonomy\_category} e
+\texttt{taxonomy\_subcategory} del DB e gestita dalla pagina \textbf{Tassonomia}
+dell'UI. Le modifiche hanno effetto immediato senza restart.
+Il file \texttt{taxonomy.yaml} è usato \emph{esclusivamente} come seed al primo avvio.
+\end{newbox}
+
+\paragraph{Categorie e sottocategorie --- uscite (15 categorie)}
+
+\begin{center}
+\small
+\begin{longtable}{@{}L{4cm} L{9cm}@{}}
+\toprule
+\textbf{Categoria} & \textbf{Sottocategorie} \\
+\midrule
+\endhead
+Casa
+  & Mutuo / Affitto, Condominio, Gas, Energia elettrica, Acqua,
+    Spazzatura (TARI), IMU / Tasse sulla casa, Manutenzione e riparazioni,
+    Arredamento, Elettrodomestici, Altro casa \\[4pt]
+Alimentari
+  & Spesa supermercato, Mercato / freschi, Macelleria / pescheria,
+    Altro alimentari \\[4pt]
+Ristorazione
+  & Ristorante, Bar / caffè, Asporto / delivery \\[4pt]
+Trasporti
+  & Carburante, Assicurazione auto, Bollo auto, Manutenzione auto,
+    Parcheggio / ZTL, Trasporto pubblico, Taxi / ride-sharing,
+    Altro trasporti \\[4pt]
+Salute
+  & Medico di base / specialista, Farmaci, Analisi / diagnostica,
+    Dentista, Ottico, Altro salute \\[4pt]
+Istruzione
+  & Rette scolastiche, Libri e materiale, Corsi e formazione,
+    Altro istruzione \\[4pt]
+Abbigliamento
+  & Abbigliamento adulti, Abbigliamento bambini, Calzature,
+    Altro abbigliamento \\[4pt]
+Comunicazioni
+  & Telefonia mobile, Internet / fibra, Telefonia fissa \\[4pt]
+Svago e tempo libero
+  & Sport e palestra, Cinema / teatro / eventi,
+    Streaming / abbonamenti digitali,
+    Viaggi e vacanze, Hobby, Libri / riviste, Altro svago \\[4pt]
+Animali domestici
+  & Cibo, Veterinario, Accessori \\[4pt]
+Finanza e assicurazioni
+  & Assicurazione vita, Assicurazione casa, Polizze varie,
+    Commissioni bancarie, Investimenti / risparmio,
+    Fondo pensione \\[4pt]
+Cura personale
+  & Parrucchiere / barbiere, Cosmetici e igiene,
+    Centro estetico / SPA \\[4pt]
+Tasse e tributi
+  & IRPEF / F24, Imposte varie, Sanzioni / more \\[4pt]
+Regali e donazioni
+  & Regali, Donazioni / beneficenza \\[4pt]
+Altro
+  & Spese non classificate \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\paragraph{Categorie e sottocategorie --- entrate (7 categorie)}
+
+\begin{center}
+\small
+\begin{longtable}{@{}L{4cm} L{9cm}@{}}
+\toprule
+\textbf{Categoria} & \textbf{Sottocategorie} \\
+\midrule
+\endhead
+Lavoro dipendente
+  & Stipendio, Tredicesima / quattordicesima, Bonus e premi,
+    Rimborso spese lavorative \\[4pt]
+Lavoro autonomo
+  & Fattura / parcella, Collaborazione occasionale,
+    Diritti d'autore / royalties \\[4pt]
+Rendite finanziarie
+  & Dividendi, Interessi attivi, Plusvalenze,
+    Cedole obbligazionarie \\[4pt]
+Rendite immobiliari
+  & Affitto percepito, Vendita immobile \\[4pt]
+Trasferimenti e rimborsi
+  & Rimborso generico, Storno / rettifica bancaria,
+    Giroconto entrata, Indennizzo / risarcimento \\[4pt]
+Prestazioni sociali
+  & Pensione / rendita, Sussidio / bonus statale,
+    Indennità (NASpI, maternità, ecc.) \\[4pt]
+Altro entrate
+  & Vendita beni usati, Regalo ricevuto,
+    Entrate non classificate \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\subsubsection{Motore delle regole}
+\label{sec:rules}
+
+Le regole sono memorizzate nella tabella \texttt{category\_rule} e offrono:
+
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{Upsert semantico}: una regola con la stessa coppia
+        \texttt{(pattern, match\_type)} aggiorna quella esistente invece di creare
+        un duplicato.
+  \item \textbf{Priorità}: quando più regole corrispondono alla stessa transazione,
+        vince quella con \texttt{priority} più alto (default 10).
+  \item \textbf{Applicazione retroattiva}: salvare una regola dalle pagine Ledger, Review
+        o Regole la applica immediatamente a tutte le transazioni esistenti che
+        corrispondono al pattern (\texttt{get\_transactions\_by\_rule\_pattern} ricerca
+        \emph{tutte} le transazioni, indipendentemente dalla sorgente di categorizzazione).
+\end{itemize}
+
+\subsubsection{Override manuale (persistenza come regola)}
+
+Ogni correzione manuale di categoria può essere opzionalmente persistita come regola
+deterministica con la struttura:
+
+\begin{center}
+\begin{tabular}{@{}L{4cm} L{3.5cm} L{5.5cm}@{}}
+\toprule
+\textbf{Campo} & \textbf{Tipo} & \textbf{Note} \\
+\midrule
+\texttt{id}           & \texttt{int PK}    & \\
+\texttt{pattern}      & \texttt{str}       & Substring o regex sulla descrizione normalizzata \\
+\texttt{match\_type}  & \texttt{enum}      & \texttt{contains} | \texttt{regex} | \texttt{exact} \\
+\texttt{category}     & \texttt{str}       & Categoria livello 1 \\
+\texttt{subcategory}  & \texttt{str?}      & Categoria livello 2 (opz.) \\
+\texttt{doc\_type}    & \texttt{enum?}     & Scope opzionale per tipo documento \\
+\texttt{priority}     & \texttt{int}       & Ordine di applicazione (desc); default 10 \\
+\texttt{created\_at}  & \texttt{datetime}  & \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{RF-06 --- Idempotenza delle importazioni}
+
+Il sistema garantisce idempotenza a due livelli:
+
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{Livello file}: SHA-256 del contenuto binario; un file già importato non
+        genera un nuovo batch.
+  \item \textbf{Livello transazione}: id deterministico
+        \texttt{sha256(\textit{source\_file} | \textit{raw\_date} | \textit{raw\_amount}
+        | \textit{raw\_description})[:24]}.
+        I campi \textbf{grezzi} (pre-normalizzazione) sono usati per stabilità:
+        miglioramenti a \texttt{parse\_amount} o \texttt{normalize\_description} non
+        modificano gli id esistenti.
+\end{itemize}
+
+\subsection{RF-07 --- Persistenza storica}
+\label{sec:rf07}
+
+Tutte le transazioni, le riconciliazioni, i link di giroconto, le regole, le correzioni
+manuali, la tassonomia e le impostazioni utente devono essere persistiti in SQLite con
+storico completo delle importazioni.
+
+\subsubsection{Schema del database (10 tabelle)}
+
+\begin{center}
+\begin{tabular}{@{}L{5cm} L{8.5cm}@{}}
+\toprule
+\textbf{Tabella} & \textbf{Descrizione} \\
+\midrule
+\texttt{import\_batch}            & Un record per file importato; chiave SHA-256 del
+                                    contenuto binario; include \texttt{flow\_used}
+                                    (\texttt{flow1|flow2}). \\
+\texttt{document\_schema}         & Template di parsing; creato da Flow 2, riutilizzato
+                                    da Flow 1. Chiave = fingerprint SHA-256 nomi colonne.
+                                    Include tutti i campi \texttt{DocumentSchema}
+                                    inclusi i diagnostici v3.0. \\
+\texttt{transaction}              & Transazione normalizzata; id SHA-256 deterministico;
+                                    include \texttt{raw\_amount}, \texttt{raw\_description}
+                                    (v3.0); colonna \texttt{context VARCHAR(64)} nullable
+                                    (v3.1). \\
+\texttt{reconciliation\_link}     & Relazione N:M settlement--transazioni carta. \\
+\texttt{internal\_transfer\_link} & Coppia giroconto con confidenza e flag keyword. \\
+\texttt{category\_rule}           & Regole deterministiche utente (vedi §\ref{sec:rules}). \\
+\texttt{taxonomy\_category}       & \textbf{[v3.0]} Categorie livello 1 (spese + entrate). \\
+\texttt{taxonomy\_subcategory}    & \textbf{[v3.0]} Sottocategorie livello 2 (FK a taxonomy\_category). \\
+\texttt{user\_settings}           & \textbf{[v3.0]} Coppie chiave/valore per impostazioni utente
+                                    (formato data, separatori, lingua, backend LLM). \\
+\texttt{import\_job}              & \textbf{[v3.0]} Stato e progresso dell'import corrente
+                                    (cross-session). \\
+\texttt{account}                  & \textbf{[v3.1]} Conti bancari configurati dall'utente
+                                    (nome, banca). Usati come \texttt{account\_label}
+                                    stabile per il dedup delle transazioni, indipendente
+                                    dal nome del file importato. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{RF-08 --- Interfaccia utente e report visivi}
+
+L'applicazione espone \textbf{8 pagine} Streamlit:
+
+\begin{center}
+\small
+\begin{longtable}{@{}L{3cm} L{10.5cm}@{}}
+\toprule
+\textbf{Pagina} & \textbf{Funzionalità} \\
+\midrule
+\endhead
+\textbf{📥 Import}        & Upload multiplo (CSV/XLSX). Progress bar live visibile da tutte
+                             le sessioni browser (via \texttt{import\_job}). Riepilogo:
+                             transazioni importate, riconciliazioni, transfer link, flow
+                             usato (1/2). \\[4pt]
+\textbf{📋 Ledger}        & Tabella filtrabile per data, tipo, descrizione, categoria,
+                             \textbf{sottocategoria (cascata)} [v3.1], contesto [v3.1],
+                             flag revisione. Click su una riga per selezionarla. Colonne
+                             Entrata/Uscita separate, allineate a destra. Metriche saldo
+                             netto/entrate/uscite. Pannello ``Assegna contesto'' con
+                             suggerimenti Jaccard [v3.1]. Toggle giroconto con bulk-apply.
+                             Download CSV/XLSX. \\[4pt]
+\textbf{📊 Analytics}     & 7 grafici Plotly interattivi: barre mensili entrate/uscite,
+                             saldo cumulativo, pie+treemap spese, drill-down interattivo
+                             categoria$\to$sottocategoria con trend mensile, pie+treemap
+                             entrate, top-10 descrizioni, stacked per conto. Export HTML
+                             standalone. \\[4pt]
+\textbf{🔍 Review}        & Transazioni con \texttt{to\_review=True}. Toggle giroconto
+                             con bulk-apply. Correzione categoria/sottocategoria con
+                             salvataggio opzionale come regola permanente (applicata
+                             retroattivamente a tutte le transazioni esistenti).
+                             \textbf{[v3.1]} Pulsante ``Rielabora con LLM'' per
+                             transazioni non pulite (\texttt{description==raw\_description}).
+                             Pulsante ``Riesegui rilevamento giroconti cross-account''. \\[4pt]
+\textbf{📏 Regole}        & \textbf{[v3.0]} CRUD completo regole di categorizzazione.
+                             Modifica/elimina regole + ricalcolo bulk delle transazioni
+                             già categorizzate. \\[4pt]
+\textbf{🗂️ Tassonomia}  & \textbf{[v3.0]} CRUD DB-backed per categorie e sottocategorie
+                             (spese e entrate). Le modifiche hanno effetto immediato
+                             senza restart. \\[4pt]
+\textbf{⚙️ Impostazioni} & \textbf{[v3.0]} Formato data visualizzazione, separatori
+                             importo, lingua descrizioni, backend LLM (modello + chiavi
+                             API). \textbf{[v3.1]} Nomi titolari (PII + giroconto),
+                             contesti di vita configurabili, modalità test import,
+                             lista conti bancari. Tutto persistito in
+                             \texttt{user\_settings} / \texttt{account}. \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\subsubsection{Progress bar cross-session}
+
+Il progresso dell'import è salvato in \texttt{import\_job} nel DB. Tutte le sessioni
+browser che hanno la pagina Import aperta vedono il progresso in tempo reale tramite
+il polling Streamlit. Lo stato è persistito anche in caso di disconnect/reconnect.
+
+\subsection{RF-09 --- Reportistica formale}
+
+Il sistema produce report in due formati:
+
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{HTML standalone} (nessuna dipendenza esterna), con grafici Plotly inline.
+  \item \textbf{CSV/XLSX}: export diretto del ledger filtrato.
+\end{itemize}
+
+\subsection{RF-10 --- Sanitizzazione dati (precondizione per LLM remoto)}
+
+La sanitizzazione è \textbf{obbligatoria} come pre-requisito per qualsiasi invocazione
+di LLM remoto. Il sistema deve:
+
+\begin{itemize}[leftmargin=2em]
+  \item rimuovere o mascherare: nomi dei proprietari (lista configurabile), IBAN, PAN,
+        numeri carta/conto, codici fiscali;
+  \item sostituire con placeholder semantici: \texttt{<OWNER>}, \texttt{<ACCOUNT\_ID>},
+        \texttt{<CARD\_ID>}, \texttt{<FISCAL\_ID>};
+  \item garantire, tramite \texttt{assert\_sanitized()}, che la chiamata venga rifiutata
+        (non degradata silenziosamente) se il testo contiene pattern rilevabili.
+\end{itemize}
+
+\subsection{RF-11 --- Astrazione multi-backend LLM}
+\label{sec:rf11}
+
+Il sistema espone un'interfaccia astratta \texttt{LLMBackend} implementata da tre
+provider:
+
+\begin{center}
+\begin{tabular}{@{}L{3.5cm} L{4cm} L{5.5cm}@{}}
+\toprule
+\textbf{Backend} & \textbf{Classe} & \textbf{Configurazione} \\
+\midrule
+Ollama (locale)  & \texttt{OllamaBackend}  & \texttt{OLLAMA\_BASE\_URL}, \texttt{OLLAMA\_MODEL} \\
+OpenAI API       & \texttt{OpenAIBackend}  & \texttt{OPENAI\_API\_KEY}, \texttt{OPENAI\_MODEL} \\
+Claude API       & \texttt{ClaudeBackend}  & \texttt{ANTHROPIC\_API\_KEY}, \texttt{CLAUDE\_MODEL} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Circuit breaker}: \texttt{call\_with\_fallback(primary, ...)} prova il backend
+primario, poi Ollama locale come fallback. Se entrambi falliscono, la transazione
+riceve \texttt{to\_review=True} senza bloccare il resto del batch.
+
+\textbf{Backend e modelli configurabili dalla UI}: dalla pagina Impostazioni (RF-12)
+è possibile selezionare backend, modello e inserire le chiavi API, senza modificare
+\texttt{.env} né riavviare.
+
+\subsection{RF-12 --- Impostazioni utente e localizzazione display}
+\label{sec:rf12}
+
+\begin{newbox}
+Nuovo in v3.0. Sostituisce la configurazione \texttt{.env}-only per le preferenze
+di visualizzazione e il backend LLM.
+\end{newbox}
+
+Le impostazioni sono memorizzate come coppie chiave/valore nella tabella
+\texttt{user\_settings} e gestite dalla pagina \textbf{⚙️ Impostazioni}:
+
+\begin{center}
+\begin{tabular}{@{}L{4.5cm} L{2.5cm} L{6.5cm}@{}}
+\toprule
+\textbf{Chiave} & \textbf{Default} & \textbf{Descrizione} \\
+\midrule
+\texttt{date\_display\_format}   & \%d/\%m/\%Y & Formato visualizzazione date in UI \\
+\texttt{amount\_decimal\_sep}    & ,            & Separatore decimale (es.\ , per italiano) \\
+\texttt{amount\_thousands\_sep}  & .            & Separatore migliaia (es.\ . per italiano) \\
+\texttt{description\_language}  & it           & Lingua ISO 639-1 delle descrizioni
+                                                  (iniettata nel prompt LLM) \\
+\texttt{llm\_backend}           & local\_ollama & Backend LLM attivo \\
+\texttt{ollama\_model}          & gemma3:12b   & Modello Ollama \\
+\texttt{openai\_model}          & gpt-4o-mini  & Modello OpenAI \\
+\texttt{claude\_model}          & claude-3-5-haiku-* & Modello Claude \\
+\texttt{openai\_api\_key}       & ---          & Chiave API OpenAI \\
+\texttt{anthropic\_api\_key}    & ---          & Chiave API Anthropic \\
+\midrule
+\multicolumn{3}{@{}l}{\textit{Nuove in v3.1}} \\
+\midrule
+\texttt{owner\_names}           & ---          & Nomi titolari CSV; usati per PII redaction
+                                                  e rilevamento giroconti \\
+\texttt{use\_owner\_names\_giroconto} & false  & Se true, le descrizioni contenenti un
+                                                  nome titolare (qualsiasi permutazione)
+                                                  sono marcate come giroconto \\
+\texttt{contexts}               & {[}"Quotidianità","Lavoro","Vacanza"{]} &
+                                                  Contesti di vita JSON array
+                                                  (RF-13) \\
+\texttt{import\_test\_mode}     & false        & Se true, importa solo le prime 20 righe
+                                                  di ogni file \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+I valori in \texttt{user\_settings} hanno priorità sulle variabili d'ambiente
+\texttt{.env}. Le funzioni \texttt{format\_amount\_display()} e
+\texttt{format\_date\_display()} in \texttt{support/formatting.py} convertono i
+valori DB per la visualizzazione nell'UI.
+
+La \texttt{description\_language} è iniettata nel prompt di categorizzazione come
+\texttt{\{description\_language\}} per orientare il modello verso il vocabolario
+corretto.
+
+
+\subsection{RF-13 --- Contesti di vita}
+\label{sec:rf13}
+
+\begin{v31box}
+Nuovo in v3.1. Dimensione di classificazione \textbf{ortogonale} alla tassonomia
+categoria/sottocategoria. Dove la categoria risponde \emph{cosa è stato acquistato},
+il contesto risponde \emph{per quale area della vita}.
+\end{v31box}
+
+\subsubsection{Design}
+
+\begin{center}
+\begin{tabular}{@{}L{4cm} L{9cm}@{}}
+\toprule
+\textbf{Aspetto} & \textbf{Dettaglio} \\
+\midrule
+Storage             & Colonna \texttt{context VARCHAR(64)} nullable sulla tabella
+                      \texttt{transaction}. Migrazione idempotente
+                      \texttt{\_migrate\_add\_context(engine)}. \\[3pt]
+Ortogonalità        & Indipendente da \texttt{category} / \texttt{subcategory} ---
+                      qualsiasi combinazione è valida. Nessuna duplicazione della
+                      tassonomia. \\[3pt]
+Configurabilità     & Lista contesti modificabile dall'utente dalla pagina Impostazioni
+                      (add / rename / delete). Salvata come JSON array in
+                      \texttt{user\_settings} alla chiave \texttt{contexts}. \\[3pt]
+Default             & {[}"Quotidianità", "Lavoro", "Vacanza"{]} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsubsection{Assegnazione (pagina Ledger)}
+
+\begin{enumerate}[leftmargin=2em]
+  \item L'utente seleziona una transazione e apre il pannello ``Assegna contesto''.
+  \item Sceglie un contesto dal menu a discesa (o imposta NULL per rimuoverlo).
+  \item Opzionalmente abilita \textbf{``Applica anche a transazioni simili''}: la
+        funzione \texttt{get\_similar\_transactions()} in \texttt{db/repository.py}
+        usa similarità Jaccard token-level (soglia 0.35) sulla colonna
+        \texttt{description} per trovare transazioni semanticamente vicine e
+        pre-assegna lo stesso contesto.
+  \item \texttt{update\_transaction\_context()} persiste la modifica.
+\end{enumerate}
+
+\subsubsection{Filtro (pagina Ledger)}
+
+Il selettore ``Contesto'' nella barra filtri supporta tre stati:
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{tutti}: nessun filtro sul contesto.
+  \item \textbf{valore specifico} (es.\ ``Vacanza''): \texttt{context = 'Vacanza'}.
+  \item \textbf{--- nessuno ---}: \texttt{context IS NULL}.
+\end{itemize}
+
+Il filtro è implementato in \texttt{get\_transactions()} tramite il campo
+\texttt{"context"} nel dizionario \texttt{filters} (supporta anche
+\texttt{None} per IS NULL).
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Requisiti Non Funzionali}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\begin{longtable}{@{}L{3.5cm} L{10cm}@{}}
+\toprule
+\textbf{Requisito} & \textbf{Specifica} \\
+\midrule
+\endhead
+\textbf{Privacy}          & Nessun dato finanziario non sanitizzato trasmesso a servizi cloud.
+                            LLM locale predefinito; LLM remoto opt-in con sanitizzazione RF-10
+                            obbligatoria. \\[0.5em]
+\textbf{Determinismo}     & Tutte le operazioni di calcolo (normalizzazione, matching,
+                            giroconti, Step 0 invert\_sign) sono deterministiche e
+                            unit-testabili senza mock LLM. \\[0.5em]
+\textbf{Precisione num.}  & Tutti gli importi sono manipolati con \texttt{Decimal}
+                            (non \texttt{float}) per evitare errori di arrotondamento
+                            cumulativi. \\[0.5em]
+\textbf{Scalabilità}      & Algoritmo di matching progettato per $n < 200$ transazioni
+                            per estratto mensile. \\[0.5em]
+\textbf{Latenza LLM}      & Processing riga per riga; per $n > 500$ opportuno il batching. \\[0.5em]
+\textbf{Confidenza bassa} & Transazioni con \texttt{confidence=low} poste in quarantena
+                            (\texttt{to\_review=True}). \\[0.5em]
+\textbf{Tracciabilità}    & Ogni voce mantiene riferimento al file sorgente e agli id
+                            delle transazioni riconciliate. \\[0.5em]
+\textbf{Portabilità}      & Database SQLite locale; dipendenza cloud solo per LLM remoto. \\[0.5em]
+\textbf{Multilingua}      & Supporto a più localizzazioni: formati data, separatori decimali,
+                            valute, encoding file, lingua descrizioni. \\[0.5em]
+\textbf{Resilienza LLM}   & Circuit breaker su backend remoto con fallback a locale.
+                            Timeout configurabile (default 30\,s per chiamata). \\[0.5em]
+\textbf{Robustezza sign.} & Step 0 deterministico in Python garantisce \texttt{invert\_sign}
+                            corretto indipendentemente dalla qualità del modello locale. \\
+\bottomrule
+\end{longtable}
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Architettura Ibrida a Due Flussi}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{Logica di selezione del flusso}
+
+\begin{center}
+\begin{tabular}{@{}L{4.5cm} L{4cm} L{4.5cm}@{}}
+\toprule
+\textbf{Condizione} & \textbf{Flusso} & \textbf{Proprietà} \\
+\midrule
+Template noto per la sorgente & Flow 1 & Alta riproducibilità, LLM minimale \\
+Formato ignoto o primo import & Flow 2 & Flessibilità massima, LLM-first \\
+Flow 2 fallisce (low conf.)   & Errore + revisione & Quarantena \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Flow 1 --- Pipeline Deterministica}
+
+\begin{enumerate}[leftmargin=2em]
+  \item Pre-analisi formato (encoding, sheet, header); load \texttt{DocumentSchema} da DB.
+  \item Normalizzazione: date $\to$ ISO, importi $\to$ \texttt{Decimal}, descrizione $\to$ NFC.
+  \item Applicazione \texttt{invert\_sign} (già nel template).
+  \item Rimozione riga saldo carta (Case 5) se doc\_type carta.
+  \item Deduplicazione SHA-256 per-transazione (raw fields).
+  \item Rilevamento giroconti (RF-04) + Riconciliazione settlement (RF-03).
+  \item Categorizzazione a cascata (RF-05).
+  \item Persistenza + audit log.
+\end{enumerate}
+
+\subsection{Flow 2 --- Pipeline LLM-First (Schema-on-Read)}
+
+\begin{enumerate}[leftmargin=2em]
+  \item Pre-processing formato obbligatorio (prima di qualunque invocazione LLM).
+  \item Sanitizzazione preventiva (RF-10).
+  \item Prompting LLM strutturato: il modello riceve il campione sanitizzato (20 righe)
+        e restituisce un \texttt{DocumentSchema} completo.
+  \item Post-elaborazione deterministica:
+    \begin{itemize}
+      \item \texttt{\_coerce\_column\_names()}: verifica che i nomi colonna restituiti
+            dall'LLM esistano nel DataFrame (match case-insensitive).
+      \item \texttt{\_apply\_step0\_invert\_sign()}: override deterministico di
+            \texttt{invert\_sign} basato sui sinonimi del nome colonna
+            (vedi §\ref{sec:invertsign}).
+    \end{itemize}
+  \item Validazione schema Pydantic.
+  \item Normalizzazione transazioni (come Flow 1, step 2--8).
+  \item Persistenza \texttt{DocumentSchema} come template per Flow 1.
+\end{enumerate}
+
+\subsection{Struttura del progetto}
+
+\begin{lstlisting}[language=bash, caption={Struttura directory v3.1}]
+spendify/
+|-- app.py                     # Streamlit entrypoint (8 pagine)
+|-- taxonomy.yaml              # Seed iniziale tassonomia (solo primo avvio)
+|-- .env.example
+|-- pyproject.toml
+|
+|-- core/
+|   |-- models.py              # Enum: DocumentType, SignConvention, ...
+|   |-- schemas.py             # DocumentSchema (Pydantic) + llm_json_schema()
+|   |-- classifier.py          # Flow 2: classify_document()
+|   |                          #   _coerce_column_names()
+|   |                          #   _apply_step0_invert_sign() [v3.0]
+|   |-- normalizer.py          # parse_amount(), SHA-256, RF-03, RF-04
+|   |                          #   remove_card_balance_row() [v3.0]
+|   |                          #   detect_internal_transfers() [v3.1 owner perms]
+|   |-- categorizer.py         # Cascata 4-step + TaxonomyConfig
+|   |                          #   categorize direzionale [v3.0]
+|   |-- description_cleaner.py # LLM cleaning descrizioni [v3.1]
+|   |-- sanitizer.py           # redact_pii(), assert_sanitized()
+|   |                          #   _build_owner_name_regex() [v3.1]
+|   |-- llm_backends.py        # OllamaBackend, OpenAIBackend, ClaudeBackend
+|   `-- orchestrator.py        # ProcessingConfig, process_file()
+|
+|-- db/
+|   |-- models.py              # ORM SQLAlchemy (10 tabelle) + migrazioni auto
+|   |                          #   _migrate_add_context() [v3.1]
+|   `-- repository.py          # CRUD idempotente
+|                              #   bulk_set_giroconto_by_description() [v3.0]
+|                              #   get_transactions_by_rule_pattern() [v3.0]
+|                              #   get/set_user_setting() [v3.0]
+|                              #   update_transaction_context() [v3.1]
+|                              #   get_similar_transactions() [v3.1]
+|                              #   get_all_transfer_keyword_patterns() [v3.1]
+|                              #   get_accounts/create_account/delete_account [v3.1]
+|
+|-- reports/
+|   |-- generator.py           # HTML, CSV, XLSX
+|   `-- template_report.html.j2
+|
+|-- ui/
+|   |-- sidebar.py             # Navigazione 8 pagine + modalita' giroconto
+|   |-- upload_page.py         # Import + progress bar cross-session
+|   |-- registry_page.py       # Ledger: filtri cascata cat/sub/ctx [v3.1]
+|   |                          #   assegnazione contesto + Jaccard [v3.1]
+|   |-- analysis_page.py       # 7 grafici Plotly + export HTML
+|   |-- review_page.py         # Revisione + correzione + regola
+|   |                          #   _rerun_llm_on_uncleaned() [v3.1]
+|   |                          #   _rerun_transfer_detection() [v3.1]
+|   |-- rules_page.py          # CRUD regole + ricalcolo bulk [v3.0]
+|   |-- taxonomy_page.py       # CRUD tassonomia DB-backed [v3.0]
+|   `-- settings_page.py       # Locale + LLM + contesti + conti [v3.1]
+|
+|-- prompts/
+|   |-- classifier.json        # Prompt Flow 2 (Step 0 hint + diagnostici)
+|   `-- categorizer.json       # Prompt categorizzazione direzionale
+|
+|-- support/
+|   |-- formatting.py          # format_amount_display(), format_date_display()
+|   `-- logging.py
+|
+`-- tests/
+    |-- test_normalizer.py
+    |-- test_backends.py
+    |-- test_categorizer.py
+    `-- test_repository_rules.py
+\end{lstlisting}
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Integrazione LLM Multi-Backend con Structured Output}
+\label{sec:llm}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{Stack di inferenza}
+
+\begin{center}
+\begin{tabular}{@{}L{3cm} L{4cm} L{6cm}@{}}
+\toprule
+\textbf{Backend} & \textbf{Tecnologia} & \textbf{Motivazione} \\
+\midrule
+Locale (default) & Gemma 3 (12B) via Ollama $\geq$ 0.3 &
+  Structured output nativo; offline-first; privacy; zero costo \\
+OpenAI (opt-in)  & GPT-4o-mini o GPT-4o via \texttt{openai} SDK &
+  Accuracy superiore per descrizioni ambigue \\
+Claude (opt-in)  & \texttt{claude-3-5-haiku-*} via \texttt{anthropic} SDK &
+  Latenza/costo ottimali; structured output via \texttt{tool\_use} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{JSON Schema per la categorizzazione (direzionale, v3.0)}
+
+\begin{newbox}
+In v3.0 lo schema enum di categoria e sottocategoria è costruito dinamicamente per
+rispecchiare solo la \emph{direzione} corretta (spese o entrate). Per importi negativi
+l'enum contiene solo le categorie di spesa; per importi positivi solo quelle di entrata.
+\end{newbox}
+
+\begin{lstlisting}[language=json, caption={Schema categorizzazione (direzione spese)}]
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["category", "subcategory", "confidence"],
+  "additionalProperties": false,
+  "properties": {
+    "category": {
+      "type": "string",
+      "enum": ["Casa", "Alimentari", "Trasporti", "..."]
+    },
+    "subcategory": {
+      "type": "string",
+      "enum": ["Mutuo / Affitto", "Spesa supermercato", "..."]
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["high", "medium", "low"]
+    },
+    "rationale": {
+      "type": "string",
+      "maxLength": 120
+    }
+  }
+}
+\end{lstlisting}
+
+\subsection{JSON Schema per la classificazione documento (Flow 2, v3.0)}
+
+\begin{lstlisting}[language=json, caption={DocumentSchema con campi diagnostici v3.0}]
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["doc_type", "date_col", "amount_col",
+               "sign_convention", "date_format",
+               "account_label", "confidence"],
+  "additionalProperties": false,
+  "properties": {
+    "doc_type":        { "type": "string",
+                         "enum": ["bank_account","credit_card","debit_card",
+                                  "prepaid_card","savings","unknown"] },
+    "date_col":         { "type": "string" },
+    "amount_col":       { "type": "string" },
+    "description_col":  { "type": ["string","null"] },
+    "description_cols": { "type": "array", "items": {"type":"string"} },
+    "invert_sign":      { "type": "boolean" },
+    "sign_convention":  { "type": "string",
+                          "enum": ["signed_single","debit_positive",
+                                   "credit_negative"] },
+    "date_format":      { "type": "string" },
+    "confidence":       { "type": "string",
+                          "enum": ["high","medium","low"] },
+    "positive_ratio":   { "type": ["number","null"] },
+    "negative_ratio":   { "type": ["number","null"] },
+    "semantic_evidence": { "type": "array", "items": {"type":"string"} },
+    "normalization_case_id": { "type": ["string","null"] }
+  }
+}
+\end{lstlisting}
+
+\begin{warnbox}
+\textbf{Step 0 è deterministico in Python, non solo nel prompt.}\\
+Anche se il modello locale ignora l'istruzione Step 0 nel prompt,
+\texttt{\_apply\_step0\_invert\_sign()} corregge \texttt{invert\_sign}
+dopo l'output LLM, prima della costruzione del \texttt{DocumentSchema}.
+Il prompt include comunque la descrizione di Step 0 per migliorare
+i modelli più capaci.
+\end{warnbox}
+
+\subsection{Errori comuni da evitare}
+
+\begin{warnbox}
+\textbf{Colonna ``Uscita'' con invert\_sign=false.}\\
+Un modello locale può ignorare Step 0. Il fix deterministico in Python
+(\texttt{\_apply\_step0\_invert\_sign}) garantisce la correttezza.
+\end{warnbox}
+
+\begin{warnbox}
+\textbf{Riga saldo/totale nei file carta.}\\
+Includere la riga ``Totale'' duplica tutte le spese.
+\texttt{remove\_card\_balance\_row()} la rileva e rimuove automaticamente.
+\end{warnbox}
+
+\begin{warnbox}
+\textbf{Hallucination di categorie fuori direzione.}\\
+La categorizzazione direzionale (v3.0) elimina questo problema: il LLM
+non può classificare una spesa come ``Stipendio'' se l'enum non lo contiene.
+\end{warnbox}
+
+\begin{warnbox}
+\textbf{Schema cache basata sul filename.}\\
+In v2.x la cache usava il filename come chiave. In v3.0 la chiave è il
+fingerprint SHA-256 dei nomi colonne: lo stesso formato è riconosciuto
+su file con nomi diversi.
+\end{warnbox}
+
+\begin{warnbox}
+\textbf{SHA-256 su campi normalizzati.}\\
+In v2.x la chiave di idempotenza usava la descrizione normalizzata.
+In v3.0 usa i campi grezzi (raw date, raw amount, raw description):
+miglioramenti alla normalizzazione non modificano gli id esistenti.
+\end{warnbox}
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Tassonomia dei Tipi di Transazione}
+\label{sec:taxonomy}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\begin{center}
+\begin{tabular}{@{}L{3.5cm} C{2.5cm} C{2.5cm} L{4cm}@{}}
+\toprule
+\textbf{TransactionType} & \textbf{Nel registro} & \textbf{Contribuisce al saldo} & \textbf{Note} \\
+\midrule
+\texttt{expense}           & \checkmark & \checkmark\ (negativo) & Uscita verso terzi \\
+\texttt{income}            & \checkmark & \checkmark\ (positivo) & Entrata da terzi \\
+\texttt{card\_tx}          & \checkmark & \checkmark\ (negativo) & Dettaglio spesa carta \\
+\texttt{card\_settlement}  & $\times$   & $\times$               & Assorbito da card\_tx \\
+\texttt{aggregate\_debit}  & $\times$   & $\times$               & Addebito aggregato riconciliato \\
+\texttt{internal\_out}     & opzionale  & $\times$               & Lato uscita giroconto \\
+\texttt{internal\_in}      & opzionale  & $\times$               & Lato entrata giroconto \\
+\texttt{unknown}           & \checkmark & \checkmark             & Richiede revisione \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Parametri di Configurazione}
+\label{sec:config}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\begin{center}
+\begin{tabular}{@{}L{5.5cm} C{2.5cm} L{5.5cm}@{}}
+\toprule
+\textbf{Parametro} & \textbf{Default} & \textbf{Razionale} \\
+\midrule
+\texttt{window\_days}              & 45 giorni  & Copre un ciclo di fatturazione \\
+\texttt{max\_gap\_days}            & 5 giorni   & Weekend + festività \\
+\texttt{tolerance}                 & 0.01\,\euro & Arrotondamenti istituto \\
+\texttt{tolerance\_strict}         & 0.005\,\euro & Simmetria stretta giroconti senza keyword \\
+\texttt{settlement\_days}          & 5 giorni   & Valuta interbancaria \\
+\texttt{settlement\_days\_strict}  & 1 giorno   & Simmetria stretta \\
+\texttt{boundary\_pre\_post}       & 10 tx      & Finestra subset sum al boundary \\
+\texttt{confidence\_threshold}     & 0.80       & Soglia per escalation \\
+\texttt{giroconto\_mode}           & \texttt{neutral} & \texttt{neutral|exclude} \\
+\texttt{require\_keyword\_confirm} & \texttt{true} & Revisione manuale per silenziosi \\
+\texttt{llm\_backend}              & \texttt{local\_ollama} & \texttt{local\_ollama|openai|claude} \\
+\texttt{ollama\_model}             & \texttt{gemma3:12b} & \\
+\texttt{llm\_timeout\_s}           & 30         & Timeout per singola chiamata LLM \\
+\texttt{description\_language}     & \texttt{it} & \textbf{[v3.0]} Lingua descrizioni per LLM \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Gestione dei Casi Limite}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{Riga saldo/totale nei file carta (Case 5)}
+
+Alcuni estratti carta includono una riga ``Totale'' o ``Saldo periodo'' il cui importo
+è la somma di tutte le transazioni. Includerla duplica ogni spesa.
+\texttt{remove\_card\_balance\_row()} rileva la riga tramite la relazione
+$|a_i| \approx \sum_{j \neq i} |a_j|$ e la rimuove. Richiede $\geq 3$ transazioni.
+
+\subsection{Convenzione di segno ambigua}
+
+La combinazione Step 0 (Python) + Step 1 (LLM) copre i casi principali.
+Il campo \texttt{semantic\_evidence} nel \texttt{DocumentSchema} documenta il
+ragionamento per audit.
+
+\subsection{Addebito carta a cavallo di due estratti conto}
+
+Gestito dalla fase 3 dell'algoritmo RF-03 (subset sum al boundary,
+$k = 10$). I parametri \texttt{window\_days} e \texttt{boundary\_pre\_post}
+sono configurabili.
+
+\subsection{Giroconti cross-account importati in momenti diversi [v3.1]}
+
+Quando le due transazioni di un giroconto appartengono a file importati in momenti
+diversi, il primo import non può trovare la coppia perché la contropartita non esiste
+ancora nel DB. Soluzione: pulsante ``Riesegui rilevamento giroconti'' nella pagina
+Review (\texttt{\_rerun\_transfer\_detection()}), da eseguire dopo aver importato
+tutti i file.
+
+\subsection{LLM fallisce durante il description cleaning [v3.1]}
+
+Se il backend LLM va in errore durante \texttt{clean\_descriptions\_batch()}, la
+\texttt{description} rimane uguale alla \texttt{raw\_description}. Questa condizione
+è usata come filtro per la rielaborazione selettiva: il pulsante ``Rielabora con LLM''
+nella pagina Review processa solo le transazioni con
+\texttt{description == raw\_description}, senza ri-processare quelle già pulite.
+
+\subsection{Giroconti silenziosi senza keyword}
+
+Coperti dal predicato \texttt{high\_sym} in RF-04
+($\varepsilon_{\text{strict}} = 0.005$\,\euro, $\delta_{\text{strict}} = 1$ giorno).
+Classificati con \texttt{confidence=medium} e inseriti in revisione manuale.
+
+\subsection{Confidenza bassa nella classificazione (Flow 2)}
+
+I documenti con \texttt{confidence=low} non entrano nel registro senza revisione
+manuale. Il \texttt{DocumentSchema} prodotto è persistito come bozza e proposto
+all'utente per correzione; le modifiche lo promuovono a template Flow 1.
+
+\subsection{Schema cache dopo modifica del file (colonne diverse)}
+
+Se il file di export cambia struttura (colonne aggiunte/rimosse), il fingerprint
+SHA-256 dei nomi colonna cambia, il template non è trovato in cache e Flow 2
+ri-classifica automaticamente.
+
+\subsection{Backend LLM remoto non disponibile}
+
+Il circuit breaker prova Ollama locale come fallback. Se anche Ollama non è
+raggiungibile, le transazioni ricevono \texttt{to\_review=True} e
+\texttt{category=Altro} senza interrompere la pipeline.
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Istruzioni di Avvio}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\begin{lstlisting}[language=bash, caption={Setup}]
+# Installare Ollama e il modello
+ollama pull gemma3:12b
+
+# Installare dipendenze (uv consigliato)
+uv sync
+# oppure: pip install -e .
+
+# Configurare l'ambiente
+cp .env.example .env
+
+# Avviare l'applicazione
+uv run streamlit run app.py
+# Disponibile su http://localhost:8501
+\end{lstlisting}
+
+\begin{lstlisting}[language=bash, caption={Reset del database (sviluppo)}]
+rm -f ledger.db
+uv run streamlit run app.py
+# Le tabelle e la tassonomia vengono ricreate automaticamente
+\end{lstlisting}
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section*{Appendice --- Invariante di Consistenza del Registro}
+\addcontentsline{toc}{section}{Appendice --- Invariante di consistenza del registro}
+\label{app:invariant}
+% ══════════════════════════════════════════════════════════════════════════════
+
+Siano $\mathcal{L}$ l'insieme delle voci del registro e
+$\mathcal{T}_{\text{esclusi}} =
+\{\texttt{internal\_out}, \texttt{internal\_in}, \texttt{card\_settlement},
+  \texttt{aggregate\_debit}\}$.
+L'invariante di saldo netto è:
+
+\[
+  \left|
+    \sum_{\substack{e \in \mathcal{L} \\ \text{type}(e) \notin \mathcal{T}_{\text{esclusi}}}}
+    a_e \;-\; B_{\text{atteso}}
+  \right| \leq \varepsilon
+\]
+
+dove $B_{\text{atteso}}$ è il saldo finale del conto corrente principale e $\varepsilon$
+è la tolleranza configurata (default 0.01\,\euro\ per valuta).
+
+In presenza di più valute, l'invariante si applica separatamente per ciascuna valuta
+ISO~4217. In modalità \texttt{giroconto\_mode=exclude}, $\mathcal{T}_{\text{esclusi}}$
+è esteso a includere entrambi i lati del giroconto.
+
+\end{document}

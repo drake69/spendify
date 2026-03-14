@@ -30,11 +30,11 @@ def _render_section(engine, type_key: str, section_label: str, search: str = "")
     session = get_session(engine)
     try:
         cat_rows = session.execute(
-            _sql("SELECT id, name, type, sort_order FROM taxonomy_category WHERE type=:t ORDER BY sort_order"),
+            _sql("SELECT id, name, type, sort_order FROM taxonomy_category WHERE type=:t ORDER BY name COLLATE NOCASE"),
             {"t": type_key},
         ).fetchall()
         sub_rows = session.execute(
-            _sql("SELECT id, category_id, name, sort_order FROM taxonomy_subcategory ORDER BY sort_order"),
+            _sql("SELECT id, category_id, name, sort_order FROM taxonomy_subcategory ORDER BY name COLLATE NOCASE"),
         ).fetchall()
     finally:
         session.close()
@@ -50,7 +50,7 @@ def _render_section(engine, type_key: str, section_label: str, search: str = "")
             "id": c.id,
             "name": c.name,
             "type": c.type,
-            "subs": sorted(subs_by_cat.get(c.id, []), key=lambda x: x["sort_order"]),
+            "subs": sorted(subs_by_cat.get(c.id, []), key=lambda x: x["name"].lower()),
         }
         for c in cat_rows
     ]

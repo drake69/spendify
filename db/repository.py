@@ -15,6 +15,7 @@ from core.schemas import DocumentSchema
 from db.models import (
     CategoryRule,
     DEFAULT_USER_SETTINGS,
+    DescriptionRule,
     DocumentSchemaModel,
     ImportBatch,
     ImportJob,
@@ -63,6 +64,19 @@ def create_import_batch(
 
 # ── DocumentSchema ────────────────────────────────────────────────────────────
 
+def get_all_transfer_keyword_patterns(session: Session) -> list[str]:
+    """Return the union of all internal_transfer_patterns across every known schema."""
+    rows = session.query(DocumentSchemaModel).all()
+    patterns: list[str] = []
+    seen: set[str] = set()
+    for row in rows:
+        for p in json.loads(row.internal_transfer_patterns or "[]"):
+            if p and p not in seen:
+                patterns.append(p)
+                seen.add(p)
+    return patterns
+
+
 def get_document_schema(session: Session, source_identifier: str) -> Optional[DocumentSchema]:
     row = session.query(DocumentSchemaModel).filter_by(source_identifier=source_identifier).first()
     if row is None:
@@ -86,6 +100,7 @@ def upsert_document_schema(session: Session, schema: DocumentSchema) -> Document
     row.debit_col = schema.debit_col
     row.credit_col = schema.credit_col
     row.description_col = schema.description_col
+    row.description_cols = json.dumps(schema.description_cols) if schema.description_cols else "[]"
     row.currency_col = schema.currency_col
     row.default_currency = schema.default_currency
     row.date_format = schema.date_format
@@ -114,6 +129,7 @@ def _row_to_schema(row: DocumentSchemaModel) -> DocumentSchema:
         debit_col=row.debit_col,
         credit_col=row.credit_col,
         description_col=row.description_col,
+        description_cols=json.loads(getattr(row, "description_cols", None) or "[]"),
         currency_col=row.currency_col,
         default_currency=row.default_currency or "EUR",
         date_format=row.date_format or "%d/%m/%Y",
@@ -219,6 +235,45 @@ def toggle_transaction_giroconto(session: Session, tx_id: str) -> tuple[bool, st
     return True, new_type
 
 
+def update_transaction_context(session: Session, tx_id: str, context: str | None) -> bool:
+    """Set or clear the context of a transaction. Returns True if found."""
+    tx = session.get(Transaction, tx_id)
+    if tx is None:
+        return False
+    tx.context = context or None
+    session.flush()
+    return True
+
+
+def get_similar_transactions(
+    session: Session, description: str, exclude_id: str = "", threshold: float = 0.35
+) -> list[Transaction]:
+    """Return transactions whose description is similar to the given one.
+
+    Uses Jaccard similarity on word tokens (case-insensitive).
+    Only transactions with a non-empty description are considered.
+    """
+    if not description:
+        return []
+    ref_tokens = set(description.lower().split())
+    if not ref_tokens:
+        return []
+    txs = session.query(Transaction).filter(
+        Transaction.description.isnot(None),
+        Transaction.description != "",
+        Transaction.id != exclude_id,
+    ).all()
+    result = []
+    for tx in txs:
+        tokens = set((tx.description or "").lower().split())
+        if not tokens:
+            continue
+        similarity = len(ref_tokens & tokens) / len(ref_tokens | tokens)
+        if similarity >= threshold:
+            result.append(tx)
+    return result
+
+
 def bulk_set_giroconto_by_description(
     session: Session, description: str, make_giroconto: bool, exclude_id: str = ""
 ) -> int:
@@ -268,7 +323,23 @@ def get_transactions(
         if "account_label" in filters:
             q = q.filter(Transaction.account_label == filters["account_label"])
         if "description" in filters:
-            q = q.filter(Transaction.description.ilike(f"%{filters['description']}%"))
+            _term = f"%{filters['description']}%"
+            from sqlalchemy import or_
+            q = q.filter(
+                or_(
+                    Transaction.description.ilike(_term),
+                    Transaction.raw_description.ilike(_term),
+                )
+            )
+        if "subcategory" in filters:
+            q = q.filter(Transaction.subcategory == filters["subcategory"])
+        if "context" in filters:
+            if filters["context"] is None:
+                q = q.filter(Transaction.context.is_(None))
+            else:
+                q = q.filter(Transaction.context == filters["context"])
+        if "exclude_tx_types" in filters:
+            q = q.filter(Transaction.tx_type.notin_(filters["exclude_tx_types"]))
     q = q.order_by(Transaction.date.desc())
     if offset:
         q = q.offset(offset)
@@ -546,12 +617,30 @@ def persist_import_result(session: Session, result) -> None:
 
 # ── ImportJob ─────────────────────────────────────────────────────────────────
 
+def reset_stale_jobs(session: Session) -> int:
+    """Mark any 'running' ImportJob as 'error' (interrupted by app restart).
+
+    Call once at app startup so stale jobs from a previous process do not block
+    the upload page or show a phantom progress bar.
+    Returns the number of jobs reset.
+    """
+    from datetime import datetime, timezone
+    stale = session.query(ImportJob).filter(ImportJob.status == "running").all()
+    for job in stale:
+        job.status = "error"
+        job.status_message = "⚠️ Importazione interrotta (app riavviata)"
+        job.completed_at = datetime.now(timezone.utc)
+    session.commit()
+    return len(stale)
+
+
 def create_import_job(session: Session, n_files: int) -> ImportJob:
     from datetime import datetime, timezone
     job = ImportJob(status="running", progress=0.0, n_files=n_files,
                     started_at=datetime.now(timezone.utc))
     session.add(job)
     session.flush()
+    session.commit()  # commit immediately so other sessions/threads can see it
     return job
 
 
@@ -725,3 +814,78 @@ def delete_account(session: Session, account_id: int) -> bool:
     session.delete(acc)
     session.flush()
     return True
+
+
+# ── DescriptionRule ───────────────────────────────────────────────────────────
+
+def get_description_rules(session: Session) -> list[DescriptionRule]:
+    return session.query(DescriptionRule).order_by(DescriptionRule.id).all()
+
+
+def create_description_rule(
+    session: Session,
+    raw_pattern: str,
+    match_type: str,
+    cleaned_description: str,
+) -> tuple[DescriptionRule, bool]:
+    """Upsert a description rule on (raw_pattern, match_type).
+
+    Returns (rule, created) where created=False means an existing rule was updated.
+    """
+    existing = (
+        session.query(DescriptionRule)
+        .filter(
+            DescriptionRule.raw_pattern == raw_pattern,
+            DescriptionRule.match_type == match_type,
+        )
+        .first()
+    )
+    if existing is not None:
+        existing.cleaned_description = cleaned_description
+        session.flush()
+        return existing, False
+
+    rule = DescriptionRule(
+        raw_pattern=raw_pattern,
+        match_type=match_type,
+        cleaned_description=cleaned_description,
+    )
+    session.add(rule)
+    session.flush()
+    return rule, True
+
+
+def delete_description_rule(session: Session, rule_id: int) -> bool:
+    rule = session.get(DescriptionRule, rule_id)
+    if rule is None:
+        return False
+    session.delete(rule)
+    session.flush()
+    return True
+
+
+def get_transactions_by_raw_pattern(
+    session: Session,
+    raw_pattern: str,
+    match_type: str,
+) -> list[Transaction]:
+    """Return transactions whose raw_description matches the given pattern."""
+    import re
+    txs = session.query(Transaction).filter(
+        Transaction.raw_description.isnot(None),
+    ).all()
+    result = []
+    pat_lower = raw_pattern.lower()
+    for tx in txs:
+        raw = (tx.raw_description or "").lower()
+        if match_type == "exact" and raw == pat_lower:
+            result.append(tx)
+        elif match_type == "contains" and pat_lower in raw:
+            result.append(tx)
+        elif match_type == "regex":
+            try:
+                if re.search(raw_pattern, tx.raw_description or "", re.IGNORECASE):
+                    result.append(tx)
+            except re.error:
+                pass
+    return result

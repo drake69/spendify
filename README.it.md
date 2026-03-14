@@ -1,4 +1,4 @@
-# Spendify v2.3
+# Spendify v2.4
 
 > 🇬🇧 [Read in English](README.md)
 
@@ -42,7 +42,11 @@ Aggrega estratti conto eterogenei (conti correnti, carte di credito, carte di de
 | **Config LLM nell'UI** | Backend, modello e chiavi API configurabili dalla pagina Impostazioni senza toccare `.env` |
 | **PII sanitization (RF-10)** | IBAN, PAN, CF, nomi del titolare redatti prima di qualsiasi chiamata remota |
 | **Circuit breaker** | Fallback automatico su Ollama locale; quarantena (`to_review=True`) se tutti i backend falliscono |
-| **Persistenza SQLAlchemy** | 9 tabelle ORM; CRUD idempotente; migrazioni automatiche all'avvio |
+| **Contesti di vita** | Dimensione ortogonale configurabile dall'utente (es. Quotidianità / Lavoro / Vacanza) assegnabile a ogni transazione; suggerimenti automatici basati su similarità Jaccard con transazioni precedenti |
+| **Re-run LLM su fallimenti** | Pulsante nella pagina Review che rielabora solo le transazioni in cui l'LLM aveva fallito (`description == raw_description`) |
+| **Rilevamento giroconti cross-account** | Pulsante nella pagina Review che riesegue `detect_internal_transfers` globalmente su tutte le transazioni, intercettando le coppie non trovate in fase di import |
+| **Permutazioni nome titolare** | Tutte le permutazioni dei token del nome del titolare vengono verificate per il rilevamento giroconti, evitando i falsi negativi quando l'ordine varia tra i file |
+| **Persistenza SQLAlchemy** | 10 tabelle ORM; CRUD idempotente; migrazioni automatiche all'avvio |
 | **Progresso import cross-session** | Stato del job di importazione salvato nel DB; tutte le sessioni browser vedono il progresso in tempo reale |
 | **Export report** | HTML standalone (Plotly), CSV, XLSX |
 | **UI Streamlit 8 pagine** | Import → Ledger → Analytics → Review → Regole → Tassonomia → Impostazioni |
@@ -258,12 +262,12 @@ L'app si apre su `http://localhost:8501` con 8 pagine:
 | Pagina | Descrizione |
 |---|---|
 | **📥 Import** | Carica uno o più file (CSV / XLSX). Progresso live visibile da tutte le sessioni browser. Riepilogo: transazioni, riconciliazioni, transfer link, flow usato (1/2). |
-| **📋 Ledger** | Tabella filtrabile per data, tipo, descrizione, categoria, flag revisione. Click su una riga per selezionarla istantaneamente. Colonne Entrata/Uscita separate e allineate a destra. Toggle giroconto sempre visibile con bulk-apply a tutte le transazioni con la stessa descrizione. Download CSV/XLSX. |
+| **📋 Ledger** | Tabella filtrabile per data, tipo, descrizione, categoria, contesto, flag revisione. Click su una riga per selezionarla istantaneamente. Colonne Entrata/Uscita separate e allineate a destra. Filtro contesto + pannello assegnazione con suggerimenti Jaccard. Toggle giroconto con bulk-apply. Download CSV/XLSX. |
 | **📊 Analytics** | 7 grafici Plotly interattivi: barre mensili entrate/uscite, saldo cumulativo, pie+treemap spese per categoria, drill-down interattivo categoria→sottocategoria con trend mensile, pie+treemap entrate, top-10 descrizioni, stacked per conto. Export HTML. |
-| **🔍 Review** | Transazioni con `to_review=True`. Toggle giroconto (con bulk-apply). Correzione categoria/sottocategoria + salvataggio opzionale come regola permanente applicata immediatamente alle transazioni già presenti. |
+| **🔍 Review** | Transazioni con `to_review=True`. Toggle giroconto (con bulk-apply). Correzione categoria/sottocategoria + salvataggio opzionale come regola permanente applicata immediatamente. Pulsante "Re-run LLM" per transazioni non pulite. Pulsante "Riesegui giroconti cross-account". |
 | **📏 Regole** | CRUD completo regole di categorizzazione. Modifica/elimina regole + ricalcolo bulk delle transazioni già categorizzate. |
 | **🗂️ Tassonomia** | CRUD DB-backed per categorie e sottocategorie (spese e entrate). Le modifiche hanno effetto immediato senza restart. |
-| **⚙️ Impostazioni** | Formato data, separatori importo, lingua descrizioni, backend LLM (modello + chiavi API). Tutto persistito nel DB. |
+| **⚙️ Impostazioni** | Formato data, separatori importo, lingua descrizioni, contesti di vita, lista conti bancari, backend LLM (modello + chiavi API). Tutto persistito nel DB. |
 
 ---
 
@@ -322,7 +326,15 @@ Entrambi i tipi sono esclusi dal saldo netto, dalle entrate e dalle uscite.
 
 ### Rilevamento automatico (RF-04)
 
-La pipeline tenta di abbinare i giroconti automaticamente durante l'importazione usando matching simbolico importo + finestra temporale.
+La pipeline tenta di abbinare i giroconti automaticamente durante l'importazione con tre passaggi:
+
+1. **Regex keyword** — la descrizione corrisponde a un pattern configurato (es. "Giroconto", "Bonifico tra i miei conti") → alta confidenza
+2. **Matching importo + data** — stesso importo assoluto entro ±3 giorni, su `account_label` diversi → confidenza media/alta
+3. **Permutazioni nome titolare** — la descrizione contiene qualsiasi permutazione dei token del nome del titolare → alta confidenza (intercetta sia "Corsaro Luigi Gerotti Elena" che "Luigi Corsaro Elena Gerotti")
+
+### Riesecuzione cross-account
+
+Quando le due transazioni di un giroconto appartengono a file importati in momenti diversi, il primo import non può trovare la coppia. Usa il pulsante **"🔁 Riesegui rilevamento giroconti"** nella pagina **🔍 Review** per rieseguire il rilevamento globalmente su tutte le transazioni non-giroconto.
 
 ### Toggle manuale
 
@@ -332,6 +344,33 @@ Dalle pagine **Ledger** o **Review** è possibile contrassegnare manualmente qua
 - **Bulk apply** — se altre transazioni condividono la stessa descrizione, una checkbox (default: abilitata) consente di applicare la stessa modifica a tutte con un solo click. Il numero di transazioni coinvolte è visibile prima di confermare.
 
 `bulk_set_giroconto_by_description` in `db/repository.py` implementa l'operazione bulk: aggiorna tutte le transazioni con la descrizione indicata eccetto quella già modificata, e restituisce il numero di righe cambiate.
+
+---
+
+## Contesti di vita
+
+I contesti di vita sono una dimensione di classificazione ortogonale alla tassonomia delle categorie. Mentre la categoria risponde *cosa è stato acquistato*, il contesto risponde *per quale area della vita*.
+
+### Design
+
+| Aspetto | Dettaglio |
+|---|---|
+| **Storage** | Colonna `context VARCHAR(64)` nullable sulla tabella `Transaction` |
+| **Ortogonalità** | Indipendente da categoria/sottocategoria — qualsiasi combinazione è valida |
+| **Configurabile** | Aggiunta, rinomina e rimozione contesti dalla pagina **⚙️ Impostazioni** (salvati come JSON in `user_settings`) |
+| **Contesti default** | Quotidianità · Lavoro · Vacanza |
+
+### Assegnazione
+
+Dalla pagina **📋 Ledger**, seleziona una transazione e apri il pannello espandibile "🌍 Assegna contesto":
+
+1. Scegli un contesto dal menu a discesa (o cancella quello esistente)
+2. Attiva opzionalmente **"Applica anche a transazioni simili"** — la similarità Jaccard a livello di token (soglia 0.35) trova transazioni con descrizione semanticamente vicina e pre-assegna lo stesso contesto
+3. Clicca **Applica**
+
+### Filtro
+
+La barra filtri del registro include un selettore contesto: *tutti*, i singoli valori configurati, o *— nessuno —* (transazioni senza contesto assegnato).
 
 ---
 

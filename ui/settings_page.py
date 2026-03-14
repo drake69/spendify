@@ -1,6 +1,8 @@
 """Settings page — persistent user preferences (locale, language, LLM)."""
 from __future__ import annotations
 
+import json
+
 import streamlit as st
 
 from db.models import get_session
@@ -154,6 +156,74 @@ def render_settings_page(engine):
         placeholder="Mario Rossi, Anna Bianchi",
     )
 
+    _owner_list = [n.strip() for n in owner_names_raw.split(",") if n.strip()]
+    use_owner_giroconto = st.toggle(
+        "Usa nomi titolari per identificare giroconti",
+        value=settings.get("use_owner_names_giroconto", "false").lower() == "true",
+        disabled=not _owner_list,
+        help=(
+            "Se attivo, le transazioni la cui descrizione contiene un nome titolare "
+            "vengono marcate automaticamente come giroconto."
+        ),
+    )
+
+    st.divider()
+
+    # ── Contesti di vita ───────────────────────────────────────────────────────
+    st.subheader("🌍 Contesti di vita")
+    st.caption(
+        "Definisci i contesti entro cui classificare le transazioni "
+        "(es. Quotidianità, Lavoro, Vacanza). "
+        "Puoi assegnare un contesto a ogni transazione dal Registro."
+    )
+
+    try:
+        _ctx_list: list[str] = json.loads(settings.get("contexts", '["Quotidianità", "Lavoro", "Vacanza"]'))
+    except Exception:
+        _ctx_list = ["Quotidianità", "Lavoro", "Vacanza"]
+
+    # Initialise session state for contexts editor
+    if "settings_contexts" not in st.session_state:
+        st.session_state["settings_contexts"] = list(_ctx_list)
+
+    ctx_to_remove = None
+    for i, ctx in enumerate(st.session_state["settings_contexts"]):
+        cc1, cc2 = st.columns([5, 1])
+        with cc1:
+            new_val = st.text_input(
+                f"Contesto {i + 1}", value=ctx, key=f"ctx_val_{i}", label_visibility="collapsed"
+            )
+            st.session_state["settings_contexts"][i] = new_val.strip()
+        with cc2:
+            if st.button("🗑️", key=f"ctx_del_{i}", help="Rimuovi contesto"):
+                ctx_to_remove = i
+
+    if ctx_to_remove is not None:
+        st.session_state["settings_contexts"].pop(ctx_to_remove)
+        st.rerun()
+
+    with st.form("new_ctx_form", clear_on_submit=True):
+        nc1, nc2 = st.columns([4, 1])
+        new_ctx = nc1.text_input("Nuovo contesto", placeholder="es. Sport", label_visibility="collapsed")
+        if nc2.form_submit_button("➕ Aggiungi"):
+            val = new_ctx.strip()
+            if val and val not in st.session_state["settings_contexts"]:
+                st.session_state["settings_contexts"].append(val)
+                st.rerun()
+
+    st.divider()
+
+    # ── Import ─────────────────────────────────────────────────────────────────
+    st.subheader("📥 Importazione")
+
+    import_test_mode = st.toggle(
+        "Modalità test (solo prime 20 righe per file)",
+        value=settings.get("import_test_mode", "false").lower() == "true",
+        help="Importa solo le prime 20 righe di ogni file per verificare rapidamente la classificazione dello schema.",
+    )
+    if import_test_mode:
+        st.caption("⚠️ Modalità test attiva — solo le prime 20 righe verranno elaborate.")
+
     st.divider()
 
     # ── Conti bancari ──────────────────────────────────────────────────────────
@@ -172,7 +242,7 @@ def render_settings_page(engine):
         col_name, col_bank, col_btn = st.columns([2, 2, 1])
         new_acc_name = col_name.text_input("Nome conto", placeholder="Conto corrente POPSO")
         new_acc_bank = col_bank.text_input("Banca (opzionale)", placeholder="Banca Popolare di Sondrio")
-        if col_btn.form_submit_button("➕ Aggiungi", use_container_width=True):
+        if col_btn.form_submit_button("➕ Aggiungi", width="stretch"):
             if new_acc_name.strip():
                 try:
                     with get_session(engine) as _s:
@@ -286,6 +356,10 @@ def render_settings_page(engine):
             set_user_setting(session2, "anthropic_api_key", anthropic_key)
             set_user_setting(session2, "anthropic_model", anthropic_model)
             set_user_setting(session2, "owner_names", owner_names_raw.strip())
+            set_user_setting(session2, "use_owner_names_giroconto", "true" if use_owner_giroconto else "false")
+            set_user_setting(session2, "import_test_mode", "true" if import_test_mode else "false")
+            _ctx_clean = [c for c in st.session_state.get("settings_contexts", _ctx_list) if c]
+            set_user_setting(session2, "contexts", json.dumps(_ctx_clean, ensure_ascii=False))
             session2.commit()
 
         # Sync session_state so rest of app picks up changes immediately
@@ -293,6 +367,8 @@ def render_settings_page(engine):
         st.session_state["llm_backend"] = backend
         st.session_state["ollama_base_url"] = ollama_url
 
+        # Reset context editor state so it reloads fresh values
+        st.session_state.pop("settings_contexts", None)
         st.success("Impostazioni salvate.")
         logger.info(f"settings_page: saved backend={backend!r} ollama_url={ollama_url!r}")
         st.rerun()
