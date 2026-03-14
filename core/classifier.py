@@ -81,6 +81,11 @@ def classify_document(
 
     # ── Phase 0: Python deterministic pre-analysis (before LLM) ──────────────
     step0 = _run_step0_analysis(list(df_raw.columns))
+    # For neutral amount columns (name carries no sign semantics), inspect the
+    # actual sample data: if any value is negative the column is already signed
+    # → invert_sign=False can be resolved deterministically without the LLM.
+    if step0.amount_semantics == "neutral" and step0.amount_col:
+        step0 = _inspect_neutral_column_sign(step0, df_raw, source_name)
     step0_text = _format_step0_for_prompt(step0)
 
     user_prompt = _PROMPTS["user_template"].format(
@@ -303,6 +308,39 @@ def _run_step0_analysis(columns: list[str]) -> _Step0Result:
     return r
 
 
+def _inspect_neutral_column_sign(step0: _Step0Result, df: pd.DataFrame, source_name: str) -> _Step0Result:
+    """Data-driven sign inspection for neutral amount columns.
+
+    When the column name carries no sign semantics (Importo, Amount…), look at
+    the actual sample values:
+    - If ANY value is negative → signs are already embedded → invert_sign=False.
+    - If ALL values are non-negative → ambiguous → leave invert_sign=None for LLM.
+    """
+    col = step0.amount_col
+    if col not in df.columns:
+        return step0
+
+    # Parse numeric, dropping unparseable cells (currency symbols, separators…)
+    vals = pd.to_numeric(
+        df[col].astype(str).str.replace(r"[€$£\s]", "", regex=True)
+                           .str.replace(",", ".", regex=False),
+        errors="coerce",
+    ).dropna()
+
+    if len(vals) == 0:
+        return step0
+
+    if (vals < 0).any():
+        logger.info(
+            f"classify_document [{source_name}]: Step 0 data inspection — "
+            f"neutral column '{col}' contains negative values → invert_sign=False [RESOLVED]"
+        )
+        step0.invert_sign = False
+        step0.amount_semantics = "signed_neutral"
+
+    return step0
+
+
 def _format_step0_for_prompt(r: _Step0Result) -> str:
     """Render _Step0Result as a prompt section injected before the LLM call."""
     lines = [
@@ -345,9 +383,14 @@ def _format_step0_for_prompt(r: _Step0Result) -> str:
             f"[RESOLVED, semantics={r.amount_semantics}]"
         )
         if r.invert_sign is not None:
+            reason = (
+                "column contains negative values → signs already embedded"
+                if r.amount_semantics == "signed_neutral"
+                else f"column is {r.amount_semantics}"
+            )
             lines.append(
                 f"- invert_sign = {str(r.invert_sign).lower()}  "
-                f"[RESOLVED — column is {r.amount_semantics}]"
+                f"[RESOLVED — {reason}]"
             )
         else:
             lines.append(
