@@ -55,15 +55,15 @@ def _build_config(engine, test_mode: bool = False) -> ProcessingConfig:
     )
 
 
-def _render_job_status(engine):
-    """Read latest import job from DB and render its state.
+def _render_job_status(engine, job=None):
+    """Render import job state. Reads from DB if job not provided.
 
-    When a job is *running*, the function auto-refreshes the page every
-    2 seconds so that any connected session (including remote ones) sees
-    live progress without depending on the originating session_state.
+    When a job is *running*, auto-refreshes every 2 s so any connected
+    session (including other browsers) sees live progress.
     """
-    with get_session(engine) as s:
-        job = get_latest_import_job(s)
+    if job is None:
+        with get_session(engine) as s:
+            job = get_latest_import_job(s)
     if job is None:
         return
 
@@ -73,7 +73,6 @@ def _render_job_status(engine):
         st.info(f"⏳ {msg}")
         st.progress(pct)
         st.caption(f"Avanzamento: {int(pct * 100)}% · aggiornamento automatico ogni 2 s")
-        # Auto-refresh: sleep then rerun so all sessions see current progress
         time.sleep(2)
         st.rerun()
 
@@ -141,7 +140,7 @@ def render_upload_page(engine):
 
     if _active_job and _active_job.status == "running":
         st.info("⏳ Importazione in corso — attendere il completamento prima di caricare nuovi file.")
-        _render_job_status(engine)
+        _render_job_status(engine, job=_active_job)
         return
 
     uploaded_files = st.file_uploader(
@@ -177,6 +176,9 @@ def render_upload_page(engine):
 
     if not uploaded_files:
         st.info("Carica uno o più file per avviare l'elaborazione.")
+        # Show job status for any connected session (including other browsers)
+        # that didn't originate the import — reads live state from DB.
+        _render_job_status(engine)
         _render_last_import_summary()
         return
 
