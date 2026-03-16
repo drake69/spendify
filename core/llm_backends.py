@@ -245,6 +245,7 @@ def call_with_fallback(
     """
     for backend in filter(None, [primary, fallback]):
         try:
+            logger.debug(f"Attempting LLM completion with backend: {backend.name}")
             result = backend.complete_structured(
                 system_prompt, user_prompt, json_schema, temperature
             )

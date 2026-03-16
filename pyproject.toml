@@ -3,6 +3,8 @@ name = "spendify"
 version = "2.1.0"
 description = "Unified personal finance ledger with hybrid LLM pipeline"
 readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Luigi Corsaro" }]
 requires-python = ">=3.13"
 dependencies = [
     # Core data

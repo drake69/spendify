@@ -72,17 +72,23 @@ class TestNormalizeDescription:
 
 class TestComputeTransactionId:
     def test_deterministic(self):
-        id1 = compute_transaction_id("file.csv", date(2024, 1, 1), Decimal("100.00"), "test desc")
-        id2 = compute_transaction_id("file.csv", date(2024, 1, 1), Decimal("100.00"), "test desc")
+        id1 = compute_transaction_id("file.csv", "01/01/2024", "100,00", "SUPERMERCATO COOP")
+        id2 = compute_transaction_id("file.csv", "01/01/2024", "100,00", "SUPERMERCATO COOP")
         assert id1 == id2
 
     def test_length_24(self):
-        tx_id = compute_transaction_id("file.csv", date(2024, 1, 1), Decimal("100.00"), "desc")
+        tx_id = compute_transaction_id("file.csv", "01/01/2024", "100,00", "desc")
         assert len(tx_id) == 24
 
     def test_different_inputs_differ(self):
-        id1 = compute_transaction_id("file.csv", date(2024, 1, 1), Decimal("100.00"), "desc a")
-        id2 = compute_transaction_id("file.csv", date(2024, 1, 1), Decimal("100.00"), "desc b")
+        id1 = compute_transaction_id("file.csv", "01/01/2024", "100,00", "desc a")
+        id2 = compute_transaction_id("file.csv", "01/01/2024", "100,00", "desc b")
+        assert id1 != id2
+
+    def test_debit_credit_convention(self):
+        # debit_positive: raw_amount is "<debit>|<credit>"
+        id1 = compute_transaction_id("file.csv", "01/01/2024", "50,00|", "pagamento")
+        id2 = compute_transaction_id("file.csv", "01/01/2024", "|100,00", "accredito")
         assert id1 != id2
 
 
