@@ -45,7 +45,7 @@
 ### 2.1 — Clona il repository
 
 ```bash
-git clone <url-repository> spendify
+git clone https://github.com/drake69/spendify.git spendify
 cd spendify
 ```
 
@@ -83,7 +83,7 @@ L'app è disponibile su **http://localhost:8501**
 ### 3.1 — Clona il repository
 
 ```bash
-git clone <url-repository> spendify
+git clone https://github.com/drake69/spendify.git spendify
 cd spendify
 ```
 
