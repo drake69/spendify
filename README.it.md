@@ -49,7 +49,7 @@ Aggrega estratti conto eterogenei (conti correnti, carte di credito, carte di de
 | **Persistenza SQLAlchemy** | 10 tabelle ORM; CRUD idempotente; migrazioni automatiche all'avvio |
 | **Progresso import cross-session** | Stato del job di importazione salvato nel DB; tutte le sessioni browser vedono il progresso in tempo reale |
 | **Export report** | HTML standalone (Plotly), CSV, XLSX |
-| **UI Streamlit 8 pagine** | Import → Ledger → Analytics → Review → Regole → Tassonomia → Impostazioni |
+| **UI Streamlit 8 pagine** | Import → Ledger → Modifiche massive → Analytics → Review → Regole → Tassonomia → Impostazioni |
 
 ---
 
@@ -58,7 +58,7 @@ Aggrega estratti conto eterogenei (conti correnti, carte di credito, carte di de
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                            app.py  (Streamlit)                           │
-│  upload  │ ledger │ analytics │ review │ rules │ taxonomy │ settings     │
+│  upload │ ledger │ bulk-edit │ analytics │ review │ rules │ taxonomy │ settings  │
 └──────────────────────────┬───────────────────────────────────────────────┘
                            │
                core/orchestrator.py
@@ -142,7 +142,8 @@ spendify/
 │   │                       #   pie+treemap spese, drill-down categoria, pie+treemap entrate,
 │   │                       #   top-10 descrizioni, stacked per conto + export HTML
 │   ├── review_page.py      # Correzione categoria + toggle giroconto + salvataggio regola
-│   ├── rules_page.py       # CRUD completo regole + ricalcolo bulk transazioni
+│   ├── bulk_edit_page.py   # Operazioni massive: categoria/contesto/giroconto + eliminazione da filtro
+│   ├── rules_page.py       # CRUD completo regole + "Esegui tutte le regole" bulk re-categorizzazione
 │   ├── taxonomy_page.py    # CRUD DB-backed per categorie e sottocategorie
 │   └── settings_page.py    # Locale (formato data/importo), lingua, config backend LLM
 │
@@ -263,9 +264,10 @@ L'app si apre su `http://localhost:8501` con 8 pagine:
 |---|---|
 | **📥 Import** | Carica uno o più file (CSV / XLSX). Progresso live visibile da tutte le sessioni browser. Riepilogo: transazioni, riconciliazioni, transfer link, flow usato (1/2). |
 | **📋 Ledger** | Tabella filtrabile per data, tipo, descrizione, categoria, contesto, flag revisione. Click su una riga per selezionarla istantaneamente. Colonne Entrata/Uscita separate e allineate a destra. Filtro contesto + pannello assegnazione con suggerimenti Jaccard. Toggle giroconto con bulk-apply. Download CSV/XLSX. |
+| **✏️ Modifiche massive** | Operazioni in blocco su transazione di riferimento: toggle giroconto, assegnazione contesto (con similarità Jaccard), correzione categoria + salvataggio regola. Eliminazione massiva tramite filtri combinati (data, conto, tipo, descrizione, categoria) con anteprima e conferma `ELIMINA` obbligatoria. |
 | **📊 Analytics** | 7 grafici Plotly interattivi: barre mensili entrate/uscite, saldo cumulativo, pie+treemap spese per categoria, drill-down interattivo categoria→sottocategoria con trend mensile, pie+treemap entrate, top-10 descrizioni, stacked per conto. Export HTML. |
 | **🔍 Review** | Transazioni con `to_review=True`. Toggle giroconto (con bulk-apply). Correzione categoria/sottocategoria + salvataggio opzionale come regola permanente applicata immediatamente. Pulsante "Re-run LLM" per transazioni non pulite. Pulsante "Riesegui giroconti cross-account". |
-| **📏 Regole** | CRUD completo regole di categorizzazione. Modifica/elimina regole + ricalcolo bulk delle transazioni già categorizzate. |
+| **📏 Regole** | CRUD completo regole di categorizzazione. Modifica/elimina regole + ricalcolo bulk delle transazioni già categorizzate. Pulsante "▶️ Esegui tutte le regole" applica tutte le regole a ogni transazione del ledger in un colpo. |
 | **🗂️ Tassonomia** | CRUD DB-backed per categorie e sottocategorie (spese e entrate). Le modifiche hanno effetto immediato senza restart. |
 | **⚙️ Impostazioni** | Formato data, separatori importo, lingua descrizioni, contesti di vita, lista conti bancari, backend LLM (modello + chiavi API). Tutto persistito nel DB. |
 
@@ -307,7 +309,9 @@ Creare una regola con la stessa coppia `(pattern, match_type)` di una regola esi
 
 ### Applicazione retroattiva
 
-Salvare una regola dalle pagine **Ledger** o **Review** la applica immediatamente a tutte le transazioni esistenti che corrispondono al pattern, non solo alle future importazioni. Il messaggio di conferma indica quante transazioni sono state aggiornate. Lo stesso comportamento è disponibile dalla pagina **Regole** tramite l'opzione di ricalcolo bulk.
+Salvare una regola dalle pagine **Ledger** o **Review** la applica immediatamente a tutte le transazioni esistenti che corrispondono al pattern, non solo alle future importazioni. Il messaggio di conferma indica quante transazioni sono state aggiornate. Lo stesso comportamento è disponibile dalla pagina **Regole** tramite l'opzione di ricalcolo bulk su singola regola.
+
+Inoltre, il pulsante **▶️ Esegui tutte le regole** nella pagina **Regole** applica tutte le regole a ogni transazione del ledger in un colpo solo (non limitato a `to_review=True`). Utile dopo aver creato più regole contemporaneamente o dopo aver importato dati storici.
 
 ---
 

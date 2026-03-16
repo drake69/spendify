@@ -27,24 +27,24 @@ FILE (CSV / XLSX)
 ┌─────────────────────────────────────────────────────────────┐
 │  3. NORMALIZZAZIONE                                          │ ◄─ DETERMINISTICO
 │     parse_date_safe · parse_amount · apply_sign_convention   │
-│     normalize_description · compute_transaction_id          │
+│     normalize_description · compute_transaction_id (SHA-256)│
 │     _infer_tx_type · remove_card_balance_row                 │
 └────────────────────────────┬────────────────────────────────┘
-                             │
-                             ▼
-                     [LLM — pulizia descrizioni]
-                             │
+                             │  ID calcolato qui da valori grezzi
                              ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  4. PRIVACY / PII REDACTION                                  │ ◄─ DETERMINISTICO
+│  4. DEDUP CHECK                                              │ ◄─ DETERMINISTICO
+│     get_existing_tx_ids (repository.py)                      │
+│     → abort se tutte già in DB, zero LLM calls sprecate      │
+└────────────────────────────┬────────────────────────────────┘
+                             │  solo tx nuove proseguono
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│  5. PULIZIA DESCRIZIONI                                      │
+│     PRIVACY / PII REDACTION  ◄─ DETERMINISTICO              │
 │     redact_pii · restore_owner_placeholders                  │
 │     (applicato PRIMA e DOPO ogni chiamata LLM)               │
-└────────────────────────────┬────────────────────────────────┘
-                             │
-                             ▼
-┌─────────────────────────────────────────────────────────────┐
-│  5. DEDUP CHECK                                              │ ◄─ DETERMINISTICO
-│     compute_transaction_id (SHA-256) · get_existing_tx_ids  │
+│                              ◄─ LLM (estrazione controparte) │
 └────────────────────────────┬────────────────────────────────┘
                              │
                              ▼
@@ -78,7 +78,8 @@ FILE (CSV / XLSX)
                              ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  10. REVISIONE — auto-applicazione regole                    │ ◄─ DETERMINISTICO
-│      apply_rules_to_review_transactions                      │
+│      apply_rules_to_review_transactions  (to_review=True)    │
+│      apply_all_rules_to_all_transactions (tutte le tx)       │
 │      bulk description rules · DescriptionRule                │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -194,7 +195,21 @@ Senza `owner_label` → rimuove la riga (evita doppio conteggio).
 
 ---
 
-## 4 — Privacy / PII Redaction
+## 4 — Dedup check
+
+**Modulo:** `db/repository.py` → `get_existing_tx_ids()`
+**Quando:** stadio 4, dopo normalizzazione e **prima** della pulizia descrizioni (LLM)
+**Perché:** l'ID SHA-256 è calcolato al passo 3 da valori grezzi → possiamo scartare i duplicati senza sprecare token LLM
+
+```
+ids_esistenti = SELECT id FROM transaction WHERE id IN (tutti_gli_id_del_batch)
+→ filtra le tx già presenti
+→ se tutte presenti → abort early (file già importato)
+```
+
+---
+
+## 5 — Privacy / PII Redaction
 
 **Modulo:** `core/sanitizer.py`
 **Quando:** PRIMA di ogni chiamata LLM (pulizia descrizioni + categorizzazione); DOPO per il ripristino nomi proprietari
@@ -223,19 +238,6 @@ I nomi reali vengono sostituiti con nomi **plausibili ma falsi** (il LLM può an
 | ES | Carlos Navarro, Elena Vega, Miguel Torres, Isabel Molina, … |
 
 **Guardia finale:** `assert_sanitized(testo)` → lancia `ValueError` se IBAN o PAN ancora presenti.
-
----
-
-## 5 — Dedup check
-
-**Modulo:** `db/repository.py` → `get_existing_tx_ids()`
-**Quando:** stadio 5, dopo normalizzazione, prima di tutto il resto
-
-```
-ids_esistenti = SELECT id FROM transaction WHERE id IN (tutti_gli_id_del_batch)
-→ filtra le tx già presenti
-→ se tutte presenti → abort early (file già importato)
-```
 
 ---
 
@@ -378,7 +380,7 @@ Hardcoded nel codice, direction-aware (spese/entrate separate):
 
 **Modulo:** `db/repository.py`, `ui/review_page.py`
 
-### Auto-applicazione regole
+### Auto-applicazione regole (pagina Review)
 
 **`apply_rules_to_review_transactions(session, user_rules)`**
 Ad ogni caricamento della pagina Review:
@@ -389,6 +391,23 @@ Per ogni tx con to_review=True:
       → aggiorna categoria, source=rule, to_review=False
       → passa alla tx successiva
 ```
+
+### Esegui tutte le regole (pagina Regole)
+
+**`apply_all_rules_to_all_transactions(session, user_rules)`**
+Pulsante "▶️ Esegui tutte le regole" nella pagina Regole:
+```
+Applica tutte le regole a TUTTE le transazioni (non solo to_review=True):
+  Regole ordinate per priorità DESC
+  Per ogni tx:
+    Per ogni regola:
+      Se regola.matches(tx.description, tx.doc_type):
+        → aggiorna categoria, subcategory, source=rule, confidence=high
+        → se tx.to_review=True → imposta to_review=False (n_cleared++)
+        → passa alla tx successiva (primo match vince)
+  Restituisce (n_matched, n_cleared_review)
+```
+Richiede conferma tramite checkbox prima dell'esecuzione.
 
 ### DescriptionRule — regole di correzione descrizione in blocco
 
@@ -435,9 +454,9 @@ Soglie applicate per ogni categoria rispetto al benchmark familiare di riferimen
 | 2. Schema — Fase 0 | sinonimi colonne, ispezione segni | classifier.py | ✗ |
 | 2. Schema — Fase 1 | classificazione doc_type, date_format, sign_convention | classifier.py | ✓ LLM |
 | 3. Normalizzazione | parse_date_safe / parse_amount / apply_sign_convention / normalize_description / compute_transaction_id / _infer_tx_type / remove_card_balance_row | normalizer.py + orchestrator.py | ✗ |
-| 4. Privacy | redact_pii / restore_owner_placeholders | sanitizer.py | ✗ |
-| 4. Pulizia descrizioni | clean_descriptions_batch | description_cleaner.py | ✓ LLM |
-| 5. Dedup | compute_transaction_id / get_existing_tx_ids | normalizer.py + repository.py | ✗ |
+| 4. Dedup | get_existing_tx_ids | repository.py | ✗ |
+| 5. Privacy | redact_pii / restore_owner_placeholders | sanitizer.py | ✗ |
+| 5. Pulizia descrizioni | clean_descriptions_batch | description_cleaner.py | ✓ LLM |
 | 6. Giroconti | detect_internal_transfers (Fase 1 + Fase 2) | normalizer.py | ✗ |
 | 7. Riconciliazione carte | find_card_settlement_matches (3 fasi) | normalizer.py | ✗ |
 | 8. Categorizzazione Liv. 0 | CategoryRule.matches (regole utente) | categorizer.py | ✗ |
@@ -445,6 +464,7 @@ Soglie applicate per ogni categoria rispetto al benchmark familiare di riferimen
 | 8. Categorizzazione Liv. 3 | categorize_batch (LLM) | categorizer.py | ✓ LLM |
 | 9. Persistenza | upsert_transaction / persist_import_result | repository.py | ✗ |
 | 10. Auto-regole | apply_rules_to_review_transactions | repository.py | ✗ |
+| 10. Esegui tutte le regole | apply_all_rules_to_all_transactions | repository.py | ✗ |
 | 10. Bulk descrizioni | DescriptionRule + _apply_description_rule_bulk | repository.py + review_page.py | ✓ LLM (ri-cat.) |
 | Analytics | EXCLUDED / benchmark ISTAT 0.5×–1.5× | analytics_page.py | ✗ |
 

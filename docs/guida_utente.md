@@ -33,7 +33,13 @@ Vai su **Ledger**. Trovi la lista completa in ordine cronologico, con filtri per
 
 > **Esempio:** Vuoi vedere solo le spese di gennaio 2025 sul conto corrente. Imposti il filtro data e selezioni il conto. La tabella si aggiorna subito.
 
-**Icone nella colonna Note:**
+**Filtri rapidi di periodo:** usa i pulsanti in cima — *Mese corrente*, *Mese precedente* (si sposta mese per mese ogni volta che lo premi), *Ultimi 3 mesi*, *Anno corrente*, *♾ Tutto* (azzera tutti i filtri contemporaneamente).
+
+**Opzioni aggiuntive nella seconda riga filtri:**
+- ☑ **Nascondi giroconti** — esclude bonifici tra tuoi stessi conti dai risultati (default: segue l'impostazione globale)
+- ☑ **Mostra raw** — aggiunge la colonna "Raw description" nella tabella per confrontare il testo originale della banca con quello rielaborato
+
+**Icone nelle colonne:**
 - 🔄 = giroconto interno (es. bonifico tra tuoi conti) — escluso dai totali
 - ⚠️ = da rivedere (la classificazione automatica non era sicura)
 
@@ -66,6 +72,10 @@ Vai su **Regole**, crea una nuova regola:
 
 Da quel momento in poi, ogni transazione che contiene quelle parole viene classificata automaticamente — sia nelle importazioni future che in quelle già presenti nel database.
 
+**Riesegui tutte le regole in blocco**
+
+Se hai creato molte regole in sessioni diverse e vuoi applicarle tutte in una volta a tutto il tuo storico, usa il pulsante **▶️ Esegui tutte le regole** in fondo alla sezione. Spunta la casella di conferma e clicca il pulsante: tutte le regole vengono applicate a ogni transazione del ledger, non solo a quelle in attesa di revisione. Al termine ti dirà quante transazioni sono state aggiornate.
+
 > **Esempio pratico con tre tipi di regola:**
 > - *Esatta:* `NETFLIX.COM` → Abbonamenti → Streaming (corrisponde solo se la descrizione è esattamente quella)
 > - *Contiene:* `ESSELUNGA` → Alimentari → Supermercato (corrisponde se la parola appare ovunque nella descrizione)
@@ -73,7 +83,38 @@ Da quel momento in poi, ogni transazione che contiene quelle parole viene classi
 
 ---
 
-## 5. Correggere le descrizioni in blocco
+## 5. Modifiche massive: categoria, contesto e eliminazione in blocco
+
+**Situazione:** Hai importato anni di estratti conto e vuoi pulire dati sbagliati o rimuovere un intero conto che non vuoi più tracciare.
+
+Vai su **✏️ Modifiche massive**. La pagina è divisa in due aree principali.
+
+### 5a — Operazioni su transazione di riferimento
+
+1. Cerca e seleziona una transazione dal menu a tendina (puoi filtrare per testo o mostrare solo quelle ⚠️ da rivedere)
+2. Spendify mostra quante altre transazioni hanno la stessa descrizione o una simile (Jaccard ≥ 35%)
+3. Poi scegli cosa fare:
+   - **2a Giroconto** — segna/rimuovi come bonifico interno, con un click propaga a tutte le tx con la stessa descrizione
+   - **2b Contesto** — assegna un contesto (es. "Vacanza") alla singola tx o a tutte le simili
+   - **2c Categoria** — corregge categoria e sottocategoria, salva una regola deterministica per i file futuri, applica subito alle simili
+
+### 5b — Eliminazione massiva da filtro
+
+**Situazione:** Vuoi cancellare tutte le transazioni di un conto chiuso, o tutte quelle di un periodo di test.
+
+1. Imposta i filtri (date, conto, tipo, descrizione, categoria) — almeno uno è obbligatorio
+2. Il contatore mostra subito quante transazioni verranno cancellate
+3. Clicca **👁 Anteprima** per vedere le prime 10 righe prima di procedere
+4. Digita **`ELIMINA`** nel campo di conferma — solo allora il pulsante si abilita
+5. Clicca il pulsante rosso
+
+> ⚠️ **L'eliminazione è irreversibile.** Fai sempre un backup del file `ledger.db` prima di eliminare grandi quantità di dati (vedi la guida Deployment).
+
+> **Esempio:** Hai importato per errore l'estratto conto di un conto corrente che non è tuo. Filtri per conto, vedi 200 transazioni nell'anteprima, digiti ELIMINA e le rimuovi in un colpo solo.
+
+---
+
+## 6. Correggere le descrizioni in blocco (pagina Review)
 
 **Situazione:** La banca scrive "SOTTOSCRIZIONI FONDI E SICAV SOTTOSCRIZIONE ETICA AZIONARIO R DEP.TITOLI 081/663905/000" — un disastro leggibile. Vuoi sostituirla con "Fondo Etico Azionario" per tutte le occorrenze.
 
@@ -86,7 +127,7 @@ Tutte le transazioni che corrispondono vengono aggiornate immediatamente e la re
 
 ---
 
-## 6. Analytics: i grafici
+## 7. Analytics: i grafici
 
 **Situazione:** Vuoi capire dove spendi di più.
 
@@ -99,7 +140,7 @@ Usa i filtri in alto per restringere a un periodo o a un conto specifico.
 
 ---
 
-## 7. Impostazioni: cambiare il modello AI
+## 8. Impostazioni: cambiare il modello AI
 
 **Situazione:** Vuoi usare un modello diverso per la classificazione (es. Claude invece di Ollama locale).
 

@@ -34,13 +34,14 @@ FILE (CSV / XLSX)
                                   │
                                   ▼
                      ┌──────────────────────────┐
-                     │  4. PULIZIA DESCRIZIONI   │  LLM estrae controparte
-                     │     [RF-02 pre-cat.]      │  (pagante o ricevente)
+                     │  4. DEDUP CHECK           │  salta tx già importate
+                     │                           │  (ID calcolato al passo 3)
                      └────────────┬─────────────┘
-                                  │
+                                  │  ← nessuna LLM call su tx già note
                                   ▼
                      ┌──────────────────────────┐
-                     │  5. DEDUP CHECK           │  salta tx già importate
+                     │  5. PULIZIA DESCRIZIONI   │  LLM estrae controparte
+                     │     [RF-02 pre-cat.]      │  (pagante o ricevente)
                      └────────────┬─────────────┘
                                   │
                                   ▼
@@ -71,6 +72,10 @@ FILE (CSV / XLSX)
                      ┌──────────────────────────┐
                      │  10. REVISIONE MANUALE    │  to_review=True → utente
                      │      + REGOLE [RF-08]     │  → riapplica regole
+                     │                           │
+                     │      Pagine UI:            │
+                     │      • Review             │
+                     │      • Modifiche massive  │
                      └──────────────────────────┘
 ```
 
@@ -206,7 +211,23 @@ remove_card_balance_row(txs, epsilon)
 
 ---
 
-## Stadio 4 — Pulizia descrizioni [RF-02, pre-categorizzazione]
+## Stadio 4 — Dedup check
+
+**Modulo:** `db/repository.py` → `get_existing_tx_ids()`
+
+> Gli ID transazione sono calcolati al passo 3 da valori grezzi, quindi la dedup
+> avviene **prima di qualsiasi chiamata LLM**: nessun token sprecato su tx già importate.
+
+```
+existing_ids = query DB WHERE id IN (tutti_gli_id_del_batch)
+→ filtra le tx già presenti
+→ se tutte presenti → abort early (file già importato, zero LLM calls)
+→ prosegue solo con le tx nuove
+```
+
+---
+
+## Stadio 5 — Pulizia descrizioni [RF-02, pre-categorizzazione]
 
 **Modulo:** `core/description_cleaner.py` → `clean_descriptions_batch()`
 
@@ -264,19 +285,8 @@ Privacy (obbligatoria prima di ogni LLM call):
 
 ---
 
-## Stadio 5 — Dedup check
-
-**Modulo:** `db/repository.py` → `get_existing_tx_ids()`
-
-```
-existing_ids = query DB WHERE id IN (tutti_gli_id_del_batch)
-→ filtra le tx già presenti
-→ se tutte presenti → abort early (file già importato)
-```
-
----
-
 ## Stadio 6 — Rilevamento giroconti [RF-04]
+
 
 **Modulo:** `core/normalizer.py` → `detect_internal_transfers()`
 
@@ -471,16 +481,23 @@ session.commit()
 
 ## Stadio 10 — Revisione manuale e regole [RF-08]
 
-**Pagina:** `ui/review_page.py`
+**Pagina:** `ui/review_page.py`, `ui/rules_page.py`
 
 ```
-Auto-applicazione regole (ad ogni caricamento pagina):
+Auto-applicazione regole (ad ogni caricamento pagina Review):
   apply_rules_to_review_transactions(session, user_rules)
     └─ per ogni tx con to_review=True:
        └─ prima regola che fa match →
           categoria, sorgente=rule, to_review=False
 
-Pulsante "Rielabora con LLM":
+Pulsante "▶️ Esegui tutte le regole" (pagina Regole):
+  apply_all_rules_to_all_transactions(session, user_rules)
+    └─ applica tutte le regole a TUTTE le transazioni (non solo to_review=True)
+    └─ regole in ordine di priorità decrescente, primo match vince
+    └─ restituisce (n_matched, n_cleared_review)
+    └─ richiede conferma tramite checkbox prima dell'esecuzione
+
+Pulsante "Rielabora con LLM" (pagina Review):
   _rerun_llm_on_review(engine)
     └─ carica tutte le tx con to_review=True
        (esclusi giroconti e card_settlement)

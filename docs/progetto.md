@@ -240,13 +240,14 @@ Le migrazioni sono idempotenti e vengono eseguite automaticamente all'avvio in `
 8 pagine Streamlit gestite da `app.py` + `ui/sidebar.py`:
 
 ```
-📥 Import          upload_page.py
-📋 Ledger          registry_page.py
-📊 Analytics       analysis_page.py
-🔍 Review          review_page.py
-📏 Regole          rules_page.py
-🗂️ Tassonomia      taxonomy_page.py
-⚙️ Impostazioni    settings_page.py
+📥 Import              upload_page.py
+📋 Ledger              registry_page.py
+✏️ Modifiche massive   bulk_edit_page.py
+📊 Analytics           analysis_page.py
+🔍 Review              review_page.py
+📏 Regole              rules_page.py
+🗂️ Tassonomia          taxonomy_page.py
+⚙️ Impostazioni        settings_page.py
 ```
 
 ### 7.2 Pagina Import
@@ -256,7 +257,13 @@ Le migrazioni sono idempotenti e vengono eseguite automaticamente all'avvio in `
 - Visibile da qualsiasi browser che ha l'app aperta
 - Riepilogo al termine: transazioni importate, riconciliate, giroconti trovati, flow usato
 
-### 7.3 Pagina Ledger
+### 7.3 Pagina Modifiche massive
+
+- Operazioni in blocco su transazione di riferimento: toggle giroconto, assegnazione contesto (similarità Jaccard ≥ 35%), correzione categoria/sottocategoria + salvataggio regola
+- Eliminazione massiva da filtro: filtri combinabili (data, conto, tipo, descrizione, categoria); almeno un filtro obbligatorio; anteprima prime 10 righe; conferma con digitazione di `ELIMINA`; eliminazione irreversibile
+- Cross-account duplicate detection: pivot table per identificare transazioni presenti su più conti
+
+### 7.4 Pagina Ledger
 
 - Filtri: date range, tipo transazione, descrizione (full-text su description + raw_description), categoria, contesto, flag revisione
 - Click su una riga → selezione istantanea con dettagli a sidebar
@@ -266,7 +273,7 @@ Le migrazioni sono idempotenti e vengono eseguite automaticamente all'avvio in `
 - Metriche: saldo netto, totale entrate, totale uscite
 - Download CSV / XLSX del ledger filtrato
 
-### 7.4 Pagina Review
+### 7.5 Pagina Review
 
 - Solo transazioni con `to_review=True`
 - Toggle giroconto + bulk-apply
@@ -274,7 +281,7 @@ Le migrazioni sono idempotenti e vengono eseguite automaticamente all'avvio in `
 - **"🔄 Rielabora con LLM"**: riesegue cleaning + categorizzazione sulle transazioni non pulite
 - **"🔁 Riesegui rilevamento giroconti"**: riesegue RF-04 globalmente
 
-### 7.5 Pagina Impostazioni
+### 7.6 Pagina Impostazioni
 
 - Formato data e separatori importo (con anteprima live)
 - Lingua delle descrizioni (usata nei prompt LLM)
@@ -304,6 +311,8 @@ Stessa coppia `(pattern, match_type)` → aggiornamento in-place di categoria/pr
 ### 8.3 Applicazione retroattiva
 
 Le regole vengono applicate a **tutte** le transazioni esistenti al salvataggio, non solo alle future importazioni. Il conteggio delle transazioni aggiornate è mostrato all'utente.
+
+**Esegui tutte le regole (bulk):** il pulsante "▶️ Esegui tutte le regole" nella pagina Regole applica in un colpo solo tutte le regole attive a ogni transazione del ledger (non solo `to_review=True`). Utile dopo aver creato più regole in sessioni diverse o dopo aver importato dati storici senza LLM attivo.
 
 ---
 
