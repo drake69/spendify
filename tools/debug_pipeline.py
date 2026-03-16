@@ -88,11 +88,15 @@ def _print_json(data: dict | list) -> None:
 
 def step_load(raw_bytes: bytes, filename: str) -> pd.DataFrame:
     _hr("LOAD")
-    df, encoding = load_raw_dataframe(raw_bytes, filename)
+    df, encoding, info = load_raw_dataframe(raw_bytes, filename)
     print(f"File       : {filename}")
     print(f"Encoding   : {encoding}")
     print(f"Shape      : {df.shape[0]} rows × {df.shape[1]} columns")
     print(f"Columns    : {df.columns.tolist()}")
+    if info.skipped_rows:
+        print(f"Pre-header rows stripped: {info.skipped_rows}")
+    if info.dropped_columns:
+        print(f"Low-variability columns dropped: {info.dropped_columns}")
     _hr("First 5 rows")
     print(df.head(5).to_string(index=False))
     return df
@@ -253,7 +257,7 @@ def main() -> None:
 
     elif args.step == "full":
         step_load(raw_bytes, filename)
-        df, _ = load_raw_dataframe(raw_bytes, filename)
+        df, _, _info = load_raw_dataframe(raw_bytes, filename)
         step_classify(df, filename, config)
         step_full(raw_bytes, filename, config)
 
