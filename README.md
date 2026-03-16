@@ -49,7 +49,8 @@ Aggregates heterogeneous bank statements (current accounts, credit cards, debit 
 | **SQLAlchemy persistence** | 10 ORM tables; idempotent CRUD; automatic migrations on startup |
 | **Cross-session import progress** | Import job state stored in DB; all browser sessions see live progress |
 | **Report export** | Standalone HTML (Plotly), CSV, XLSX |
-| **8-page Streamlit UI** | Import → Ledger → Modifiche massive → Analytics → Review → Regole → Tassonomia → Impostazioni |
+| **9-page Streamlit UI** | Import → Ledger → Modifiche massive → Analytics → Review → Regole → Tassonomia → Impostazioni → Check List |
+| **Monthly coverage checklist** | Pivot table (month × account) showing transaction counts; highlights missing months at a glance |
 
 ---
 
@@ -109,7 +110,7 @@ Aggregates heterogeneous bank statements (current accounts, credit cards, debit 
 
 ```
 spendify/
-├── app.py                  # Streamlit entry point (8 pages)
+├── app.py                  # Streamlit entry point (9 pages)
 ├── taxonomy.yaml           # Initial taxonomy seed (imported into DB on first run)
 ├── .env.example            # Environment variable template
 ├── pyproject.toml          # Dependencies (uv / pip)
@@ -135,7 +136,7 @@ spendify/
 │   └── template_report.html.j2
 │
 ├── ui/
-│   ├── sidebar.py          # Navigation buttons (8 pages) + giroconto mode
+│   ├── sidebar.py          # Navigation buttons (9 pages) + giroconto mode
 │   ├── upload_page.py      # Multi-file import + cross-session progress bar
 │   ├── registry_page.py    # Filterable ledger + row-click selection + giroconto bulk-apply
 │   ├── analysis_page.py    # 7 Plotly charts: monthly bars, cumulative balance,
@@ -145,7 +146,8 @@ spendify/
 │   ├── bulk_edit_page.py   # Bulk operations: category/context/giroconto + mass deletion by filter
 │   ├── rules_page.py       # Full CRUD for CategoryRule + "Run all rules" bulk re-categorization
 │   ├── taxonomy_page.py    # DB-backed CRUD for categories and subcategories
-│   └── settings_page.py    # Locale (date/amount format), language, LLM backend config
+│   ├── settings_page.py    # Locale (date/amount format), language, LLM backend config
+│   └── checklist_page.py   # Month × account pivot: transaction presence checklist
 │
 ├── prompts/
 │   ├── classifier.json     # System+user prompts for Flow 2 schema detection (invert_sign hint)
@@ -258,7 +260,7 @@ uv run streamlit run app.py
 streamlit run app.py
 ```
 
-The app opens at `http://localhost:8501` with 8 pages:
+The app opens at `http://localhost:8501` with 9 pages:
 
 | Page | Description |
 |---|---|
@@ -270,6 +272,7 @@ The app opens at `http://localhost:8501` with 8 pages:
 | **📏 Regole** | Full CRUD for category rules. Edit/delete existing rules + optional bulk re-categorization of already-matched transactions. "▶️ Esegui tutte le regole" button applies all rules to every transaction in the ledger at once. |
 | **🗂️ Tassonomia** | DB-backed CRUD for categories and subcategories (expenses and income). Changes take effect immediately without restarting. |
 | **⚙️ Impostazioni** | Date format, amount separators, description language, life contexts, bank account list, LLM backend (model + API keys). All persisted in DB. |
+| **✅ Check List** | Pivot table (month × account). Current month at top, descending. Cells show tx count; **—** = no transactions. Color-coded by volume. Filters: account selection, last N months, hide empty rows. CSV export. |
 
 ---
 
