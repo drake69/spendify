@@ -241,6 +241,25 @@ _AMOUNT_NEUTRAL_SYNONYMS: frozenset[str] = frozenset({
 _BANK_DOC_TYPES: frozenset[str] = frozenset({"bank_account", "savings"})
 _CREDIT_CARD_DOC_TYPES: frozenset[str] = frozenset({"credit_card"})
 
+# Column names that look numeric but are IDs/references, never amounts.
+# Matched as substring of the lowercased column name.
+_REFERENCE_COLUMN_BLOCKLIST: frozenset[str] = frozenset({
+    # Italian
+    "riferimento", "num. operazione", "numero operazione", "codice operazione",
+    "codice", "numero", "n. operazione", "id operazione", "id transazione",
+    "identificativo", "rif.", "rif ",
+    # English
+    "reference", "ref.", "ref ", "transaction id", "transaction ref",
+    "order id", "order number", "record id", "entry id",
+    # French / German / Spanish
+    "référence", "referenz", "referencia", "numero de referencia",
+})
+
+# Personal-finance plausibility cap: if the median absolute value of a column
+# classified as "amount" exceeds this threshold (in whatever currency unit the
+# file uses), treat it as a reference/ID column instead.
+_AMOUNT_PLAUSIBILITY_CAP = 1_000_000
+
 # ── Content-type detection regexes (Phase 0 data-driven) ─────────────────────
 # Date: three digit-groups separated by / - . with optional time component
 _CONTENT_DATE_RE = re.compile(
@@ -317,6 +336,33 @@ def _classify_column_content(series: pd.Series) -> str:
     if date_hits / n >= _CONTENT_MIN_RATIO:
         return "date"
     if amount_hits / n >= _CONTENT_MIN_RATIO:
+        # Plausibility check: reference/ID columns contain large integers that
+        # match the amount regex but are not actual monetary values.
+        # Parse the matched samples and reject if median absolute value exceeds cap.
+        numeric_vals: list[float] = []
+        for v in samples:
+            if _CONTENT_AMOUNT_RE.match(v):
+                cleaned = re.sub(r'[€$£¥₹\s]', '', v)
+                # Normalise European thousands separator (e.g. "1.234,56" → "1234.56")
+                if '.' in cleaned and ',' in cleaned:
+                    if cleaned.rfind('.') < cleaned.rfind(','):
+                        cleaned = cleaned.replace('.', '').replace(',', '.')
+                    else:
+                        cleaned = cleaned.replace(',', '')
+                elif ',' in cleaned:
+                    parts = cleaned.split(',')
+                    if len(parts) == 2 and len(parts[1]) <= 2:
+                        cleaned = cleaned.replace(',', '.')
+                    else:
+                        cleaned = cleaned.replace(',', '')
+                try:
+                    numeric_vals.append(abs(float(cleaned)))
+                except ValueError:
+                    pass
+        if numeric_vals:
+            median_val = sorted(numeric_vals)[len(numeric_vals) // 2]
+            if median_val > _AMOUNT_PLAUSIBILITY_CAP:
+                return "text"
         return "amount"
     return "text"
 
@@ -348,7 +394,13 @@ def _run_step0_analysis(columns: list[str], df_raw: pd.DataFrame | None = None) 
                 col_type[col] = _classify_column_content(df_raw[col])
 
     date_cols_found   = [c for c in columns if col_type.get(c) == "date"]
-    amount_cols_found = [c for c in columns if col_type.get(c) == "amount"]
+    # Exclude columns whose name matches known reference/ID patterns even if their
+    # content was classified as "amount" (large integers like CartaSi "Riferimento").
+    amount_cols_found = [
+        c for c in columns
+        if col_type.get(c) == "amount"
+        and not any(ref in c.lower() for ref in _REFERENCE_COLUMN_BLOCKLIST)
+    ]
     # Exclude categorical columns (few distinct values — enum/flag, not free text)
     text_cols_found   = [
         c for c in columns
