@@ -225,6 +225,19 @@ def render_settings_page(engine):
     if import_test_mode:
         st.caption("⚠️ Modalità test attiva — solo le prime 20 righe verranno elaborate.")
 
+    max_tx_amount = st.number_input(
+        "Importo massimo transazione (€)",
+        min_value=1_000,
+        max_value=100_000_000,
+        value=int(settings.get("max_transaction_amount", "1000000")),
+        step=10_000,
+        help=(
+            "Colonne con valore mediano superiore a questa soglia vengono scartate come "
+            "colonne importo (es. colonne 'Riferimento' con ID numerici). "
+            "Aumenta solo se hai transazioni reali sopra €1.000.000."
+        ),
+    )
+
     st.divider()
 
     # ── Conti bancari ──────────────────────────────────────────────────────────
@@ -399,6 +412,7 @@ def render_settings_page(engine):
             set_user_setting(session2, "owner_names", owner_names_raw.strip())
             set_user_setting(session2, "use_owner_names_giroconto", "true" if use_owner_giroconto else "false")
             set_user_setting(session2, "import_test_mode", "true" if import_test_mode else "false")
+            set_user_setting(session2, "max_transaction_amount", str(int(max_tx_amount)))
             _ctx_clean = [c for c in st.session_state.get("settings_contexts", _ctx_list) if c]
             set_user_setting(session2, "contexts", json.dumps(_ctx_clean, ensure_ascii=False))
             session2.commit()

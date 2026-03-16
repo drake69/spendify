@@ -60,6 +60,7 @@ def _build_config(engine, test_mode: bool | None = None) -> ProcessingConfig:
         compat_model=s.get("compat_model", ""),
         description_language=s.get("description_language", "it"),
         test_mode=test_mode,
+        max_transaction_amount=float(s.get("max_transaction_amount", "1000000")),
     )
 
 

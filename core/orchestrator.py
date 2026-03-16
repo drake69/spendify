@@ -86,6 +86,10 @@ class ProcessingConfig:
     sanitize_config: SanitizationConfig = field(default_factory=SanitizationConfig)
     description_language: str = "it"  # language of transaction descriptions (ISO 639-1)
 
+    # Plausibility cap for amount column detection: columns whose median absolute
+    # value exceeds this threshold are treated as reference/ID columns, not amounts.
+    max_transaction_amount: float = 1_000_000
+
     # Test mode: limit rows for quick classifier verification
     test_mode: bool = False
     test_mode_rows: int = 20
@@ -492,6 +496,7 @@ def process_file(
             sanitize=True,
             sanitize_config=config.sanitize_config,
             fallback_backend=fallback,
+            amount_plausibility_cap=config.max_transaction_amount,
         )
         _progress(0.25)
         if doc_schema is None or doc_schema.confidence == Confidence.low:
