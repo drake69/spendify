@@ -6,11 +6,19 @@ Flow 2 (LLM-first / schema-on-read).
 from __future__ import annotations
 
 import io
+import re
 from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Optional
+
+# Regex per UUID v4 — usati da alcune banche come ID transazione interno nella
+# colonna descrizione: vanno scartati perché non portano informazione utente.
+_UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+    re.IGNORECASE,
+)
 
 import chardet
 import pandas as pd
@@ -32,14 +40,17 @@ from core.models import (
     TransactionType,
 )
 from core.normalizer import (
+    PreprocessInfo,
     apply_sign_convention,
     compute_file_hash,
     compute_transaction_id,
+    detect_and_strip_preheader_rows,
     detect_best_sheet,
     detect_delimiter,
     detect_encoding,
     detect_header_row,
     detect_internal_transfers,
+    drop_low_variability_columns,
     find_card_settlement_matches,
     normalize_description,
     parse_amount,
@@ -86,6 +97,10 @@ class ProcessingConfig:
     openai_api_key: str = ""
     claude_model: str = "claude-3-5-haiku-20241022"
     anthropic_api_key: str = ""
+    # OpenAI-compatible (Groq, Together AI, Google AI Studio, …)
+    compat_base_url: str = ""
+    compat_api_key: str = ""
+    compat_model: str = ""
 
 
 @dataclass
@@ -113,6 +128,10 @@ def _build_backend(config: ProcessingConfig) -> LLMBackend:
     elif config.llm_backend == "claude":
         kwargs["model"] = config.claude_model
         kwargs["api_key"] = config.anthropic_api_key
+    elif config.llm_backend == "openai_compatible":
+        kwargs["base_url"] = config.compat_base_url
+        kwargs["api_key"]  = config.compat_api_key
+        kwargs["model"]    = config.compat_model
     return BackendFactory.create(config.llm_backend, **kwargs)
 
 
@@ -127,12 +146,21 @@ def _get_fallback_backend(config: ProcessingConfig) -> Optional[OllamaBackend]:
     return None
 
 
-def load_raw_dataframe(raw_bytes: bytes, filename: str) -> tuple[pd.DataFrame, str]:
-    """
-    Load a file into a raw DataFrame with pre-processing:
-    encoding detection, sheet selection, header detection.
+def load_raw_dataframe(
+    raw_bytes: bytes,
+    filename: str,
+) -> tuple[pd.DataFrame, str, PreprocessInfo]:
+    """Load a file into a raw DataFrame with Phase-0 pre-processing.
 
-    Returns (df, encoding_used).
+    Steps:
+    1. Detect encoding (CSV) / select best sheet (Excel).
+    2. Detect and skip leading non-data rows (CSV: ``detect_header_row``).
+    3. Load into DataFrame.
+    4. Strip any pre-header metadata rows (statistical median approach).
+    5. Drop low-variability columns (e.g., repeated account name / card PAN).
+
+    Returns:
+        ``(df, encoding_used, preprocess_info)``
     """
     encoding = detect_encoding(raw_bytes)
     name_lower = filename.lower()
@@ -147,22 +175,28 @@ def load_raw_dataframe(raw_bytes: bytes, filename: str) -> tuple[pd.DataFrame, s
             sheet_name = 0  # fallback to first sheet
 
         df = pd.read_excel(io.BytesIO(raw_bytes), sheet_name=sheet_name)
-        return df, encoding
 
-    # CSV / text
-    text = raw_bytes.decode(encoding, errors="replace")
-    delimiter = detect_delimiter(text)
-    lines = text.splitlines()
-    skip_rows = detect_header_row(lines)
+    else:
+        # CSV / text
+        text = raw_bytes.decode(encoding, errors="replace")
+        delimiter = detect_delimiter(text)
+        lines = text.splitlines()
+        skip_rows = detect_header_row(lines)
 
-    df = pd.read_csv(
-        io.StringIO(text),
-        sep=delimiter,
-        skiprows=skip_rows,
-        engine="python",
-        on_bad_lines="skip",
-    )
-    return df, encoding
+        df = pd.read_csv(
+            io.StringIO(text),
+            sep=delimiter,
+            skiprows=skip_rows,
+            engine="python",
+            on_bad_lines="skip",
+        )
+
+    # Phase-0 preprocessing (runs on both CSV and Excel)
+    df, skipped_rows = detect_and_strip_preheader_rows(df, source_name=filename)
+    df, dropped_cols = drop_low_variability_columns(df, source_name=filename)
+
+    info = PreprocessInfo(skipped_rows=skipped_rows, dropped_columns=dropped_cols)
+    return df, encoding, info
 
 
 def _normalize_df_with_schema(
@@ -235,6 +269,9 @@ def _normalize_df_with_schema(
             accumulated = ""
             for p in parts:
                 if not p or p.lower() in ("nan", "null"):
+                    continue
+                # Scarta UUID v4 (ID transazione interna — es. Satispay)
+                if _UUID_RE.match(p):
                     continue
                 if p.lower() not in accumulated.lower():
                     accumulated = (accumulated + " " + p).strip()
@@ -407,7 +444,7 @@ def process_file(
 
     # Load raw data
     _progress(0.0)
-    df_raw, encoding = load_raw_dataframe(raw_bytes, filename)
+    df_raw, encoding, _preprocess_info = load_raw_dataframe(raw_bytes, filename)
     logger.info(
         f"process_file: loaded {filename} | rows={len(df_raw)} "
         f"ncols={len(df_raw.columns)} | known_schema={'yes' if known_schema else 'no'}"
@@ -509,23 +546,9 @@ def process_file(
             flow_used=flow_used,
         )
 
-    # ── Description cleaning: extract counterpart name (pre-categorization) ──
-    # Sends descriptions to LLM to strip payment-method boilerplate and keep
-    # only the merchant / beneficiary / payer name.
-    # raw_description is never modified — it stays as the SHA-256 dedup key.
-    # Owner names are replaced with fake but plausible aliases (e.g. "Carlo
-    # Brambilla") so the LLM extracts them as real names; aliases are restored
-    # to the real owner names after extraction.
-    transactions = clean_descriptions_batch(
-        transactions,
-        llm_backend=backend,
-        fallback_backend=fallback,
-        source_name=filename,
-        sanitize_config=config.sanitize_config,
-    )
-    _progress(0.38)
-
-    # Per-transaction dedup: skip transactions already in DB before running LLM
+    # ── Per-transaction dedup: filter already-imported rows BEFORE any LLM call ──
+    # Transaction IDs are computed from raw values during normalisation, so we
+    # can cheaply skip duplicates here and avoid wasting LLM tokens on them.
     skipped_count = 0
     if existing_tx_ids_checker is not None:
         all_ids = [t["id"] for t in transactions]
@@ -549,6 +572,22 @@ def process_file(
                 skipped_count=skipped_count,
                 flow_used=flow_used,
             )
+    _progress(0.38)
+
+    # ── Description cleaning: extract counterpart name (pre-categorization) ──
+    # Sends descriptions to LLM to strip payment-method boilerplate and keep
+    # only the merchant / beneficiary / payer name.
+    # raw_description is never modified — it stays as the SHA-256 dedup key.
+    # Owner names are replaced with fake but plausible aliases (e.g. "Carlo
+    # Brambilla") so the LLM extracts them as real names; aliases are restored
+    # to the real owner names after extraction.
+    transactions = clean_descriptions_batch(
+        transactions,
+        llm_backend=backend,
+        fallback_backend=fallback,
+        source_name=filename,
+        sanitize_config=config.sanitize_config,
+    )
 
     # Build DataFrame for transfer detection
     tx_df = pd.DataFrame(transactions)

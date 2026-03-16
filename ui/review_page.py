@@ -57,6 +57,9 @@ def _rerun_llm_on_review(engine) -> tuple[int, int]:
         openai_api_key=s.get("openai_api_key", ""),
         claude_model=s.get("anthropic_model", "claude-3-5-haiku-20241022"),
         anthropic_api_key=s.get("anthropic_api_key", ""),
+        compat_base_url=s.get("compat_base_url", ""),
+        compat_api_key=s.get("compat_api_key", ""),
+        compat_model=s.get("compat_model", ""),
         description_language=s.get("description_language", "it"),
     )
     backend = _build_backend(config)
@@ -269,6 +272,9 @@ def _apply_description_rule_bulk(
         openai_api_key=s.get("openai_api_key", ""),
         claude_model=s.get("anthropic_model", "claude-3-5-haiku-20241022"),
         anthropic_api_key=s.get("anthropic_api_key", ""),
+        compat_base_url=s.get("compat_base_url", ""),
+        compat_api_key=s.get("compat_api_key", ""),
+        compat_model=s.get("compat_model", ""),
         description_language=s.get("description_language", "it"),
     )
     backend = _build_backend(config)

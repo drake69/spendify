@@ -208,6 +208,71 @@ class ClaudeBackend(LLMBackend):
             raise LLMValidationError(f"ClaudeBackend error: {exc}") from exc
 
 
+# ── OpenAI-compatible (Groq, Together AI, Google AI Studio, …) ───────────────
+
+class OpenAICompatibleBackend(LLMBackend):
+    """Generic OpenAI-compatible backend for any provider that exposes /v1/chat/completions.
+
+    Uses json_object response format (broadly supported) instead of strict json_schema,
+    then validates required fields manually.  Works with Groq, Together AI,
+    Google AI Studio (Gemma), and any other OpenAI-compatible API.
+    """
+
+    def __init__(
+        self,
+        base_url: str,
+        api_key: str,
+        model: str,
+        timeout: int = 60,
+    ):
+        import openai as _openai
+        self._openai = _openai
+        self.base_url = base_url.rstrip("/")
+        self.api_key  = api_key
+        self.model    = model
+        self.timeout  = timeout
+
+    @property
+    def is_remote(self) -> bool:
+        return True
+
+    @property
+    def name(self) -> str:
+        return "openai_compatible"
+
+    def complete_structured(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        json_schema: dict[str, Any],
+        temperature: float = 0.0,
+    ) -> dict[str, Any]:
+        client = self._openai.OpenAI(
+            api_key=self.api_key,
+            base_url=self.base_url,
+            timeout=self.timeout,
+        )
+        # Append JSON instruction to system prompt for providers that don't support
+        # response_format=json_schema
+        system_with_json = system_prompt + "\n\nRespond ONLY with valid JSON."
+        try:
+            response = client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": system_with_json},
+                    {"role": "user",   "content": user_prompt},
+                ],
+                response_format={"type": "json_object"},
+                temperature=temperature,
+            )
+            content = response.choices[0].message.content
+            result = json.loads(content)
+            _validate_required(result, json_schema)
+            return result
+        except (self._openai.OpenAIError, json.JSONDecodeError, KeyError) as exc:
+            raise LLMValidationError(f"OpenAICompatibleBackend error: {exc}") from exc
+
+
 # ── Factory ───────────────────────────────────────────────────────────────────
 
 class BackendFactory:
@@ -220,6 +285,8 @@ class BackendFactory:
             return OpenAIBackend(**kwargs)
         elif backend_name == "claude":
             return ClaudeBackend(**kwargs)
+        elif backend_name == "openai_compatible":
+            return OpenAICompatibleBackend(**kwargs)
         else:
             raise ValueError(f"Unknown backend: {backend_name}")
 

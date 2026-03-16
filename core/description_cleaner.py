@@ -18,6 +18,7 @@ transaction["raw_description"] = original text      (used for SHA-256 dedup, nev
 from __future__ import annotations
 
 import json
+import unicodedata
 from decimal import Decimal
 
 from core.llm_backends import LLMBackend, call_with_fallback
@@ -25,6 +26,25 @@ from core.sanitizer import SanitizationConfig, redact_pii, restore_owner_placeho
 from support.logging import setup_logging
 
 logger = setup_logging()
+
+
+def _strip_non_text(text: str) -> str:
+    """Remove emoji and non-text symbols, keeping letters, digits, punctuation and spaces.
+
+    Uses Unicode general categories:
+      L* = letters (all scripts, accented chars included)
+      N* = digits and numeric chars
+      P* = punctuation (. , ; : ' " - etc.)
+      Z* = separators / spaces
+    Everything else (S* symbols including emoji ✅🏬€, C* control chars) is dropped.
+    The result is collapsed to single spaces and stripped.
+    """
+    kept = [
+        ch for ch in text
+        if unicodedata.category(ch)[0] in ("L", "N", "P", "Z") or ch in " \t"
+    ]
+    return " ".join("".join(kept).split())
+
 
 # ── Prompts ───────────────────────────────────────────────────────────────────
 
@@ -317,7 +337,8 @@ def _process_group(
         ]
 
         # Always redact before LLM (owner names + IBAN/PAN/fiscal code)
-        llm_descs = [redact_pii(d, sanitize_config) for d in raw_descs]
+        # Then strip emoji and non-text symbols so the LLM sees clean text only
+        llm_descs = [_strip_non_text(redact_pii(d, sanitize_config)) for d in raw_descs]
 
         cleaned = _call_llm_batch(
             llm_descs, system_prompt, llm_backend, fallback_backend,
