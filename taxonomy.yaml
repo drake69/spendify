@@ -67,12 +67,12 @@ expenses:
       - "Telefonia mobile"
       - "Internet / fibra"
       - "Telefonia fissa"
-      - "Streaming / abbonamenti digitali"
 
   - category: "Svago e tempo libero"
     subcategories:
       - "Sport e palestra"
       - "Cinema / teatro / eventi"
+      - "Streaming / abbonamenti digitali"
       - "Viaggi e vacanze"
       - "Hobby"
       - "Libri / riviste"
@@ -91,6 +91,7 @@ expenses:
       - "Polizze varie"
       - "Commissioni bancarie"
       - "Investimenti / risparmio"
+      - "Fondo pensione"
 
   - category: "Cura personale"
     subcategories:

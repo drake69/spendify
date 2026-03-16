@@ -5,11 +5,12 @@ All functions are pure / side-effect-free and unit-testable without LLM mocks.
 from __future__ import annotations
 
 import hashlib
+import math
 import re
 import unicodedata
 from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
-from itertools import combinations
+from itertools import combinations, permutations as _permutations
 from typing import Optional
 
 import chardet
@@ -101,24 +102,44 @@ def _is_numeric_cell(value) -> bool:
 
 # ── Date normalization ────────────────────────────────────────────────────────
 
+_DATE_FORMATS_FALLBACK = [
+    "%d/%m/%Y", "%d-%m-%Y", "%d/%m/%y", "%d-%m-%y",
+    "%Y-%m-%d", "%Y/%m/%d", "%m/%d/%Y", "%m/%d/%y",
+]
+
+
 def parse_date_safe(value: str, fmt: str) -> Optional[date]:
-    """Parse a date string with the given strftime format. Returns None on failure."""
+    """Parse a date string. Tries fmt first, then common Italian/ISO fallbacks."""
     if not value or not isinstance(value, str):
         return None
-    try:
-        import datetime
-        return datetime.datetime.strptime(value.strip(), fmt).date()
-    except ValueError:
-        return None
+    import datetime
+    v = value.strip()
+    # Try the specified format first
+    if fmt:
+        try:
+            return datetime.datetime.strptime(v, fmt).date()
+        except ValueError:
+            pass
+    # Fallback: try common formats
+    for fallback in _DATE_FORMATS_FALLBACK:
+        if fallback == fmt:
+            continue
+        try:
+            return datetime.datetime.strptime(v, fallback).date()
+        except ValueError:
+            continue
+    return None
 
 
 # ── Amount normalization ──────────────────────────────────────────────────────
 
 def parse_amount(value: str | float | int | Decimal) -> Optional[Decimal]:
-    """Convert a raw amount value to Decimal. Returns None on failure."""
+    """Convert a raw amount value to Decimal. Returns None on failure or non-finite values."""
     if isinstance(value, Decimal):
-        return value
+        return value if value.is_finite() else None
     if isinstance(value, (int, float)):
+        if isinstance(value, float) and not math.isfinite(value):
+            return None
         return Decimal(str(value))
     if not isinstance(value, str):
         return None
@@ -159,13 +180,21 @@ def apply_sign_convention(
     elif convention == SignConvention.debit_positive:
         debit = parse_amount(row.get(debit_col)) if debit_col else None
         credit = parse_amount(row.get(credit_col)) if credit_col else None
-        debit = debit or Decimal(0)
-        credit = credit or Decimal(0)
-        return credit - debit
+        # If neither column parsed, fall back to amount_col (schema may have mismapped)
+        if debit is None and credit is None:
+            return parse_amount(row.get(amount_col)) if amount_col else None
+        # Use abs() so the result is correct whether the bank stores values as
+        # positive (standard) or negative (e.g. YELLOW "Uscite" = -2.60).
+        # Column NAME determines direction; the sign in the cell is irrelevant.
+        debit_abs = abs(debit) if debit is not None else Decimal(0)
+        credit_abs = abs(credit) if credit is not None else Decimal(0)
+        return credit_abs - debit_abs
     elif convention == SignConvention.credit_negative:
         # credit column is positive (income), debit column is negative (expense)
         credit = parse_amount(row.get(credit_col)) if credit_col else None
         debit = parse_amount(row.get(debit_col)) if debit_col else None
+        if credit is None and debit is None:
+            return parse_amount(row.get(amount_col)) if amount_col else None
         if credit and credit > 0:
             return credit
         if debit:
@@ -186,10 +215,33 @@ def normalize_description(text: str) -> str:
 
 # ── SHA-256 idempotency key ────────────────────────────────────────────────────
 
-def compute_transaction_id(source_file: str, tx_date: date, amount: Decimal, description_normalized: str) -> str:
-    """Return the first 24 chars of SHA-256 of the canonical fields."""
-    raw = f"{source_file}|{tx_date.isoformat()}|{amount}|{description_normalized}"
-    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24]
+def compute_transaction_id(source_file: str, raw_date: str, raw_amount: str, raw_description: str,
+                           account_label: str = "") -> str:
+    """Return the first 24 chars of SHA-256 of the raw (pre-normalisation) fields.
+
+    Using raw strings keeps the key stable across normalisation changes:
+    improving parse_amount or normalize_description won't shift existing IDs.
+    For debit/credit conventions pass raw_amount as '<debit_raw>|<credit_raw>'.
+
+    Deduplication key uses account_label (stable bank account identifier) instead
+    of source_file (filename), so the same transaction imported from two different
+    files of the same account is correctly recognised as a duplicate.
+    Falls back to source_file if account_label is empty (e.g. unclassified files).
+    """
+    account_key = account_label.strip() if account_label and account_label.strip() else source_file
+    key = f"{account_key}|{raw_date}|{raw_amount}|{raw_description}"
+    return hashlib.sha256(key.encode("utf-8")).hexdigest()[:24]
+
+
+def compute_columns_key(df: "pd.DataFrame") -> str:  # type: ignore[name-defined]
+    """Return SHA-256[:16] of the sorted column names.
+
+    Used as the DocumentSchema cache key so the same bank layout is recognised
+    regardless of the export filename (e.g. CARTA_2025.xlsx vs CARTA_2026.xlsx).
+    Columns are sorted to be robust to minor reordering.
+    """
+    cols = "|".join(sorted(str(c).strip() for c in df.columns))
+    return "cols:" + hashlib.sha256(cols.encode("utf-8")).hexdigest()[:16]
 
 
 def compute_file_hash(raw_bytes: bytes) -> str:
@@ -199,6 +251,31 @@ def compute_file_hash(raw_bytes: bytes) -> str:
 
 # ── Internal transfer detection (RF-04) ──────────────────────────────────────
 
+def _build_owner_name_regex(owner_names: list[str]) -> re.Pattern | None:
+    """Build a regex that matches any token-permutation of each owner name.
+
+    For "Mario Rossi" generates both "Mario Rossi" and "Rossi Mario" patterns
+    so the description matches regardless of the order banks write the name.
+    Each token permutation is joined with \\s+ to tolerate extra spaces.
+    Single-token names (e.g. a company abbreviation) are matched as-is.
+    """
+    if not owner_names:
+        return None
+    patterns: list[str] = []
+    for name in owner_names:
+        tokens = name.strip().split()
+        if not tokens:
+            continue
+        if len(tokens) == 1:
+            patterns.append(re.escape(tokens[0]))
+        else:
+            for perm in _permutations(tokens):
+                patterns.append(r"\s+".join(re.escape(t) for t in perm))
+    if not patterns:
+        return None
+    return re.compile("|".join(f"(?:{p})" for p in patterns), re.IGNORECASE)
+
+
 def detect_internal_transfers(
     df: pd.DataFrame,
     epsilon: Decimal = Decimal("0.01"),
@@ -207,6 +284,7 @@ def detect_internal_transfers(
     delta_days_strict: int = 1,
     keyword_patterns: list[str] | None = None,
     require_keyword_confirmation: bool = True,
+    owner_names: list[str] | None = None,
 ) -> pd.DataFrame:
     """
     Mark pairs of transactions as internal transfers (RF-04).
@@ -294,6 +372,32 @@ def detect_internal_transfers(
         df.at[i, "transfer_confidence"] = confidence.value
         df.at[j, "transfer_confidence"] = confidence.value
         already_paired.update([i, j])
+
+    # Owner-name pass: any unpaired transaction whose description contains an
+    # owner name is marked directly as internal_out / internal_in (no pairing
+    # needed — the owner is the other side of the transfer).
+    # Owner-name pass: match any token-permutation of each owner name so that
+    # both "Mario Rossi" and "ROSSI MARIO" (common in bank exports) are caught.
+    owner_re = _build_owner_name_regex(owner_names) if owner_names else None
+    if owner_re:
+        for idx in df.index:
+            if idx in already_paired:
+                continue
+            desc = str(df.at[idx, "description"] or "")
+            if owner_re.search(desc):
+                amt = df.at[idx, "amount"]
+                if not isinstance(amt, Decimal):
+                    amt = Decimal(str(amt or 0))
+                df.at[idx, "tx_type"] = (
+                    TransactionType.internal_out.value if amt < 0
+                    else TransactionType.internal_in.value
+                )
+                df.at[idx, "transfer_confidence"] = Confidence.high.value
+                logger.info(
+                    f"detect_internal_transfers: owner-name match → "
+                    f"idx={idx} desc='{desc[:40]}' "
+                    f"type={df.at[idx, 'tx_type']}"
+                )
 
     return df
 
@@ -424,3 +528,63 @@ def _subset_sum_match(
             if abs(total - target) <= epsilon:
                 return [transactions[i] for i in subset]
     return None
+
+
+# ── Card within-file balance row removal (Case 5) ────────────────────────────
+
+def remove_card_balance_row(
+    transactions: list[dict],
+    epsilon: Decimal = Decimal("0.01"),
+    owner_name_label: str | None = None,
+) -> tuple[list[dict], bool]:
+    """Handle the single balance/totale summary row from a card file if present.
+
+    Some card exports include a row whose |amount| equals the sum of |all other
+    amounts| (the statement total). Including it would double-count every expense.
+
+    Detection rule (requires ≥ 3 transactions):
+        For each candidate row i:
+            sum_others = Σ |amount_j| for j ≠ i
+            if ||amount_i| - sum_others| ≤ epsilon  →  row i is the balance row
+
+    Behaviour:
+        - If owner_name_label is provided: rename the row's description to the
+          owner name instead of removing it, so the transfer detector can later
+          mark it as giroconto (internal transfer).
+        - Otherwise: remove the row (legacy behaviour, avoids double-counting).
+
+    Only the FIRST such row is handled (there should be at most one).
+
+    Returns:
+        (transactions, was_found)
+    """
+    if len(transactions) < 3:
+        return transactions, False
+
+    amounts = [
+        abs(tx["amount"]) if isinstance(tx["amount"], Decimal) else Decimal(str(abs(tx["amount"])))
+        for tx in transactions
+    ]
+    total = sum(amounts)
+
+    for i, tx in enumerate(transactions):
+        amt_i = amounts[i]
+        sum_others = total - amt_i
+        if abs(amt_i - sum_others) <= epsilon:
+            if owner_name_label:
+                logger.info(
+                    f"remove_card_balance_row: balance/totale row relabelled as '{owner_name_label}' "
+                    f"id={tx.get('id', '?')} amount={amt_i} ≈ sum_others={sum_others} "
+                    f"(source={tx.get('source_file', '?')})"
+                )
+                transactions[i]["description"] = owner_name_label
+                return transactions, True
+            else:
+                logger.info(
+                    f"remove_card_balance_row: removed balance/totale row "
+                    f"id={tx.get('id', '?')} amount={amt_i} ≈ sum_others={sum_others} "
+                    f"(source={tx.get('source_file', '?')})"
+                )
+                return transactions[:i] + transactions[i + 1:], True
+
+    return transactions, False

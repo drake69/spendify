@@ -1,41 +1,32 @@
 import streamlit as st
 
 
+_NAV = [
+    ("📥 Import", "import"),
+    ("📋 Ledger", "ledger"),
+    ("✏️ Modifiche massive", "bulk_edit"),
+    ("📊 Analytics", "analytics"),
+    ("🔍 Review", "review"),
+    ("📏 Regole", "rules"),
+    ("🗂️ Tassonomia", "taxonomy"),
+    ("⚙️ Impostazioni", "settings"),
+    ("✅ Check List", "checklist"),
+]
+
+
 def render_sidebar() -> str:
     """Render the sidebar and return the selected page key."""
     st.sidebar.title("🏦 Spendify")
 
-    labels = {
-        "📥 Import": "import",
-        "📋 Ledger": "ledger",
-        "📊 Analytics": "analytics",
-        "🔍 Review": "review",
-    }
+    if "page" not in st.session_state:
+        st.session_state["page"] = "import"
 
-    choice = st.sidebar.radio("Naviga", list(labels.keys()))
+    for label, key in _NAV:
+        is_active = st.session_state["page"] == key
+        # Highlight active page with a filled button, others secondary
+        btn_type = "primary" if is_active else "secondary"
+        if st.sidebar.button(label, key=f"nav_{key}", width="stretch", type=btn_type):
+            st.session_state["page"] = key
+            st.rerun()
 
-    st.sidebar.divider()
-    st.sidebar.subheader("⚙️ Configurazione LLM")
-
-    backend = st.sidebar.selectbox(
-        "Backend LLM",
-        ["local_ollama", "openai", "claude"],
-        help="local_ollama = privacy-first (default)",
-    )
-    st.session_state["llm_backend"] = backend
-
-    if backend == "openai":
-        key = st.sidebar.text_input("OpenAI API Key", type="password",
-                                    value=st.session_state.get("openai_api_key", ""))
-        st.session_state["openai_api_key"] = key
-    elif backend == "claude":
-        key = st.sidebar.text_input("Anthropic API Key", type="password",
-                                    value=st.session_state.get("anthropic_api_key", ""))
-        st.session_state["anthropic_api_key"] = key
-
-    st.sidebar.divider()
-    st.sidebar.subheader("🔄 Modalità Giroconti")
-    mode = st.sidebar.radio("Giroconti nel registro", ["neutral", "exclude"], index=0)
-    st.session_state["giroconto_mode"] = mode
-
-    return labels[choice]
+    return st.session_state["page"]

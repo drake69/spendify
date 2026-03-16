@@ -1,12 +1,17 @@
 """SQLAlchemy ORM models (RF-07).
 
-Six tables:
+Eleven tables:
   import_batch            – one record per imported file
   document_schema         – parsing template (Flow 2 → Flow 1 promotion)
   transaction             – canonical transaction with all fields
   reconciliation_link     – card_settlement ↔ card_tx N:M
   internal_transfer_link  – giroconto pairs
   category_rule           – user-defined override rules (RF-05)
+  user_settings           – persistent user preferences (locale, language)
+  taxonomy_category       – category definitions (expense / income)
+  taxonomy_subcategory    – subcategory definitions (FK → taxonomy_category)
+  account                 – user-defined bank accounts (stable dedup key)
+  description_rule        – bulk description replacement rules (raw_description → cleaned)
 """
 from __future__ import annotations
 
@@ -37,11 +42,94 @@ def get_engine(db_url: str = DB_URL):
     return create_engine(db_url, connect_args={"check_same_thread": False})
 
 
+DEFAULT_USER_SETTINGS = {
+    "date_display_format": "%d/%m/%Y",
+    "amount_decimal_sep": ",",
+    "amount_thousands_sep": ".",
+    "description_language": "it",
+    "llm_backend": "local_ollama",
+    "ollama_base_url": "http://localhost:11434",
+    "ollama_model": "gemma3:12b",
+    "openai_api_key": "",
+    "openai_model": "gpt-4o-mini",
+    "anthropic_api_key": "",
+    "anthropic_model": "claude-3-5-haiku-20241022",
+    "use_owner_names_giroconto": "false",
+    "import_test_mode": "false",
+    "contexts": '["Quotidianità", "Lavoro", "Vacanza"]',
+    "giroconto_mode": "neutral",
+}
+
+
 def create_tables(engine=None):
     if engine is None:
         engine = get_engine()
-    Base.metadata.create_all(engine)
+    try:
+        Base.metadata.create_all(engine, checkfirst=True)
+    except Exception as exc:
+        if "already exists" not in str(exc).lower():
+            raise
+    _migrate_add_raw_columns(engine)
+    _migrate_add_user_settings(engine)
+    _migrate_add_import_job(engine)
+    _migrate_add_invert_sign(engine)
+    _migrate_add_taxonomy(engine)
+    _migrate_add_accounts(engine)
+    _migrate_add_description_cols(engine)
+    _migrate_add_context(engine)
+    _migrate_add_description_rules(engine)
     return engine
+
+
+def _migrate_add_user_settings(engine) -> None:
+    """Create user_settings table and seed defaults if not already present."""
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        conn.execute(_text(
+            'CREATE TABLE IF NOT EXISTS user_settings '
+            '(key VARCHAR(64) PRIMARY KEY, value VARCHAR(255))'
+        ))
+        conn.commit()
+        # Seed defaults only if the table was just created (no rows yet)
+        row = conn.execute(_text("SELECT COUNT(*) FROM user_settings")).scalar()
+        if row == 0:
+            for k, v in DEFAULT_USER_SETTINGS.items():
+                conn.execute(
+                    _text("INSERT INTO user_settings (key, value) VALUES (:k, :v)"),
+                    {"k": k, "v": v},
+                )
+            conn.commit()
+        else:
+            # Insert any missing keys (for existing DBs upgrading)
+            for k, v in DEFAULT_USER_SETTINGS.items():
+                conn.execute(
+                    _text("INSERT OR IGNORE INTO user_settings (key, value) VALUES (:k, :v)"),
+                    {"k": k, "v": v},
+                )
+            conn.commit()
+
+
+def _migrate_add_raw_columns(engine) -> None:
+    """Add raw_description / raw_amount to existing DBs (idempotent).
+
+    Uses try/except instead of PRAGMA inspection to stay compatible with
+    both SQLAlchemy 1.x and 2.x row-access semantics.
+    """
+    from sqlalchemy import text as _text
+    stmts = [
+        'ALTER TABLE "transaction" ADD COLUMN raw_description TEXT',
+        'ALTER TABLE "transaction" ADD COLUMN raw_amount TEXT',
+    ]
+    with engine.connect() as conn:
+        for stmt in stmts:
+            try:
+                conn.execute(_text(stmt))
+                conn.commit()
+            except Exception as exc:
+                if "duplicate column name" in str(exc).lower():
+                    pass  # column already exists, nothing to do
+                else:
+                    raise
 
 
 def get_session(engine=None) -> Session:
@@ -80,11 +168,13 @@ class DocumentSchemaModel(Base):
     debit_col = Column(String(128))
     credit_col = Column(String(128))
     description_col = Column(String(128))
+    description_cols = Column(Text)  # JSON array of column names for multi-col concat
     currency_col = Column(String(128))
     default_currency = Column(String(3), default="EUR")
     date_format = Column(String(64))
     sign_convention = Column(String(32))
     is_zero_sum = Column(Boolean, default=False)
+    invert_sign = Column(Boolean, default=False)
     internal_transfer_patterns = Column(Text)  # JSON array
     account_label = Column(String(256))
     encoding = Column(String(32), default="utf-8")
@@ -118,6 +208,9 @@ class Transaction(Base):
     to_review = Column(Boolean, default=False)
     transfer_pair_id = Column(String(64))
     transfer_confidence = Column(String(10))
+    raw_description = Column(Text, nullable=True)   # original text before normalize_description
+    raw_amount = Column(String(64), nullable=True)  # original string from source file
+    context = Column(String(64), nullable=True)     # user-defined life context (e.g. Vacanza, Lavoro)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     batch = relationship("ImportBatch", back_populates="transactions")
@@ -160,3 +253,265 @@ class CategoryRule(Base):
     doc_type = Column(String(32))
     priority = Column(Integer, default=0)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class DescriptionRule(Base):
+    """Bulk description replacement rule.
+
+    When a transaction's raw_description matches raw_pattern (using match_type),
+    its description field is replaced with cleaned_description.
+    """
+    __tablename__ = "description_rule"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    raw_pattern = Column(Text, nullable=False)          # pattern to match in raw_description
+    match_type = Column(String(10), nullable=False)      # exact | contains | regex
+    cleaned_description = Column(Text, nullable=False)  # replacement description
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (UniqueConstraint("raw_pattern", "match_type"),)
+
+
+class UserSettings(Base):
+    __tablename__ = "user_settings"
+
+    key = Column(String(64), primary_key=True)
+    value = Column(String(255), nullable=True)
+
+
+class ImportJob(Base):
+    __tablename__ = "import_job"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    status = Column(String(16), default="running")   # running | completed | error
+    progress = Column(Numeric(5, 4), default=0.0)
+    status_message = Column(Text)
+    detail_message = Column(Text)
+    n_transactions = Column(Integer, default=0)
+    n_files = Column(Integer, default=0)
+    started_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    completed_at = Column(DateTime)
+
+
+class TaxonomyCategory(Base):
+    __tablename__ = "taxonomy_category"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(128), nullable=False)
+    type = Column(String(8), nullable=False)   # "expense" | "income"
+    sort_order = Column(Integer, default=0)
+
+    subcategories = relationship(
+        "TaxonomySubcategory",
+        back_populates="category",
+        cascade="all, delete-orphan",
+        order_by="TaxonomySubcategory.sort_order",
+    )
+
+
+class TaxonomySubcategory(Base):
+    __tablename__ = "taxonomy_subcategory"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    category_id = Column(Integer, ForeignKey("taxonomy_category.id"), nullable=False)
+    name = Column(String(128), nullable=False)
+    sort_order = Column(Integer, default=0)
+
+    category = relationship("TaxonomyCategory", back_populates="subcategories")
+
+
+class Account(Base):
+    """User-defined bank account.  Provides a stable dedup key (name) that is
+    independent of the filename used when importing the file."""
+    __tablename__ = "account"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(256), unique=True, nullable=False)   # e.g. "Conto POPSO", "Carta CartaSI"
+    bank_name = Column(String(256))                           # optional free-text bank name
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+def _migrate_add_import_job(engine) -> None:
+    """Create import_job table if not present (idempotent)."""
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        conn.execute(_text(
+            'CREATE TABLE IF NOT EXISTS import_job ('
+            'id INTEGER PRIMARY KEY AUTOINCREMENT, '
+            'status VARCHAR(16) DEFAULT "running", '
+            'progress NUMERIC(5,4) DEFAULT 0.0, '
+            'status_message TEXT, '
+            'detail_message TEXT, '
+            'n_transactions INTEGER DEFAULT 0, '
+            'n_files INTEGER DEFAULT 0, '
+            'started_at DATETIME, '
+            'completed_at DATETIME)'
+        ))
+        conn.commit()
+
+
+def _migrate_add_taxonomy(engine) -> None:
+    """Create taxonomy tables and seed from taxonomy.yaml (idempotent)."""
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        conn.execute(_text(
+            'CREATE TABLE IF NOT EXISTS taxonomy_category ('
+            'id INTEGER PRIMARY KEY AUTOINCREMENT, '
+            'name VARCHAR(128) NOT NULL, '
+            'type VARCHAR(8) NOT NULL, '
+            'sort_order INTEGER DEFAULT 0)'
+        ))
+        conn.execute(_text(
+            'CREATE TABLE IF NOT EXISTS taxonomy_subcategory ('
+            'id INTEGER PRIMARY KEY AUTOINCREMENT, '
+            'category_id INTEGER NOT NULL REFERENCES taxonomy_category(id) ON DELETE CASCADE, '
+            'name VARCHAR(128) NOT NULL, '
+            'sort_order INTEGER DEFAULT 0)'
+        ))
+        conn.commit()
+
+        # Deduplicate any rows that crept in via race conditions at first startup
+        # (Streamlit can run app.py twice concurrently before the first commit).
+        # Keep only the lowest-id row per (name, type).
+        conn.execute(_text(
+            "DELETE FROM taxonomy_category WHERE id NOT IN ("
+            "  SELECT MIN(id) FROM taxonomy_category GROUP BY name, type"
+            ")"
+        ))
+        conn.commit()
+
+        # Unique index prevents future duplicates (CREATE … IF NOT EXISTS is safe
+        # even when the index already exists).
+        conn.execute(_text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_taxonomy_category_name_type "
+            "ON taxonomy_category(name, type)"
+        ))
+        conn.commit()
+
+        # Seed only if still empty (INSERT OR IGNORE makes it race-safe).
+        count = conn.execute(_text("SELECT COUNT(*) FROM taxonomy_category")).scalar()
+        if count == 0:
+            _seed_taxonomy(conn)
+            conn.commit()
+
+
+def _seed_taxonomy(conn) -> None:
+    """Seed taxonomy_category/subcategory from taxonomy.yaml or hardcoded defaults."""
+    import os
+    import yaml
+    from sqlalchemy import text as _text
+
+    taxonomy_path = os.getenv("TAXONOMY_PATH", "taxonomy.yaml")
+    try:
+        import pathlib
+        p = pathlib.Path(taxonomy_path)
+        if p.exists():
+            with open(p, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f) or {}
+        else:
+            data = {}
+    except Exception:
+        data = {}
+
+    expenses = data.get("expenses", [])
+    income = data.get("income", [])
+
+    for sort_i, entry in enumerate(expenses):
+        r = conn.execute(
+            _text("INSERT OR IGNORE INTO taxonomy_category (name, type, sort_order) VALUES (:n,:t,:s)"),
+            {"n": entry["category"], "t": "expense", "s": sort_i},
+        )
+        cat_id = r.lastrowid
+        for sort_j, sub in enumerate(entry.get("subcategories", [])):
+            conn.execute(
+                _text("INSERT INTO taxonomy_subcategory (category_id, name, sort_order) VALUES (:c,:n,:s)"),
+                {"c": cat_id, "n": sub, "s": sort_j},
+            )
+
+    for sort_i, entry in enumerate(income):
+        r = conn.execute(
+            _text("INSERT OR IGNORE INTO taxonomy_category (name, type, sort_order) VALUES (:n,:t,:s)"),
+            {"n": entry["category"], "t": "income", "s": sort_i},
+        )
+        cat_id = r.lastrowid
+        for sort_j, sub in enumerate(entry.get("subcategories", [])):
+            conn.execute(
+                _text("INSERT INTO taxonomy_subcategory (category_id, name, sort_order) VALUES (:c,:n,:s)"),
+                {"c": cat_id, "n": sub, "s": sort_j},
+            )
+
+
+def _migrate_add_accounts(engine) -> None:
+    """Create account table if not present (idempotent)."""
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        conn.execute(_text(
+            'CREATE TABLE IF NOT EXISTS account '
+            '(id INTEGER PRIMARY KEY AUTOINCREMENT, '
+            ' name TEXT UNIQUE NOT NULL, '
+            ' bank_name TEXT, '
+            ' created_at DATETIME)'
+        ))
+        conn.commit()
+
+
+def _migrate_add_description_cols(engine) -> None:
+    """Add description_cols column to document_schema if not present (idempotent)."""
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        try:
+            conn.execute(_text(
+                'ALTER TABLE document_schema ADD COLUMN description_cols TEXT'
+            ))
+            conn.commit()
+        except Exception as exc:
+            if "duplicate column name" in str(exc).lower():
+                pass  # column already exists
+            else:
+                raise
+
+
+def _migrate_add_context(engine) -> None:
+    """Add context column to transaction table if not present (idempotent)."""
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        try:
+            conn.execute(_text('ALTER TABLE "transaction" ADD COLUMN context VARCHAR(64)'))
+            conn.commit()
+        except Exception as exc:
+            if "duplicate column name" in str(exc).lower():
+                pass
+            else:
+                raise
+
+
+def _migrate_add_invert_sign(engine) -> None:
+    """Add invert_sign column to document_schema if not present (idempotent)."""
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        try:
+            conn.execute(_text(
+                'ALTER TABLE document_schema ADD COLUMN invert_sign BOOLEAN DEFAULT 0'
+            ))
+            conn.commit()
+        except Exception as exc:
+            if "duplicate column name" in str(exc).lower():
+                pass  # column already exists
+            else:
+                raise
+
+
+def _migrate_add_description_rules(engine) -> None:
+    """Create description_rule table if not present (idempotent)."""
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        conn.execute(_text(
+            'CREATE TABLE IF NOT EXISTS description_rule ('
+            'id INTEGER PRIMARY KEY AUTOINCREMENT, '
+            'raw_pattern TEXT NOT NULL, '
+            'match_type VARCHAR(10) NOT NULL, '
+            'cleaned_description TEXT NOT NULL, '
+            'created_at DATETIME, '
+            'UNIQUE(raw_pattern, match_type))'
+        ))
+        conn.commit()
