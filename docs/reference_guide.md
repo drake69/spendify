@@ -8,6 +8,7 @@
 |---|---|
 | **Import** | Carica file CSV/XLSX, avvia la pipeline di elaborazione |
 | **Ledger** | Vista tabellare di tutte le transazioni importate |
+| **Modifiche massive** | Operazioni in blocco: categoria, contesto, giroconto, **eliminazione da filtro** |
 | **Analytics** | Grafici e report aggregati per periodo/conto/categoria |
 | **Review** | Transazioni con classificazione incerta o da rivedere |
 | **Regole** | Gestione regole deterministiche di categorizzazione |
@@ -35,11 +36,12 @@ File in input
     ▼
 1. Classificazione documento   → identifica banca, tipo conto, schema colonne
 2. Normalizzazione             → encoding, delimitatori, parse date/importi, SHA-256
-3. Sanitizzazione PII          → redazione IBAN, PAN, CF, nome titolare
-4. Riconciliazione carta-c/c   → elimina double-counting addebiti mensili aggregati
+3. Dedup check                 → scarta transazioni già presenti (zero LLM call)
+4. Pulizia descrizioni         → LLM estrae nome controparte, PII redatte prima/dopo
 5. Rilevamento giroconti       → esclude/neutralizza trasferimenti interni
-6. Categorizzazione a cascata  → regole utente → regex statiche → LLM → fallback "Altro"
-7. Persistenza                 → INSERT OR IGNORE per idempotenza
+6. Riconciliazione carta-c/c   → elimina double-counting addebiti mensili aggregati
+7. Categorizzazione a cascata  → regole utente → regex statiche → LLM → fallback "Altro"
+8. Persistenza                 → upsert idempotente per tx, link, schema
 ```
 
 ---
@@ -70,8 +72,11 @@ La **sottocategoria è la fonte di verità**: se LLM o regola assegna una sottoc
 ### Applicazione retroattiva
 Quando salvi una nuova regola, viene applicata immediatamente a **tutte** le transazioni già presenti nel database, non solo alle future importazioni.
 
+### Esegui tutte le regole
+Il pulsante **▶️ Esegui tutte le regole** applica tutte le regole attive a ogni transazione del ledger in un colpo solo. Utile dopo aver creato più regole in sessioni diverse o dopo l'importazione di dati storici. L'operazione richiede conferma tramite checkbox; al termine mostra quante transazioni sono state aggiornate.
+
 ### Priorità
-Le regole vengono valutate nell'ordine: prima le `exact`, poi le `contains`, poi le `regex`. In caso di conflitto tra due regole dello stesso tipo, vince quella creata prima (ID minore).
+Le regole vengono valutate in ordine di priorità decrescente (campo `priorità`, default 10). In caso di parità di priorità, l'ordine è stabile ma non garantito. La **prima regola che fa match vince** — l'elaborazione si ferma al primo match trovato.
 
 ---
 
@@ -116,10 +121,10 @@ Prima di qualsiasi chiamata a backend remoto, Spendify redige:
 
 | Dato | Esempio originale | Dopo sanitizzazione |
 |---|---|---|
-| IBAN | `IT60X0542811101000000123456` | `[IBAN]` |
-| Numero carta | `4111 1111 1111 1111` | `[PAN]` |
-| Codice fiscale | `RSSMRA80A01H501U` | `[CF]` |
-| Nome titolare | `Mario Rossi` | `[OWNER]` |
+| IBAN | `IT60X0542811101000000123456` | `<ACCOUNT_ID>` |
+| Numero carta | `4111 1111 1111 1111` | `<CARD_ID>` |
+| Codice fiscale | `RSSMRA80A01H501U` | `<FISCAL_ID>` |
+| Nome titolare | `Mario Rossi` | Nome fittizio (es. `Carlo Brambilla`) |
 
 La sanitizzazione avviene in memoria; il dato originale non viene mai modificato nel database.
 
@@ -164,6 +169,41 @@ Distinte dalle regole di categorizzazione. Servono a sostituire descrizioni grez
 
 ---
 
+## Modifiche massive — pagina dedicata
+
+La pagina **✏️ Modifiche massive** raccoglie tutte le operazioni che agiscono su più transazioni contemporaneamente.
+
+### Sezioni 1–3: operazioni su transazione di riferimento
+
+| Sezione | Operazione |
+|---------|-----------|
+| **1 · Scegli transazione** | Selezione con ricerca testuale e filtro "solo da rivedere" |
+| **2a · Giroconto** | Toggle giroconto ↔ normale, con propagazione a tutte le tx con stessa descrizione |
+| **2b · Contesto** | Assegna contesto alla tx selezionata e/o alle simili (Jaccard ≥ 35%) |
+| **2c · Categoria** | Corregge categoria/sottocategoria, salva regola deterministica, propaga alle simili |
+
+### Sezione 3: Eliminazione massiva da filtro
+
+Permette di eliminare in blocco transazioni selezionate tramite filtri combinabili:
+
+| Filtro | Tipo |
+|--------|------|
+| Da / A | Intervallo date |
+| Conto | Account label esatto |
+| Tipo | tx_type (expense, income, card_tx, …) |
+| Descrizione | Ricerca `ILIKE` su `description` e `raw_description` |
+| Categoria | Categoria esatta |
+
+**Comportamento:**
+- Se nessun filtro è impostato il pulsante di eliminazione non è disponibile (protezione da cancellazione accidentale di tutto il DB)
+- Il contatore mostra in tempo reale il numero di transazioni che verranno cancellate
+- Un'anteprima espandibile mostra le prime 10 righe corrispondenti
+- La conferma richiede di digitare esattamente `ELIMINA` nel campo testo prima di abilitare il pulsante
+- L'eliminazione è **irreversibile** — assicurarsi di avere un backup prima di procedere (vedi `deployment.md`)
+- I link di riconciliazione e giroconti associati alle transazioni eliminate vengono rimossi in cascade
+
+---
+
 ## Database
 
 File SQLite: `ledger.db` nella directory dell'applicazione.
@@ -173,13 +213,16 @@ Tabelle principali:
 | Tabella | Contenuto |
 |---|---|
 | `transaction` | Tutte le transazioni importate |
-| `account` | Conti/carte riconosciuti |
-| `category` | Categorie di primo livello |
-| `subcategory` | Sottocategorie |
+| `import_batch` | Metadati di ogni importazione (file, schema, conteggi) |
+| `document_schema` | Template schema per Flow 1 (fingerprint colonne → configurazione) |
+| `reconciliation_link` | Coppie carta–c/c riconciliate |
+| `internal_transfer_link` | Coppie giroconto |
 | `category_rule` | Regole di categorizzazione utente |
-| `description_rule` | Regole di pulizia descrizione |
-| `import_job` | Storico e stato dei job di importazione |
-| `user_settings` | Preferenze utente (formato date, separatori, LLM) |
+| `description_rule` | Regole di pulizia descrizione in blocco |
+| `taxonomy_category` | Categorie tassonomia |
+| `taxonomy_subcategory` | Sottocategorie tassonomia |
+| `import_job` | Stato corrente del job di importazione |
+| `user_settings` | Preferenze utente (formato date, separatori, LLM, contesti) |
 
 Le migrazioni dello schema sono idempotenti: vengono eseguite automaticamente ad ogni avvio senza perdita di dati.
 
