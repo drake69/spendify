@@ -14,6 +14,7 @@
 | **Regole** | Gestione regole deterministiche di categorizzazione |
 | **Tassonomia** | Struttura categorie/sottocategorie personalizzabile |
 | **Impostazioni** | Backend LLM, API key, formati data/importo, lingua |
+| **Check List** | Tabella pivot mese × conto: presenza e quantità delle transazioni |
 
 ---
 
@@ -201,6 +202,44 @@ Permette di eliminare in blocco transazioni selezionate tramite filtri combinabi
 - La conferma richiede di digitare esattamente `ELIMINA` nel campo testo prima di abilitare il pulsante
 - L'eliminazione è **irreversibile** — assicurarsi di avere un backup prima di procedere (vedi `deployment.md`)
 - I link di riconciliazione e giroconti associati alle transazioni eliminate vengono rimossi in cascade
+
+---
+
+## Check List — pagina dedicata
+
+La pagina **✅ Check List** mostra una tabella pivot **mese × conto** con il numero di transazioni presenti per ogni combinazione.
+
+### Layout
+
+- **Righe:** mesi in ordine **decrescente** (mese corrente in cima, poi a ritroso fino al mese più vecchio con dati)
+- **Colonne:** tutti i conti definiti nella tabella `account` + eventuali `account_label` presenti nelle transazioni ma non ancora formalizzati come conto
+- **Cella con transazioni:** numero intero (colore proporzionale alla quantità)
+- **Cella senza transazioni:** simbolo **—** in grigio chiaro
+
+### Colorazione
+
+| Colore | Intervallo |
+|---|---|
+| Grigio (—) | 0 transazioni |
+| Azzurro tenue | 1–4 transazioni |
+| Azzurro medio | 5–19 transazioni |
+| Azzurro scuro | ≥ 20 transazioni |
+
+### Filtri disponibili
+
+| Filtro | Effetto |
+|---|---|
+| Mostra solo conti | Riduce le colonne ai conti selezionati |
+| Ultimi N mesi | Limita le righe agli ultimi N mesi (0 = tutti) |
+| Nascondi mesi senza tx | Rimuove le righe con tutti zeri |
+
+### Metriche sommario
+
+Tre KPI in cima alla pagina: **transazioni totali**, **conti monitorati**, **mesi con dati**.
+
+### Export
+
+Pulsante **⬇️ Scarica CSV** per esportare la tabella filtrata.
 
 ---
 
