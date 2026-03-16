@@ -28,6 +28,9 @@ from support.logging import setup_logging
 
 logger = setup_logging()
 
+# Sentinel per distinguere "non passato" da None in update_category_rule.context
+_SENTINEL = object()
+
 
 # ── ImportBatch ───────────────────────────────────────────────────────────────
 
@@ -411,6 +414,7 @@ def get_category_rules(session: Session) -> list[CoreCategoryRule]:
             match_type=row.match_type,
             category=row.category,
             subcategory=row.subcategory,
+            context=row.context or None,
             doc_type=row.doc_type,
             priority=row.priority or 0,
         )
@@ -444,6 +448,8 @@ def apply_rules_to_review_transactions(
             if rule.matches(desc, tx.doc_type):
                 tx.category = rule.category
                 tx.subcategory = rule.subcategory
+                if rule.context:
+                    tx.context = rule.context
                 tx.category_source = "rule"
                 tx.category_confidence = "high"
                 tx.to_review = False
@@ -454,12 +460,55 @@ def apply_rules_to_review_transactions(
     return updated
 
 
+def apply_all_rules_to_all_transactions(
+    session: Session,
+    user_rules: list[CoreCategoryRule],
+) -> tuple[int, int]:
+    """Apply category rules to ALL transactions (not just to_review).
+
+    Rules are evaluated in descending priority order; first match wins.
+    Transactions with no matching rule are left unchanged.
+
+    Returns (n_matched, n_cleared_review) where:
+      - n_matched        = transactions whose category was set/changed by a rule
+      - n_cleared_review = subset of those that also had to_review cleared
+    """
+    if not user_rules:
+        return 0, 0
+
+    rules = sorted(user_rules, key=lambda r: -(r.priority or 0))
+    txs = session.query(Transaction).all()
+
+    n_matched = 0
+    n_cleared = 0
+    for tx in txs:
+        desc = tx.description or ""
+        for rule in rules:
+            if rule.matches(desc, tx.doc_type):
+                tx.category            = rule.category
+                tx.subcategory         = rule.subcategory
+                if rule.context:
+                    tx.context = rule.context
+                tx.category_source     = "rule"
+                tx.category_confidence = "high"
+                if tx.to_review:
+                    tx.to_review = False
+                    n_cleared += 1
+                n_matched += 1
+                break
+
+    if n_matched:
+        session.flush()
+    return n_matched, n_cleared
+
+
 def create_category_rule(
     session: Session,
     pattern: str,
     match_type: str,
     category: str,
     subcategory: Optional[str] = None,
+    context: Optional[str] = None,
     doc_type: Optional[str] = None,
     priority: int = 0,
 ) -> tuple[CategoryRule, bool]:
@@ -478,6 +527,7 @@ def create_category_rule(
     if existing is not None:
         existing.category = category
         existing.subcategory = subcategory
+        existing.context = context or None
         existing.priority = priority
         session.flush()
         return existing, False
@@ -487,6 +537,7 @@ def create_category_rule(
         match_type=match_type,
         category=category,
         subcategory=subcategory,
+        context=context or None,
         doc_type=doc_type,
         priority=priority,
     )
@@ -502,6 +553,7 @@ def update_category_rule(
     match_type: Optional[str] = None,
     category: Optional[str] = None,
     subcategory: Optional[str] = None,
+    context: Optional[str] = _SENTINEL,   # type: ignore[assignment]
     priority: Optional[int] = None,
 ) -> bool:
     rule = session.get(CategoryRule, rule_id)
@@ -515,6 +567,9 @@ def update_category_rule(
         rule.category = category
     if subcategory is not None:
         rule.subcategory = subcategory
+    if context is not _SENTINEL:
+        # None means "clear context"; any string sets it
+        rule.context = context or None
     if priority is not None:
         rule.priority = priority
     session.flush()
@@ -862,6 +917,109 @@ def delete_description_rule(session: Session, rule_id: int) -> bool:
     session.delete(rule)
     session.flush()
     return True
+
+
+def delete_transactions_by_filter(
+    session: Session,
+    filters: dict,
+) -> int:
+    """Delete transactions matching *filters* and return the count of deleted rows.
+
+    Uses the same filter keys as ``get_transactions()``.
+    Cascades: also removes linked ReconciliationLink and InternalTransferLink rows
+    to avoid dangling foreign-key references.
+    """
+    from sqlalchemy import or_
+
+    q = session.query(Transaction)
+    if "tx_type" in filters:
+        q = q.filter(Transaction.tx_type == filters["tx_type"])
+    if "category" in filters:
+        q = q.filter(Transaction.category == filters["category"])
+    if "date_from" in filters:
+        q = q.filter(Transaction.date >= filters["date_from"])
+    if "date_to" in filters:
+        q = q.filter(Transaction.date <= filters["date_to"])
+    if "account_label" in filters:
+        q = q.filter(Transaction.account_label == filters["account_label"])
+    if "description" in filters:
+        _term = f"%{filters['description']}%"
+        q = q.filter(
+            or_(
+                Transaction.description.ilike(_term),
+                Transaction.raw_description.ilike(_term),
+            )
+        )
+    if "subcategory" in filters:
+        q = q.filter(Transaction.subcategory == filters["subcategory"])
+    if "context" in filters:
+        q = q.filter(Transaction.context == filters["context"])
+    if "exclude_tx_types" in filters:
+        q = q.filter(Transaction.tx_type.notin_(filters["exclude_tx_types"]))
+
+    txs = q.all()
+    if not txs:
+        return 0
+
+    ids = [tx.id for tx in txs]
+
+    # Remove cascade links first (avoid FK violations)
+    session.query(ReconciliationLink).filter(
+        (ReconciliationLink.settlement_id.in_(ids)) |
+        (ReconciliationLink.detail_id.in_(ids))
+    ).delete(synchronize_session=False)
+    session.query(InternalTransferLink).filter(
+        (InternalTransferLink.out_id.in_(ids)) |
+        (InternalTransferLink.in_id.in_(ids))
+    ).delete(synchronize_session=False)
+
+    for tx in txs:
+        session.delete(tx)
+
+    return len(txs)
+
+
+def get_cross_account_duplicates(session: Session) -> list[list[Transaction]]:
+    """Return groups of transactions that share (date, raw_description, amount)
+    but belong to different account_labels.
+
+    Each element of the returned list is a group of ≥ 2 transactions that are
+    likely the same real-world movement imported from multiple bank exports.
+    Groups are sorted by date descending.
+    """
+    from sqlalchemy import func, tuple_
+
+    # Find (date, raw_description, amount) keys that appear in > 1 account
+    subq = (
+        session.query(
+            Transaction.date,
+            Transaction.raw_description,
+            Transaction.amount,
+        )
+        .filter(Transaction.raw_description.isnot(None))
+        .group_by(Transaction.date, Transaction.raw_description, Transaction.amount)
+        .having(func.count(Transaction.account_label.distinct()) > 1)
+        .subquery()
+    )
+
+    # Fetch all transactions matching those keys
+    duplicates = (
+        session.query(Transaction)
+        .filter(
+            tuple_(Transaction.date, Transaction.raw_description, Transaction.amount)
+            .in_(session.query(subq.c.date, subq.c.raw_description, subq.c.amount))
+        )
+        .order_by(Transaction.date.desc(), Transaction.raw_description, Transaction.amount)
+        .all()
+    )
+
+    # Group by key
+    from collections import defaultdict
+    groups: dict[tuple, list[Transaction]] = defaultdict(list)
+    for tx in duplicates:
+        groups[(tx.date, tx.raw_description, str(tx.amount))].append(tx)
+
+    return [g for g in groups.values() if len(g) >= 2]
 
 
 def get_transactions_by_raw_pattern(

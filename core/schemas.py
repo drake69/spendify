@@ -48,8 +48,13 @@ class DocumentSchema(BaseModel):
             "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
             "required": [
-                "doc_type", "date_col", "amount_col", "sign_convention",
-                "date_format", "account_label", "confidence",
+                "doc_type", "date_col", "date_accounting_col", "amount_col",
+                "debit_col", "credit_col", "description_col", "description_cols",
+                "currency_col", "default_currency", "date_format", "sign_convention",
+                "is_zero_sum", "invert_sign", "internal_transfer_patterns",
+                "account_label", "encoding", "sheet_name", "skip_rows", "delimiter",
+                "confidence", "positive_ratio", "negative_ratio", "semantic_evidence",
+                "normalization_case_id",
             ],
             "additionalProperties": False,
             "properties": {
@@ -120,7 +125,7 @@ def build_categorization_schema(expense_categories: list[str], income_categories
     return {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "type": "object",
-        "required": ["category", "subcategory", "confidence"],
+        "required": ["category", "subcategory", "confidence", "rationale"],
         "additionalProperties": False,
         "properties": {
             "category": {
@@ -149,7 +154,7 @@ def build_categorization_batch_schema(categories: list[str], dir_subs: list[str]
     """Build the JSON schema for batched LLM categorization (array response)."""
     item_schema = {
         "type": "object",
-        "required": ["category", "subcategory", "confidence"],
+        "required": ["category", "subcategory", "confidence", "rationale"],
         "additionalProperties": False,
         "properties": {
             "category": {

@@ -1,415 +1,354 @@
-"""Ledger page (RF-08): filterable transaction table + export."""
+"""Ledger page (RF-08): editable transaction table + export."""
 from __future__ import annotations
 
+import json
+from datetime import date, timedelta
 from decimal import Decimal
 
 import pandas as pd
 import streamlit as st
 
 from db.models import Transaction, get_session
-import json
-
 from db.repository import (
-    bulk_set_giroconto_by_description,
-    create_category_rule,
     get_all_user_settings,
-    get_similar_transactions,
     get_taxonomy_config,
     get_transactions,
-    get_transactions_by_rule_pattern,
     toggle_transaction_giroconto,
     update_transaction_category,
     update_transaction_context,
 )
 from reports.generator import generate_csv_export, generate_xlsx_export
-from support.formatting import format_amount_display, format_date_display, format_raw_amount_display
+from support.formatting import format_amount_display, format_date_display
 from support.logging import setup_logging
 
 logger = setup_logging()
 
 EXCLUDED_FROM_BALANCE = {"internal_out", "internal_in", "card_settlement", "aggregate_debit"}
+_ALL_TX_TYPES = [
+    "tutti", "expense", "income", "card_tx",
+    "internal_out", "internal_in", "card_settlement", "unknown",
+]
+
+
+def _get_distinct_accounts(engine) -> list[str]:
+    with get_session(engine) as s:
+        rows = s.query(Transaction.account_label).distinct().all()
+        return sorted({r[0] for r in rows if r[0]})
 
 
 def render_registry_page(engine):
     st.header("📋 Ledger — Registro Transazioni")
 
-    session = get_session(engine)
-    with session:
-        settings = get_all_user_settings(session)
+    # ── Settings & taxonomy ────────────────────────────────────────────────────
+    with get_session(engine) as s:
+        settings = get_all_user_settings(s)
+        taxonomy = get_taxonomy_config(s)
 
-        # ── Filters ──────────────────────────────────────────────────────────
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            date_from = st.date_input("Da", value=None, key="ledger_from")
-        with col2:
-            date_to = st.date_input("A", value=None, key="ledger_to")
-        with col3:
-            tx_type_filter = st.selectbox(
-                "Tipo transazione",
-                ["tutti", "expense", "income", "card_tx", "internal_out", "internal_in",
-                 "card_settlement", "unknown"],
-            )
-        with col4:
-            review_only = st.checkbox("Solo da rivedere")
+    _date_fmt = settings.get("date_display_format", "%d/%m/%Y")
+    _dec = settings.get("amount_decimal_sep", ",")
+    _thou = settings.get("amount_thousands_sep", ".")
+    giroconto_mode = settings.get("giroconto_mode", "neutral")
 
-        _taxonomy = get_taxonomy_config(session)
-        _all_cats = ["tutte"] + _taxonomy.all_expense_categories + _taxonomy.all_income_categories
+    try:
+        _contexts: list[str] = json.loads(
+            settings.get("contexts", '["Quotidianità", "Lavoro", "Vacanza"]')
+        )
+    except Exception:
+        _contexts = ["Quotidianità", "Lavoro", "Vacanza"]
 
-        try:
-            _contexts: list[str] = json.loads(settings.get("contexts", '["Quotidianità", "Lavoro", "Vacanza"]'))
-        except Exception:
-            _contexts = ["Quotidianità", "Lavoro", "Vacanza"]
+    _expense_cats = sorted(taxonomy.all_expense_categories)
+    _income_cats  = sorted(taxonomy.all_income_categories)
+    _all_cats     = _expense_cats + _income_cats
+    _all_sub      = sorted({
+        sub
+        for cat in _all_cats
+        for sub in taxonomy.valid_subcategories(cat)
+    })
 
-        fcol1, fcol2, fcol3, fcol4 = st.columns([3, 2, 2, 2])
-        with fcol1:
-            desc_filter = st.text_input("🔍 Descrizione", placeholder="cerca in descrizione e raw…", key="ledger_desc")
-        with fcol2:
-            cat_filter = st.selectbox("Categoria", _all_cats, key="ledger_cat")
-        with fcol3:
-            # Cascading: subcategories depend on selected category
-            if cat_filter == "tutte":
-                _sub_options = ["tutte"] + [
-                    sub
-                    for cat in (_taxonomy.all_expense_categories + _taxonomy.all_income_categories)
-                    for sub in _taxonomy.valid_subcategories(cat)
-                ]
-            else:
-                _sub_options = ["tutte"] + _taxonomy.valid_subcategories(cat_filter)
-            sub_filter = st.selectbox(
-                "Sottocategoria", _sub_options, key=f"ledger_sub_{cat_filter}"
-            )
-        with fcol4:
-            ctx_filter = st.selectbox("Contesto", ["tutti"] + _contexts + ["— nessuno —"], key="ledger_ctx")
+    _accounts = _get_distinct_accounts(engine)
+    today = date.today()
 
-        giroconto_mode = settings.get("giroconto_mode", "neutral")
-        if giroconto_mode == "exclude":
-            st.caption("ℹ️ Giroconti esclusi dal registro (modalità *Escludi giroconti*).")
+    # ── Date preset initialisation (default: mese corrente) ───────────────────
+    if "ledger_from" not in st.session_state:
+        st.session_state["ledger_from"] = today.replace(day=1)
+    if "ledger_to" not in st.session_state:
+        st.session_state["ledger_to"] = today
+
+    # ── Quick date presets ─────────────────────────────────────────────────────
+    _first_cur  = today.replace(day=1)
+    _three_ago  = today - timedelta(days=90)
+    _first_year = today.replace(month=1, day=1)
+
+    # "Mese precedente" is relative to the currently displayed ledger_from,
+    # so pressing it repeatedly navigates backwards month by month.
+    _cur_from   = st.session_state.get("ledger_from", _first_cur)
+    if not isinstance(_cur_from, date):
+        _cur_from = _first_cur
+    _rel_last_prev  = _cur_from - timedelta(days=1)
+    _rel_first_prev = _rel_last_prev.replace(day=1)
+
+    st.caption("**Periodo rapido**")
+    pc1, pc2, pc3, pc4, pc5 = st.columns(5)
+    if pc1.button("📅 Mese corrente",  key="preset_cur",  use_container_width=True):
+        st.session_state["ledger_from"] = _first_cur
+        st.session_state["ledger_to"]   = today
+        # No st.rerun() — lo script continua e renderizza tutti i widget
+        # con le nuove date E gli altri filtri già in session_state invariati.
+    if pc2.button("⏮ Mese precedente", key="preset_prev", use_container_width=True):
+        st.session_state["ledger_from"] = _rel_first_prev
+        st.session_state["ledger_to"]   = _rel_last_prev
+    if pc3.button("📆 Ultimi 3 mesi",  key="preset_3m",  use_container_width=True):
+        st.session_state["ledger_from"] = _three_ago
+        st.session_state["ledger_to"]   = today
+    if pc4.button("🗓 Anno corrente",   key="preset_year", use_container_width=True):
+        st.session_state["ledger_from"] = _first_year
+        st.session_state["ledger_to"]   = today
+    if pc5.button("♾ Tutto",            key="preset_all",  use_container_width=True):
+        # "Tutto" deve azzerare esplicitamente TUTTI i filtri; il rerun
+        # è necessario qui per far rieseguire il blocco di init delle date.
+        for _k in ("ledger_from", "ledger_to", "ledger_account", "ledger_type",
+                   "ledger_cat", "ledger_desc", "ledger_review"):
+            if _k in st.session_state:
+                del st.session_state[_k]
+        st.rerun()
+
+    # ── Filter row ─────────────────────────────────────────────────────────────
+    fc1, fc2, fc3, fc4 = st.columns(4)
+    with fc1:
+        date_from = st.date_input("Da", key="ledger_from")
+    with fc2:
+        date_to = st.date_input("A", key="ledger_to")
+    with fc3:
+        account_filter = st.selectbox(
+            "Conto", ["tutti i conti"] + _accounts, key="ledger_account"
+        )
+    with fc4:
+        tx_type_filter = st.selectbox("Tipo", _ALL_TX_TYPES, key="ledger_type")
+
+    fc5, fc6, fc7, fc8, fc9 = st.columns([3, 2, 1, 1, 1])
+    with fc5:
+        desc_filter = st.text_input(
+            "🔍 Descrizione", placeholder="cerca in descrizione e raw…", key="ledger_desc"
+        )
+    with fc6:
+        cat_filter = st.selectbox(
+            "Categoria", ["tutte"] + _all_cats, key="ledger_cat"
+        )
+    with fc7:
+        review_only = st.checkbox("Solo da rivedere ⚠️", key="ledger_review")
+    with fc8:
+        hide_giro = st.checkbox(
+            "Nascondi giroconti",
+            key="ledger_hide_giro",
+            value=st.session_state.get("ledger_hide_giro", giroconto_mode == "exclude"),
+        )
+    with fc9:
+        show_raw = st.checkbox("Mostra raw", key="ledger_show_raw")
+
+    # ── Build query filters ────────────────────────────────────────────────────
+    filters: dict = {}
+    if date_from:
+        filters["date_from"] = date_from.isoformat()
+    if date_to:
+        filters["date_to"] = date_to.isoformat()
+    if account_filter != "tutti i conti":
+        filters["account_label"] = account_filter
+    if tx_type_filter != "tutti":
+        filters["tx_type"] = tx_type_filter
+    elif hide_giro:
+        filters["exclude_tx_types"] = ["internal_in", "internal_out"]
+    if desc_filter.strip():
+        filters["description"] = desc_filter.strip()
+    if cat_filter != "tutte":
+        filters["category"] = cat_filter
+    if review_only:
+        filters["to_review"] = True
+
+    with get_session(engine) as s:
+        txs = get_transactions(s, filters=filters)
+
+    if not txs:
+        st.info("Nessuna transazione trovata con i filtri selezionati.")
+        return
+
+    # ── Metrics ────────────────────────────────────────────────────────────────
+    _bal_txs = [tx for tx in txs if tx.tx_type not in EXCLUDED_FROM_BALANCE]
+    net       = sum(Decimal(str(tx.amount)) for tx in _bal_txs)
+    income_t  = sum(Decimal(str(tx.amount)) for tx in _bal_txs if Decimal(str(tx.amount)) > 0)
+    expense_t = sum(Decimal(str(tx.amount)) for tx in _bal_txs if Decimal(str(tx.amount)) < 0)
+
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Transazioni", len(txs))
+    m2.metric("Saldo netto",  format_amount_display(float(net),         _dec, _thou))
+    m3.metric("Entrate",      format_amount_display(float(income_t),    _dec, _thou))
+    m4.metric("Uscite",       format_amount_display(float(abs(expense_t)), _dec, _thou))
+
+    # ── Pagination ────────────────────────────────────────────────────────────
+    _pg1, _pg2 = st.columns([1, 4])
+    with _pg1:
+        rows_per_page = st.selectbox(
+            "Righe/pagina", [15, 25, 50, 100, 200], index=0, key="ledger_page_size"
+        )
+
+    total_rows  = len(txs)
+    total_pages = max(1, -(-total_rows // rows_per_page))
+
+    _fp = f"{total_rows}_{sorted(filters.items())}"
+    if st.session_state.get("_ledger_fp") != _fp:
+        st.session_state["_ledger_fp"] = _fp
+        st.session_state["ledger_page"] = 0
+
+    page_num  = max(0, min(st.session_state.get("ledger_page", 0), total_pages - 1))
+    page_start = page_num * rows_per_page
+    page_end   = min(page_start + rows_per_page, total_rows)
+    page_txs   = txs[page_start:page_end]
+
+    with _pg2:
+        st.caption(
+            f"Pagina **{page_num + 1}** / **{total_pages}** "
+            f"· righe {page_start + 1}–{page_end} di {total_rows}"
+        )
+
+    # ── Editable table ────────────────────────────────────────────────────────
+    st.caption(
+        "✏️ Modifica **Categoria**, **Sottocategoria**, **Contesto** e **🔄 Giroconto** "
+        "direttamente nella tabella, poi clicca **Salva modifiche**."
+    )
+
+    orig_rows = [
+        {
+            "_id":           tx.id,
+            "⚠️":            bool(tx.to_review),
+            "Data":          format_date_display(tx.date, _date_fmt),
+            "Descrizione":   (tx.description or "")[:80],
+            **({"Raw": (tx.raw_description or "")[:80]} if show_raw else {}),
+            "Entrata":       float(tx.amount) if float(tx.amount) > 0 else None,
+            "Uscita":        abs(float(tx.amount)) if float(tx.amount) < 0 else None,
+            "Conto":         tx.account_label or "",
+            "Tipo":          tx.tx_type or "",
+            "Categoria":     tx.category or "",
+            "Sottocategoria": tx.subcategory or "",
+            "Contesto":      tx.context or "",
+            "🔄 Giroconto":  tx.tx_type in ("internal_out", "internal_in"),
+        }
+        for tx in page_txs
+    ]
+    orig_df = pd.DataFrame(orig_rows)
+
+    _col_cfg: dict = {
+        "_id":            None,   # hidden
+        "⚠️":             st.column_config.CheckboxColumn("⚠️",  disabled=True, width=40),
+        "Data":           st.column_config.TextColumn("Data",         disabled=True, width="small"),
+        "Descrizione":    st.column_config.TextColumn("Descrizione",  disabled=True),
+        "Entrata":        st.column_config.NumberColumn("Entrata",    disabled=True, format="%.2f", width="small"),
+        "Uscita":         st.column_config.NumberColumn("Uscita",     disabled=True, format="%.2f", width="small"),
+        "Conto":          st.column_config.TextColumn("Conto",        disabled=True, width="small"),
+        "Tipo":           st.column_config.TextColumn("Tipo",         disabled=True, width="small"),
+        "Categoria":      st.column_config.SelectboxColumn(
+            "Categoria", options=[""] + _all_cats, required=False, width="medium",
+        ),
+        "Sottocategoria": st.column_config.SelectboxColumn(
+            "Sottocategoria", options=[""] + _all_sub, required=False, width="medium",
+        ),
+        "Contesto":       st.column_config.SelectboxColumn(
+            "Contesto", options=[""] + _contexts, required=False, width="small",
+        ),
+        "🔄 Giroconto":   st.column_config.CheckboxColumn("🔄 Giroconto", width="small"),
+    }
+    if show_raw:
+        _col_cfg["Raw"] = st.column_config.TextColumn(
+            "Raw description", disabled=True, width="medium"
+        )
+
+    edited_df = st.data_editor(
+        orig_df,
+        use_container_width=True,
+        hide_index=True,
+        height=min(650, 42 + len(orig_df) * 35),
+        column_config=_col_cfg,
+        key="ledger_editor",
+    )
+
+    # ── Save button ───────────────────────────────────────────────────────────
+    sv_col, _ = st.columns([1, 5])
+    with sv_col:
+        save_clicked = st.button("💾 Salva modifiche", type="primary", key="ledger_save",
+                                 use_container_width=True)
+
+    if save_clicked:
+        n_cat  = 0
+        n_ctx  = 0
+        n_giro = 0
+        with get_session(engine) as save_s:
+            for idx in range(len(orig_df)):
+                orig = orig_df.iloc[idx]
+                edit = edited_df.iloc[idx]
+                tx_id = orig["_id"]
+
+                cat_changed  = str(edit["Categoria"])      != str(orig["Categoria"])
+                sub_changed  = str(edit["Sottocategoria"]) != str(orig["Sottocategoria"])
+                ctx_changed  = str(edit["Contesto"])       != str(orig["Contesto"])
+                giro_changed = bool(edit["🔄 Giroconto"])  != bool(orig["🔄 Giroconto"])
+
+                if cat_changed or sub_changed:
+                    update_transaction_category(
+                        save_s, tx_id,
+                        edit["Categoria"]      or orig["Categoria"],
+                        edit["Sottocategoria"] or orig["Sottocategoria"],
+                    )
+                    n_cat += 1
+
+                if ctx_changed:
+                    update_transaction_context(
+                        save_s, tx_id, edit["Contesto"] or None
+                    )
+                    n_ctx += 1
+
+                if giro_changed:
+                    toggle_transaction_giroconto(save_s, tx_id)
+                    n_giro += 1
+
+            save_s.commit()
+
+        total_saved = n_cat + n_ctx + n_giro
+        if total_saved:
+            parts = []
+            if n_cat:  parts.append(f"{n_cat} categorie")
+            if n_ctx:  parts.append(f"{n_ctx} contesti")
+            if n_giro: parts.append(f"{n_giro} giroconti")
+            st.success(f"✅ Salvate: {' · '.join(parts)}")
+            logger.info(f"ledger_page: saved cat={n_cat} ctx={n_ctx} giro={n_giro}")
+            st.rerun()
         else:
-            st.caption("ℹ️ Giroconti inclusi nel registro (modalità *Mostra*). Puoi cambiarla in ⚙️ Impostazioni.")
+            st.info("Nessuna modifica rilevata.")
 
-        filters = {}
-        if date_from:
-            filters["date_from"] = date_from.isoformat()
-        if date_to:
-            filters["date_to"] = date_to.isoformat()
-        if tx_type_filter != "tutti":
-            filters["tx_type"] = tx_type_filter
-        elif giroconto_mode == "exclude":
-            filters["exclude_tx_types"] = ["internal_in", "internal_out"]
-        if review_only:
-            filters["to_review"] = True
-        if desc_filter.strip():
-            filters["description"] = desc_filter.strip()
-        if cat_filter != "tutte":
-            filters["category"] = cat_filter
-        if sub_filter != "tutte":
-            filters["subcategory"] = sub_filter
-        if ctx_filter == "— nessuno —":
-            filters["context"] = None
-        elif ctx_filter != "tutti":
-            filters["context"] = ctx_filter
+    # ── Page navigation ───────────────────────────────────────────────────────
+    nav1, nav2, _ = st.columns([1, 1, 5])
+    with nav1:
+        if st.button("◀ Precedente", disabled=(page_num == 0), key="ledger_prev",
+                     use_container_width=True):
+            st.session_state["ledger_page"] = page_num - 1
+            st.rerun()
+    with nav2:
+        if st.button("Successiva ▶", disabled=(page_num >= total_pages - 1), key="ledger_next",
+                     use_container_width=True):
+            st.session_state["ledger_page"] = page_num + 1
+            st.rerun()
 
-        txs = get_transactions(session, filters=filters)
-
-        if not txs:
-            st.info("Nessuna transazione trovata.")
-            return
-
-        # ── Metrics ──────────────────────────────────────────────────────────
-        net = sum(
-            Decimal(str(tx.amount)) for tx in txs
-            if tx.tx_type not in EXCLUDED_FROM_BALANCE
-        )
-        income = sum(
-            Decimal(str(tx.amount)) for tx in txs
-            if tx.tx_type not in EXCLUDED_FROM_BALANCE and Decimal(str(tx.amount)) > 0
-        )
-        expenses = sum(
-            Decimal(str(tx.amount)) for tx in txs
-            if tx.tx_type not in EXCLUDED_FROM_BALANCE and Decimal(str(tx.amount)) < 0
-        )
-
-        m1, m2, m3, m4 = st.columns(4)
-        _dec = settings.get("amount_decimal_sep", ",")
-        _thou = settings.get("amount_thousands_sep", ".")
-
-        m1.metric("Transazioni", len(txs))
-        m2.metric("Saldo Netto", format_amount_display(float(net), _dec, _thou))
-        m3.metric("Entrate", format_amount_display(float(income), _dec, _thou))
-        m4.metric("Uscite", format_amount_display(float(expenses), _dec, _thou))
-
-        # ── Table ─────────────────────────────────────────────────────────────
-        show_raw = st.toggle("Mostra valori originali (raw)", value=False, key="ledger_show_raw")
-
-        _date_fmt = settings.get("date_display_format", "%d/%m/%Y")
-
-        data = [
-            {
-                "Data": format_date_display(tx.date, _date_fmt),
-                "Descrizione": (tx.description or "")[:80],
-                "Entrata": float(tx.amount) if float(tx.amount) > 0 else None,
-                "Uscita": abs(float(tx.amount)) if float(tx.amount) < 0 else None,
-                "Valuta": tx.currency,
-                "Tipo": ("🔄 " + tx.tx_type) if tx.tx_type in ("internal_out", "internal_in") else tx.tx_type,
-                "Categoria": tx.category or "",
-                "Sottocategoria": tx.subcategory or "",
-                "Contesto": tx.context or "",
-                "Conto": tx.account_label or "",
-                "Conf.": tx.category_confidence or "",
-                "Da rivedere": "⚠️" if tx.to_review else "",
-                "Desc. originale": (tx.raw_description or "")[:80],
-                "Importo originale": format_raw_amount_display(tx.raw_amount),
-                "id": tx.id,
-            }
-            for tx in txs
-        ]
-        df = pd.DataFrame(data)
-
-        hide_cols = ["id"]
-        if not show_raw:
-            hide_cols += ["Desc. originale", "Importo originale"]
-
-        display_df = df.drop(columns=hide_cols)
-
-        # ── Pagination ────────────────────────────────────────────────────────
-        _page_sizes = [25, 50, 100, 200]
-        _pg_col1, _pg_col2 = st.columns([1, 3])
-        with _pg_col1:
-            rows_per_page = st.selectbox(
-                "Righe per pagina", _page_sizes, index=1, key="ledger_page_size"
-            )
-
-        total_rows = len(display_df)
-        total_pages = max(1, -(-total_rows // rows_per_page))  # ceiling division
-
-        # Reset page if filters changed (fingerprint = total rows + filter keys)
-        _filter_fp = f"{total_rows}_{sorted(filters.items())}"
-        if st.session_state.get("_ledger_filter_fp") != _filter_fp:
-            st.session_state["_ledger_filter_fp"] = _filter_fp
-            st.session_state["ledger_page"] = 0
-
-        page_num = st.session_state.get("ledger_page", 0)
-        page_num = max(0, min(page_num, total_pages - 1))
-
-        with _pg_col2:
-            st.caption(
-                f"Pagina **{page_num + 1}** di **{total_pages}** "
-                f"· {total_rows} transazioni totali"
-            )
-
-        page_start = page_num * rows_per_page
-        page_end = min(page_start + rows_per_page, total_rows)
-        page_df = display_df.iloc[page_start:page_end].reset_index(drop=True)
-
-        _num_fmt = f"%.2f"
-        table_event = st.dataframe(
-            page_df,
-            width="stretch",
-            height=min(500, 36 + len(page_df) * 35),
-            on_select="rerun",
-            selection_mode="single-row",
-            column_config={
-                "Entrata": st.column_config.NumberColumn("Entrata", format=_num_fmt),
-                "Uscita": st.column_config.NumberColumn("Uscita", format=_num_fmt),
-            },
-        )
-
-        # Navigation buttons
-        _nav1, _nav2, _nav3 = st.columns([1, 1, 4])
-        with _nav1:
-            if st.button("◀ Precedente", disabled=(page_num == 0), key="ledger_prev"):
-                st.session_state["ledger_page"] = page_num - 1
-                st.rerun()
-        with _nav2:
-            if st.button("Successiva ▶", disabled=(page_num >= total_pages - 1), key="ledger_next"):
-                st.session_state["ledger_page"] = page_num + 1
-                st.rerun()
-
-        # ── Export ────────────────────────────────────────────────────────────
-        st.divider()
+    # ── Export ────────────────────────────────────────────────────────────────
+    st.divider()
+    with get_session(engine) as s:
         ec1, ec2 = st.columns(2)
         with ec1:
-            csv_bytes = generate_csv_export(session, filters=filters)
-            st.download_button("📥 Esporta CSV", csv_bytes, "spendify_export.csv", "text/csv")
+            csv_bytes = generate_csv_export(s, filters=filters)
+            st.download_button(
+                "📥 Esporta CSV", csv_bytes, "spendify_export.csv", "text/csv",
+                use_container_width=True,
+            )
         with ec2:
-            xlsx_bytes = generate_xlsx_export(session, filters=filters)
+            xlsx_bytes = generate_xlsx_export(s, filters=filters)
             st.download_button(
                 "📥 Esporta XLSX", xlsx_bytes, "spendify_export.xlsx",
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
             )
-
-        # ── Correction panel ──────────────────────────────────────────────────
-        st.divider()
-        taxonomy = get_taxonomy_config(session)
-
-    # ── Transaction selector ───────────────────────────────────────────────────
-    st.subheader("Azioni transazione")
-    tx_options = {
-        f"{'⚠️ ' if tx.to_review else ''}{format_date_display(tx.date, _date_fmt)} | "
-        f"{(tx.description or '')[:60]} | "
-        f"{format_amount_display(abs(float(tx.amount)), _dec, _thou, symbol='')}": tx
-        for tx in txs
-    }
-
-    _keys = list(tx_options.keys())
-
-    # Sync selectbox when a table row is clicked
-    # Row index is relative to the current page → map back to full list
-    _sel_rows = table_event.selection.rows if table_event and table_event.selection.rows else []
-    if _sel_rows:
-        _idx = page_start + _sel_rows[0]
-        if _idx < len(_keys):
-            st.session_state["ledger_correct_tx"] = _keys[_idx]
-
-    # Reset stale session state value (e.g. after filter change or rerun)
-    if st.session_state.get("ledger_correct_tx") not in tx_options:
-        st.session_state["ledger_correct_tx"] = _keys[0] if _keys else None
-
-    selected_label = st.selectbox("Seleziona transazione", _keys, key="ledger_correct_tx")
-    selected_tx = tx_options[selected_label]
-
-    is_giroconto = selected_tx.tx_type in ("internal_out", "internal_in")
-    st.caption(
-        f"Tipo: **{selected_tx.tx_type}** · "
-        f"Categoria: **{selected_tx.category or '—'}** / "
-        f"{selected_tx.subcategory or '—'} "
-        f"(confidenza: {selected_tx.category_confidence or '—'}) · "
-        f"Contesto: **{selected_tx.context or '—'}**"
-    )
-
-    # ── Segna come giroconto ───────────────────────────────────────────────────
-    _similar_count = 0
-    if selected_tx.description:
-        with get_session(engine) as _sc:
-            _similar_count = _sc.query(Transaction).filter(
-                Transaction.description == selected_tx.description,
-                Transaction.id != selected_tx.id,
-            ).count()
-
-    apply_to_similar = False
-    if _similar_count > 0:
-        apply_to_similar = st.checkbox(
-            f"Applica anche alle altre {_similar_count} transazioni con la stessa descrizione",
-            value=True,
-            key="ledger_giroconto_similar",
-        )
-
-    giroconto_label = "↩️ Rimuovi da giroconti" if is_giroconto else "🔄 Segna come giroconto"
-    if st.button(giroconto_label, key="ledger_toggle_giroconto"):
-        with get_session(engine) as ws:
-            ok, new_type = toggle_transaction_giroconto(ws, selected_tx.id)
-            n_extra = 0
-            if ok and apply_to_similar and selected_tx.description:
-                make_giroconto = new_type in ("internal_out", "internal_in")
-                n_extra = bulk_set_giroconto_by_description(
-                    ws, selected_tx.description, make_giroconto, exclude_id=selected_tx.id
-                )
-            ws.commit()
-        if ok:
-            action = "rimossa dai giroconti" if new_type in ("expense", "income") else "segnata come giroconto"
-            extra_msg = f" · {n_extra} transazioni simili aggiornate." if n_extra else ""
-            st.success(f"Transazione {action} (tipo: {new_type}).{extra_msg}")
-            st.rerun()
-        else:
-            st.error("Transazione non trovata.")
-
-    # ── Assegnazione contesto ──────────────────────────────────────────────────
-    with st.expander("🌍 Assegna contesto", expanded=False):
-        _ctx_options = ["— nessuno —"] + _contexts
-        _cur_ctx_idx = _ctx_options.index(selected_tx.context) if selected_tx.context in _ctx_options else 0
-        new_ctx_label = st.selectbox(
-            "Contesto", _ctx_options, index=_cur_ctx_idx, key="ledger_ctx_assign"
-        )
-        new_ctx_value = None if new_ctx_label == "— nessuno —" else new_ctx_label
-
-        # Similarity suggestion
-        with get_session(engine) as _sim_s:
-            _similar_ctx = get_similar_transactions(
-                _sim_s, selected_tx.description or "", exclude_id=selected_tx.id
-            )
-        _sim_count = len(_similar_ctx)
-        apply_ctx_to_similar = False
-        if _sim_count > 0:
-            apply_ctx_to_similar = st.checkbox(
-                f"Applica anche alle {_sim_count} transazioni con descrizione simile",
-                value=False,
-                key="ledger_ctx_similar",
-            )
-
-        if st.button("💾 Applica contesto", key="ledger_ctx_save"):
-            with get_session(engine) as _cs:
-                update_transaction_context(_cs, selected_tx.id, new_ctx_value)
-                n_ctx_extra = 0
-                if apply_ctx_to_similar:
-                    for _stx in _similar_ctx:
-                        update_transaction_context(_cs, _stx.id, new_ctx_value)
-                        n_ctx_extra += 1
-                _cs.commit()
-            extra_msg = f" · {n_ctx_extra} transazioni simili aggiornate." if n_ctx_extra else ""
-            ctx_display = new_ctx_value or "nessuno"
-            st.success(f"Contesto impostato: **{ctx_display}**.{extra_msg}")
-            st.rerun()
-
-    # ── Correzione categoria ───────────────────────────────────────────────────
-    if not is_giroconto:
-        # Show only the relevant direction's categories based on amount sign
-        _is_expense = float(selected_tx.amount) < 0
-        all_categories = (
-            taxonomy.all_expense_categories if _is_expense else taxonomy.all_income_categories
-        )
-        with st.expander("✏️ Correggi categoria transazione", expanded=False):
-            col1, col2 = st.columns(2)
-            with col1:
-                cat_idx = all_categories.index(selected_tx.category) \
-                    if selected_tx.category in all_categories else 0
-                new_cat = st.selectbox("Nuova categoria", all_categories, index=cat_idx,
-                                       key="ledger_correct_cat")
-            with col2:
-                subs = taxonomy.valid_subcategories(new_cat)
-                if subs:
-                    sub_idx = subs.index(selected_tx.subcategory) \
-                        if (selected_tx.subcategory in subs and selected_tx.category == new_cat) else 0
-                    new_sub = st.selectbox("Nuova sottocategoria", subs, index=sub_idx,
-                                           key=f"ledger_correct_sub__{new_cat}")
-                else:
-                    new_sub = st.text_input("Nuova sottocategoria",
-                                            value=selected_tx.subcategory or "",
-                                            key=f"ledger_correct_sub__{new_cat}")
-
-            save_rule = st.checkbox(
-                "Salva come regola deterministica (applica a tutte le transazioni simili)",
-                value=False,
-                key="ledger_correct_rule",
-            )
-
-            if st.button("💾 Applica correzione", type="primary", key="ledger_correct_save"):
-                with get_session(engine) as ws:
-                    ok = update_transaction_category(ws, selected_tx.id, new_cat, new_sub)
-                    if ok:
-                        rule_msg = ""
-                        if save_rule and selected_tx.description:
-                            _, created = create_category_rule(
-                                session=ws,
-                                pattern=selected_tx.description,
-                                match_type="contains",
-                                category=new_cat,
-                                subcategory=new_sub,
-                                priority=10,
-                            )
-                            similar = get_transactions_by_rule_pattern(
-                                ws, selected_tx.description, "contains"
-                            )
-                            n_similar = 0
-                            for stx in similar:
-                                if stx.id != selected_tx.id:
-                                    update_transaction_category(ws, stx.id, new_cat, new_sub)
-                                    n_similar += 1
-                            rule_tag = "creata" if created else "aggiornata"
-                            rule_msg = f" · Regola {rule_tag}"
-                            if n_similar:
-                                rule_msg += f" · {n_similar} transazioni simili aggiornate."
-                        ws.commit()
-                        st.success(f"Categoria aggiornata: {new_cat} / {new_sub}{rule_msg}")
-                        st.rerun()
-                    else:
-                        st.error("Transazione non trovata.")
