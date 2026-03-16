@@ -78,6 +78,7 @@ def create_tables(engine=None):
     _migrate_add_description_cols(engine)
     _migrate_add_context(engine)
     _migrate_add_description_rules(engine)
+    _migrate_add_rule_context(engine)
     return engine
 
 
@@ -250,6 +251,7 @@ class CategoryRule(Base):
     match_type = Column(String(10), nullable=False)  # contains | regex | exact
     category = Column(String(128), nullable=False)
     subcategory = Column(String(128))
+    context = Column(String(64))               # optional — None means "don't set"
     doc_type = Column(String(32))
     priority = Column(Integer, default=0)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
@@ -515,3 +517,19 @@ def _migrate_add_description_rules(engine) -> None:
             'UNIQUE(raw_pattern, match_type))'
         ))
         conn.commit()
+
+
+def _migrate_add_rule_context(engine) -> None:
+    """Add context column to category_rule if not present (idempotent)."""
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        try:
+            conn.execute(_text(
+                'ALTER TABLE category_rule ADD COLUMN context VARCHAR(64)'
+            ))
+            conn.commit()
+        except Exception as exc:
+            if "duplicate column name" in str(exc).lower():
+                pass
+            else:
+                raise

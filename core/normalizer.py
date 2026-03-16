@@ -8,9 +8,11 @@ import hashlib
 import math
 import re
 import unicodedata
+from dataclasses import dataclass, field
 from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
 from itertools import combinations, permutations as _permutations
+from statistics import median
 from typing import Optional
 
 import chardet
@@ -27,6 +29,25 @@ from core.schemas import DocumentSchema
 from support.logging import setup_logging
 
 logger = setup_logging()
+
+
+# ── Pre-processing constants ───────────────────────────────────────────────────
+
+_PREHEADER_MAX_ROWS: int = 20        # absolute max rows we are willing to strip
+_PREHEADER_MAX_RATIO: float = 0.10   # 10 % of total rows — safety cap
+_PREHEADER_DENSITY_THRESHOLD: float = 0.5   # fraction of median density below which a row is "sparse"
+_LOW_VARIABILITY_RATIO: float = 0.015  # nunique/nrows < 1.5 % → metadata/constant column
+
+
+@dataclass
+class PreprocessInfo:
+    """Metadata produced by the Phase-0 preprocessing step.
+
+    Carried alongside the raw DataFrame so the rest of the pipeline can log
+    or display what was stripped/dropped without re-running the analysis.
+    """
+    skipped_rows: int = 0
+    dropped_columns: list[str] = field(default_factory=list)
 
 
 # ── Encoding / format detection ───────────────────────────────────────────────
@@ -247,6 +268,174 @@ def compute_columns_key(df: "pd.DataFrame") -> str:  # type: ignore[name-defined
 def compute_file_hash(raw_bytes: bytes) -> str:
     """Return SHA-256 hex of raw file bytes (for import-level idempotency)."""
     return hashlib.sha256(raw_bytes).hexdigest()
+
+
+# ── Phase-0 preprocessing ──────────────────────────────────────────────────────
+
+def detect_and_strip_preheader_rows(
+    df: pd.DataFrame,
+    source_name: str = "",
+) -> tuple[pd.DataFrame, int]:
+    """Remove spurious metadata rows that appear *before* the actual column header.
+
+    Banks occasionally export files where the first few rows contain account
+    info, report titles, or empty lines before the real transaction table
+    header.  pandas reads those rows as data, producing wrong column names and
+    extra NaN-heavy rows at the top.
+
+    Algorithm (language-agnostic, statistical):
+    1. Reconstruct the pandas-consumed header row as row 0 of a working copy
+       (``Unnamed: N`` synthetic column names are treated as empty cells).
+    2. Count non-null cells per row → density array.
+    3. Compute the median density across all rows.
+    4. Walk from row 0 downward; collect contiguous rows whose density is
+       below ``median × _PREHEADER_DENSITY_THRESHOLD``.
+    5. Safety caps: if the candidate count exceeds ``_PREHEADER_MAX_ROWS``
+       **or** ``_PREHEADER_MAX_RATIO × total_rows``, raise ``ValueError``
+       (import stops with a descriptive message rather than silently
+       producing garbage data).
+    6. If ``n_sparse > 0``, reassign column names from the first non-sparse
+       row (row index ``n_sparse`` in the working copy) and return the data
+       rows that follow.
+
+    Args:
+        df: Raw DataFrame as returned by ``pd.read_csv`` / ``pd.read_excel``.
+        source_name: Filename used only for log messages.
+
+    Returns:
+        ``(trimmed_df, n_skipped)`` where ``n_skipped`` is the number of
+        pre-header rows removed.  If nothing was stripped, ``n_skipped == 0``
+        and the original DataFrame is returned unchanged.
+
+    Raises:
+        ValueError: If the number of sparse rows at the start exceeds the
+            safety caps, indicating the file probably does not start with a
+            transaction table at all.
+    """
+    if len(df) < 4:
+        # Too short to run safely; nothing to strip.
+        return df, 0
+
+    total_rows = len(df) + 1  # +1 for the reconstructed header row
+
+    # Step 1 – Reconstruct the pandas-consumed header row.
+    header_values: list = [
+        None if re.match(r"^Unnamed: \d+$", str(c)) else str(c)
+        for c in df.columns
+    ]
+    n_cols = len(header_values)
+    header_series = pd.Series(header_values, index=df.columns)
+    df_full = pd.concat(
+        [header_series.to_frame().T, df.reset_index(drop=True)],
+        ignore_index=True,
+    )
+
+    # Step 2 – Non-null density per row.
+    densities: list[float] = [
+        row.notna().sum() / n_cols
+        for _, row in df_full.iterrows()
+    ]
+
+    # Step 3 – Median density.
+    med = median(densities)
+    threshold = med * _PREHEADER_DENSITY_THRESHOLD
+
+    # Step 4 – Contiguous sparse rows at the start.
+    n_sparse = 0
+    for d in densities:
+        if d < threshold:
+            n_sparse += 1
+        else:
+            break  # stop at first non-sparse row
+
+    if n_sparse == 0:
+        return df, 0
+
+    # Step 5 – Safety caps.
+    if n_sparse > _PREHEADER_MAX_ROWS:
+        raise ValueError(
+            f"[{source_name}] detect_and_strip_preheader_rows: "
+            f"{n_sparse} sparse rows detected at the start, exceeding the "
+            f"absolute cap of {_PREHEADER_MAX_ROWS}. "
+            "The file may not contain a standard transaction table."
+        )
+    ratio = n_sparse / total_rows
+    if ratio > _PREHEADER_MAX_RATIO:
+        raise ValueError(
+            f"[{source_name}] detect_and_strip_preheader_rows: "
+            f"{n_sparse} sparse rows represent {ratio:.1%} of the file, "
+            f"exceeding the {_PREHEADER_MAX_RATIO:.0%} safety cap. "
+            "The file may not contain a standard transaction table."
+        )
+
+    # Step 6 – Reassign column names from the first non-sparse row.
+    new_header_row = df_full.iloc[n_sparse]
+    new_columns = [
+        (str(v).strip() if pd.notna(v) and str(v).strip() else f"Unnamed: {i}")
+        for i, v in enumerate(new_header_row)
+    ]
+    result = df_full.iloc[n_sparse + 1:].copy()
+    result.columns = new_columns
+    result = result.reset_index(drop=True)
+
+    logger.info(
+        "[%s] Stripped %d pre-header row(s) (density threshold=%.2f × median %.2f)",
+        source_name, n_sparse, _PREHEADER_DENSITY_THRESHOLD, med,
+    )
+    return result, n_sparse
+
+
+def drop_low_variability_columns(
+    df: pd.DataFrame,
+    source_name: str = "",
+    min_ratio: float = _LOW_VARIABILITY_RATIO,
+) -> tuple[pd.DataFrame, list[str]]:
+    """Remove columns whose value diversity is too low to carry transaction data.
+
+    Columns like "Nome titolare" (always the same name) or "Numero carta"
+    (same masked PAN on every row) add noise without information.  A column
+    is considered metadata/constant if::
+
+        nunique(col) / nrows < min_ratio
+
+    At least 2 columns are always preserved so downstream processing has
+    something to work with.
+
+    Args:
+        df: DataFrame (may already be pre-header-stripped).
+        source_name: Filename used only for log messages.
+        min_ratio: Fraction threshold (default ``_LOW_VARIABILITY_RATIO``
+            = 1.5 %).
+
+    Returns:
+        ``(cleaned_df, dropped_column_names)``.  If nothing was dropped,
+        ``dropped_column_names`` is an empty list.
+    """
+    if len(df) < 2 or len(df.columns) <= 2:
+        return df, []
+
+    nrows = len(df)
+    to_drop: list[str] = []
+
+    for col in df.columns:
+        ratio = df[col].nunique(dropna=True) / nrows
+        if ratio < min_ratio:
+            to_drop.append(col)
+
+    # Never drop below 2 columns.
+    max_droppable = len(df.columns) - 2
+    if len(to_drop) > max_droppable:
+        to_drop = to_drop[:max_droppable]
+
+    if not to_drop:
+        return df, []
+
+    result = df.drop(columns=to_drop)
+    logger.info(
+        "[%s] Dropped %d low-variability column(s): %s",
+        source_name, len(to_drop), to_drop,
+    )
+    return result, to_drop
 
 
 # ── Internal transfer detection (RF-04) ──────────────────────────────────────

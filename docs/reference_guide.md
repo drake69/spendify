@@ -1,5 +1,7 @@
 # Spendify — Reference Guide
 
+> Per la configurazione dettagliata di tutti i parametri e dei provider LLM vedi **[configurazione.md](configurazione.md)**.
+
 ---
 
 ## Pagine dell'applicazione
@@ -35,6 +37,7 @@ Banche riconosciute automaticamente tramite fingerprint degli header. Nessuna co
 File in input
     │
     ▼
+0. Pre-processing Phase 0      → rimozione righe pre-header sparse; drop colonne a bassa variabilità
 1. Classificazione documento   → identifica banca, tipo conto, schema colonne
 2. Normalizzazione             → encoding, delimitatori, parse date/importi, SHA-256
 3. Dedup check                 → scarta transazioni già presenti (zero LLM call)
