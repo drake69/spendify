@@ -6,6 +6,7 @@ from sqlalchemy import create_engine
 
 from db.models import Base, Transaction, get_session
 from db.repository import (
+    apply_all_rules_to_all_transactions,
     apply_rules_to_review_transactions,
     bulk_set_giroconto_by_description,
     create_category_rule,
@@ -280,3 +281,81 @@ class TestBulkSetGirocontoByDescription:
     def test_returns_zero_when_no_match(self, session):
         n = bulk_set_giroconto_by_description(session, "nessuna desc", make_giroconto=True)
         assert n == 0
+
+
+# ── apply_all_rules_to_all_transactions ──────────────────────────────────────
+
+class TestApplyAllRulesToAllTransactions:
+    def _rule(self, pattern, category, subcategory="", match_type="contains",
+              priority=10, doc_type=None) -> CoreCategoryRule:
+        return CoreCategoryRule(
+            id=1, pattern=pattern, match_type=match_type,
+            category=category, subcategory=subcategory,
+            doc_type=doc_type, priority=priority,
+        )
+
+    def test_applies_to_all_including_non_review(self, session):
+        _tx(session, tx_id="t1", description="netflix abbonamento",
+            category="Altro", to_review=False)
+        _tx(session, tx_id="t2", description="netflix abbonamento",
+            category="Altro", to_review=True)
+        rule = self._rule("netflix", "Intrattenimento", "Streaming")
+        n_matched, n_cleared = apply_all_rules_to_all_transactions(session, [rule])
+        assert n_matched == 2
+        assert n_cleared == 1   # only the to_review=True one is "cleared"
+        t1 = session.get(Transaction, "t1")
+        t2 = session.get(Transaction, "t2")
+        assert t1.category == "Intrattenimento"
+        assert t2.category == "Intrattenimento"
+        assert t2.to_review is False
+        assert t1.to_review is False   # was already False, stays False
+
+    def test_returns_zero_zero_when_no_rules(self, session):
+        _tx(session, tx_id="t1", description="something", to_review=True)
+        assert apply_all_rules_to_all_transactions(session, []) == (0, 0)
+
+    def test_returns_zero_zero_when_no_transactions(self, session):
+        rule = self._rule("netflix", "Intrattenimento")
+        assert apply_all_rules_to_all_transactions(session, [rule]) == (0, 0)
+
+    def test_first_match_wins_highest_priority(self, session):
+        _tx(session, tx_id="t1", description="amazon prime video", to_review=False)
+        low  = self._rule("amazon",      "Shopping",        priority=5)
+        high = self._rule("prime video", "Intrattenimento", priority=20)
+        n_matched, _ = apply_all_rules_to_all_transactions(session, [low, high])
+        assert n_matched == 1
+        tx = session.get(Transaction, "t1")
+        assert tx.category == "Intrattenimento"   # higher priority wins
+
+    def test_unmatched_transactions_left_unchanged(self, session):
+        _tx(session, tx_id="t1", description="amazon prime video", category="Shopping")
+        _tx(session, tx_id="t2", description="esselunga supermercato", category="Altro")
+        rule = self._rule("prime video", "Intrattenimento")
+        n_matched, _ = apply_all_rules_to_all_transactions(session, [rule])
+        assert n_matched == 1
+        assert session.get(Transaction, "t2").category == "Altro"
+
+    def test_category_source_set_to_rule(self, session):
+        _tx(session, tx_id="t1", description="enel energia", category_source="llm")
+        rule = self._rule("enel", "Utenze", "Elettricità")
+        apply_all_rules_to_all_transactions(session, [rule])
+        tx = session.get(Transaction, "t1")
+        assert tx.category_source == "rule"
+        assert tx.category_confidence == "high"
+
+    def test_n_cleared_counts_only_previously_to_review(self, session):
+        _tx(session, tx_id="t1", description="enel energia", to_review=True)
+        _tx(session, tx_id="t2", description="enel energia", to_review=False)
+        _tx(session, tx_id="t3", description="enel energia", to_review=True)
+        rule = self._rule("enel", "Utenze")
+        n_matched, n_cleared = apply_all_rules_to_all_transactions(session, [rule])
+        assert n_matched == 3
+        assert n_cleared == 2
+
+    def test_empty_rules_list_no_db_flush(self, session):
+        """No flush should occur (and no error) when rules list is empty."""
+        _tx(session, tx_id="t1", description="test", to_review=True)
+        result = apply_all_rules_to_all_transactions(session, [])
+        assert result == (0, 0)
+        # transaction unchanged
+        assert session.get(Transaction, "t1").category == "Altro"
