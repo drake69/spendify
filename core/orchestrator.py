@@ -501,21 +501,20 @@ def process_file(
             amount_plausibility_cap=config.max_transaction_amount,
         )
         _progress(0.25)
-        if doc_schema is None or doc_schema.confidence in (Confidence.low, Confidence.medium):
-            level = "failed" if doc_schema is None else doc_schema.confidence.value
-            logger.warning(f"process_file: classification {level} for {filename} — needs user review")
-            return ImportResult(
-                batch_sha256=batch_sha256,
-                source_name=filename,
-                transactions=[],
-                doc_schema=doc_schema,
-                reconciliations=[],
-                transfer_links=[],
-                errors=[],
-                flow_used=flow_used,
-                needs_schema_review=True,
-                available_columns=list(df_raw.columns),
-            )
+        # Always stop on Flow 2: user must confirm schema before any data is imported
+        logger.info(f"process_file: Flow 2 for {filename} — stopping for mandatory user schema review")
+        return ImportResult(
+            batch_sha256=batch_sha256,
+            source_name=filename,
+            transactions=[],
+            doc_schema=doc_schema,
+            reconciliations=[],
+            transfer_links=[],
+            errors=[],
+            flow_used=flow_used,
+            needs_schema_review=True,
+            available_columns=list(df_raw.columns),
+        )
     else:
         _progress(0.10)
 
