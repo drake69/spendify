@@ -19,6 +19,13 @@ FILE (CSV / XLSX)
                              │
                              ▼
 ┌─────────────────────────────────────────────────────────────┐
+│  1b. PRE-PROCESSING Phase 0                                  │ ◄─ DETERMINISTICO
+│     detect_and_strip_preheader_rows                          │
+│     drop_low_variability_columns                             │
+└────────────────────────────┬────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
 │  2. CLASSIFICAZIONE DOCUMENTO — Fase 0                       │ ◄─ DETERMINISTICO
 │     sinonimi colonne · ispezione segni                       │
 └────────────────────────────┬────────────────────────────────┘
@@ -451,6 +458,7 @@ Soglie applicate per ogni categoria rispetto al benchmark familiare di riferimen
 | Stadio | Strumento | Modulo | LLM? |
 |--------|-----------|--------|------|
 | 1. Formato file | detect_encoding / detect_delimiter / detect_header_row / detect_best_sheet | normalizer.py | ✗ |
+| 1b. Pre-processing | detect_and_strip_preheader_rows / drop_low_variability_columns | normalizer.py | ✗ |
 | 2. Schema — Fase 0 | sinonimi colonne, ispezione segni | classifier.py | ✗ |
 | 2. Schema — Fase 1 | classificazione doc_type, date_format, sign_convention | classifier.py | ✓ LLM |
 | 3. Normalizzazione | parse_date_safe / parse_amount / apply_sign_convention / normalize_description / compute_transaction_id / _infer_tx_type / remove_card_balance_row | normalizer.py + orchestrator.py | ✗ |
