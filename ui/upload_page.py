@@ -246,6 +246,40 @@ def _render_schema_review(engine, config, taxonomy, user_rules) -> bool:
                 "confidence": Confidence.high,  # user confirmed → treat as high
             })
 
+            # Preview: apply schema and show normalised result — same layout as ledger
+            st.markdown("**Anteprima normalizzata** — così appariranno nel ledger:")
+            try:
+                from core.orchestrator import _normalize_df_with_schema, load_raw_dataframe
+                import pandas as pd
+                df_raw_prev, _, _ = load_raw_dataframe(entry["raw_bytes"], filename)
+                preview_txs = _normalize_df_with_schema(df_raw_prev.head(30), confirmed_schemas[filename], filename)
+                if preview_txs:
+                    preview_rows = [
+                        {
+                            "Data":              str(t.get("date", "")),
+                            "Descrizione":       (t.get("description") or "")[:80],
+                            "Entrata":           float(t["amount"]) if t.get("amount") is not None and float(t["amount"]) > 0 else None,
+                            "Uscita":            abs(float(t["amount"])) if t.get("amount") is not None and float(t["amount"]) < 0 else None,
+                            "Valuta":            t.get("currency", "EUR"),
+                            "Desc. originale":   (t.get("raw_description") or "")[:80],
+                            "Importo originale": str(t.get("raw_amount", "")),
+                        }
+                        for t in preview_txs[:8]
+                    ]
+                    st.dataframe(
+                        pd.DataFrame(preview_rows),
+                        use_container_width=True,
+                        hide_index=True,
+                        column_config={
+                            "Entrata": st.column_config.NumberColumn("Entrata", format="%.2f"),
+                            "Uscita":  st.column_config.NumberColumn("Uscita",  format="%.2f"),
+                        },
+                    )
+                else:
+                    st.warning("⚠️ Nessuna riga parsata — verifica le colonne selezionate.")
+            except Exception as e:
+                st.caption(f"Anteprima non disponibile: {e}")
+
     if st.button("✅ Conferma schemi e importa", type="primary"):
         from core.orchestrator import process_file
         results = []
