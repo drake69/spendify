@@ -119,6 +119,8 @@ class ImportResult:
     skipped_count: int = 0   # number of transactions already in DB (skipped before LLM)
     errors: list[str] = field(default_factory=list)
     flow_used: str = "unknown"  # "flow1" or "flow2"
+    needs_schema_review: bool = False   # True when confidence is medium/low → user must confirm schema
+    available_columns: list[str] = field(default_factory=list)  # column names for review UI
 
 
 def _build_backend(config: ProcessingConfig) -> LLMBackend:
@@ -499,8 +501,9 @@ def process_file(
             amount_plausibility_cap=config.max_transaction_amount,
         )
         _progress(0.25)
-        if doc_schema is None or doc_schema.confidence == Confidence.low:
-            logger.warning(f"process_file: classification failed or low confidence for {filename}")
+        if doc_schema is None or doc_schema.confidence in (Confidence.low, Confidence.medium):
+            level = "failed" if doc_schema is None else doc_schema.confidence.value
+            logger.warning(f"process_file: classification {level} for {filename} — needs user review")
             return ImportResult(
                 batch_sha256=batch_sha256,
                 source_name=filename,
@@ -508,8 +511,10 @@ def process_file(
                 doc_schema=doc_schema,
                 reconciliations=[],
                 transfer_links=[],
-                errors=["Document classification failed or low confidence; needs manual review"],
+                errors=[],
                 flow_used=flow_used,
+                needs_schema_review=True,
+                available_columns=list(df_raw.columns),
             )
     else:
         _progress(0.10)
