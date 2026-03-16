@@ -58,6 +58,7 @@ DEFAULT_USER_SETTINGS = {
     "import_test_mode": "false",
     "contexts": '["Quotidianità", "Lavoro", "Vacanza"]',
     "giroconto_mode": "neutral",
+    "max_transaction_amount": "1000000",
 }
 
 
