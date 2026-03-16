@@ -6,10 +6,11 @@ from datetime import datetime, timezone
 
 import streamlit as st
 
-from core.models import GirocontoMode
+from core.models import Confidence, DocumentType, GirocontoMode, SignConvention
 from core.normalizer import compute_columns_key
 from core.orchestrator import ProcessingConfig, load_raw_dataframe, process_files
 from core.sanitizer import SanitizationConfig
+from core.schemas import DocumentSchema
 from db.models import get_session
 from db.repository import get_accounts
 from db.repository import (
@@ -144,6 +145,146 @@ def _render_last_import_summary():
                         f"Account: {result.doc_schema.account_label} | "
                         f"Confidence: {result.doc_schema.confidence}"
                     )
+
+
+def _render_schema_review(engine, config, taxonomy, user_rules) -> bool:
+    """Show editable schema form for files with medium/low confidence.
+    Returns True if the user confirmed and re-import was triggered."""
+    pending = st.session_state.get("_pending_schema_reviews", [])
+    if not pending:
+        return False
+
+    st.warning(
+        f"⚠️ **Revisione schema richiesta** — {len(pending)} file con classificazione incerta. "
+        "Verifica i campi rilevati e conferma prima di importare."
+    )
+
+    doc_type_options = [d.value for d in DocumentType]
+    sign_options = [s.value for s in SignConvention]
+    none_option = "— nessuna —"
+
+    confirmed_schemas: dict[str, DocumentSchema] = {}
+
+    for entry in pending:
+        filename = entry["filename"]
+        result = entry["result"]
+        schema = result.doc_schema
+        cols = result.available_columns
+        col_options = [none_option] + cols
+
+        evidence = schema.semantic_evidence if schema else []
+        confidence_label = schema.confidence.value if schema else "unknown"
+
+        with st.expander(f"📄 {filename}  [confidence: {confidence_label}]", expanded=True):
+            if evidence:
+                st.caption("Ragionamento LLM: " + " · ".join(evidence))
+
+            c1, c2 = st.columns(2)
+            doc_type_val = schema.doc_type.value if schema else doc_type_options[0]
+            doc_type_sel = c1.selectbox(
+                "Tipo documento", doc_type_options,
+                index=doc_type_options.index(doc_type_val) if doc_type_val in doc_type_options else 0,
+                key=f"rev_doc_type_{filename}",
+            )
+            account_sel = c2.text_input(
+                "Account label", value=schema.account_label if schema else "",
+                key=f"rev_account_{filename}",
+            )
+
+            c3, c4, c5 = st.columns(3)
+            def _col_idx(val):
+                return col_options.index(val) if val in col_options else 0
+
+            amount_sel = c3.selectbox(
+                "Colonna importo", col_options,
+                index=_col_idx(schema.amount_col if schema else none_option),
+                key=f"rev_amount_{filename}",
+            )
+            date_sel = c4.selectbox(
+                "Colonna data", col_options,
+                index=_col_idx(schema.date_col if schema else none_option),
+                key=f"rev_date_{filename}",
+            )
+            sign_val = schema.sign_convention.value if schema else sign_options[0]
+            sign_sel = c5.selectbox(
+                "Convenzione segno", sign_options,
+                index=sign_options.index(sign_val) if sign_val in sign_options else 0,
+                key=f"rev_sign_{filename}",
+            )
+
+            c6, c7, c8 = st.columns(3)
+            debit_sel = c6.selectbox(
+                "Colonna addebiti (opt.)", col_options,
+                index=_col_idx(schema.debit_col if schema and schema.debit_col else none_option),
+                key=f"rev_debit_{filename}",
+            )
+            credit_sel = c7.selectbox(
+                "Colonna accrediti (opt.)", col_options,
+                index=_col_idx(schema.credit_col if schema and schema.credit_col else none_option),
+                key=f"rev_credit_{filename}",
+            )
+            invert = c8.checkbox(
+                "Inverti segno", value=schema.invert_sign if schema else False,
+                key=f"rev_invert_{filename}",
+            )
+
+            # Build confirmed schema from user selections
+            base = schema.model_copy() if schema else DocumentSchema(
+                doc_type=DocumentType(doc_type_options[0]),
+                date_col="", amount_col="", sign_convention=SignConvention(sign_options[0]),
+                date_format="%d/%m/%Y", account_label="", confidence=Confidence.high,
+            )
+            confirmed_schemas[filename] = base.model_copy(update={
+                "doc_type": DocumentType(doc_type_sel),
+                "account_label": account_sel,
+                "amount_col": "" if amount_sel == none_option else amount_sel,
+                "date_col": "" if date_sel == none_option else date_sel,
+                "sign_convention": SignConvention(sign_sel),
+                "debit_col": None if debit_sel == none_option else debit_sel,
+                "credit_col": None if credit_sel == none_option else credit_sel,
+                "invert_sign": invert,
+                "confidence": Confidence.high,  # user confirmed → treat as high
+            })
+
+    if st.button("✅ Conferma schemi e importa", type="primary"):
+        from core.orchestrator import process_file
+        results = []
+        prog = st.progress(0.0)
+        with get_session(engine) as session:
+            taxonomy_c = taxonomy
+            user_rules_c = user_rules
+            for i, entry in enumerate(pending):
+                raw_bytes = entry["raw_bytes"]
+                filename = entry["filename"]
+                confirmed = confirmed_schemas[filename]
+                prog.progress((i + 1) / len(pending))
+
+                def _make_existing_checker(eng):
+                    def _checker(tx_ids):
+                        with get_session(eng) as s:
+                            return get_existing_tx_ids(s, tx_ids)
+                    return _checker
+
+                result = process_file(
+                    raw_bytes=raw_bytes,
+                    filename=filename,
+                    config=config,
+                    taxonomy=taxonomy_c,
+                    user_rules=user_rules_c,
+                    known_schema=confirmed,
+                    existing_tx_ids_checker=_make_existing_checker(engine),
+                    account_label_override=entry.get("account_label_override"),
+                )
+                with get_session(engine) as s2:
+                    persist_import_result(s2, result)
+                results.append(result)
+
+        st.session_state["_pending_schema_reviews"] = []
+        existing = st.session_state.get("last_import_results", [])
+        st.session_state["last_import_results"] = existing + results
+        st.rerun()
+
+    return True
 
 
 def render_upload_page(engine):
@@ -299,7 +440,18 @@ def render_upload_page(engine):
                     existing_tx_ids_checker=_make_existing_checker(engine),
                     account_label_override=_file_account_map.get(filename),
                 )
-                persist_import_result(session2, result)
+                if result.needs_schema_review:
+                    # Do NOT persist — wait for user confirmation
+                    pending = st.session_state.get("_pending_schema_reviews", [])
+                    pending.append({
+                        "raw_bytes": raw_bytes,
+                        "filename": filename,
+                        "result": result,
+                        "account_label_override": _file_account_map.get(filename),
+                    })
+                    st.session_state["_pending_schema_reviews"] = pending
+                else:
+                    persist_import_result(session2, result)
                 results.append(result)
                 _progress_bar.progress(file_end)
 
@@ -307,9 +459,13 @@ def render_upload_page(engine):
                 with get_session(engine) as s:
                     update_import_job(s, job_id, progress=file_end)
 
-        n_tx = sum(len(r.transactions) for r in results)
+        n_pending = len(st.session_state.get("_pending_schema_reviews", []))
+        n_tx = sum(len(r.transactions) for r in results if not r.needs_schema_review)
         n_skipped = sum(r.skipped_count for r in results)
-        final_msg = f"✅ Completato — {n_tx:,} nuove transazioni"
+        if n_pending:
+            final_msg = f"⏸️ {n_pending} file in attesa di revisione schema"
+        else:
+            final_msg = f"✅ Completato — {n_tx:,} nuove transazioni"
         if n_skipped:
             final_msg += f" · {n_skipped:,} già presenti (saltate)"
         final_detail = (
@@ -327,7 +483,16 @@ def render_upload_page(engine):
                               n_transactions=n_tx,
                               completed_at=datetime.now(timezone.utc))
 
-        st.session_state["last_import_results"] = results
+        st.session_state["last_import_results"] = [r for r in results if not r.needs_schema_review]
+
+    # Schema review gate: shown when a file has medium/low confidence
+    if st.session_state.get("_pending_schema_reviews"):
+        with get_session(engine) as _rs:
+            _config = _build_config(engine)
+            _taxonomy = get_taxonomy_config(_rs)
+            _user_rules = get_category_rules(_rs)
+        _render_schema_review(engine, _config, _taxonomy, _user_rules)
+        return
 
     # Always rendered: reads job state from DB + summary from session_state.
     # Fragment auto-refreshes every 2 s — no time.sleep() needed here.
