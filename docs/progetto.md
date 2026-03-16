@@ -237,7 +237,7 @@ Le migrazioni sono idempotenti e vengono eseguite automaticamente all'avvio in `
 
 ### 7.1 Navigazione
 
-8 pagine Streamlit gestite da `app.py` + `ui/sidebar.py`:
+9 pagine Streamlit gestite da `app.py` + `ui/sidebar.py`:
 
 ```
 📥 Import              upload_page.py
@@ -248,6 +248,7 @@ Le migrazioni sono idempotenti e vengono eseguite automaticamente all'avvio in `
 📏 Regole              rules_page.py
 🗂️ Tassonomia          taxonomy_page.py
 ⚙️ Impostazioni        settings_page.py
+✅ Check List          checklist_page.py
 ```
 
 ### 7.2 Pagina Import
@@ -291,6 +292,17 @@ Le migrazioni sono idempotenti e vengono eseguite automaticamente all'avvio in `
 - Modalità test import (solo prime 20 righe)
 - Lista conti bancari (add/delete, usata come `account_label` stabile per dedup)
 - Backend LLM: Ollama / OpenAI / Claude + modello + chiavi API
+
+### 7.7 Pagina Check List
+
+- Tabella pivot **mese × conto** con il numero di transazioni per ogni combinazione
+- Righe in ordine **decrescente**: mese corrente in cima, poi a ritroso
+- Il mese corrente appare sempre (anche se non ha ancora transazioni)
+- Colonne: tutti i conti definiti in `account` + eventuali `account_label` da transazioni non ancora formalizzati
+- Cella vuota (0 tx): simbolo **—** in grigio chiaro; cella con tx: numero con colorazione proporzionale (azzurro tenue → scuro)
+- Tre KPI in cima: transazioni totali, conti monitorati, mesi con dati
+- Filtri: selezione conti, ultimi N mesi, nascondi mesi senza transazioni
+- Download CSV della tabella filtrata
 
 ---
 

@@ -49,7 +49,8 @@ Aggrega estratti conto eterogenei (conti correnti, carte di credito, carte di de
 | **Persistenza SQLAlchemy** | 10 tabelle ORM; CRUD idempotente; migrazioni automatiche all'avvio |
 | **Progresso import cross-session** | Stato del job di importazione salvato nel DB; tutte le sessioni browser vedono il progresso in tempo reale |
 | **Export report** | HTML standalone (Plotly), CSV, XLSX |
-| **UI Streamlit 8 pagine** | Import → Ledger → Modifiche massive → Analytics → Review → Regole → Tassonomia → Impostazioni |
+| **UI Streamlit 9 pagine** | Import → Ledger → Modifiche massive → Analytics → Review → Regole → Tassonomia → Impostazioni → Check List |
+| **Check List mensile** | Tabella pivot mese × conto con conteggio transazioni; evidenzia i mesi mancanti a colpo d'occhio |
 
 ---
 
@@ -109,7 +110,7 @@ Aggrega estratti conto eterogenei (conti correnti, carte di credito, carte di de
 
 ```
 spendify/
-├── app.py                  # Entry point Streamlit (8 pagine)
+├── app.py                  # Entry point Streamlit (9 pagine)
 ├── taxonomy.yaml           # Seed iniziale tassonomia (importato nel DB al primo avvio)
 ├── .env.example            # Template variabili d'ambiente
 ├── pyproject.toml          # Dipendenze (uv / pip)
@@ -135,7 +136,7 @@ spendify/
 │   └── template_report.html.j2
 │
 ├── ui/
-│   ├── sidebar.py          # Pulsanti navigazione (8 pagine) + modalità giroconto
+│   ├── sidebar.py          # Pulsanti navigazione (9 pagine) + modalità giroconto
 │   ├── upload_page.py      # Import multi-file + progress bar cross-session
 │   ├── registry_page.py    # Ledger filtrabile + selezione al click + bulk giroconto
 │   ├── analysis_page.py    # 7 grafici Plotly: barre mensili, saldo cumulativo,
@@ -145,7 +146,8 @@ spendify/
 │   ├── bulk_edit_page.py   # Operazioni massive: categoria/contesto/giroconto + eliminazione da filtro
 │   ├── rules_page.py       # CRUD completo regole + "Esegui tutte le regole" bulk re-categorizzazione
 │   ├── taxonomy_page.py    # CRUD DB-backed per categorie e sottocategorie
-│   └── settings_page.py    # Locale (formato data/importo), lingua, config backend LLM
+│   ├── settings_page.py    # Locale (formato data/importo), lingua, config backend LLM
+│   └── checklist_page.py   # Pivot mese × conto: checklist presenza transazioni
 │
 ├── prompts/
 │   ├── classifier.json     # Prompt Flow 2 (hint invert_sign per file carta)
@@ -258,7 +260,7 @@ uv run streamlit run app.py
 streamlit run app.py
 ```
 
-L'app si apre su `http://localhost:8501` con 8 pagine:
+L'app si apre su `http://localhost:8501` con 9 pagine:
 
 | Pagina | Descrizione |
 |---|---|
@@ -270,6 +272,7 @@ L'app si apre su `http://localhost:8501` con 8 pagine:
 | **📏 Regole** | CRUD completo regole di categorizzazione. Modifica/elimina regole + ricalcolo bulk delle transazioni già categorizzate. Pulsante "▶️ Esegui tutte le regole" applica tutte le regole a ogni transazione del ledger in un colpo. |
 | **🗂️ Tassonomia** | CRUD DB-backed per categorie e sottocategorie (spese e entrate). Le modifiche hanno effetto immediato senza restart. |
 | **⚙️ Impostazioni** | Formato data, separatori importo, lingua descrizioni, contesti di vita, lista conti bancari, backend LLM (modello + chiavi API). Tutto persistito nel DB. |
+| **✅ Check List** | Tabella pivot mese × conto. Mese corrente in cima, ordine decrescente. Celle: numero tx o **—** se assenti. Colorazione per volume. Filtri: selezione conti, ultimi N mesi, nascondi mesi vuoti. Export CSV. |
 
 ---
 

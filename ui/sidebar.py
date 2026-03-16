@@ -4,11 +4,13 @@ import streamlit as st
 _NAV = [
     ("📥 Import", "import"),
     ("📋 Ledger", "ledger"),
+    ("✏️ Modifiche massive", "bulk_edit"),
     ("📊 Analytics", "analytics"),
     ("🔍 Review", "review"),
     ("📏 Regole", "rules"),
     ("🗂️ Tassonomia", "taxonomy"),
     ("⚙️ Impostazioni", "settings"),
+    ("✅ Check List", "checklist"),
 ]
 
 

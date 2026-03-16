@@ -140,7 +140,34 @@ Usa i filtri in alto per restringere a un periodo o a un conto specifico.
 
 ---
 
-## 8. Impostazioni: cambiare il modello AI
+## 8. Check List: tutto in ordine?
+
+**Situazione:** Vuoi controllare a colpo d'occhio se stai importando regolarmente tutti i tuoi estratti conto, senza buchi di mesi.
+
+Vai su **✅ Check List**. Trovi una tabella con:
+- **Una riga per ogni mese**, dal mese corrente in poi verso il passato
+- **Una colonna per ogni conto** che hai configurato in Impostazioni
+
+Ogni cella mostra il numero di transazioni importate per quel mese e quel conto. Se il numero è **—** (grigio), non hai transazioni per quella combinazione.
+
+> **Esempio pratico:** Hai tre conti — Conto Corrente, Carta Visa, Conto Deposito. Guardi la check list e vedi che Luglio 2024 ha "—" per il Conto Deposito. Significa che non hai mai importato l'estratto conto del conto deposito di quel mese. Vai a scaricarlo dalla banca e importalo.
+
+**Come leggere i colori:**
+- **—** grigio = nessuna transazione
+- 🔵 azzurro chiaro = 1–4 transazioni (poche — forse manca qualcosa?)
+- 🔵 azzurro medio = 5–19 transazioni (normale)
+- 🔵 azzurro scuro = ≥ 20 transazioni (mese pieno)
+
+**Filtri utili:**
+- *Mostra solo conti* — confronta solo i conti che ti interessano
+- *Ultimi N mesi* — focalizza su un periodo recente
+- *Nascondi mesi senza transazioni* — rimuove i mesi in cui non hai ancora dati per nessun conto
+
+Puoi scaricare la tabella come CSV con il pulsante **⬇️ Scarica CSV**.
+
+---
+
+## 9. Impostazioni: cambiare il modello AI
 
 **Situazione:** Vuoi usare un modello diverso per la classificazione (es. Claude invece di Ollama locale).
 
