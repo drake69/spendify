@@ -118,7 +118,7 @@ class ImportResult:
 
 
 def _build_backend(config: ProcessingConfig) -> LLMBackend:
-    kwargs = {"timeout": config.llm_timeout_s}
+    kwargs: dict[str, Any] = {"timeout": config.llm_timeout_s}
     if config.llm_backend == "local_ollama":
         kwargs["base_url"] = config.ollama_base_url
         kwargs["model"] = config.ollama_model
@@ -164,7 +164,8 @@ def load_raw_dataframe(
     """
     encoding = detect_encoding(raw_bytes)
     name_lower = filename.lower()
-
+    logger.info(f"load_raw_dataframe: detected encoding {encoding} for {filename}")
+    
     if name_lower.endswith((".xlsx", ".xls")):
         try:
             import openpyxl
@@ -388,7 +389,7 @@ def _infer_tx_type(
         if pattern.search(description):
             return TransactionType.internal_out if amount < 0 else TransactionType.internal_in
 
-    doc_str = doc_type.value if hasattr(doc_type, 'value') else str(doc_type)
+    doc_str = doc_type.value if isinstance(doc_type, DocumentType) else doc_type
     _card_types = {DocumentType.credit_card.value, DocumentType.debit_card.value, DocumentType.prepaid_card.value}
     if doc_str in _card_types:
         return TransactionType.card_tx
