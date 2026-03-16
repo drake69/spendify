@@ -16,6 +16,10 @@ FILE (CSV / XLSX)
      │   detect_header_row        (normalizer.py)  [solo CSV]
      │   detect_best_sheet        (normalizer.py)  [solo Excel]
      │
+     ▼  ── STADIO 1b: PRE-PROCESSING (Phase 0) ────────────────────────────
+     │   detect_and_strip_preheader_rows (normalizer.py)  [CSV + Excel]
+     │   drop_low_variability_columns    (normalizer.py)  [CSV + Excel]
+     │
      ▼  ── STADIO 2: SCHEMA / CLASSIFICAZIONE ─────────────────────────────
      │   compute_columns_key      (normalizer.py)  [cache schema]
      │   compute_file_hash        (normalizer.py)  [idempotenza import]
@@ -101,6 +105,55 @@ FILE (CSV / XLSX)
 - Esclude fogli con nome corrispondente a `summary|totale|riepilogo` (case-insensitive)
 - Punteggio = `n_righe + n_colonne_numeriche × 10`
 - Soglia: > 50% delle righe deve avere valori numerici per colonna considerata numerica
+
+---
+
+### Stadio 1b — Pre-processing Phase 0
+
+#### `detect_and_strip_preheader_rows` · `core/normalizer.py`
+**Funzione:** rimuove righe di metadati sparse presenti *prima* dell'intestazione reale della tabella transazioni
+**Input:** DataFrame grezzo + nome file (per log)
+**Output:** `(DataFrame ripulito, n_righe_rimosse)`
+**Algoritmo:**
+1. Ricostruisce la riga header consumata da pandas come riga 0 (i nomi colonna `Unnamed: N` vengono trattati come celle vuote)
+2. Calcola la densità non-null per riga (numero celle non-null / numero colonne)
+3. Calcola la mediana delle densità
+4. Conta le righe contigue dall'inizio con densità < `mediana × 0.5`
+5. Limiti di sicurezza: max **20 righe** assolute **E** max **10%** del totale → altrimenti `ValueError`
+6. Riassegna i nomi colonna dalla prima riga non-sparsa
+
+**Costanti (hardcoded):**
+
+| Costante | Valore | Descrizione |
+|---|---|---|
+| `_PREHEADER_MAX_ROWS` | 20 | Max righe sparse assolute prima dell'errore |
+| `_PREHEADER_MAX_RATIO` | 0.10 | Max % righe sparse rispetto al totale |
+| `_PREHEADER_DENSITY_THRESHOLD` | 0.5 | Moltiplicatore della mediana per soglia sparsa |
+
+**Casi speciali:**
+- DataFrame con < 4 righe → restituisce invariato
+- 0 righe sparse → restituisce invariato (fast path)
+
+**Rationale:** approccio statistico e language-agnostic — non usa dizionari di termini bancari
+
+---
+
+#### `drop_low_variability_columns` · `core/normalizer.py`
+**Funzione:** rimuove colonne con valori quasi costanti (es. "Nome titolare", "Numero carta" nei file AmEx)
+**Input:** DataFrame + nome file (per log)
+**Output:** `(DataFrame ripulito, lista_colonne_rimosse)`
+**Algoritmo:** per ogni colonna calcola `nunique(col) / n_righe`; se < soglia → candidata alla rimozione
+**Protezione:** mai scende sotto 2 colonne (preserva sempre un minimo lavorabile)
+
+**Costanti (hardcoded):**
+
+| Costante | Valore | Descrizione |
+|---|---|---|
+| `_LOW_VARIABILITY_RATIO` | 0.015 | Soglia: < 1.5 % unique/nrows → colonna metadata |
+
+**Casi speciali:**
+- DataFrame con < 2 righe → restituisce invariato
+- DataFrame con ≤ 2 colonne → restituisce invariato
 
 ---
 
@@ -446,6 +499,8 @@ Dopo ogni risposta LLM, prima di accettare la categorizzazione:
 | 2 | `detect_delimiter` | normalizer.py | 1 – Caricamento | ✓ | No |
 | 3 | `detect_header_row` | normalizer.py | 1 – Caricamento | ✓ | No |
 | 4 | `detect_best_sheet` | normalizer.py | 1 – Caricamento | ✓ | No |
+| 4b | `detect_and_strip_preheader_rows` | normalizer.py | 1b – Pre-processing | ✓ | No |
+| 4c | `drop_low_variability_columns` | normalizer.py | 1b – Pre-processing | ✓ | No |
 | 5 | `compute_file_hash` | normalizer.py | 2 – Schema | ✓ | No |
 | 6 | `compute_columns_key` | normalizer.py | 2 – Schema | ✓ | No |
 | 7 | Classifier Fase 0 (sinonimi) | classifier.py | 2 – Classificazione | ✓ | No |

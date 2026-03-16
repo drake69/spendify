@@ -47,6 +47,7 @@ class CategoryRule:
     subcategory: Optional[str]
     doc_type: Optional[str]
     priority: int = 0
+    context: Optional[str] = None  # se impostato, viene applicato alle transazioni
 
     _compiled: re.Pattern = field(init=False, repr=False)
 

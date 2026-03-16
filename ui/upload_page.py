@@ -55,21 +55,32 @@ def _build_config(engine, test_mode: bool | None = None) -> ProcessingConfig:
         openai_api_key=s.get("openai_api_key", ""),
         claude_model=s.get("anthropic_model", "claude-3-5-haiku-20241022"),
         anthropic_api_key=s.get("anthropic_api_key", ""),
+        compat_base_url=s.get("compat_base_url", ""),
+        compat_api_key=s.get("compat_api_key", ""),
+        compat_model=s.get("compat_model", ""),
         description_language=s.get("description_language", "it"),
         test_mode=test_mode,
     )
 
 
-def _render_job_status(engine, job=None):
-    """Render import job state. Reads from DB if job not provided.
+@st.fragment(run_every="2s")
+def _render_job_status_poll(engine) -> None:
+    """Auto-refreshing job-status fragment (polls DB every 2 s).
 
-    When a job is *running*, auto-refreshes every 2 s so any connected
-    session (including other browsers) sees live progress.
+    Renders progress/result widgets without blocking the main script thread,
+    so no ghost content from the previous page ever appears.
+
+    Uses session_state to detect state transitions:
+    - not running → running : full app rerun to lock the file-uploader form.
+    - running → completed/error : full app rerun to unlock the form.
     """
+    with get_session(engine) as s:
+        job = get_latest_import_job(s)
+
+    was_running: bool = st.session_state.get("_upload_job_was_running", False)
+
     if job is None:
-        with get_session(engine) as s:
-            job = get_latest_import_job(s)
-    if job is None:
+        st.session_state["_upload_job_was_running"] = False
         return
 
     if job.status == "running":
@@ -78,17 +89,27 @@ def _render_job_status(engine, job=None):
         st.info(f"⏳ {msg}")
         st.progress(pct)
         st.caption(f"Avanzamento: {int(pct * 100)}% · aggiornamento automatico ogni 2 s")
-        time.sleep(2)
-        st.rerun()
+        st.session_state["_upload_job_was_running"] = True
+        if not was_running:
+            # Newly detected running job (started from another browser session).
+            # Full rerun so main script enters the "job running" block and hides the form.
+            st.rerun()
 
     elif job.status == "completed":
         st.success(job.status_message or "✅ Completato")
         st.progress(1.0)
         if job.detail_message:
             st.caption(job.detail_message)
+        if was_running:
+            # Transition: running → completed. Full rerun to unlock the form.
+            st.session_state["_upload_job_was_running"] = False
+            st.rerun()
 
     elif job.status == "error":
         st.error(job.status_message or "❌ Errore durante l'importazione")
+        if was_running:
+            st.session_state["_upload_job_was_running"] = False
+            st.rerun()
 
 
 def _render_last_import_summary():
@@ -137,7 +158,7 @@ def render_upload_page(engine):
         )
         return
 
-    # Check for an active or recently-completed job *before* rendering the form.
+    # Check for an active running job *before* rendering the form.
     # If a job is running: show only the progress view (block the form).
     # If completed/error: fall through and show form + summary below.
     with get_session(engine) as _js:
@@ -145,7 +166,8 @@ def render_upload_page(engine):
 
     if _active_job and _active_job.status == "running":
         st.info("⏳ Importazione in corso — attendere il completamento prima di caricare nuovi file.")
-        _render_job_status(engine, job=_active_job)
+        # Fragment polls every 2 s; calls st.rerun() when job completes to unlock the form.
+        _render_job_status_poll(engine)
         return
 
     uploaded_files = st.file_uploader(
@@ -156,17 +178,9 @@ def render_upload_page(engine):
 
     if not uploaded_files:
         st.info("Carica uno o più file per avviare l'elaborazione.")
-        # Show job status for any connected session (including other browsers)
-        # that didn't originate the import — reads live state from DB.
-        with get_session(engine) as _idle_s:
-            _idle_job = get_latest_import_job(_idle_s)
-        _render_job_status(engine, job=_idle_job)
+        # Fragment polls every 2 s and detects jobs started from other browser sessions.
+        _render_job_status_poll(engine)
         _render_last_import_summary()
-        # If no running job is visible, poll every 5 s to detect a job started
-        # from another browser session (Streamlit has no push mechanism).
-        if _idle_job is None or _idle_job.status != "running":
-            time.sleep(5)
-            st.rerun()
         return
 
     # Per-file account selector
@@ -205,7 +219,7 @@ def render_upload_page(engine):
             user_rules = get_category_rules(session)
             for uf in uploaded_files:
                 raw_bytes = uf.read()
-                df_raw, _ = load_raw_dataframe(raw_bytes, uf.name)
+                df_raw, _, _preprocess_info = load_raw_dataframe(raw_bytes, uf.name)
                 cols_key = compute_columns_key(df_raw)
                 schema = get_document_schema(session, cols_key)
                 if schema:
@@ -314,6 +328,7 @@ def render_upload_page(engine):
 
         st.session_state["last_import_results"] = results
 
-    # Always rendered: reads job state from DB + summary from session_state
-    _render_job_status(engine)
+    # Always rendered: reads job state from DB + summary from session_state.
+    # Fragment auto-refreshes every 2 s — no time.sleep() needed here.
+    _render_job_status_poll(engine)
     _render_last_import_summary()

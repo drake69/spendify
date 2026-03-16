@@ -103,7 +103,20 @@ Per CSV / testo:
   pd.read_csv(sep=delimiter, skiprows=skip_rows)
 ```
 
-**Output:** `DataFrame` grezzo con colonne originali
+Dopo il caricamento (sia CSV che Excel), vengono applicati i pre-processing Phase 0:
+
+```
+detect_and_strip_preheader_rows(df)
+  └─ conta celle non-null per riga → calcola mediana → soglia = mediana × 0.5
+  └─ righe contigue in cima con densità < soglia → rimosse (max 20 righe / 10%)
+  └─ la prima riga non-sparsa diventa la nuova intestazione colonne
+
+drop_low_variability_columns(df)
+  └─ per ogni colonna: nunique(col) / n_righe < 1.5% → colonna metadata
+  └─ colonne candidate rimosse (mai scende sotto 2 colonne)
+```
+
+**Output:** `DataFrame` ripulito + `PreprocessInfo(skipped_rows, dropped_columns)`
 
 ---
 

@@ -172,11 +172,13 @@ Puoi scaricare la tabella come CSV con il pulsante **⬇️ Scarica CSV**.
 **Situazione:** Vuoi usare un modello diverso per la classificazione (es. Claude invece di Ollama locale).
 
 Vai su **Impostazioni**:
-- **Backend LLM:** scegli tra Ollama (locale, gratuito, privato), OpenAI, Claude
-- **Modello:** specifica il nome del modello (es. `gpt-4o-mini`, `claude-haiku-4-5`)
+- **Backend LLM:** scegli tra Ollama (locale, gratuito, privato), OpenAI, Claude, o qualsiasi provider OpenAI-compatible (Groq, Google AI Studio, ecc.)
+- **Modello:** specifica il nome del modello (es. `gpt-4o-mini`, `claude-3-5-haiku-20241022`, `gemma2-9b-it`)
 - **API Key:** inserisci la chiave se usi un servizio remoto
 
 > **Nota sulla privacy:** Se usi un backend remoto (OpenAI o Claude), Spendify rimuove automaticamente IBAN, numeri carta, codice fiscale e nome del titolare prima di inviare qualsiasi dato.
+
+Per istruzioni dettagliate su dove registrarsi e come ottenere le API key di ogni provider, consulta il **[Manuale di Configurazione](configurazione.md)**.
 
 ---
 
