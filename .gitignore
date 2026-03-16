@@ -10,3 +10,7 @@ venv
 *.xlsx
 *.tmp
 my_secrets.py
+# Local databases (runtime data, never commit)
+*.db
+# Claude internal session data
+.claude/

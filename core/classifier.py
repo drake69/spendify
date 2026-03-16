@@ -4,10 +4,12 @@ Given raw tabular data from an unknown source, uses LLM structured output to
 produce a DocumentSchema that can be persisted as a template for Flow 1.
 
 Architecture: two-phase classification
-  Phase 0 (Python, pre-LLM): deterministic synonym matching on column names.
-    Always resolves: description_col, description_cols, date_col candidates.
-    Sometimes resolves: amount semantics (outflow/inflow/debit_positive),
-      invert_sign, debit_col, credit_col.
+  Phase 0 (Python, pre-LLM): deterministic content-type detection on actual data.
+    Classifies each column as 'date', 'amount', or 'text' by inspecting values.
+    Text columns → description_cols; date columns → date_col(s);
+    amount columns → amount_col / debit_col + credit_col.
+    Column-name synonyms used only as tiebreakers within the same content type.
+    Sometimes resolves: amount semantics (outflow/inflow/debit_positive), invert_sign.
   Phase 1 (LLM): receives Phase 0 findings as facts; focuses on genuinely
     ambiguous fields (doc_type, date_format, sign_convention for neutral amounts).
   Post-LLM (Python): merge Phase 0 results (Phase 0 wins), coerce column names,
@@ -16,6 +18,7 @@ Architecture: two-phase classification
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field as dc_field
 from pathlib import Path
 
@@ -80,7 +83,7 @@ def classify_document(
     columns_list = df_raw.columns.tolist()
 
     # ── Phase 0: Python deterministic pre-analysis (before LLM) ──────────────
-    step0 = _run_step0_analysis(list(df_raw.columns))
+    step0 = _run_step0_analysis(list(df_raw.columns), df_raw=df_raw)
     # For neutral amount columns (name carries no sign semantics), inspect the
     # actual sample data: if any value is negative the column is already signed
     # → invert_sign=False can be resolved deterministically without the LLM.
@@ -153,9 +156,11 @@ _COLUMN_FIELDS = (
 
 # Ordered list — earlier entry = higher priority for description_col selection.
 _DESCRIPTION_PRIORITY: list[str] = [
-    # Italian
+    # Italian — "tipo" / "tipologia" inclusi: contengono spesso la descrizione completa
+    # (es. Satispay usa "Tipo" per il tipo operazione, Sicily usa "Tipologia" per la narrativa)
+    # Il filtro UUID nell'orchestrator rimuove eventuali ID transazione interni.
     "causale", "dettagli operazione", "descrizione", "dettagli",
-    "tipo operazione", "tipo", "note", "memo",
+    "tipo operazione", "tipologia", "tipo", "note", "memo",
     # English
     "description", "narrative", "transaction type", "details", "reference", "remarks",
     # French
@@ -236,6 +241,24 @@ _AMOUNT_NEUTRAL_SYNONYMS: frozenset[str] = frozenset({
 _BANK_DOC_TYPES: frozenset[str] = frozenset({"bank_account", "savings"})
 _CREDIT_CARD_DOC_TYPES: frozenset[str] = frozenset({"credit_card"})
 
+# ── Content-type detection regexes (Phase 0 data-driven) ─────────────────────
+# Date: three digit-groups separated by / - . with optional time component
+_CONTENT_DATE_RE = re.compile(
+    r'^\s*\d{1,4}[/\-.]\d{1,2}[/\-.]\d{2,4}(\s+\d{1,2}:\d{2}(:\d{2})?)?\s*$',
+    re.ASCII,
+)
+# Amount: optional sign/currency, then digits with at most one decimal separator
+# (comma or dot followed by 1-2 digits).  Thousands separators (dot/comma before
+# a 3-digit group) are also allowed.
+_CONTENT_AMOUNT_RE = re.compile(
+    r'^\s*[€$£¥₹+\-]?\s*\d[\d\s]*'          # leading sign/currency + first digits
+    r'([.,]\d{3})*'                           # optional thousands groups
+    r'([.,]\d{1,2})?\s*[€$£¥₹]?\s*$',        # optional decimal + trailing currency
+    re.UNICODE,
+)
+_CONTENT_MIN_SAMPLE = 1    # minimum non-null values required to attempt classification
+_CONTENT_MIN_RATIO  = 0.60 # fraction of samples that must match to confirm a type
+
 
 # ── Phase 0 result dataclass ──────────────────────────────────────────────────
 
@@ -258,86 +281,195 @@ class _Step0Result:
     invert_sign: bool | None = None      # None = unresolved → LLM must decide
 
 
-def _run_step0_analysis(columns: list[str]) -> _Step0Result:
+def _is_categorical(series: pd.Series) -> bool:
+    """True if the column looks like a category/flag rather than free text.
+
+    A column is categorical when it has very few distinct values (≤ 5 absolute,
+    or ≤ 3 % of total non-null rows).  This filters out enum-like columns such
+    as Satispay "Tipo" (🏬/🛡️/🏦, 3 distinct values) or "Valuta" (EUR only).
+    """
+    samples = series.dropna().astype(str).str.strip()
+    samples = samples[samples != ""]
+    n = len(samples)
+    if n == 0:
+        return True
+    n_distinct = samples.nunique()
+    return n_distinct <= 5 or (n_distinct / n) <= 0.03
+
+
+def _classify_column_content(series: pd.Series) -> str:
+    """Return 'date', 'amount', or 'text' by inspecting actual cell values.
+
+    Samples up to 30 non-null, non-empty values.  A column is classified as
+    'date' or 'amount' only when at least _CONTENT_MIN_RATIO of samples match
+    the respective pattern AND at least _CONTENT_MIN_SAMPLE values are present.
+    Everything else is 'text'.
+    """
+    samples = series.dropna().astype(str).str.strip()
+    samples = samples[samples != ""].head(30)
+    n = len(samples)
+    if n < _CONTENT_MIN_SAMPLE:
+        return "text"
+
+    date_hits   = samples.apply(lambda v: bool(_CONTENT_DATE_RE.match(v))).sum()
+    amount_hits = samples.apply(lambda v: bool(_CONTENT_AMOUNT_RE.match(v))).sum()
+
+    if date_hits / n >= _CONTENT_MIN_RATIO:
+        return "date"
+    if amount_hits / n >= _CONTENT_MIN_RATIO:
+        return "amount"
+    return "text"
+
+
+def _run_step0_analysis(columns: list[str], df_raw: pd.DataFrame | None = None) -> _Step0Result:
     """Deterministic pre-LLM column analysis.
 
-    Matches column names against synonym tables for description, date, and
-    amount/sign semantics.  Returns a _Step0Result; unresolved fields stay
-    None / "unclear" for the LLM (Phase 1) to determine.
+    Primary strategy (when df_raw is provided): inspect actual cell values to
+    classify each column as 'date', 'amount', or 'text'.
+      - All text columns  → description_cols (concatenated as description)
+      - Date columns      → date_col / date_accounting_col
+      - Amount columns    → amount_col / debit_col + credit_col
+
+    Column-name synonyms are used only as tiebreakers to assign roles within
+    the same content type (e.g. which date column is the operation date vs the
+    accounting/value date, and whether an amount column is debit/credit/neutral).
+
+    Falls back to pure name-synonym matching when df_raw is None or when the
+    data sample is too small to reach the confidence threshold.
     """
     r = _Step0Result()
     lower_to_orig: dict[str, str] = {c.lower(): c for c in columns}
 
-    # ── Description columns ───────────────────────────────────────────────────
-    desc_candidates: list[str] = []
-    for col_low, col_orig in lower_to_orig.items():
-        if any(syn in col_low for syn in _DESCRIPTION_PRIORITY):
-            desc_candidates.append(col_orig)
+    # ── Content-type classification ───────────────────────────────────────────
+    col_type: dict[str, str] = {}  # original col name → 'date'|'amount'|'text'
+    if df_raw is not None:
+        for col in columns:
+            if col in df_raw.columns:
+                col_type[col] = _classify_column_content(df_raw[col])
 
-    if desc_candidates:
-        def _desc_rank(col: str) -> int:
-            cl = col.lower()
-            for i, syn in enumerate(_DESCRIPTION_PRIORITY):
-                if syn in cl:
-                    return i
-            return len(_DESCRIPTION_PRIORITY)
+    date_cols_found   = [c for c in columns if col_type.get(c) == "date"]
+    amount_cols_found = [c for c in columns if col_type.get(c) == "amount"]
+    # Exclude categorical columns (few distinct values — enum/flag, not free text)
+    text_cols_found   = [
+        c for c in columns
+        if col_type.get(c) == "text"
+        and (df_raw is None or not _is_categorical(df_raw[c]))
+    ]
 
-        desc_candidates.sort(key=_desc_rank)
-        r.description_col = desc_candidates[0]
-        r.description_cols = desc_candidates
+    # ── Description columns (all text columns) ────────────────────────────────
+    if text_cols_found:
+        r.description_cols = text_cols_found
+        r.description_col  = text_cols_found[0]
+    else:
+        # Fallback: synonym matching on column names
+        desc_candidates: list[str] = []
+        for col_low, col_orig in lower_to_orig.items():
+            if any(syn in col_low for syn in _DESCRIPTION_PRIORITY):
+                desc_candidates.append(col_orig)
+        if desc_candidates:
+            def _desc_rank(col: str) -> int:
+                cl = col.lower()
+                for i, syn in enumerate(_DESCRIPTION_PRIORITY):
+                    if syn in cl:
+                        return i
+                return len(_DESCRIPTION_PRIORITY)
+            desc_candidates.sort(key=_desc_rank)
+            r.description_col  = desc_candidates[0]
+            r.description_cols = desc_candidates
 
     # ── Date columns ──────────────────────────────────────────────────────────
-    # Check known multi-word synonyms first (e.g. "Data Operazione"),
-    # then fall back to any column whose name starts with "data".
-    for col_low, col_orig in lower_to_orig.items():
-        if r.date_col is None and any(syn in col_low for syn in _DATE_OP_SYNONYMS):
-            r.date_col = col_orig
-        if r.date_accounting_col is None and any(syn in col_low for syn in _DATE_ACC_SYNONYMS):
-            r.date_accounting_col = col_orig
-
-    if r.date_col is None:
-        for prefix in ("data", "date", "datum", "fecha"):
-            for col_low, col_orig in lower_to_orig.items():
-                if col_low.startswith(prefix):
-                    r.date_col = col_orig
+    if date_cols_found:
+        # Tiebreaker: use name synonyms to distinguish operation vs accounting date
+        op_date = next(
+            (c for c in date_cols_found if any(syn in c.lower() for syn in _DATE_OP_SYNONYMS)),
+            None,
+        )
+        acc_date = next(
+            (c for c in date_cols_found if any(syn in c.lower() for syn in _DATE_ACC_SYNONYMS)),
+            None,
+        )
+        if op_date and acc_date:
+            r.date_col = op_date
+            r.date_accounting_col = acc_date
+        elif op_date:
+            r.date_col = op_date
+            # second date column (if any) is likely accounting date
+            others = [c for c in date_cols_found if c != op_date]
+            if others:
+                r.date_accounting_col = others[0]
+        elif acc_date:
+            # Only an accounting date found — promote it to date_col
+            r.date_col = acc_date
+        else:
+            # No name hints — first detected date is operation date
+            r.date_col = date_cols_found[0]
+            if len(date_cols_found) > 1:
+                r.date_accounting_col = date_cols_found[1]
+    else:
+        # Fallback: synonym matching on column names
+        for col_low, col_orig in lower_to_orig.items():
+            if r.date_col is None and any(syn in col_low for syn in _DATE_OP_SYNONYMS):
+                r.date_col = col_orig
+            if r.date_accounting_col is None and any(syn in col_low for syn in _DATE_ACC_SYNONYMS):
+                r.date_accounting_col = col_orig
+        if r.date_col is None:
+            for prefix in ("data", "date", "datum", "fecha"):
+                for col_low, col_orig in lower_to_orig.items():
+                    if col_low.startswith(prefix):
+                        r.date_col = col_orig
+                        break
+                if r.date_col:
                     break
-            if r.date_col:
-                break
 
     # ── Amount / sign columns ─────────────────────────────────────────────────
-    debit_candidates: list[str] = []
-    credit_candidates: list[str] = []
-    neutral_candidates: list[str] = []
+    if amount_cols_found:
+        # Tiebreaker: use name synonyms to distinguish debit / credit / neutral
+        debit_found  = [c for c in amount_cols_found if any(syn in c.lower() for syn in _DEBIT_COLUMN_SYNONYMS)]
+        credit_found = [c for c in amount_cols_found if any(syn in c.lower() for syn in _CREDIT_COLUMN_SYNONYMS)]
 
-    for col_low, col_orig in lower_to_orig.items():
-        if any(syn in col_low for syn in _DEBIT_COLUMN_SYNONYMS):
-            debit_candidates.append(col_orig)
-        elif any(syn in col_low for syn in _CREDIT_COLUMN_SYNONYMS):
-            credit_candidates.append(col_orig)
-        elif any(syn in col_low for syn in _AMOUNT_NEUTRAL_SYNONYMS):
-            neutral_candidates.append(col_orig)
-
-    if debit_candidates and credit_candidates:
-        # Two separate columns → debit_positive convention (e.g. Dare/Avere)
-        r.debit_col = debit_candidates[0]
-        r.credit_col = credit_candidates[0]
-        r.amount_semantics = "debit_positive"
-        # invert_sign not applicable for debit_positive
-    elif debit_candidates:
-        # Single outflow column (e.g. Uscita, Addebito) → expenses stored as positive
-        r.amount_col = debit_candidates[0]
-        r.amount_semantics = "outflow"
-        r.invert_sign = True
-    elif credit_candidates:
-        # Single inflow column alone (e.g. Accredito without a paired Addebito)
-        r.amount_col = credit_candidates[0]
-        r.amount_semantics = "inflow"
-        r.invert_sign = False
-    elif neutral_candidates:
-        # Neutral column (Importo, Amount…) → LLM must decide invert_sign from data
-        r.amount_col = neutral_candidates[0]
-        r.amount_semantics = "neutral"
-        # r.invert_sign remains None
+        if debit_found and credit_found:
+            r.debit_col = debit_found[0]
+            r.credit_col = credit_found[0]
+            r.amount_semantics = "debit_positive"
+        elif debit_found:
+            r.amount_col = debit_found[0]
+            r.amount_semantics = "outflow"
+            r.invert_sign = True
+        elif credit_found:
+            r.amount_col = credit_found[0]
+            r.amount_semantics = "inflow"
+            r.invert_sign = False
+        else:
+            # No name hint → neutral; leave invert_sign for Phase 0.5 / LLM
+            r.amount_col = amount_cols_found[0]
+            r.amount_semantics = "neutral"
+    else:
+        # Fallback: synonym matching on column names
+        debit_candidates:   list[str] = []
+        credit_candidates:  list[str] = []
+        neutral_candidates: list[str] = []
+        for col_low, col_orig in lower_to_orig.items():
+            if any(syn in col_low for syn in _DEBIT_COLUMN_SYNONYMS):
+                debit_candidates.append(col_orig)
+            elif any(syn in col_low for syn in _CREDIT_COLUMN_SYNONYMS):
+                credit_candidates.append(col_orig)
+            elif any(syn in col_low for syn in _AMOUNT_NEUTRAL_SYNONYMS):
+                neutral_candidates.append(col_orig)
+        if debit_candidates and credit_candidates:
+            r.debit_col = debit_candidates[0]
+            r.credit_col = credit_candidates[0]
+            r.amount_semantics = "debit_positive"
+        elif debit_candidates:
+            r.amount_col = debit_candidates[0]
+            r.amount_semantics = "outflow"
+            r.invert_sign = True
+        elif credit_candidates:
+            r.amount_col = credit_candidates[0]
+            r.amount_semantics = "inflow"
+            r.invert_sign = False
+        elif neutral_candidates:
+            r.amount_col = neutral_candidates[0]
+            r.amount_semantics = "neutral"
 
     return r
 
@@ -486,10 +618,16 @@ def _merge_step0_into_result(result: dict, step0: _Step0Result, source_name: str
         _set("date_accounting_col", step0.date_accounting_col, "deterministic match")
         # If the LLM assigned the same column to currency_col, clear it to avoid
         # using a date column as currency (e.g. POPSO "Valuta" column).
-        if out.get("currency_col", "").lower() == step0.date_accounting_col.lower():
+        _cc  = out.get("currency_col")
+        _dac = step0.date_accounting_col
+        if (
+            isinstance(_cc, str)
+            and isinstance(_dac, str)
+            and _cc.lower() == _dac.lower()
+        ):
             logger.info(
                 f"classify_document [{source_name}]: clearing currency_col "
-                f"'{out['currency_col']}' — it's the value-date column"
+                f"'{_cc}' — it's the value-date column"
             )
             out["currency_col"] = None
 

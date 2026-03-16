@@ -45,6 +45,7 @@ _BACKEND_OPTIONS = {
     "Ollama (locale, privacy-first)": "local_ollama",
     "OpenAI": "openai",
     "Claude (Anthropic)": "claude",
+    "OpenAI-compatible (Groq, Together AI, Google AI Studio…)": "openai_compatible",
 }
 
 
@@ -337,6 +338,43 @@ def render_settings_page(engine):
         ollama_model = settings.get("ollama_model", "gemma3:12b")
         openai_key = settings.get("openai_api_key", "")
         openai_model = settings.get("openai_model", "gpt-4o-mini")
+        compat_base_url = settings.get("compat_base_url", "")
+        compat_api_key  = settings.get("compat_api_key", "")
+        compat_model    = settings.get("compat_model", "")
+
+    elif backend == "openai_compatible":
+        st.caption("Compatibile con qualsiasi API che esponga `/v1/chat/completions` (Groq, Together AI, Google AI Studio, ecc.)")
+        col_url, col_key, col_model = st.columns([2, 2, 1])
+        with col_url:
+            compat_base_url = st.text_input(
+                "Base URL",
+                value=settings.get("compat_base_url", ""),
+                placeholder="https://api.groq.com/openai/v1",
+            )
+        with col_key:
+            compat_api_key = st.text_input(
+                "API Key",
+                type="password",
+                value=settings.get("compat_api_key", ""),
+                placeholder="gsk_...",
+            )
+        with col_model:
+            compat_model = st.text_input(
+                "Modello",
+                value=settings.get("compat_model", ""),
+                placeholder="gemma3-12b-it",
+            )
+        ollama_url      = settings.get("ollama_base_url", "http://localhost:11434")
+        ollama_model    = settings.get("ollama_model", "gemma3:12b")
+        openai_key      = settings.get("openai_api_key", "")
+        openai_model    = settings.get("openai_model", "gpt-4o-mini")
+        anthropic_key   = settings.get("anthropic_api_key", "")
+        anthropic_model = settings.get("anthropic_model", "claude-3-5-haiku-20241022")
+
+    if backend != "openai_compatible":
+        compat_base_url = settings.get("compat_base_url", "")
+        compat_api_key  = settings.get("compat_api_key", "")
+        compat_model    = settings.get("compat_model", "")
 
     st.divider()
 
@@ -355,6 +393,9 @@ def render_settings_page(engine):
             set_user_setting(session2, "openai_model", openai_model)
             set_user_setting(session2, "anthropic_api_key", anthropic_key)
             set_user_setting(session2, "anthropic_model", anthropic_model)
+            set_user_setting(session2, "compat_base_url", compat_base_url)
+            set_user_setting(session2, "compat_api_key", compat_api_key)
+            set_user_setting(session2, "compat_model", compat_model)
             set_user_setting(session2, "owner_names", owner_names_raw.strip())
             set_user_setting(session2, "use_owner_names_giroconto", "true" if use_owner_giroconto else "false")
             set_user_setting(session2, "import_test_mode", "true" if import_test_mode else "false")
