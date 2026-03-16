@@ -6,7 +6,6 @@ Flow 2 (LLM-first / schema-on-read).
 from __future__ import annotations
 
 import io
-import os
 from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
@@ -22,12 +21,14 @@ from core.categorizer import (
     TaxonomyConfig,
     categorize_batch,
 )
+from core.description_cleaner import clean_descriptions_batch
 from core.classifier import classify_document
 from core.llm_backends import LLMBackend, BackendFactory, OllamaBackend
 from core.models import (
     Confidence,
     DocumentType,
     GirocontoMode,
+    SignConvention,
     TransactionType,
 )
 from core.normalizer import (
@@ -43,6 +44,7 @@ from core.normalizer import (
     normalize_description,
     parse_amount,
     parse_date_safe,
+    remove_card_balance_row,
 )
 from core.sanitizer import SanitizationConfig, redact_pii
 from core.schemas import DocumentSchema
@@ -64,15 +66,26 @@ class ProcessingConfig:
     boundary_pre_post: int = 10
     confidence_threshold: float = 0.80
     require_keyword_confirmation: bool = True
-    llm_timeout_s: int = 30
+    # When True: transactions whose description matches an owner name are marked
+    # as internal transfer (giroconto), and the card balance row (if present) is
+    # relabelled with the owner name instead of removed.
+    use_owner_names_for_giroconto: bool = False
+    llm_timeout_s: int = 120
     batch_size_llm: int = 1
     sanitize_config: SanitizationConfig = field(default_factory=SanitizationConfig)
+    description_language: str = "it"  # language of transaction descriptions (ISO 639-1)
+
+    # Test mode: limit rows for quick classifier verification
+    test_mode: bool = False
+    test_mode_rows: int = 20
 
     # Backend kwargs
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "gemma3:12b"
     openai_model: str = "gpt-4o-mini"
+    openai_api_key: str = ""
     claude_model: str = "claude-3-5-haiku-20241022"
+    anthropic_api_key: str = ""
 
 
 @dataclass
@@ -84,6 +97,7 @@ class ImportResult:
     reconciliations: list[dict]
     transfer_links: list[dict]
     skipped_duplicate: bool = False
+    skipped_count: int = 0   # number of transactions already in DB (skipped before LLM)
     errors: list[str] = field(default_factory=list)
     flow_used: str = "unknown"  # "flow1" or "flow2"
 
@@ -95,8 +109,10 @@ def _build_backend(config: ProcessingConfig) -> LLMBackend:
         kwargs["model"] = config.ollama_model
     elif config.llm_backend == "openai":
         kwargs["model"] = config.openai_model
+        kwargs["api_key"] = config.openai_api_key
     elif config.llm_backend == "claude":
         kwargs["model"] = config.claude_model
+        kwargs["api_key"] = config.anthropic_api_key
     return BackendFactory.create(config.llm_backend, **kwargs)
 
 
@@ -158,19 +174,38 @@ def _normalize_df_with_schema(
     Apply DocumentSchema to produce a list of canonical transaction dicts.
     """
     transactions = []
+    skip_date_nan = skip_date_parse = skip_amount = 0
 
     for _, row in df.iterrows():
-        # Parse date
+        # Parse date — Excel cells arrive as datetime/date objects, not strings
         raw_date = row.get(schema.date_col, "")
-        tx_date = parse_date_safe(str(raw_date), schema.date_format) if raw_date else None
+        if raw_date is None or (isinstance(raw_date, float) and pd.isna(raw_date)):
+            skip_date_nan += 1
+            continue
+        if hasattr(raw_date, "date"):          # datetime → date
+            tx_date = raw_date.date()
+        elif isinstance(raw_date, date):       # already a date
+            tx_date = raw_date
+        elif raw_date:
+            tx_date = parse_date_safe(str(raw_date), schema.date_format)
+        else:
+            tx_date = None
         if tx_date is None:
+            skip_date_parse += 1
             continue  # skip rows with unparseable date
 
         # Parse accounting date
         raw_date_acc = row.get(schema.date_accounting_col, "") if schema.date_accounting_col else None
         tx_date_acc = parse_date_safe(str(raw_date_acc), schema.date_format) if raw_date_acc else None
 
-        # Parse amount
+        # Capture raw amount string(s) before parsing — used for the dedup hash
+        if schema.sign_convention in (SignConvention.debit_positive, SignConvention.credit_negative):
+            _d = str(row.get(schema.debit_col, "")) if schema.debit_col else ""
+            _c = str(row.get(schema.credit_col, "")) if schema.credit_col else ""
+            raw_amount_str = f"{_d}|{_c}"
+        else:
+            raw_amount_str = str(row.get(schema.amount_col, "")) if schema.amount_col else ""
+
         amount = apply_sign_convention(
             row.to_dict(),
             schema.amount_col,
@@ -179,17 +214,53 @@ def _normalize_df_with_schema(
             schema.sign_convention,
         )
         if amount is None:
+            skip_amount += 1
             continue
 
-        # Description
-        desc_raw = str(row.get(schema.description_col or "", "")) if schema.description_col else ""
+        # Card files often store expenses as positive values.
+        # invert_sign=True means "negate all amounts so expenses become negative".
+        if getattr(schema, "invert_sign", False) and amount is not None:
+            amount = -amount
+
+        # Description — concatenate all descriptive columns when available
+        _desc_cols = getattr(schema, "description_cols", None)
+        if _desc_cols:
+            parts = [
+                str(row.get(c, "") or "").strip()
+                for c in _desc_cols if c in row
+            ]
+            # Filter empty / nan, then skip parts already contained in the
+            # accumulated string (case-insensitive) to avoid duplication when
+            # banks repeat text across multiple columns or within one cell.
+            accumulated = ""
+            for p in parts:
+                if not p or p.lower() in ("nan", "null"):
+                    continue
+                if p.lower() not in accumulated.lower():
+                    accumulated = (accumulated + " " + p).strip()
+            desc_raw = accumulated
+        elif schema.description_col:
+            _v = str(row.get(schema.description_col, "") or "").strip()
+            desc_raw = "" if _v.lower() in ("nan", "null") else _v
+        else:
+            desc_raw = ""
         description = normalize_description(desc_raw)
 
         # Currency
         currency = str(row.get(schema.currency_col, schema.default_currency)) if schema.currency_col else schema.default_currency
 
-        # Idempotency key
-        tx_id = compute_transaction_id(source_name, tx_date, amount, description)
+        # Idempotency key — hashed on PARSED/NORMALISED values so the same logical
+        # transaction deduplicates across different file formats (CSV vs XLSX, Italian
+        # date strings vs Excel datetime objects, comma vs dot decimals).
+        # Uses account_label (stable per bank account) as the primary namespace.
+        # Falls back to source_file when account_label is empty.
+        _date_key = tx_date.isoformat()   # always "YYYY-MM-DD"
+        _amount_key = str(amount.normalize()) if isinstance(amount, Decimal) else str(float(str(amount or 0)))
+        _desc_key = desc_raw.strip()      # strip leading/trailing whitespace only
+        tx_id = compute_transaction_id(
+            source_name, _date_key, _amount_key, _desc_key,
+            account_label=schema.account_label or "",
+        )
 
         # Infer tx_type from doc_type
         tx_type = _infer_tx_type(amount, schema.doc_type, description, schema.internal_transfer_patterns)
@@ -199,8 +270,10 @@ def _normalize_df_with_schema(
             "date": tx_date,
             "date_accounting": tx_date_acc,
             "amount": amount,
+            "raw_amount": raw_amount_str or None,
             "currency": currency,
             "description": description,
+            "raw_description": desc_raw or None,
             "source_file": source_name,
             "doc_type": schema.doc_type.value if hasattr(schema.doc_type, 'value') else str(schema.doc_type),
             "account_label": schema.account_label,
@@ -215,7 +288,54 @@ def _normalize_df_with_schema(
             "transfer_confidence": None,
         })
 
-    return transactions
+    total_skipped = skip_date_nan + skip_date_parse + skip_amount
+    if total_skipped or not transactions:
+        logger.warning(
+            f"_normalize_df_with_schema [{source_name}]: "
+            f"{len(transactions)} parsed, {total_skipped} skipped "
+            f"(date_nan={skip_date_nan}, date_parse_fail={skip_date_parse}, amount_none={skip_amount})"
+        )
+
+    # --- Intra-file aggregation ---
+    # Rows that share the same hash (same account + date + amount + description)
+    # are genuine repetitions of the same transaction in the bank export (e.g. 3×
+    # identical POS charges on the same day).  Rather than discarding duplicates,
+    # we sum their amounts so the daily total is preserved, then re-hash with the
+    # aggregated amount so cross-file dedup still works correctly.
+    id_index: dict[str, int] = {}   # id → position in transactions list
+    merged: list[dict] = []
+    merge_count = 0
+    for tx in transactions:
+        tid = tx["id"]
+        if tid in id_index:
+            # Sum amounts for subsequent occurrences
+            existing = merged[id_index[tid]]
+            existing["amount"] = existing["amount"] + tx["amount"]
+            # Re-compute hash with the new aggregated amount so the DB key is
+            # deterministic regardless of how many occurrences were in this file.
+            _new_amount_key = (
+                str(existing["amount"].normalize())
+                if isinstance(existing["amount"], Decimal)
+                else str(float(str(existing["amount"] or 0)))
+            )
+            existing["id"] = compute_transaction_id(
+                source_name,
+                existing["date"].isoformat(),
+                _new_amount_key,
+                existing["raw_description"] or "",
+                account_label=existing["account_label"] or "",
+            )
+            merge_count += 1
+        else:
+            id_index[tid] = len(merged)
+            merged.append(tx)
+
+    if merge_count:
+        logger.info(
+            f"_normalize_df_with_schema [{source_name}]: "
+            f"merged {merge_count} duplicate row(s) into {len(merged)} unique transactions"
+        )
+    return merged
 
 
 def _infer_tx_type(
@@ -232,11 +352,19 @@ def _infer_tx_type(
             return TransactionType.internal_out if amount < 0 else TransactionType.internal_in
 
     doc_str = doc_type.value if hasattr(doc_type, 'value') else str(doc_type)
-    if doc_str == DocumentType.credit_card.value:
+    _card_types = {DocumentType.credit_card.value, DocumentType.debit_card.value, DocumentType.prepaid_card.value}
+    if doc_str in _card_types:
         return TransactionType.card_tx
     if amount > 0:
         return TransactionType.income
     return TransactionType.expense
+
+
+def _schema_is_usable(schema: "DocumentSchema") -> bool:
+    """Return True if the schema has the minimum fields needed to parse transactions."""
+    has_date = bool(schema.date_col)
+    has_amount = bool(schema.amount_col) or (bool(schema.debit_col) and bool(schema.credit_col))
+    return has_date and has_amount
 
 
 def process_file(
@@ -246,10 +374,16 @@ def process_file(
     taxonomy: TaxonomyConfig,
     user_rules: list[CategoryRule],
     known_schema: Optional[DocumentSchema] = None,
-    existing_batch_hashes: Optional[set[str]] = None,
+    progress_callback=None,  # Callable[[float], None] — 0.0..1.0 within this file
+    existing_tx_ids_checker=None,  # Callable[[list[str]], set[str]] — returns already-imported tx ids
+    account_label_override: Optional[str] = None,  # user-selected account name; overrides LLM-assigned label
 ) -> ImportResult:
     """
     Process a single file through Flow 1 or Flow 2.
+
+    Deduplication is handled at transaction level: each transaction has a
+    deterministic SHA-256 ID; upsert_transaction silently skips any that
+    already exist in the database.
 
     Args:
         raw_bytes: raw file content.
@@ -258,31 +392,35 @@ def process_file(
         taxonomy: taxonomy configuration.
         user_rules: user-defined category rules from DB.
         known_schema: DocumentSchema from DB (if exists → Flow 1).
-        existing_batch_hashes: set of already-imported file SHA-256s.
 
     Returns:
         ImportResult.
     """
+    def _progress(p: float):
+        if progress_callback:
+            progress_callback(max(0.0, min(1.0, p)))
+
     batch_sha256 = compute_file_hash(raw_bytes)
-
-    # File-level idempotency check
-    if existing_batch_hashes and batch_sha256 in existing_batch_hashes:
-        logger.info(f"process_file: {filename} already imported, skipping")
-        return ImportResult(
-            batch_sha256=batch_sha256,
-            source_name=filename,
-            transactions=[],
-            doc_schema=known_schema,
-            reconciliations=[],
-            transfer_links=[],
-            skipped_duplicate=True,
-        )
-
+    logger.info(f"process_file: loading {filename} ({len(raw_bytes)} bytes)")
     backend = _build_backend(config)
     fallback = _get_fallback_backend(config)
 
     # Load raw data
+    _progress(0.0)
     df_raw, encoding = load_raw_dataframe(raw_bytes, filename)
+    logger.info(
+        f"process_file: loaded {filename} | rows={len(df_raw)} "
+        f"ncols={len(df_raw.columns)} | known_schema={'yes' if known_schema else 'no'}"
+    )
+    _progress(0.05)
+
+    # Test mode: truncate to first N rows for quick pipeline verification
+    if config.test_mode and len(df_raw) > config.test_mode_rows:
+        df_raw = df_raw.head(config.test_mode_rows).copy()
+        logger.info(
+            f"process_file: TEST MODE — truncated {filename} to first {config.test_mode_rows} rows"
+        )
+
     if df_raw.empty:
         return ImportResult(
             batch_sha256=batch_sha256,
@@ -297,6 +435,14 @@ def process_file(
     flow_used = "flow1"
     doc_schema = known_schema
 
+    # Validate cached schema has the critical fields; re-classify if not
+    if doc_schema is not None and not _schema_is_usable(doc_schema):
+        logger.warning(
+            f"process_file: cached schema for {filename} is missing critical fields "
+            f"(amount_col={doc_schema.amount_col!r}, date_col={doc_schema.date_col!r}) — re-classifying"
+        )
+        doc_schema = None
+
     # Flow 2: classify document if no known schema
     if doc_schema is None:
         flow_used = "flow2"
@@ -309,6 +455,7 @@ def process_file(
             sanitize_config=config.sanitize_config,
             fallback_backend=fallback,
         )
+        _progress(0.25)
         if doc_schema is None or doc_schema.confidence == Confidence.low:
             logger.warning(f"process_file: classification failed or low confidence for {filename}")
             return ImportResult(
@@ -321,9 +468,35 @@ def process_file(
                 errors=["Document classification failed or low confidence; needs manual review"],
                 flow_used=flow_used,
             )
+    else:
+        _progress(0.10)
+
+    # User-selected account overrides the LLM-assigned label — provides a
+    # stable, human-readable dedup key independent of the filename.
+    if account_label_override and account_label_override.strip():
+        doc_schema.account_label = account_label_override.strip()
+        logger.info(
+            f"process_file: account_label overridden to '{doc_schema.account_label}' for {filename}"
+        )
 
     # Apply schema → canonical transactions
     transactions = _normalize_df_with_schema(df_raw, doc_schema, filename)
+    _progress(0.35)
+
+    # Case 5: remove within-file card balance/totale summary row (double-counting guard)
+    _card_doc_types = {DocumentType.credit_card.value, DocumentType.debit_card.value, DocumentType.prepaid_card.value}
+    _doc_str = doc_schema.doc_type.value if hasattr(doc_schema.doc_type, 'value') else str(doc_schema.doc_type)
+    if _doc_str in _card_doc_types and transactions:
+        _owner_label: str | None = None
+        if config.use_owner_names_for_giroconto and config.sanitize_config.owner_names:
+            _owner_label = ", ".join(config.sanitize_config.owner_names)
+        transactions, _balance_removed = remove_card_balance_row(
+            transactions, epsilon=config.tolerance, owner_name_label=_owner_label
+        )
+        if _balance_removed:
+            action = "relabelled" if _owner_label else "removed"
+            logger.info(f"process_file: balance/totale row {action} from {filename}")
+
     if not transactions:
         return ImportResult(
             batch_sha256=batch_sha256,
@@ -336,11 +509,57 @@ def process_file(
             flow_used=flow_used,
         )
 
+    # ── Description cleaning: extract counterpart name (pre-categorization) ──
+    # Sends descriptions to LLM to strip payment-method boilerplate and keep
+    # only the merchant / beneficiary / payer name.
+    # raw_description is never modified — it stays as the SHA-256 dedup key.
+    # Owner names are replaced with fake but plausible aliases (e.g. "Carlo
+    # Brambilla") so the LLM extracts them as real names; aliases are restored
+    # to the real owner names after extraction.
+    transactions = clean_descriptions_batch(
+        transactions,
+        llm_backend=backend,
+        fallback_backend=fallback,
+        source_name=filename,
+        sanitize_config=config.sanitize_config,
+    )
+    _progress(0.38)
+
+    # Per-transaction dedup: skip transactions already in DB before running LLM
+    skipped_count = 0
+    if existing_tx_ids_checker is not None:
+        all_ids = [t["id"] for t in transactions]
+        existing = existing_tx_ids_checker(all_ids)
+        if existing:
+            skipped_count = len(existing)
+            transactions = [t for t in transactions if t["id"] not in existing]
+            logger.info(
+                f"process_file: {skipped_count} transactions already in DB, "
+                f"{len(transactions)} new for {filename}"
+            )
+        if not transactions:
+            logger.info(f"process_file: all transactions already imported for {filename}, skipping")
+            return ImportResult(
+                batch_sha256=batch_sha256,
+                source_name=filename,
+                transactions=[],
+                doc_schema=doc_schema,
+                reconciliations=[],
+                transfer_links=[],
+                skipped_count=skipped_count,
+                flow_used=flow_used,
+            )
+
     # Build DataFrame for transfer detection
     tx_df = pd.DataFrame(transactions)
 
     # Internal transfer detection (RF-04)
     keyword_patterns = doc_schema.internal_transfer_patterns or []
+    _owner_names_giroconto = (
+        config.sanitize_config.owner_names
+        if config.use_owner_names_for_giroconto
+        else None
+    )
     tx_df = detect_internal_transfers(
         tx_df,
         epsilon=config.tolerance,
@@ -349,6 +568,7 @@ def process_file(
         delta_days_strict=config.settlement_days_strict,
         keyword_patterns=keyword_patterns,
         require_keyword_confirmation=config.require_keyword_confirmation,
+        owner_names=_owner_names_giroconto,
     )
 
     # Card settlement reconciliation (RF-03)
@@ -397,6 +617,11 @@ def process_file(
         TransactionType.unknown.value,
     }
     to_categorize = tx_df[tx_df["tx_type"].isin(categorizable_types)].to_dict("records")
+
+    def _cat_cb(frac: float):
+        # Map categorization progress (0..1) → file progress (0.40..1.0)
+        _progress(0.40 + 0.60 * frac)
+
     cat_results = categorize_batch(
         transactions=to_categorize,
         taxonomy=taxonomy,
@@ -405,11 +630,35 @@ def process_file(
         sanitize_config=config.sanitize_config,
         fallback_backend=fallback,
         confidence_threshold=config.confidence_threshold,
+        description_language=config.description_language,
+        progress_callback=_cat_cb,
+        source_name=filename,
     )
     cat_map = {tx["id"]: result for tx, result in zip(to_categorize, cat_results)}
 
-    # Merge categorization back
+    # Build tx_type / transfer map from tx_df so that changes made by
+    # detect_internal_transfers (owner-name pass, keyword pass) are propagated
+    # back to the original transactions list before DB persistence.
+    # Use iterrows() instead of set_index().to_dict("index") to gracefully
+    # handle the rare case of duplicate IDs (same date+amount+desc in one file).
+    tx_df_map: dict[str, dict] = {}
+    for _, _row in tx_df[["id", "tx_type", "transfer_pair_id", "transfer_confidence"]].iterrows():
+        tx_df_map[_row["id"]] = {
+            "tx_type": _row["tx_type"],
+            "transfer_pair_id": _row["transfer_pair_id"],
+            "transfer_confidence": _row["transfer_confidence"],
+        }
+
+    # Merge categorization + tx_type back
     for tx in transactions:
+        # tx_type and transfer fields from detect_internal_transfers
+        df_row = tx_df_map.get(tx["id"])
+        if df_row:
+            tx["tx_type"] = df_row["tx_type"]
+            tx["transfer_pair_id"] = df_row["transfer_pair_id"]
+            tx["transfer_confidence"] = df_row["transfer_confidence"]
+
+        # Categorization (only for categorizable types)
         result: Optional[CategorizationResult] = cat_map.get(tx["id"])
         if result:
             tx["category"] = result.category
@@ -430,6 +679,7 @@ def process_file(
         doc_schema=doc_schema,
         reconciliations=reconciliations,
         transfer_links=transfer_links,
+        skipped_count=skipped_count,
         flow_used=flow_used,
     )
 
@@ -440,7 +690,6 @@ def process_files(
     taxonomy: TaxonomyConfig,
     user_rules: list[CategoryRule],
     known_schemas: Optional[dict[str, DocumentSchema]] = None,
-    existing_batch_hashes: Optional[set[str]] = None,
 ) -> list[ImportResult]:
     """
     Process multiple files. Each (bytes, filename) tuple.
@@ -448,7 +697,6 @@ def process_files(
     """
     results = []
     known_schemas = known_schemas or {}
-    existing_batch_hashes = existing_batch_hashes or set()
 
     for raw_bytes, filename in files:
         schema = known_schemas.get(filename)
@@ -460,7 +708,6 @@ def process_files(
                 taxonomy=taxonomy,
                 user_rules=user_rules,
                 known_schema=schema,
-                existing_batch_hashes=existing_batch_hashes,
             )
             results.append(result)
         except Exception as exc:
