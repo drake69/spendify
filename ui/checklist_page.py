@@ -52,23 +52,45 @@ def _cell_fmt(val: int) -> str:
     return _ICON_NO_TX if val == 0 else str(val)
 
 
+def _all_months_range(oldest_ym: str, newest_ym: str) -> list[str]:
+    """Return every 'YYYY-MM' string from newest_ym down to oldest_ym (inclusive)."""
+    from datetime import date
+    y_new, m_new = int(newest_ym[:4]), int(newest_ym[5:])
+    y_old, m_old = int(oldest_ym[:4]), int(oldest_ym[5:])
+    months = []
+    y, m = y_new, m_new
+    while (y, m) >= (y_old, m_old):
+        months.append(f"{y:04d}-{m:02d}")
+        m -= 1
+        if m == 0:
+            m = 12
+            y -= 1
+    return months
+
+
 def _build_pivot(
     rows: list,                    # (year_month, account_label, tx_count)
     all_accounts: list[str],
     current_ym: str,
 ) -> pd.DataFrame:
-    """Build a month × account DataFrame of tx counts."""
-    # Collect all months from data, always include current
-    month_set: set[str] = {current_ym}
-    for r in rows:
-        if r.year_month:
-            month_set.add(r.year_month)
-    months_sorted = sorted(month_set, reverse=True)   # newest first
+    """Build a month × account DataFrame of tx counts.
 
-    # Build count dict
+    Every month from current_ym down to the oldest month with data is
+    included, even if it has zero transactions for every account.
+    """
+    # Find oldest month with data
+    data_months = [r.year_month for r in rows if r.year_month]
+    oldest_ym = min(data_months) if data_months else current_ym
+
+    # Generate the full continuous range: current → oldest (no gaps)
+    months_sorted = _all_months_range(oldest_ym, current_ym)
+
+    # Build count dict (initialise all months to empty so gaps stay at 0)
     data: dict[str, dict[str, int]] = {ym: {} for ym in months_sorted}
     for r in rows:
         ym = r.year_month
+        if not ym:
+            continue
         acc = r.account_label or "(nessun conto)"
         if ym in data:
             data[ym][acc] = int(r.tx_count)
