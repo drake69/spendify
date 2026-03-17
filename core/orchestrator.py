@@ -212,12 +212,20 @@ def load_raw_dataframe(
     # Phase-0 preprocessing (runs on both CSV and Excel)
     if skip_rows_override is None:
         df, skipped_rows = detect_and_strip_preheader_rows(df, source_name=filename)
-        df, dropped_cols = drop_low_variability_columns(df, source_name=filename)
     else:
         skipped_rows = skip_rows_override
-        df, dropped_cols = drop_low_variability_columns(df, source_name=filename)
 
-    info = PreprocessInfo(skipped_rows=skipped_rows, dropped_columns=dropped_cols)
+    # Capture column names BEFORE drop_low_variability_columns — used for stable
+    # cols_key lookup: drop ratio depends on file size so it varies across monthly
+    # exports of the same bank, making the post-drop key unstable.
+    cols_before_drop = list(df.columns)
+    df, dropped_cols = drop_low_variability_columns(df, source_name=filename)
+
+    info = PreprocessInfo(
+        skipped_rows=skipped_rows,
+        dropped_columns=dropped_cols,
+        columns_before_drop=cols_before_drop,
+    )
     return df, encoding, info
 
 

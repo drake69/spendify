@@ -48,6 +48,9 @@ class PreprocessInfo:
     """
     skipped_rows: int = 0
     dropped_columns: list[str] = field(default_factory=list)
+    columns_before_drop: list[str] = field(default_factory=list)
+    """Column names captured AFTER preheader-strip but BEFORE drop_low_variability_columns.
+    Used for stable schema lookup (cols_key) regardless of file size."""
 
 
 # ── Encoding / format detection ───────────────────────────────────────────────
