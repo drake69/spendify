@@ -16,6 +16,11 @@ WORKDIR /app
 # Copia solo i file di dipendenze per sfruttare la cache Docker
 COPY pyproject.toml uv.lock ./
 
+# Usa il Python di sistema (non scaricare un Python separato con uv):
+# così il symlink /app/.venv/bin/python → /usr/local/bin/python3.13
+# è valido anche nel runtime stage che usa la stessa base image.
+ENV UV_PYTHON_DOWNLOADS=0
+
 # Installa dipendenze in una venv isolata (senza dev/test)
 RUN uv sync --frozen --no-dev --no-install-project
 
