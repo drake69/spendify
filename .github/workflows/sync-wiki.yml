@@ -34,6 +34,8 @@ jobs:
             ["docs/guida_utente.md"]="Guida-Utente.md"
             ["docs/configurazione.md"]="Configurazione.md"
             ["docs/deployment.md"]="Deployment.md"
+            ["docs/installazione.md"]="Installazione.md"
+            ["docs/database.md"]="Database.md"
             ["docs/pipeline.md"]="Pipeline.md"
             ["docs/deterministic_rules.md"]="Regole-Deterministiche.md"
             ["docs/deterministic_tools.md"]="Strumenti-Deterministici.md"
