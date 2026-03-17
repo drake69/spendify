@@ -46,6 +46,14 @@ jobs:
           path: coverage.xml
           retention-days: 7
 
+      - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest'
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.xml
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
   docker:
     name: Docker build & smoke test
     runs-on: ubuntu-latest
