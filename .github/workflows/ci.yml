@@ -45,3 +45,44 @@ jobs:
           name: coverage-${{ matrix.os }}-py${{ matrix.python-version }}
           path: coverage.xml
           retention-days: 7
+
+  docker:
+    name: Docker build & smoke test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create minimal .env for CI
+        run: cp .env.example .env
+
+      - name: Build Docker image
+        run: docker compose build --no-cache
+
+      - name: Start container
+        run: docker compose up -d
+
+      - name: Wait for healthcheck to pass (max 60s)
+        run: |
+          echo "Waiting for Streamlit to be ready..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8501/_stcore/health > /dev/null 2>&1; then
+              echo "✅ App is up after ${i}s"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "❌ App did not become healthy in time"
+          docker compose logs
+          exit 1
+
+      - name: Smoke test — verify health endpoint
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8501/_stcore/health)
+          echo "Health endpoint status: $STATUS"
+          [ "$STATUS" = "200" ] || (docker compose logs && exit 1)
+
+      - name: Teardown
+        if: always()
+        run: docker compose down -v
