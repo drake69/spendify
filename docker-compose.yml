@@ -34,7 +34,7 @@ services:
       - ./taxonomy.yaml:/app/taxonomy.yaml:ro
 
     healthcheck:
-      test: ["CMD", "python", "-c",
+      test: ["CMD", "uv", "run", "python", "-c",
              "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')"]
       interval: 30s
       timeout: 10s
