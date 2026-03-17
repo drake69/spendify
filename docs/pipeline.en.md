@@ -99,8 +99,10 @@ For XLSX / XLS:
 For CSV / text:
   detect_delimiter(content)
     └─ character frequency [, ; | TAB] → most frequent wins
-  detect_header_row(lines)
+  detect_header_row(lines) → (skip_rows: int, certain: bool)
     └─ first row with ≥ 2 non-numeric and non-empty fields
+    └─ certain=True  → header found, used silently
+    └─ certain=False → no match, fallback to 0 (ambiguous → UI asks user)
   pd.read_csv(sep=delimiter, skiprows=skip_rows)
 ```
 
@@ -146,7 +148,24 @@ load_raw_head(raw_bytes, filename, n=10)
 
 **Why the first rows?** Bank statement files typically contain static institutional header rows (bank name, account number, date range) that are identical across all monthly exports from the same institution. These rows are a reliable fingerprint of the format.
 
-**`skip_rows_override`** — `load_raw_dataframe` accepts an optional parameter `skip_rows_override: int | None`. If provided:
+**Skip rows detection — full flow**
+
+```
+detect_skip_rows(raw_bytes, filename) → (N, certain)
+  ├─ CSV:   detect_header_row(lines)        → (N, certain)
+  └─ Excel: detect_header_row_excel(bytes)  → (N, certain)
+              └─ same CSV heuristic applied to cell values
+
+At upload time (before the Elaborate button):
+  1. compute_header_sha256 → find_schema_by_header_sha256()
+     ├─ HIT  → skip_rows known from schema; no user input needed
+     └─ MISS → detect_skip_rows()
+               ├─ certain=True  → N used silently (any value)
+               └─ certain=False → UI shows "Rows to skip" number_input
+                                  (default=0, user can correct)
+```
+
+**`skip_rows_override`** — `process_file` accepts `skip_rows_override: int | None` (from the UI form). Always takes precedence over `known_schema.skip_rows`. `load_raw_dataframe` accepts the same parameter:
 - CSV: replaces `detect_header_row()`
 - Excel: passes `skiprows=N` to `pd.read_excel` and skips `detect_and_strip_preheader_rows()`
 
@@ -206,7 +225,6 @@ classify_document(df_raw, llm_backend)
 On the first import of an unknown file (header SHA256 not found in DB), the import always stops — regardless of the classifier's confidence — and shows the user a review form with:
 
 - **Raw preview**: first 10 rows of the file without preprocessing (via `load_raw_head()`)
-- **skip_rows selector**: number input "Rows to skip before the header" — pre-populated with the automatically detected value, editable by the user
 - **Schema fields**: doc_type, account_label, amount column, date, sign, debits/credits, invert sign
 - **Parsed preview**: first 8 transactions processed with the current schema — updates live on every change
 - **"Confirm and import" button**: saves the schema (with `header_sha256`) and starts the import

@@ -98,8 +98,10 @@ Per XLSX / XLS:
 Per CSV / testo:
   detect_delimiter(content)
     └─ frequenza dei caratteri [, ; | TAB] → vince il più frequente
-  detect_header_row(lines)
+  detect_header_row(lines) → (skip_rows: int, certain: bool)
     └─ prima riga con ≥ 2 campi non-numerici e non-vuoti
+    └─ certain=True  → header trovato, usato silenziosamente
+    └─ certain=False → nessun match, fallback a 0 (ambiguo → UI chiede conferma)
   pd.read_csv(sep=delimiter, skiprows=skip_rows)
 ```
 
@@ -145,7 +147,24 @@ load_raw_head(raw_bytes, filename, n=10)
 
 **Perché le prime righe?** I file di estratto conto contengono tipicamente righe di intestazione istituzionale statiche (nome banca, numero conto, intervallo date) identiche in tutti gli export mensili dello stesso istituto. Queste righe sono un fingerprint affidabile del formato.
 
-**`skip_rows_override`** — `load_raw_dataframe` accetta un parametro opzionale `skip_rows_override: int | None`. Se fornito:
+**Rilevamento righe da saltare — flusso completo**
+
+```
+detect_skip_rows(raw_bytes, filename) → (N, certain)
+  ├─ CSV:   detect_header_row(lines)        → (N, certain)
+  └─ Excel: detect_header_row_excel(bytes)  → (N, certain)
+              └─ stessa euristica CSV applicata ai valori delle celle
+
+Al caricamento (prima del pulsante Elabora):
+  1. compute_header_sha256 → find_schema_by_header_sha256()
+     ├─ HIT  → skip_rows noto dallo schema; nessun input all'utente
+     └─ MISS → detect_skip_rows()
+               ├─ certain=True  → N usato silenziosamente (qualunque valore)
+               └─ certain=False → UI mostra number_input "Righe da saltare"
+                                  (default=0, utente può correggere)
+```
+
+**`skip_rows_override`** — `process_file` accetta `skip_rows_override: int | None` (dal form UI). Precede sempre `known_schema.skip_rows`. `load_raw_dataframe` accetta lo stesso parametro:
 - CSV: sostituisce `detect_header_row()`
 - Excel: passa `skiprows=N` a `pd.read_excel` e salta `detect_and_strip_preheader_rows()`
 
@@ -205,7 +224,6 @@ classify_document(df_raw, llm_backend)
 Al primo import di un file sconosciuto (header SHA256 non trovato in DB), l'importazione si ferma **sempre** — indipendentemente dalla confidenza del classifier — e mostra all'utente un form di revisione con:
 
 - **Preview raw**: prime 10 righe del file senza preprocessing (via `load_raw_head()`)
-- **Selettore skip_rows**: number input "Righe da saltare prima dell'intestazione" — pre-popolato con il valore rilevato automaticamente, modificabile dall'utente
 - **Campi dello schema**: doc_type, account_label, colonna importo, data, segno, addebiti/accrediti, inverti segno
 - **Preview parsata**: prime 8 transazioni elaborate con lo schema corrente — si aggiorna live ad ogni modifica
 - **Pulsante "Conferma e importa"**: salva lo schema (con `header_sha256`) e avvia l'import
