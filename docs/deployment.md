@@ -239,72 +239,90 @@ docker compose up -d
 
 ## 6 — Backup del database
 
-Il database di Spendify è un singolo file SQLite. Il backup consiste nel **copiare quel file** in un luogo sicuro.
+Il database di Spendify è un singolo file SQLite. Il backup consiste nel **copiare quel file** in un posto sicuro.
 
 ### 6.1 — Posizione del database
 
 | Modalità | Percorso |
 |----------|---------|
-| Installazione locale | `./ledger.db` (directory del progetto) |
-| Docker Compose | volume Docker `spendify_data` → `/app/data/ledger.db` |
+| Installazione locale | `./ledger.db` (nella cartella del progetto) |
+| Docker Compose | volume Docker → `/app/data/ledger.db` dentro il container |
 
-### 6.2 — Backup manuale (installazione locale)
-
-```bash
-# Copia con timestamp
-cp ledger.db backups/ledger_$(date +%Y%m%d_%H%M%S).db
-```
-
-> **Importante:** per un backup coerente mentre l'app è in esecuzione, usare
-> il comando `sqlite3` con l'API di backup online (evita corruzione da scritture concorrenti):
+### 6.2 — Backup (installazione locale)
 
 ```bash
-sqlite3 ledger.db ".backup backups/ledger_$(date +%Y%m%d_%H%M%S).db"
+# 1. Crea la cartella di backup se non esiste ancora
+#    Puoi scegliere qualunque percorso, ad esempio ./backups o ~/Desktop/spendify-backup
+mkdir -p <CARTELLA_BACKUP>
+
+# 2. Copia il DB con un nome che include data e ora
+cp ledger.db <CARTELLA_BACKUP>/ledger_$(date +%Y%m%d_%H%M%S).db
 ```
+
+> **`<CARTELLA_BACKUP>`** — percorso a tua scelta dove salvare i backup.
+> Esempi: `./backups` · `~/Desktop/spendify-backup` · `/mnt/nas/spendify`
 
 ### 6.3 — Backup da Docker
 
-Il metodo più semplice è copiare direttamente dal container in esecuzione:
+Il metodo più diretto usa `docker cp`, che copia un file direttamente dal container in esecuzione all'host senza container aggiuntivi:
 
 ```bash
-mkdir -p backups
-docker cp spendify_app:/app/data/ledger.db backups/ledger_$(date +%Y%m%d_%H%M%S).db
+# 1. Crea la cartella di backup se non esiste ancora
+mkdir -p <CARTELLA_BACKUP>
+
+# 2. Copia il DB dal container all'host
+docker cp spendify_app:/app/data/ledger.db <CARTELLA_BACKUP>/ledger_$(date +%Y%m%d_%H%M%S).db
 ```
 
-> `docker cp` copia un file dal filesystem del container all'host — non richiede
-> container temporanei né comandi aggiuntivi.
+> **`<CARTELLA_BACKUP>`** — percorso a tua scelta. Esempio: `./backups`
+> **`spendify_app`** — nome del container, definito nel `docker-compose.yml` alla riga `container_name`.
+> Il container deve essere **in esecuzione** per usare `docker cp`.
 
 Se il container è fermo, usa un container temporaneo come "ponte":
 
 ```bash
-mkdir -p backups
+# 1. Trova il nome esatto del volume con:
+docker volume ls | grep spendify
+# L'output sarà qualcosa come: angry-wozniak_spendify_data  oppure  spendify_spendify_data
+# Il prefisso dipende dal nome della cartella da cui hai lanciato docker compose
+
+# 2. Crea la cartella di backup se non esiste ancora
+mkdir -p <CARTELLA_BACKUP>
+
+# 3. Copia dal volume all'host tramite container temporaneo
 docker run --rm \
-  -v spendify_data:/data \
-  -v "$(pwd)/backups":/backups \
+  -v <NOME_VOLUME>:/data \
+  -v "<CARTELLA_BACKUP>":/backups \
   python:3.13-slim \
   cp /data/ledger.db /backups/ledger_backup.db
 ```
 
-> ⚠️ `sqlite3` non è incluso in `python:3.13-slim`. Usare `cp` come sopra,
-> oppure installarlo al volo: `python:3.13-slim sh -c "apt-get install -y sqlite3 && sqlite3 ..."`
+> **`<NOME_VOLUME>`** — nome del volume trovato al passo 1. Esempio: `angry-wozniak_spendify_data`
+> **`<CARTELLA_BACKUP>`** — percorso **assoluto** della cartella di backup sull'host.
+> Esempio su Mac: `/Users/mario/backups` — non usare `$(pwd)/backups` perché richiede che la cartella esista già.
 
 ### 6.4 — Backup automatico (crontab)
 
-Aggiungere al crontab del server (`crontab -e`) per un backup giornaliero alle 03:00:
-
 ```cron
-# Backup Spendify ogni giorno alle 3:00
-0 3 * * * cd /path/to/spendify && docker cp spendify_app:/app/data/ledger.db backups/ledger_$(date +\%Y\%m\%d).db 2>&1 >> logs/backup.log
+# Sostituisci i segnaposto con i tuoi valori:
+#   <PERCORSO_PROGETTO>  = cartella dove hai clonato Spendify
+#                          es. /home/mario/spendify  oppure  /Users/mario/Documents/spendify
+#   <CARTELLA_BACKUP>    = cartella dove salvare i backup (deve esistere)
+#                          es. /home/mario/backups
 
-# Pulizia backup più vecchi di 30 giorni
-0 4 * * * find /path/to/spendify/backups -name "ledger_*.db" -mtime +30 -delete
+# Backup ogni giorno alle 03:00
+0 3 * * * docker cp spendify_app:/app/data/ledger.db <CARTELLA_BACKUP>/ledger_$(date +\%Y\%m\%d).db
+
+# Cancella i backup più vecchi di 30 giorni
+0 4 * * * find <CARTELLA_BACKUP> -name "ledger_*.db" -mtime +30 -delete
 ```
 
 Per l'installazione locale (senza Docker):
 
 ```cron
-0 3 * * * cd /path/to/spendify && sqlite3 ledger.db ".backup backups/ledger_$(date +\%Y\%m\%d).db" 2>&1 >> logs/backup.log
-0 4 * * * find /path/to/spendify/backups -name "ledger_*.db" -mtime +30 -delete
+# Sostituisci <PERCORSO_PROGETTO> e <CARTELLA_BACKUP> come sopra
+0 3 * * * cd <PERCORSO_PROGETTO> && cp ledger.db <CARTELLA_BACKUP>/ledger_$(date +\%Y\%m\%d).db
+0 4 * * * find <CARTELLA_BACKUP> -name "ledger_*.db" -mtime +30 -delete
 ```
 
 ### 6.5 — Cosa include il backup
@@ -326,71 +344,59 @@ Il file `ledger.db` contiene **tutto**:
 
 ## 7 — Ripristino del database
 
-### 7.1 — Verifica integrità del backup prima di ripristinare
-
-```bash
-sqlite3 backups/ledger_20240101_030000.db "PRAGMA integrity_check;"
-# Output atteso: "ok"
-```
-
-### 7.2 — Ripristino (installazione locale)
+### 7.1 — Ripristino (installazione locale)
 
 ```bash
 # 1. Ferma l'applicazione (Ctrl+C o pkill)
 pkill -f "streamlit run app.py"
 
-# 2. Crea un backup del DB corrente (per sicurezza)
+# 2. Fai un backup del DB attuale (per sicurezza)
 cp ledger.db ledger_before_restore_$(date +%Y%m%d_%H%M%S).db
 
-# 3. Ripristina dal backup scelto
-cp backups/ledger_20240101_030000.db ledger.db
+# 3. Sostituisci il DB con il backup scelto
+#    <FILE_BACKUP> = percorso del file da ripristinare
+#    Esempio: ./backups/ledger_20260316_030000.db
+cp <FILE_BACKUP> ledger.db
 
 # 4. Riavvia l'applicazione
 uv run streamlit run app.py
 ```
 
-### 7.3 — Ripristino da Docker
+### 7.2 — Ripristino da Docker
 
 ```bash
 # 1. Ferma il container
 docker compose down
 
-# 2. Copia il backup nel volume Docker
-docker run --rm \
-  -v spendify_data:/data \
-  -v "$(pwd)/backups":/backups \
-  python:3.13-slim \
-  cp /backups/ledger_20240101_030000.db /data/ledger.db
+# 2. Trova il nome del volume (se non lo ricordi)
+docker volume ls | grep spendify
 
-# 3. Riavvia
+# 3. Crea una cartella temporanea e mettici il file da ripristinare
+#    <FILE_BACKUP> = percorso del tuo file di backup sull'host
+#    Esempio: /Users/mario/backups/ledger_20260316.db
+mkdir -p /tmp/spendify-restore
+cp <FILE_BACKUP> /tmp/spendify-restore/ledger.db
+
+# 4. Copia il backup nel volume tramite container temporaneo
+#    <NOME_VOLUME> = trovato al passo 2, es. angry-wozniak_spendify_data
+docker run --rm \
+  -v <NOME_VOLUME>:/data \
+  -v /tmp/spendify-restore:/source:ro \
+  python:3.13-slim \
+  cp /source/ledger.db /data/ledger.db
+
+# 5. Riavvia
 docker compose up -d
 ```
 
-Oppure usando `docker cp` (se il container è in esecuzione):
+### 7.3 — Ripristino parziale (solo alcune tabelle)
+
+Se vuoi recuperare solo le regole di categorizzazione da un backup senza sovrascrivere le transazioni, usa `sqlite3` (richiede installazione locale di sqlite3 sull'host):
 
 ```bash
-# 1. Metti il container in modalità manutenzione (stop + keep volume)
-docker compose stop spendify
-
-# 2. Avvia un container temporaneo sullo stesso volume per il ripristino
-docker run --rm \
-  -v spendify_data:/data \
-  -v "$(pwd)/backups":/backups \
-  python:3.13-slim \
-  sh -c "cp /data/ledger.db /data/ledger_before_restore.db && cp /backups/ledger_20240101_030000.db /data/ledger.db"
-
-# 3. Riavvia
-docker compose start spendify
-```
-
-### 7.4 — Ripristino parziale (solo alcune tabelle)
-
-Se si vuole recuperare solo le regole di categorizzazione da un backup senza sovrascrivere le transazioni:
-
-```bash
-# Apri il backup in sola lettura e copia la tabella category_rule nel DB attivo
+# <FILE_BACKUP> = percorso del backup da cui estrarre le regole
 sqlite3 ledger.db "
-ATTACH DATABASE 'backups/ledger_20240101.db' AS bkp;
+ATTACH DATABASE '<FILE_BACKUP>' AS bkp;
 DELETE FROM category_rule;
 INSERT INTO category_rule SELECT * FROM bkp.category_rule;
 DETACH DATABASE bkp;
