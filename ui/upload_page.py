@@ -154,6 +154,10 @@ def _render_schema_review(engine, config, taxonomy, user_rules) -> bool:
     if not pending:
         return False
 
+    # Deduplica per filename — stessa entry può finire in lista più volte
+    seen: set[str] = set()
+    pending = [e for e in pending if not (e["filename"] in seen or seen.add(e["filename"]))]  # type: ignore[func-returns-value]
+
     st.warning(
         f"⚠️ **Revisione schema richiesta** — {len(pending)} file con classificazione incerta. "
         "Verifica i campi rilevati e conferma prima di importare."
@@ -165,8 +169,9 @@ def _render_schema_review(engine, config, taxonomy, user_rules) -> bool:
 
     confirmed_schemas: dict[str, DocumentSchema] = {}
 
-    for entry in pending:
+    for _idx, entry in enumerate(pending):
         filename = entry["filename"]
+        _key = f"{_idx}_{filename}"  # indice + filename → chiave sempre unica
         result = entry["result"]
         schema = result.doc_schema
         cols = result.available_columns
@@ -184,11 +189,11 @@ def _render_schema_review(engine, config, taxonomy, user_rules) -> bool:
             doc_type_sel = c1.selectbox(
                 "Tipo documento", doc_type_options,
                 index=doc_type_options.index(doc_type_val) if doc_type_val in doc_type_options else 0,
-                key=f"rev_doc_type_{filename}",
+                key=f"rev_doc_type_{_key}",
             )
             account_sel = c2.text_input(
                 "Account label", value=schema.account_label if schema else "",
-                key=f"rev_account_{filename}",
+                key=f"rev_account_{_key}",
             )
 
             c3, c4, c5 = st.columns(3)
@@ -198,34 +203,34 @@ def _render_schema_review(engine, config, taxonomy, user_rules) -> bool:
             amount_sel = c3.selectbox(
                 "Colonna importo", col_options,
                 index=_col_idx(schema.amount_col if schema else none_option),
-                key=f"rev_amount_{filename}",
+                key=f"rev_amount_{_key}",
             )
             date_sel = c4.selectbox(
                 "Colonna data", col_options,
                 index=_col_idx(schema.date_col if schema else none_option),
-                key=f"rev_date_{filename}",
+                key=f"rev_date_{_key}",
             )
             sign_val = schema.sign_convention.value if schema else sign_options[0]
             sign_sel = c5.selectbox(
                 "Convenzione segno", sign_options,
                 index=sign_options.index(sign_val) if sign_val in sign_options else 0,
-                key=f"rev_sign_{filename}",
+                key=f"rev_sign_{_key}",
             )
 
             c6, c7, c8 = st.columns(3)
             debit_sel = c6.selectbox(
                 "Colonna addebiti (opt.)", col_options,
                 index=_col_idx(schema.debit_col if schema and schema.debit_col else none_option),
-                key=f"rev_debit_{filename}",
+                key=f"rev_debit_{_key}",
             )
             credit_sel = c7.selectbox(
                 "Colonna accrediti (opt.)", col_options,
                 index=_col_idx(schema.credit_col if schema and schema.credit_col else none_option),
-                key=f"rev_credit_{filename}",
+                key=f"rev_credit_{_key}",
             )
             invert = c8.checkbox(
                 "Inverti segno", value=schema.invert_sign if schema else False,
-                key=f"rev_invert_{filename}",
+                key=f"rev_invert_{_key}",
             )
 
             # Build confirmed schema from user selections
