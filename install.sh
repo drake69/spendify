@@ -76,7 +76,7 @@ echo ""
 
 # Apri browser automaticamente se possibile
 if command -v open &>/dev/null; then
-    open "$APP_URL"           # macOS
+    open "$APP_URL" || true           # macOS
 elif command -v xdg-open &>/dev/null; then
-    xdg-open "$APP_URL"       # Linux
+    xdg-open "$APP_URL" || true       # Linux (ignora errori in ambienti headless)
 fi
