@@ -1,0 +1,62 @@
+name: Sync docs → Wiki
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+
+  # Eseguibile manualmente per forzare una sincronizzazione
+  workflow_dispatch:
+
+jobs:
+  sync:
+    name: Sync docs/ to GitHub Wiki
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Clone wiki
+        run: |
+          git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git /tmp/wiki
+
+      - name: Copy docs/ → wiki pages
+        run: |
+          # Mappa: docs/nome_file.md → wiki/Nome-Pagina.md
+          # Regola: sostituisce _ con - e capitalizza la prima lettera di ogni parola
+          declare -A MAP=(
+            ["docs/progetto.md"]="Progetto.md"
+            ["docs/reference_guide.md"]="Reference-Guide.md"
+            ["docs/guida_utente.md"]="Guida-Utente.md"
+            ["docs/configurazione.md"]="Configurazione.md"
+            ["docs/deployment.md"]="Deployment.md"
+            ["docs/pipeline.md"]="Pipeline.md"
+            ["docs/deterministic_rules.md"]="Regole-Deterministiche.md"
+            ["docs/deterministic_tools.md"]="Strumenti-Deterministici.md"
+          )
+
+          for src in "${!MAP[@]}"; do
+            dst="/tmp/wiki/${MAP[$src]}"
+            if [ -f "$src" ]; then
+              cp "$src" "$dst"
+              echo "✅ $src → $dst"
+            else
+              echo "⚠️  $src non trovato, salto"
+            fi
+          done
+
+      - name: Commit and push wiki
+        run: |
+          cd /tmp/wiki
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica — wiki già aggiornata"
+          else
+            git commit -m "docs: sync from main ($(date +%Y-%m-%d))"
+            git push
+            echo "✅ Wiki aggiornata"
+          fi

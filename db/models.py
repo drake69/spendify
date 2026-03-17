@@ -80,6 +80,7 @@ def create_tables(engine=None):
     _migrate_add_context(engine)
     _migrate_add_description_rules(engine)
     _migrate_add_rule_context(engine)
+    _migrate_add_header_sha256(engine)
     return engine
 
 
@@ -184,6 +185,7 @@ class DocumentSchemaModel(Base):
     skip_rows = Column(Integer, default=0)
     delimiter = Column(String(4))
     confidence = Column(String(10))
+    header_sha256 = Column(String(64), nullable=True, index=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, onupdate=lambda: datetime.now(timezone.utc))
 
@@ -534,3 +536,15 @@ def _migrate_add_rule_context(engine) -> None:
                 pass
             else:
                 raise
+
+
+def _migrate_add_header_sha256(engine) -> None:
+    """Add header_sha256 column to document_schema if not already present."""
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        try:
+            conn.execute(_text("ALTER TABLE document_schema ADD COLUMN header_sha256 VARCHAR(64)"))
+            conn.execute(_text("CREATE INDEX IF NOT EXISTS ix_document_schema_header_sha256 ON document_schema (header_sha256)"))
+            conn.commit()
+        except Exception:
+            pass  # column already exists

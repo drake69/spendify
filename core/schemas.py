@@ -41,6 +41,7 @@ class DocumentSchema(BaseModel):
 
     # source tracking
     source_identifier: Optional[str] = None  # sha256 prefix of the file or institution key
+    header_sha256: Optional[str] = None  # SHA256 of first min(30,N) raw rows — used for fast schema lookup
 
     def llm_json_schema(self) -> dict[str, Any]:
         """Return the JSON schema for LLM structured output (Flow 2)."""

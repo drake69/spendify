@@ -270,6 +270,62 @@ def compute_file_hash(raw_bytes: bytes) -> str:
     return hashlib.sha256(raw_bytes).hexdigest()
 
 
+def compute_header_sha256(raw_bytes: bytes, filename: str, n: int = 30) -> str:
+    """SHA256 of the first min(n, total) raw rows — stable fingerprint of the file header/pre-header area."""
+    import io as _io
+    name_lower = filename.lower()
+    if name_lower.endswith((".xlsx", ".xls")):
+        try:
+            import openpyxl
+            wb = openpyxl.load_workbook(_io.BytesIO(raw_bytes), read_only=True, data_only=True)
+            sheet_name = detect_best_sheet(wb)
+            ws = wb[sheet_name]
+            rows = []
+            for i, row in enumerate(ws.iter_rows(values_only=True)):
+                if i >= n:
+                    break
+                rows.append("|".join(str(c) if c is not None else "" for c in row))
+            wb.close()
+            content = "\n".join(rows)
+        except Exception:
+            content = str(raw_bytes[:2000])
+    else:
+        encoding = detect_encoding(raw_bytes)
+        text = raw_bytes.decode(encoding, errors="replace")
+        lines = text.splitlines()
+        content = "\n".join(lines[:n])
+    return hashlib.sha256(content.encode()).hexdigest()
+
+
+def load_raw_head(raw_bytes: bytes, filename: str, n: int = 10) -> "pd.DataFrame":
+    """Load first n rows of a file with NO skip_rows and NO preprocessing.
+    Used for the schema review UI to show the user the raw file structure."""
+    import io as _io
+    name_lower = filename.lower()
+    if name_lower.endswith((".xlsx", ".xls")):
+        try:
+            import openpyxl
+            wb = openpyxl.load_workbook(_io.BytesIO(raw_bytes), read_only=True, data_only=True)
+            sheet_name = detect_best_sheet(wb)
+            wb.close()
+        except Exception:
+            sheet_name = 0
+        df = pd.read_excel(_io.BytesIO(raw_bytes), sheet_name=sheet_name, header=None, nrows=n)
+    else:
+        encoding = detect_encoding(raw_bytes)
+        text = raw_bytes.decode(encoding, errors="replace")
+        delimiter = detect_delimiter(text)
+        df = pd.read_csv(
+            _io.StringIO(text),
+            sep=delimiter,
+            header=None,
+            nrows=n,
+            engine="python",
+            on_bad_lines="skip",
+        )
+    return df
+
+
 # ── Phase-0 preprocessing ──────────────────────────────────────────────────────
 
 def detect_and_strip_preheader_rows(
