@@ -38,15 +38,27 @@ File in input
     │
     ▼
 0. Pre-processing Phase 0      → rimozione righe pre-header sparse; drop colonne a bassa variabilità
-1. Classificazione documento   → identifica banca, tipo conto, schema colonne
-2. Normalizzazione             → encoding, delimitatori, parse date/importi, SHA-256
+0b. Header SHA256               → hash prime min(30,N) righe raw → lookup schema in DB (O(1))
+1. Classificazione documento   → solo se schema non trovato per SHA256: LLM Flow 2 + review UI obbligatoria
+2. Normalizzazione             → encoding, delimitatori, skip_rows, parse date/importi, SHA-256
 3. Dedup check                 → scarta transazioni già presenti (zero LLM call)
 4. Pulizia descrizioni         → LLM estrae nome controparte, PII redatte prima/dopo
 5. Rilevamento giroconti       → esclude/neutralizza trasferimenti interni
 6. Riconciliazione carta-c/c   → elimina double-counting addebiti mensili aggregati
 7. Categorizzazione a cascata  → regole utente → regex statiche → LLM → fallback "Altro"
-8. Persistenza                 → upsert idempotente per tx, link, schema
+8. Persistenza                 → upsert idempotente per tx, link, schema (con header_sha256)
 ```
+
+## Schema review gate (primo import)
+
+Al **primo import** di un file con formato sconosciuto (header SHA256 non presente in DB), l'app si ferma e mostra un form di revisione obbligatorio. L'utente vede:
+
+1. **Preview raw** — prime 10 righe del file grezzo (senza preprocessing)
+2. **Selettore skip_rows** — quante righe saltare prima dell'intestazione vera
+3. **Campi schema editabili** — tipo documento, colonne, convenzione segno
+4. **Preview parsata** — prime 8 transazioni con lo schema corrente (live)
+
+Dopo conferma, lo schema viene salvato con il fingerprint `header_sha256`. Al re-import dello stesso formato: lookup immediato, nessuna LLM call, nessuna UI.
 
 ---
 
