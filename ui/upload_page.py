@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 import streamlit as st
 
 from core.models import Confidence, DocumentType, GirocontoMode, SignConvention
-from core.normalizer import compute_columns_key
+from core.normalizer import compute_columns_key, compute_header_sha256, load_raw_head
 from core.orchestrator import ProcessingConfig, load_raw_dataframe, process_files
 from core.sanitizer import SanitizationConfig
 from core.schemas import DocumentSchema
@@ -15,6 +15,7 @@ from db.models import get_session
 from db.repository import get_accounts
 from db.repository import (
     create_import_job,
+    find_schema_by_header_sha256,
     get_all_user_settings,
     get_category_rules,
     get_document_schema,
@@ -184,6 +185,25 @@ def _render_schema_review(engine, config, taxonomy, user_rules) -> bool:
             if evidence:
                 st.caption("Ragionamento LLM: " + " · ".join(evidence))
 
+            # Raw file preview (no skip, no preprocessing)
+            st.markdown("**Struttura raw del file (prime 10 righe, senza pre-elaborazione):**")
+            try:
+                df_raw_preview = load_raw_head(entry["raw_bytes"], filename, n=10)
+                st.dataframe(df_raw_preview, use_container_width=True, hide_index=False)
+            except Exception as e:
+                st.caption(f"Anteprima raw non disponibile: {e}")
+
+            # Skip rows selector
+            detected_skip = schema.skip_rows if schema else 0
+            skip_sel = st.number_input(
+                "Righe da saltare prima dell'intestazione (0 = la prima riga è già l'header)",
+                min_value=0,
+                max_value=20,
+                value=detected_skip,
+                key=f"rev_skip_{_key}",
+                help="Nell'anteprima sopra, conta quante righe di 'spazzatura' ci sono prima della riga con i nomi delle colonne.",
+            )
+
             c1, c2 = st.columns(2)
             doc_type_val = schema.doc_type.value if schema else doc_type_options[0]
             doc_type_sel = c1.selectbox(
@@ -249,6 +269,8 @@ def _render_schema_review(engine, config, taxonomy, user_rules) -> bool:
                 "credit_col": None if credit_sel == none_option else credit_sel,
                 "invert_sign": invert,
                 "confidence": Confidence.high,  # user confirmed → treat as high
+                "skip_rows": int(skip_sel),
+                "header_sha256": entry.get("header_sha256", ""),
             })
 
             # Preview: apply schema and show normalised result — same layout as ledger
@@ -256,7 +278,8 @@ def _render_schema_review(engine, config, taxonomy, user_rules) -> bool:
             try:
                 from core.orchestrator import _normalize_df_with_schema, load_raw_dataframe
                 import pandas as pd
-                df_raw_prev, _, _ = load_raw_dataframe(entry["raw_bytes"], filename)
+                _skip_override = int(skip_sel) if int(skip_sel) > 0 else None
+                df_raw_prev, _, _ = load_raw_dataframe(entry["raw_bytes"], filename, skip_rows_override=_skip_override)
                 preview_txs = _normalize_df_with_schema(df_raw_prev.head(30), confirmed_schemas[filename], filename)
                 if preview_txs:
                     preview_rows = [
@@ -404,17 +427,28 @@ def render_upload_page(engine):
         # Prepare file list and load known schemas
         files = []
         known_schemas = {}
+        _file_header_sha256: dict[str, str] = {}
         with get_session(engine) as session:
             taxonomy = get_taxonomy_config(session)
             user_rules = get_category_rules(session)
             for uf in uploaded_files:
                 raw_bytes = uf.read()
-                df_raw, _, _preprocess_info = load_raw_dataframe(raw_bytes, uf.name)
-                cols_key = compute_columns_key(df_raw)
-                schema = get_document_schema(session, cols_key)
-                if schema:
-                    known_schemas[uf.name] = schema
-                files.append((raw_bytes, uf.name, len(df_raw)))
+                # Compute header SHA256 for fast schema lookup
+                h_sha256 = compute_header_sha256(raw_bytes, uf.name)
+                _file_header_sha256[uf.name] = h_sha256
+                # Check header SHA256 cache first (avoids loading DataFrame for known formats)
+                cached_schema = find_schema_by_header_sha256(session, h_sha256)
+                if cached_schema:
+                    logger.info(f"upload_page: header_sha256 cache hit for {uf.name} — reusing schema")
+                    known_schemas[uf.name] = cached_schema
+                    files.append((raw_bytes, uf.name, 0))
+                else:
+                    df_raw, _, _preprocess_info = load_raw_dataframe(raw_bytes, uf.name)
+                    cols_key = compute_columns_key(df_raw)
+                    schema = get_document_schema(session, cols_key)
+                    if schema:
+                        known_schemas[uf.name] = schema
+                    files.append((raw_bytes, uf.name, len(df_raw)))
 
         total_files = len(files)
 
@@ -496,6 +530,7 @@ def render_upload_page(engine):
                         "filename": filename,
                         "result": result,
                         "account_label_override": _file_account_map.get(filename),
+                        "header_sha256": _file_header_sha256.get(filename, ""),
                     })
                     st.session_state["_pending_schema_reviews"] = pending
                     st.session_state["_pending_schema_job_id"] = job_id
