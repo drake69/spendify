@@ -8,7 +8,7 @@ import pandas as pd
 import streamlit as st
 
 from core.models import Confidence, DocumentType, GirocontoMode, SignConvention
-from core.normalizer import compute_columns_key, compute_header_sha256, load_raw_head
+from core.normalizer import compute_columns_key, compute_header_sha256, detect_skip_rows, load_raw_head
 from core.orchestrator import ProcessingConfig, load_raw_dataframe, process_files
 from core.sanitizer import SanitizationConfig
 from core.schemas import DocumentSchema
@@ -194,17 +194,6 @@ def _render_schema_review(engine, config, taxonomy, user_rules) -> bool:
             except Exception as e:
                 st.caption(f"Anteprima raw non disponibile: {e}")
 
-            # Skip rows selector
-            detected_skip = schema.skip_rows if schema else 0
-            skip_sel = st.number_input(
-                "Righe da saltare prima dell'intestazione (0 = la prima riga è già l'header)",
-                min_value=0,
-                max_value=20,
-                value=detected_skip,
-                key=f"rev_skip_{_key}",
-                help="Nell'anteprima sopra, conta quante righe di 'spazzatura' ci sono prima della riga con i nomi delle colonne.",
-            )
-
             c1, c2 = st.columns(2)
             doc_type_val = schema.doc_type.value if schema else doc_type_options[0]
             doc_type_sel = c1.selectbox(
@@ -270,7 +259,7 @@ def _render_schema_review(engine, config, taxonomy, user_rules) -> bool:
                 "credit_col": None if credit_sel == none_option else credit_sel,
                 "invert_sign": invert,
                 "confidence": Confidence.high,  # user confirmed → treat as high
-                "skip_rows": int(skip_sel),
+                "skip_rows": schema.skip_rows if schema else 0,
                 "header_sha256": entry.get("header_sha256", ""),
             })
 
@@ -279,7 +268,7 @@ def _render_schema_review(engine, config, taxonomy, user_rules) -> bool:
             try:
                 from core.orchestrator import _normalize_df_with_schema, load_raw_dataframe
                 import pandas as pd
-                _skip_override = int(skip_sel) if int(skip_sel) > 0 else None
+                _skip_override = (schema.skip_rows or None) if schema else None
                 df_raw_prev, _, _ = load_raw_dataframe(entry["raw_bytes"], filename, skip_rows_override=_skip_override)
                 preview_txs = _normalize_df_with_schema(df_raw_prev.head(30), confirmed_schemas[filename], filename)
                 if preview_txs:
@@ -411,15 +400,44 @@ def render_upload_page(engine):
 
     st.markdown("**Associa ogni file a un conto:**")
     _file_account_map: dict[str, str | None] = {}
+    _file_skip_map: dict[str, int] = {}
     for uf in uploaded_files:
-        c1, c2 = st.columns([3, 2])
-        c1.caption(f"📄 {uf.name}")
-        sel = c2.selectbox(
-            "Conto",
-            options=_account_options,
-            key=f"file_account_{uf.name}",
-            label_visibility="collapsed",
-        )
+        raw_preview = uf.getvalue()
+        _detected_skip, _skip_certain = detect_skip_rows(raw_preview, uf.name)
+
+        # SHA256 hit → schema (and skip_rows) already known, no input needed
+        with get_session(engine) as _prev_s:
+            _sha256_hit = find_schema_by_header_sha256(_prev_s, compute_header_sha256(raw_preview, uf.name))
+
+        if _sha256_hit or _skip_certain:
+            # Detection confident or schema cached → silent
+            c1, c2 = st.columns([3, 2])
+            c1.caption(f"📄 {uf.name}")
+            sel = c2.selectbox(
+                "Conto",
+                options=_account_options,
+                key=f"file_account_{uf.name}",
+                label_visibility="collapsed",
+            )
+            _file_skip_map[uf.name] = _sha256_hit.skip_rows if _sha256_hit else _detected_skip
+        else:
+            # Detection uncertain → ask user
+            c1, c2, c3 = st.columns([3, 2, 2])
+            c1.caption(f"📄 {uf.name}")
+            sel = c2.selectbox(
+                "Conto",
+                options=_account_options,
+                key=f"file_account_{uf.name}",
+                label_visibility="collapsed",
+            )
+            _file_skip_map[uf.name] = c3.number_input(
+                "Righe da saltare",
+                min_value=0,
+                max_value=20,
+                value=0,
+                key=f"file_skip_{uf.name}",
+                help="Non riesco a rilevare automaticamente quante righe saltare prima dell'intestazione. Controlla il file e inserisci il numero corretto.",
+            )
         _file_account_map[uf.name] = sel if sel != "— rilevamento automatico —" else None
 
     if st.button("▶️ Elabora file", type="primary"):
@@ -526,6 +544,7 @@ def render_upload_page(engine):
                     ),
                     existing_tx_ids_checker=_make_existing_checker(engine),
                     account_label_override=_file_account_map.get(filename),
+                    skip_rows_override=_file_skip_map.get(filename),
                 )
                 if result.needs_schema_review:
                     # Do NOT persist — wait for user confirmation

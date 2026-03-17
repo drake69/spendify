@@ -72,8 +72,12 @@ def detect_delimiter(content: str) -> str:
     return max(counts, key=counts.get)
 
 
-def detect_header_row(lines: list[str]) -> int:
-    """Return index of the first line with ≥2 non-empty, non-numeric fields."""
+def detect_header_row(lines: list[str]) -> tuple[int, bool]:
+    """Return (index, certain) of the first line with ≥2 non-empty, non-numeric fields.
+
+    certain=True  → a matching line was found (header detected with confidence).
+    certain=False → no line matched; defaulted to 0 (ambiguous, ask the user).
+    """
     for i, line in enumerate(lines):
         fields = [f.strip() for f in re.split(r'[,;\t|]', line)]
         non_numeric = sum(
@@ -81,8 +85,49 @@ def detect_header_row(lines: list[str]) -> int:
             if f and not re.match(r'^[\d\.\,\-\+\s€$£%]+$', f)
         )
         if non_numeric >= 2:
-            return i
-    return 0
+            return i, True
+    return 0, False
+
+
+def detect_header_row_excel(raw_bytes: bytes) -> tuple[int, bool]:
+    """Detect header row in an Excel file by scanning the best sheet's cell values.
+
+    Applies the same ≥2 non-numeric fields heuristic as detect_header_row.
+    Returns (skip_rows, certain) with identical semantics.
+    """
+    import io as _io
+    try:
+        import openpyxl
+        wb = openpyxl.load_workbook(_io.BytesIO(raw_bytes), read_only=True, data_only=True)
+        sheet_name = detect_best_sheet(wb)
+        ws = wb[sheet_name]
+        for i, row in enumerate(ws.iter_rows(values_only=True, max_row=30)):
+            values = [str(v).strip() for v in row if v is not None]
+            non_numeric = sum(
+                1 for v in values
+                if v and not re.match(r'^[\d\.\,\-\+\s€$£%]+$', v)
+            )
+            if non_numeric >= 2:
+                wb.close()
+                return i, True
+        wb.close()
+    except Exception:
+        pass
+    return 0, False
+
+
+def detect_skip_rows(raw_bytes: bytes, filename: str) -> tuple[int, bool]:
+    """Unified pre-load header detection for CSV and Excel.
+
+    Returns (skip_rows, certain):
+      certain=True  → detection confident, use skip_rows silently.
+      certain=False → could not determine; surface a number_input to the user.
+    """
+    if filename.lower().endswith((".xlsx", ".xls")):
+        return detect_header_row_excel(raw_bytes)
+    encoding = detect_encoding(raw_bytes)
+    text = raw_bytes.decode(encoding, errors="replace")
+    return detect_header_row(text.splitlines())
 
 
 def detect_best_sheet(workbook) -> str:

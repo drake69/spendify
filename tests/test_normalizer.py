@@ -12,6 +12,8 @@ from core.normalizer import (
     detect_and_strip_preheader_rows,
     detect_delimiter,
     detect_encoding,
+    detect_header_row,
+    detect_skip_rows,
     drop_low_variability_columns,
     normalize_description,
     parse_amount,
@@ -285,6 +287,108 @@ class TestDropLowVariabilityColumns:
         result, dropped = drop_low_variability_columns(df, "good.csv")
         assert dropped == []
         assert len(result.columns) == 3
+
+
+# ── TestDetectHeaderRow ────────────────────────────────────────────────────────
+
+class TestDetectHeaderRow:
+    """Tests for detect_header_row(lines) -> (int, bool)."""
+
+    def test_header_at_row_0_certain(self):
+        """Standard CSV: header is the first line → (0, True)."""
+        lines = [
+            "Data,Importo,Descrizione",
+            "01/01/2024,100.00,Supermercato",
+            "02/01/2024,-50.00,Bolletta",
+        ]
+        n, certain = detect_header_row(lines)
+        assert n == 0
+        assert certain is True
+
+    def test_header_at_row_3_certain(self):
+        """AMEX-style: 3 metadata rows before the real header → (3, True)."""
+        lines = [
+            "",
+            "Estratto conto American Express",
+            "Dal 01/01/2024 al 31/01/2024",
+            "Data,Descrizione,Importo,Valuta",
+            "01/01/2024,Ristorante,45.00,EUR",
+        ]
+        n, certain = detect_header_row(lines)
+        assert n == 3
+        assert certain is True
+
+    def test_all_numeric_uncertain(self):
+        """All-numeric file: no header line found → fallback (0, False)."""
+        lines = [
+            "1,2,3",
+            "4,5,6",
+            "7,8,9",
+        ]
+        n, certain = detect_header_row(lines)
+        assert n == 0
+        assert certain is False
+
+    def test_empty_lines_uncertain(self):
+        """Empty file: no lines → fallback (0, False)."""
+        n, certain = detect_header_row([])
+        assert n == 0
+        assert certain is False
+
+    def test_single_field_line_skipped(self):
+        """A line with only 1 non-numeric field does not match (needs ≥2)."""
+        lines = [
+            "Estratto",          # 1 non-numeric field → not a match
+            "Data,Importo,Desc", # 3 non-numeric fields → match
+        ]
+        n, certain = detect_header_row(lines)
+        assert n == 1
+        assert certain is True
+
+    def test_semicolon_delimiter(self):
+        """Detection works with semicolon-delimited files."""
+        lines = [
+            "Data;Importo;Descrizione",
+            "01/01/2024;100,00;Pagamento",
+        ]
+        n, certain = detect_header_row(lines)
+        assert n == 0
+        assert certain is True
+
+
+# ── TestDetectSkipRows ─────────────────────────────────────────────────────────
+
+class TestDetectSkipRows:
+    """Tests for detect_skip_rows(raw_bytes, filename) -> (int, bool)."""
+
+    def test_csv_standard_header(self):
+        """Standard CSV → (0, True)."""
+        content = "Data,Importo,Descrizione\n01/01/2024,100.00,Pane\n"
+        raw = content.encode("utf-8")
+        n, certain = detect_skip_rows(raw, "estratto.csv")
+        assert n == 0
+        assert certain is True
+
+    def test_csv_with_metadata_rows(self):
+        """CSV with 2 metadata rows before header → (2, True)."""
+        content = (
+            "Banca Esempio SpA\n"
+            "Periodo: Gennaio 2024\n"
+            "Data,Importo,Descrizione\n"
+            "01/01/2024,100.00,Pane\n"
+        )
+        raw = content.encode("utf-8")
+        n, certain = detect_skip_rows(raw, "estratto.csv")
+        assert n == 2
+        assert certain is True
+
+    def test_csv_all_numeric_uncertain(self):
+        """CSV with no text header → (0, False)."""
+        content = "1,2,3\n4,5,6\n"
+        raw = content.encode("utf-8")
+        n, certain = detect_skip_rows(raw, "data.csv")
+        assert n == 0
+        assert certain is False
 
     def test_too_few_rows_unchanged(self):
         df = pd.DataFrame({"A": ["x"], "B": ["y"], "C": ["z"]})
