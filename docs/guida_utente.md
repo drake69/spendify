@@ -16,12 +16,23 @@ Scarichi gli estratti conto dalla banca, li trascini in Spendify, lui li unifica
 
 1. Vai su **Import** (il primo pulsante in alto a sinistra).
 2. Trascina uno o più file nell'area tratteggiata — vanno bene CSV, XLSX, XLS tutti insieme.
-3. Clicca **Avvia elaborazione**.
-4. Aspetta la barra verde. Puoi chiudere il browser e riaprirlo: il lavoro continua in background.
+3. Per ogni file scegli il conto bancario associato dal menu a tendina.
+4. Clicca **Avvia elaborazione**.
+5. Aspetta la barra verde. Puoi chiudere il browser e riaprirlo: il lavoro continua in background.
 
 > **Esempio:** Hai tre file — `estratto_unicredit_gen.csv`, `carta_visa_gen.xlsx`, `conto_deposito.csv`. Li selezioni tutti e tre in una volta sola. Spendify capisce da solo che tipo sono.
 
 **Cosa succede dietro le quinte:** Spendify assegna a ogni transazione un codice univoco basato sul contenuto. Se importi lo stesso file due volte non succede nulla di male — i duplicati vengono scartati silenziosamente.
+
+### Righe da saltare — quando compare questo campo?
+
+Alcuni file di banca hanno righe di intestazione prima della tabella dati (nome della banca, periodo, numero conto…). Spendify le rileva automaticamente e le salta.
+
+Se però il rilevamento automatico **non è riuscito** (file con formato insolito, tutto numerico, senza intestazioni testuali), comparirà il campo **"Righe da saltare"** accanto al nome del file. Inserisci quante righe vuoi saltare prima dell'intestazione della tabella.
+
+> **Esempio:** Apri il file CSV con un editor di testo. Se le prime 3 righe sono `Banca XYZ`, `Conto 123`, `Dal 01/01 al 31/01` e la riga 4 è `Data,Importo,Descrizione`, inserisci `3`.
+
+Una volta confermato lo schema del file, alle importazioni successive non vedrai più questo campo — Spendify lo ricorda automaticamente.
 
 ---
 

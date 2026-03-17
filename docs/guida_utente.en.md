@@ -16,12 +16,23 @@ You download your bank statements, drag them into Spendify, it unifies them, cla
 
 1. Go to **Import** (the first button at the top left).
 2. Drag one or more files into the dashed area — CSV, XLSX, XLS all work together.
-3. Click **Avvia elaborazione**.
-4. Wait for the green bar. You can close the browser and reopen it: the work continues in the background.
+3. For each file, select the associated bank account from the dropdown menu.
+4. Click **Avvia elaborazione**.
+5. Wait for the green bar. You can close the browser and reopen it: the work continues in the background.
 
 > **Example:** You have three files — `estratto_unicredit_gen.csv`, `carta_visa_gen.xlsx`, `conto_deposito.csv`. You select all three at once. Spendify automatically figures out what type they are.
 
 **What happens behind the scenes:** Spendify assigns each transaction a unique code based on its content. If you import the same file twice nothing bad happens — duplicates are silently discarded.
+
+### Rows to skip — when does this field appear?
+
+Some bank files have header rows before the data table (bank name, period, account number…). Spendify detects and skips them automatically.
+
+If automatic detection **fails** (unusual format, fully numeric, no text headers), a **"Rows to skip"** field will appear next to the filename. Enter how many rows to skip before the table header.
+
+> **Example:** Open the CSV file in a text editor. If the first 3 rows are `Bank XYZ`, `Account 123`, `From 01/01 to 31/01` and row 4 is `Date,Amount,Description`, enter `3`.
+
+Once the file schema is confirmed, you won't see this field on subsequent imports — Spendify remembers it automatically.
 
 ---
 
