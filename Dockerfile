@@ -1,37 +1,31 @@
 # ── Spendify — Dockerfile ────────────────────────────────────────────────────
-# Multi-stage: installa dipendenze con uv, poi copia solo il necessario.
+# Single-stage build con uv: evita problemi di symlink nei multi-stage copy.
 # Build:  docker build -t spendify .
 # Run:    docker run -p 8501:8501 --env-file .env spendify
 
-# ── Stage 1: dependency resolver ─────────────────────────────────────────────
-FROM python:3.13-slim AS builder
+FROM python:3.13-slim
 
-# Installa uv (package manager veloce)
+# Installa uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-WORKDIR /build
+WORKDIR /app
+
+# Non scaricare Python separato: usa quello di sistema già presente nell'image
+ENV UV_PYTHON_DOWNLOADS=0
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
 
 # Copia solo i file di dipendenze per sfruttare la cache Docker
 COPY pyproject.toml uv.lock ./
 
-# Installa dipendenze in una venv isolata (senza dev/test)
+# Installa dipendenze nella venv (senza dev/test)
 RUN uv sync --frozen --no-dev --no-install-project
-
-# ── Stage 2: runtime ──────────────────────────────────────────────────────────
-FROM python:3.13-slim AS runtime
-
-WORKDIR /app
-
-# Copia la venv già risolta
-COPY --from=builder /build/.venv /app/.venv
 
 # Copia il codice sorgente
 COPY . .
 
-# Assicura che la venv sia usata per tutti i comandi
+# Aggiungi la venv al PATH
 ENV PATH="/app/.venv/bin:$PATH"
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
 
 # Directory dove il DB e i log verranno montati come volume
 VOLUME ["/app/data", "/app/logs"]
@@ -39,12 +33,12 @@ VOLUME ["/app/data", "/app/logs"]
 # Porta Streamlit
 EXPOSE 8501
 
-# Healthcheck: verifica che Streamlit risponda
+# Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')" || exit 1
 
-# Entrypoint
-CMD ["streamlit", "run", "app.py", \
+# Entrypoint — uv run attiva automaticamente la venv e risolve il symlink Python
+CMD ["uv", "run", "streamlit", "run", "app.py", \
      "--server.port=8501", \
      "--server.address=0.0.0.0", \
      "--server.headless=true", \
