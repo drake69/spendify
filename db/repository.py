@@ -87,6 +87,20 @@ def get_document_schema(session: Session, source_identifier: str) -> Optional[Do
     return _row_to_schema(row)
 
 
+def find_schema_by_header_sha256(session: Session, header_sha256: str) -> Optional[DocumentSchema]:
+    """Look up a saved schema by the SHA256 of the file's first rows.
+    Returns the most recently updated schema if multiple match (shouldn't happen in practice)."""
+    row = (
+        session.query(DocumentSchemaModel)
+        .filter_by(header_sha256=header_sha256)
+        .order_by(DocumentSchemaModel.updated_at.desc().nullslast())
+        .first()
+    )
+    if row is None:
+        return None
+    return _row_to_schema(row)
+
+
 def upsert_document_schema(session: Session, schema: DocumentSchema) -> DocumentSchemaModel:
     row = session.query(DocumentSchemaModel).filter_by(
         source_identifier=schema.source_identifier
@@ -117,6 +131,8 @@ def upsert_document_schema(session: Session, schema: DocumentSchema) -> Document
     row.skip_rows = schema.skip_rows
     row.delimiter = schema.delimiter
     row.confidence = schema.confidence.value if hasattr(schema.confidence, 'value') else schema.confidence
+    if schema.header_sha256:
+        row.header_sha256 = schema.header_sha256
 
     session.flush()
     return row
@@ -147,6 +163,7 @@ def _row_to_schema(row: DocumentSchemaModel) -> DocumentSchema:
         delimiter=row.delimiter,
         confidence=Confidence(row.confidence or "low"),
         source_identifier=row.source_identifier,
+        header_sha256=getattr(row, 'header_sha256', None),
     )
 
 

@@ -120,6 +120,25 @@ drop_low_variability_columns(df)
 
 ---
 
+## Schema fingerprinting — header SHA256
+
+To avoid running the LLM classifier on every import of the same file format, Spendify computes a SHA256 hash of the first `min(30, N)` raw rows of each uploaded file (before any skip or preprocessing). This hash is stored alongside the confirmed schema.
+
+On subsequent imports:
+1. The first `min(30, N)` rows are hashed
+2. The DB is queried for a matching `header_sha256`
+3. If found → the saved schema (including `skip_rows`) is used directly — no LLM call, no schema review UI
+4. If not found → Flow 2 runs (LLM classification + user review)
+
+**Why the first rows?** Bank statement exports typically include static institution metadata (logo row, account number, date range label) in the pre-header area. These rows are identical across all monthly exports from the same bank, making them a reliable fingerprint.
+
+**Skip rows UI** — During the first import of an unknown file format, the schema review form shows:
+- The first 10 raw rows of the file (no preprocessing) so the user can see the full structure
+- A number input to select how many rows to skip before the actual header row
+- A live preview of the first 8 parsed transactions using the current schema settings
+
+---
+
 ## Stadio 2 — Schema decision / Classificazione documento [RF-01]
 
 **Modulo:** `core/orchestrator.py`, `core/classifier.py`
