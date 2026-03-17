@@ -12,10 +12,35 @@
 2. [Installazione senza Docker (sviluppo / uso locale)](#2--installazione-senza-docker)
 3. [Installazione con Docker Compose (produzione consigliata)](#3--installazione-con-docker-compose)
 4. [Configurazione `.env`](#4--configurazione-env)
-5. [Backup del database](#5--backup-del-database)
-6. [Ripristino del database](#6--ripristino-del-database)
-7. [Aggiornare l'applicazione](#7--aggiornare-lapplicazione)
-8. [Risoluzione problemi comuni](#8--risoluzione-problemi-comuni)
+5. [Primo avvio con un database esistente](#5--primo-avvio-con-un-database-esistente)
+6. [Backup del database](#6--backup-del-database)
+7. [Ripristino del database](#7--ripristino-del-database)
+8. [Aggiornare l'applicazione](#8--aggiornare-lapplicazione)
+9. [Risoluzione problemi comuni](#9--risoluzione-problemi-comuni)
+
+---
+
+## Concetti Docker per chi parte da zero
+
+Se non hai mai usato Docker, questi tre concetti ti basteranno per gestire Spendify:
+
+| Concetto | Analogia | Cosa significa in pratica |
+|----------|----------|--------------------------|
+| **Image** (immagine) | Ricetta di cucina | Il "pacchetto" con tutto il codice e le dipendenze, costruito una volta sola con `docker compose build` |
+| **Container** | Piatto cucinato | L'applicazione in esecuzione, creata dall'immagine. Si avvia, si ferma, si cancella senza perdere i dati (che stanno nel volume) |
+| **Volume** | Quaderno esterno | La cartella persistente dove sta il database. Sopravvive anche se il container viene cancellato e ricreato |
+
+**Flusso normale:**
+```
+build (una volta) → up (avvia) → down (ferma) → up (riavvia con stessi dati)
+```
+
+**Cosa NON cancella i tuoi dati:**
+- `docker compose down` ✅ sicuro
+- `docker compose up -d --build` ✅ sicuro (ricostruisce l'immagine, dati intatti)
+
+**Cosa CANCELLA i dati:**
+- `docker compose down -v` ⚠️ cancella i volumi — usare solo per reset completo
 
 ---
 
@@ -167,18 +192,63 @@ TAXONOMY_PATH=taxonomy.yaml
 
 ---
 
-## 5 — Backup del database
+## 5 — Primo avvio con un database esistente
+
+Se hai già un `ledger.db` (ad esempio creato con l'installazione locale) e vuoi usarlo nel container Docker, devi **copiarlo nel volume** prima di avviare l'app.
+
+> **Perché non basta copiare il file nella cartella?**
+> Il container Docker non vede il filesystem del tuo Mac/Linux direttamente.
+> Il database vive nel **volume** `spendify_data`, una cartella gestita da Docker.
+> Per metterci qualcosa devi usare un container temporaneo come "ponte".
+
+### 5.1 — Copia il DB nel volume (da file locale)
+
+```bash
+# 1. Assicurati che il container sia fermo
+docker compose down
+
+# 2. Copia il tuo ledger.db nel volume spendify_data
+docker run --rm \
+  -v spendify_data:/data \
+  -v "/percorso/del/tuo/ledger.db":/source/ledger.db:ro \
+  python:3.13-slim \
+  cp /source/ledver.db /data/ledger.db
+```
+
+> Sostituisci `/percorso/del/tuo/ledger.db` con il path assoluto del tuo file.
+> Esempio su Mac: `-v "/Users/mario/spendify/ledger.db":/source/ledger.db:ro`
+
+### 5.2 — Verifica che il file sia arrivato
+
+```bash
+docker run --rm \
+  -v spendify_data:/data \
+  python:3.13-slim \
+  ls -lh /data/
+```
+
+Dovresti vedere `ledger.db` con la dimensione corretta.
+
+### 5.3 — Avvia l'app
+
+```bash
+docker compose up -d
+```
+
+---
+
+## 6 — Backup del database
 
 Il database di Spendify è un singolo file SQLite. Il backup consiste nel **copiare quel file** in un luogo sicuro.
 
-### 5.1 — Posizione del database
+### 6.1 — Posizione del database
 
 | Modalità | Percorso |
 |----------|---------|
 | Installazione locale | `./ledger.db` (directory del progetto) |
 | Docker Compose | volume Docker `spendify_data` → `/app/data/ledger.db` |
 
-### 5.2 — Backup manuale (installazione locale)
+### 6.2 — Backup manuale (installazione locale)
 
 ```bash
 # Copia con timestamp
@@ -192,27 +262,33 @@ cp ledger.db backups/ledger_$(date +%Y%m%d_%H%M%S).db
 sqlite3 ledger.db ".backup backups/ledger_$(date +%Y%m%d_%H%M%S).db"
 ```
 
-### 5.3 — Backup da Docker
+### 6.3 — Backup da Docker
+
+Il metodo più semplice è copiare direttamente dal container in esecuzione:
 
 ```bash
-# Crea la directory locale per i backup (se non esiste)
 mkdir -p backups
+docker cp spendify_app:/app/data/ledger.db backups/ledger_$(date +%Y%m%d_%H%M%S).db
+```
 
-# Estrae il file DB dal volume Docker e lo salva localmente
+> `docker cp` copia un file dal filesystem del container all'host — non richiede
+> container temporanei né comandi aggiuntivi.
+
+Se il container è fermo, usa un container temporaneo come "ponte":
+
+```bash
+mkdir -p backups
 docker run --rm \
   -v spendify_data:/data \
   -v "$(pwd)/backups":/backups \
   python:3.13-slim \
-  sqlite3 /data/ledger.db ".backup /backups/ledger_$(date +%Y%m%d_%H%M%S).db"
+  cp /data/ledger.db /backups/ledger_backup.db
 ```
 
-Oppure, più semplicemente, copiando direttamente dal container in esecuzione:
+> ⚠️ `sqlite3` non è incluso in `python:3.13-slim`. Usare `cp` come sopra,
+> oppure installarlo al volo: `python:3.13-slim sh -c "apt-get install -y sqlite3 && sqlite3 ..."`
 
-```bash
-docker cp spendify_app:/app/data/ledger.db backups/ledger_$(date +%Y%m%d_%H%M%S).db
-```
-
-### 5.4 — Backup automatico (crontab)
+### 6.4 — Backup automatico (crontab)
 
 Aggiungere al crontab del server (`crontab -e`) per un backup giornaliero alle 03:00:
 
@@ -231,7 +307,7 @@ Per l'installazione locale (senza Docker):
 0 4 * * * find /path/to/spendify/backups -name "ledger_*.db" -mtime +30 -delete
 ```
 
-### 5.5 — Cosa include il backup
+### 6.5 — Cosa include il backup
 
 Il file `ledger.db` contiene **tutto**:
 
@@ -248,16 +324,16 @@ Il file `ledger.db` contiene **tutto**:
 
 ---
 
-## 6 — Ripristino del database
+## 7 — Ripristino del database
 
-### 6.1 — Verifica integrità del backup prima di ripristinare
+### 7.1 — Verifica integrità del backup prima di ripristinare
 
 ```bash
 sqlite3 backups/ledger_20240101_030000.db "PRAGMA integrity_check;"
 # Output atteso: "ok"
 ```
 
-### 6.2 — Ripristino (installazione locale)
+### 7.2 — Ripristino (installazione locale)
 
 ```bash
 # 1. Ferma l'applicazione (Ctrl+C o pkill)
@@ -273,7 +349,7 @@ cp backups/ledger_20240101_030000.db ledger.db
 uv run streamlit run app.py
 ```
 
-### 6.3 — Ripristino da Docker
+### 7.3 — Ripristino da Docker
 
 ```bash
 # 1. Ferma il container
@@ -307,7 +383,7 @@ docker run --rm \
 docker compose start spendify
 ```
 
-### 6.4 — Ripristino parziale (solo alcune tabelle)
+### 7.4 — Ripristino parziale (solo alcune tabelle)
 
 Se si vuole recuperare solo le regole di categorizzazione da un backup senza sovrascrivere le transazioni:
 
@@ -325,7 +401,7 @@ Stessa logica per altre tabelle: `description_rule`, `user_settings`, `taxonomy_
 
 ---
 
-## 7 — Aggiornare l'applicazione
+## 8 — Aggiornare l'applicazione
 
 ### Installazione locale
 
@@ -349,7 +425,7 @@ docker compose up -d --build         # ricostruisce l'immagine con il nuovo codi
 
 ---
 
-## 8 — Risoluzione problemi comuni
+## 9 — Risoluzione problemi comuni
 
 ### L'app non si avvia / porta 8501 occupata
 
@@ -414,4 +490,4 @@ Il modello `gemma3:12b` richiede ~8 GB di RAM. Usare un modello più leggero tra
 
 ---
 
-*Documento generato per Spendify v2.4 — aggiornato al 2026-03-16*
+*Documento generato per Spendify v2.4 — aggiornato al 2026-03-17*
