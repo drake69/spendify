@@ -132,16 +132,25 @@ Nessun framework LLM (no LangChain) — i backend AI usano direttamente gli SDK 
 
 ---
 
-## Installazione in 4 comandi
+## Installazione in un comando
 
+L'unico prerequisito è **[Docker Desktop](https://www.docker.com/products/docker-desktop/)**.
+
+**Mac / Linux:**
 ```bash
-git clone https://github.com/drake69/spendify.git && cd spendify
-uv sync
-ollama pull gemma3:12b
-uv run streamlit run app.py
+curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/install.sh | bash
 ```
 
-Apri `http://localhost:8501`, vai in **Impostazioni**, inserisci il tuo nome, aggiungi i tuoi conti — e importa.
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/drake69/spendify/main/install.ps1 | iex
+```
+
+Lo script scarica l'immagine da GitHub Container Registry, avvia il container e apre il browser su `http://localhost:8501` automaticamente.
+
+Vai in **Impostazioni**, inserisci il tuo nome, aggiungi i tuoi conti — e importa.
+
+> Per installazione nativa (Mac con Ollama) o server Linux/Windows con Docker+LLM locale → [Guida completa](installazione.md).
 
 ---
 
