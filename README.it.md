@@ -176,10 +176,35 @@ spendify/
 
 ## Installazione
 
+### ⚡ Installazione rapida (Docker — niente git clone)
+
+L'unico prerequisito è **[Docker Desktop](https://www.docker.com/products/docker-desktop/)** installato e avviato.
+
+**Mac / Linux:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/install.sh | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/drake69/spendify/main/install.ps1 | iex
+```
+
+Lo script scarica l'immagine pre-compilata da GitHub Container Registry, avvia il container e apre il browser su **http://localhost:8501** automaticamente.
+
+> **Aggiornamento all'ultima versione:**
+> ```bash
+> docker compose -C ~/spendify pull && docker compose -C ~/spendify up -d
+> ```
+
+---
+
+### Installazione developer (nativa, consigliata su Mac)
+
 ### Prerequisiti
 
 - **Python 3.13+**
-- **[uv](https://github.com/astral-sh/uv)** (gestore pacchetti consigliato) oppure `pip`
+- **[uv](https://github.com/astral-sh/uv)** (gestore pacchetti consigliato)
 - **[Ollama](https://ollama.com)** per il backend LLM locale (default)
 
 ### 1. Clona il repository
@@ -192,18 +217,13 @@ cd spendify
 ### 2. Installa le dipendenze
 
 ```bash
-# Con uv (consigliato)
 uv sync
-
-# Oppure con pip
-pip install -e .
 ```
 
 ### 3. Configura le variabili d'ambiente
 
 ```bash
 cp .env.example .env
-# Modifica .env con i tuoi valori
 ```
 
 ### 4. Scarica il modello LLM locale
