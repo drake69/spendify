@@ -122,20 +122,32 @@ drop_low_variability_columns(df)
 
 ## Schema fingerprinting — header SHA256
 
-To avoid running the LLM classifier on every import of the same file format, Spendify computes a SHA256 hash of the first `min(30, N)` raw rows of each uploaded file (before any skip or preprocessing). This hash is stored alongside the confirmed schema.
+**Modulo:** `core/normalizer.py` → `compute_header_sha256()`, `load_raw_head()`
 
-On subsequent imports:
-1. The first `min(30, N)` rows are hashed
-2. The DB is queried for a matching `header_sha256`
-3. If found → the saved schema (including `skip_rows`) is used directly — no LLM call, no schema review UI
-4. If not found → Flow 2 runs (LLM classification + user review)
+Per evitare di eseguire il classifier LLM ad ogni import dello stesso formato file, Spendify calcola lo SHA256 delle prime `min(30, N)` righe raw (prima di qualsiasi skip o pre-elaborazione) e lo memorizza insieme allo schema confermato.
 
-**Why the first rows?** Bank statement exports typically include static institution metadata (logo row, account number, date range label) in the pre-header area. These rows are identical across all monthly exports from the same bank, making them a reliable fingerprint.
+```
+compute_header_sha256(raw_bytes, filename, n=30)
+  └─ Excel: prime min(30, N) righe del foglio migliore → serializzate con "|" tra celle
+  └─ CSV:   prime min(30, N) righe di testo grezze
+  └─ SHA256(contenuto.encode()) → hex string 64 caratteri
 
-**Skip rows UI** — During the first import of an unknown file format, the schema review form shows:
-- The first 10 raw rows of the file (no preprocessing) so the user can see the full structure
-- A number input to select how many rows to skip before the actual header row
-- A live preview of the first 8 parsed transactions using the current schema settings
+load_raw_head(raw_bytes, filename, n=10)
+  └─ carica N righe senza skiprows, senza preprocessing
+  └─ usato dall'UI di revisione schema per mostrare la struttura raw del file
+```
+
+**Algoritmo al re-import:**
+1. Calcola `header_sha256` delle prime min(30, N) righe raw
+2. Query DB: `SELECT * FROM document_schema WHERE header_sha256 = ?`
+3. Se trovato → usa lo schema salvato (include `skip_rows`) → salta classifier e review UI
+4. Se non trovato → Flow 2 (classificazione LLM + review UI obbligatoria)
+
+**Perché le prime righe?** I file di estratto conto contengono tipicamente righe di intestazione istituzionale statiche (nome banca, numero conto, intervallo date) identiche in tutti gli export mensili dello stesso istituto. Queste righe sono un fingerprint affidabile del formato.
+
+**`skip_rows_override`** — `load_raw_dataframe` accetta un parametro opzionale `skip_rows_override: int | None`. Se fornito:
+- CSV: sostituisce `detect_header_row()`
+- Excel: passa `skiprows=N` a `pd.read_excel` e salta `detect_and_strip_preheader_rows()`
 
 ---
 
@@ -187,6 +199,18 @@ classify_document(df_raw, llm_backend)
 ```
 
 **Output:** `DocumentSchema` con mappatura colonne e convenzioni segno
+
+### Schema review gate (Flow 2 obbligatorio)
+
+Al primo import di un file sconosciuto (header SHA256 non trovato in DB), l'importazione si ferma **sempre** — indipendentemente dalla confidenza del classifier — e mostra all'utente un form di revisione con:
+
+- **Preview raw**: prime 10 righe del file senza preprocessing (via `load_raw_head()`)
+- **Selettore skip_rows**: number input "Righe da saltare prima dell'intestazione" — pre-popolato con il valore rilevato automaticamente, modificabile dall'utente
+- **Campi dello schema**: doc_type, account_label, colonna importo, data, segno, addebiti/accrediti, inverti segno
+- **Preview parsata**: prime 8 transazioni elaborate con lo schema corrente — si aggiorna live ad ogni modifica
+- **Pulsante "Conferma e importa"**: salva lo schema (con `header_sha256`) e avvia l'import
+
+Dal secondo import dello stesso formato, il `header_sha256` viene trovato in DB e l'intero processo è automatico (nessuna LLM call, nessuna UI).
 
 ---
 

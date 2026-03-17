@@ -278,6 +278,50 @@ RF-12 / Settings    & Nuove chiavi \texttt{user\_settings}: \texttt{owner\_names
 \end{longtable}
 \end{center}
 
+\subsection*{Changelog rispetto a v3.1 (novità v3.2)}
+\addcontentsline{toc}{subsection}{Changelog rispetto a v3.1 (novità v3.2)}
+
+\begin{center}
+\small
+\begin{longtable}{@{}L{3cm} L{10.5cm}@{}}
+\toprule
+\textbf{Area} & \textbf{Novità v3.2} \\
+\midrule
+\endhead
+RF-01 / Schema gate     & \textbf{Schema review obbligatoria} al Flow 2: l'importazione si ferma
+                           \emph{sempre} al primo import di un formato sconosciuto, indipendentemente
+                           dalla confidenza del classifier. L'utente vede lo schema rilevato e
+                           lo conferma/corregge prima che qualsiasi transazione venga scrtta nel DB. \\[3pt]
+RF-01 / Header SHA256   & \textbf{Fingerprint header}: \texttt{compute\_header\_sha256()} calcola SHA256
+                           delle prime $\min(30, N)$ righe raw (pre-skip, pre-preprocessing).
+                           Salvato come campo \texttt{header\_sha256} in \texttt{document\_schema}.
+                           Al re-import: lookup O(1) nel DB → se trovato, bypassa interamente
+                           classifier LLM e review UI. \\[3pt]
+RF-01 / Skip rows UI    & \textbf{Selettore righe da saltare}: nel form di revisione schema,
+                           l'utente vede le prime 10 righe raw del file (via \texttt{load\_raw\_head()}),
+                           un \emph{number input} per scegliere quante righe saltare prima
+                           dell'intestazione, e una preview live delle prime 8 transazioni
+                           parsate con lo schema corrente. \\[3pt]
+RF-01 / Normalizer      & \texttt{load\_raw\_dataframe} accetta \texttt{skip\_rows\_override}:
+                           se fornito, bypassa \texttt{detect\_header\_row()} (CSV) e
+                           \texttt{detect\_and\_strip\_preheader\_rows()} (Excel), garantendo
+                           coerenza tra import successivi dello stesso file. \\[3pt]
+Infra / Docker          & Build \textbf{single-stage} (rimosso multi-stage): elimina il bug di
+                           symlink Python nella venv copiata tra stage. \texttt{UV\_PYTHON\_DOWNLOADS=0}
+                           forza l'uso del Python di sistema. CMD usa \texttt{uv run streamlit}
+                           per attivazione automatica della venv. \\[3pt]
+Infra / CI              & Nuovo job \textbf{Docker smoke test} in \texttt{ci.yml}:
+                           build \texttt{-{}-no-cache}, avvio container, polling healthcheck (max 60s),
+                           verifica HTTP 200 su \texttt{/\_stcore/health}, teardown con
+                           \texttt{docker compose down -v}. Runner: \texttt{ubuntu-latest}. \\[3pt]
+Infra / Wiki            & \textbf{Sync automatico docs → wiki}: workflow
+                           \texttt{sync-wiki.yml} triggerato da push a \texttt{main} con
+                           \texttt{paths: docs/**}. Copia ogni \texttt{docs/*.md} nella wiki
+                           GitHub con nome pagina corretto. Eseguibile anche manualmente. \\
+\bottomrule
+\end{longtable}
+\end{center}
+
 % ── TOC ──────────────────────────────────────────────────────────────────────
 \tableofcontents
 \newpage
@@ -1514,15 +1558,21 @@ Classificati con \texttt{confidence=medium} e inseriti in revisione manuale.
 
 \subsection{Confidenza bassa nella classificazione (Flow 2)}
 
-I documenti con \texttt{confidence=low} non entrano nel registro senza revisione
-manuale. Il \texttt{DocumentSchema} prodotto è persistito come bozza e proposto
-all'utente per correzione; le modifiche lo promuovono a template Flow 1.
+Dal v3.2, \textbf{tutti} i documenti classificati con Flow 2 (schema sconosciuto)
+richiedono revisione manuale, indipendentemente dalla confidenza.
+L'UI mostra: (1)~anteprima raw 10 righe, (2)~selettore \texttt{skip\_rows},
+(3)~campi schema editabili, (4)~preview live 8 transazioni parsate.
+Solo dopo conferma utente lo schema viene persistito e l'import procede.
 
 \subsection{Schema cache dopo modifica del file (colonne diverse)}
 
-Se il file di export cambia struttura (colonne aggiunte/rimosse), il fingerprint
-SHA-256 dei nomi colonna cambia, il template non è trovato in cache e Flow 2
-ri-classifica automaticamente.
+Il sistema mantiene due fingerprint complementari:
+\begin{itemize}
+  \item \textbf{Column fingerprint} (\texttt{source\_identifier}): SHA256 dei nomi colonna normalizzati. Cambia se le colonne vengono aggiunte/rimosse/rinominate.
+  \item \textbf{Header SHA256} (\texttt{header\_sha256}): SHA256 delle prime $\min(30,N)$ righe raw. Stabile per file dello stesso istituto, cambia se la struttura del file cambia significativamente.
+\end{itemize}
+Se nessuno dei due fingerprint è trovato in DB, Flow 2 ri-classifica automaticamente
+e l'utente rivede lo schema prima dell'import.
 
 \subsection{Backend LLM remoto non disponibile}
 
