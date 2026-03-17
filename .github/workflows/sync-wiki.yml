@@ -13,6 +13,8 @@ jobs:
   sync:
     name: Sync docs/ to GitHub Wiki
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repo
