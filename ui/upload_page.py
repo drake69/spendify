@@ -4,6 +4,7 @@ from __future__ import annotations
 import time
 from datetime import datetime, timezone
 
+import pandas as pd
 import streamlit as st
 
 from core.models import Confidence, DocumentType, GirocontoMode, SignConvention
@@ -444,7 +445,11 @@ def render_upload_page(engine):
                     files.append((raw_bytes, uf.name, 0))
                 else:
                     df_raw, _, _preprocess_info = load_raw_dataframe(raw_bytes, uf.name)
-                    cols_key = compute_columns_key(df_raw)
+                    # Use columns BEFORE drop_low_variability_columns for a stable key:
+                    # the drop ratio is relative to file size, so monthly exports of the
+                    # same bank can produce different post-drop column sets → cache miss.
+                    stable_cols = _preprocess_info.columns_before_drop or list(df_raw.columns)
+                    cols_key = compute_columns_key(pd.DataFrame(columns=stable_cols))
                     schema = get_document_schema(session, cols_key)
                     if schema:
                         known_schemas[uf.name] = schema
