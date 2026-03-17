@@ -4,7 +4,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
-INSTALL_DIR="$HOME/spendify"
+INSTALL_DIR="${SPENDIFY_INSTALL_DIR:-$HOME/spendify}"
 COMPOSE_URL="https://raw.githubusercontent.com/drake69/spendify/main/docker-compose.release.yml"
 APP_URL="http://localhost:8501"
 
