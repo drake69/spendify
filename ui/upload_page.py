@@ -316,6 +316,15 @@ def _render_schema_review(engine, config, taxonomy, user_rules) -> bool:
         st.session_state["_pending_schema_reviews"] = []
         existing = st.session_state.get("last_import_results", [])
         st.session_state["last_import_results"] = existing + results
+
+        # Update job status message so the banner shows ✅ instead of ⏸️
+        _pending_job_id = st.session_state.pop("_pending_schema_job_id", None)
+        if _pending_job_id:
+            n_confirmed = sum(len(r.transactions) for r in results)
+            with get_session(engine) as _sj:
+                update_import_job(_sj, _pending_job_id,
+                                  status_message=f"✅ Completato — {n_confirmed:,} nuove transazioni")
+
         st.rerun()
 
     return True
@@ -484,6 +493,7 @@ def render_upload_page(engine):
                         "account_label_override": _file_account_map.get(filename),
                     })
                     st.session_state["_pending_schema_reviews"] = pending
+                    st.session_state["_pending_schema_job_id"] = job_id
                 else:
                     persist_import_result(session2, result)
                 results.append(result)
