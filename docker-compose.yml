@@ -4,6 +4,8 @@
 # Logs:    docker compose logs -f spendify
 # Backup:  vedi docs/deployment.md
 
+name: spendify
+
 services:
 
   spendify:
