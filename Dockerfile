@@ -9,7 +9,9 @@ FROM python:3.13-slim AS builder
 # Installa uv (package manager veloce)
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-WORKDIR /build
+# Usa /app come workdir anche nel builder: gli shebang nella venv
+# punteranno a /app/.venv/bin/python, che esiste anche nel runtime stage.
+WORKDIR /app
 
 # Copia solo i file di dipendenze per sfruttare la cache Docker
 COPY pyproject.toml uv.lock ./
@@ -22,8 +24,8 @@ FROM python:3.13-slim AS runtime
 
 WORKDIR /app
 
-# Copia la venv già risolta
-COPY --from=builder /build/.venv /app/.venv
+# Copia la venv già risolta (stessa path /app/.venv → shebang validi)
+COPY --from=builder /app/.venv /app/.venv
 
 # Copia il codice sorgente
 COPY . .
@@ -43,8 +45,8 @@ EXPOSE 8501
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')" || exit 1
 
-# Entrypoint
-CMD ["streamlit", "run", "app.py", \
+# Entrypoint — path esplicito evita problemi di shebang nei multi-stage build
+CMD ["/app/.venv/bin/python", "-m", "streamlit", "run", "app.py", \
      "--server.port=8501", \
      "--server.address=0.0.0.0", \
      "--server.headless=true", \
