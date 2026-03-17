@@ -199,7 +199,8 @@ def load_raw_dataframe(
         text = raw_bytes.decode(encoding, errors="replace")
         delimiter = detect_delimiter(text)
         lines = text.splitlines()
-        skip_rows = skip_rows_override if skip_rows_override is not None else detect_header_row(lines)
+        _detected, _ = detect_header_row(lines)
+        skip_rows = skip_rows_override if skip_rows_override is not None else _detected
 
         df = pd.read_csv(
             io.StringIO(text),
@@ -212,12 +213,20 @@ def load_raw_dataframe(
     # Phase-0 preprocessing (runs on both CSV and Excel)
     if skip_rows_override is None:
         df, skipped_rows = detect_and_strip_preheader_rows(df, source_name=filename)
-        df, dropped_cols = drop_low_variability_columns(df, source_name=filename)
     else:
         skipped_rows = skip_rows_override
-        df, dropped_cols = drop_low_variability_columns(df, source_name=filename)
 
-    info = PreprocessInfo(skipped_rows=skipped_rows, dropped_columns=dropped_cols)
+    # Capture column names BEFORE drop_low_variability_columns — used for stable
+    # cols_key lookup: drop ratio depends on file size so it varies across monthly
+    # exports of the same bank, making the post-drop key unstable.
+    cols_before_drop = list(df.columns)
+    df, dropped_cols = drop_low_variability_columns(df, source_name=filename)
+
+    info = PreprocessInfo(
+        skipped_rows=skipped_rows,
+        dropped_columns=dropped_cols,
+        columns_before_drop=cols_before_drop,
+    )
     return df, encoding, info
 
 
@@ -436,6 +445,7 @@ def process_file(
     progress_callback=None,  # Callable[[float], None] — 0.0..1.0 within this file
     existing_tx_ids_checker=None,  # Callable[[list[str]], set[str]] — returns already-imported tx ids
     account_label_override: Optional[str] = None,  # user-selected account name; overrides LLM-assigned label
+    skip_rows_override: Optional[int] = None,  # user-confirmed skip_rows from UI; takes precedence over schema
 ) -> ImportResult:
     """
     Process a single file through Flow 1 or Flow 2.
@@ -466,7 +476,12 @@ def process_file(
 
     # Load raw data
     _progress(0.0)
-    skip_override = known_schema.skip_rows if (known_schema and known_schema.skip_rows) else None
+    # skip_rows_override (from UI) takes precedence; fall back to cached schema value
+    skip_override = (
+        skip_rows_override
+        if skip_rows_override is not None
+        else (known_schema.skip_rows if (known_schema and known_schema.skip_rows) else None)
+    )
     df_raw, encoding, _preprocess_info = load_raw_dataframe(raw_bytes, filename, skip_rows_override=skip_override)
     logger.info(
         f"process_file: loaded {filename} | rows={len(df_raw)} "
