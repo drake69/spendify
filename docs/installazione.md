@@ -264,6 +264,49 @@ docker compose ps                           # stato container
 
 ---
 
+## 💾 Backup e ripristino del database (installazione Docker)
+
+Il database è salvato nel volume Docker `spendify_data`. I dati persistono tra i riavvii e gli aggiornamenti dell'app.
+
+### Backup
+
+```bash
+# Crea una cartella backup (una volta sola)
+mkdir -p ~/spendify-backup
+
+# Copia il database dal volume alla cartella backup
+docker run --rm \
+  -v spendify_data:/data \
+  -v ~/spendify-backup:/backup \
+  alpine cp /data/ledger.db /backup/ledger_$(date +%Y%m%d).db
+```
+
+Il file risultante si chiama ad esempio `ledger_20260317.db`. È un normalissimo file SQLite — puoi aprirlo con qualsiasi strumento compatibile.
+
+### Ripristino
+
+```bash
+# Ferma l'app prima di ripristinare
+docker compose -C ~/spendify down
+
+# Copia il backup nel volume
+docker run --rm \
+  -v spendify_data:/data \
+  -v ~/spendify-backup:/backup \
+  alpine cp /backup/ledger_20260317.db /data/ledger.db
+
+# Riavvia
+docker compose -C ~/spendify up -d
+```
+
+> **Su Windows (PowerShell)** sostituisci `~/spendify-backup` con `$env:USERPROFILE\spendify-backup` e `$(date +%Y%m%d)` con la data a mano (es. `20260317`).
+
+### Dove si trova il volume?
+
+Il volume `spendify_data` è gestito da Docker e non è direttamente accessibile come cartella normale. I comandi sopra usano un container temporaneo (`alpine`) per accedervi — è il modo corretto e sicuro.
+
+---
+
 ## 🔁 Riepilogo comandi di avvio
 
 | Scenario | Comando |
@@ -294,3 +337,9 @@ Sì:
 - LLM nativo sull'host → `http://localhost:11434` (o `1234` per LM Studio)
 - LLM in container Docker → usa il **nome del servizio** (`http://ollama:11434` o `http://llama-cpp:8080`)
 - LLM sull'host, app in Docker → `http://host.docker.internal:11434`
+
+**Posso fare il backup anche con l'installazione one-liner?**
+Sì. L'installazione one-liner (`install.sh` / `install.ps1`) usa lo stesso volume Docker `spendify_data`. I comandi di backup e ripristino nella sezione 💾 qui sopra funzionano identicamente.
+
+**Posso spostare i dati su un altro computer?**
+Sì. Fai il backup come descritto sopra, copia il file `.db` sul nuovo computer, esegui `install.sh` (o `install.ps1`) sul nuovo computer e poi ripristina il database.
