@@ -43,6 +43,7 @@ from core.normalizer import (
     PreprocessInfo,
     apply_sign_convention,
     compute_file_hash,
+    compute_header_sha256,
     compute_transaction_id,
     detect_and_strip_preheader_rows,
     detect_best_sheet,
@@ -52,6 +53,7 @@ from core.normalizer import (
     detect_internal_transfers,
     drop_low_variability_columns,
     find_card_settlement_matches,
+    load_raw_head,
     normalize_description,
     parse_amount,
     parse_date_safe,
@@ -155,6 +157,7 @@ def _get_fallback_backend(config: ProcessingConfig) -> Optional[OllamaBackend]:
 def load_raw_dataframe(
     raw_bytes: bytes,
     filename: str,
+    skip_rows_override: Optional[int] = None,
 ) -> tuple[pd.DataFrame, str, PreprocessInfo]:
     """Load a file into a raw DataFrame with Phase-0 pre-processing.
 
@@ -165,13 +168,20 @@ def load_raw_dataframe(
     4. Strip any pre-header metadata rows (statistical median approach).
     5. Drop low-variability columns (e.g., repeated account name / card PAN).
 
+    Args:
+        raw_bytes: Raw file content.
+        filename: Original filename (used for format detection).
+        skip_rows_override: If provided, skip exactly this many rows before the
+            header instead of auto-detecting. Also bypasses
+            ``detect_and_strip_preheader_rows`` for Excel files.
+
     Returns:
         ``(df, encoding_used, preprocess_info)``
     """
     encoding = detect_encoding(raw_bytes)
     name_lower = filename.lower()
     logger.info(f"load_raw_dataframe: detected encoding {encoding} for {filename}")
-    
+
     if name_lower.endswith((".xlsx", ".xls")):
         try:
             import openpyxl
@@ -181,14 +191,15 @@ def load_raw_dataframe(
         except Exception:
             sheet_name = 0  # fallback to first sheet
 
-        df = pd.read_excel(io.BytesIO(raw_bytes), sheet_name=sheet_name)
+        skip = skip_rows_override if skip_rows_override is not None else 0
+        df = pd.read_excel(io.BytesIO(raw_bytes), sheet_name=sheet_name, skiprows=skip if skip > 0 else None)
 
     else:
         # CSV / text
         text = raw_bytes.decode(encoding, errors="replace")
         delimiter = detect_delimiter(text)
         lines = text.splitlines()
-        skip_rows = detect_header_row(lines)
+        skip_rows = skip_rows_override if skip_rows_override is not None else detect_header_row(lines)
 
         df = pd.read_csv(
             io.StringIO(text),
@@ -199,8 +210,12 @@ def load_raw_dataframe(
         )
 
     # Phase-0 preprocessing (runs on both CSV and Excel)
-    df, skipped_rows = detect_and_strip_preheader_rows(df, source_name=filename)
-    df, dropped_cols = drop_low_variability_columns(df, source_name=filename)
+    if skip_rows_override is None:
+        df, skipped_rows = detect_and_strip_preheader_rows(df, source_name=filename)
+        df, dropped_cols = drop_low_variability_columns(df, source_name=filename)
+    else:
+        skipped_rows = skip_rows_override
+        df, dropped_cols = drop_low_variability_columns(df, source_name=filename)
 
     info = PreprocessInfo(skipped_rows=skipped_rows, dropped_columns=dropped_cols)
     return df, encoding, info
@@ -451,7 +466,8 @@ def process_file(
 
     # Load raw data
     _progress(0.0)
-    df_raw, encoding, _preprocess_info = load_raw_dataframe(raw_bytes, filename)
+    skip_override = known_schema.skip_rows if (known_schema and known_schema.skip_rows) else None
+    df_raw, encoding, _preprocess_info = load_raw_dataframe(raw_bytes, filename, skip_rows_override=skip_override)
     logger.info(
         f"process_file: loaded {filename} | rows={len(df_raw)} "
         f"ncols={len(df_raw.columns)} | known_schema={'yes' if known_schema else 'no'}"
