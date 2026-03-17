@@ -264,6 +264,14 @@ docker compose ps                           # stato container
 
 ---
 
+## 💾 Backup e ripristino del database
+
+Il database è salvato nel volume Docker `spendify_data` e persiste tra i riavvii e gli aggiornamenti dell'app.
+
+Per backup, ripristino, spostamento su un altro computer e ispezione diretta → **[Guida database](database.md)**.
+
+---
+
 ## 🔁 Riepilogo comandi di avvio
 
 | Scenario | Comando |
@@ -294,3 +302,9 @@ Sì:
 - LLM nativo sull'host → `http://localhost:11434` (o `1234` per LM Studio)
 - LLM in container Docker → usa il **nome del servizio** (`http://ollama:11434` o `http://llama-cpp:8080`)
 - LLM sull'host, app in Docker → `http://host.docker.internal:11434`
+
+**Posso fare il backup anche con l'installazione one-liner?**
+Sì. L'installazione one-liner usa lo stesso volume Docker `spendify_data`. → [Guida database](database.md)
+
+**Posso spostare i dati su un altro computer?**
+Sì. → [Spostare il database](database.md#6--spostare-il-database-su-un-altro-computer)

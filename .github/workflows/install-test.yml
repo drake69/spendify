@@ -1,0 +1,59 @@
+name: Installer E2E test
+
+# Runs after the Docker image has been published to GHCR.
+# Tests the full install.sh flow: pull image → start container → health check.
+
+on:
+  workflow_run:
+    workflows: ["Publish Docker image → GHCR"]
+    types: [completed]
+    branches: [main]
+
+  # Also triggerable manually for debugging
+  workflow_dispatch:
+
+jobs:
+  install-sh:
+    name: install.sh end-to-end (Ubuntu)
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Checkout (to get install.sh from this commit)
+        uses: actions/checkout@v4
+
+      - name: Run install.sh (non-interactive, skip browser open)
+        run: bash install.sh
+        env:
+          # Override install dir to a CI temp folder
+          SPENDIFY_INSTALL_DIR: "${{ runner.temp }}/spendify-install-test"
+          # Prevent install.sh from trying to open the browser (no display in CI)
+          DISPLAY: ""
+
+      - name: Verify health endpoint
+        run: |
+          echo "Waiting for Streamlit health endpoint..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8501/_stcore/health > /dev/null 2>&1; then
+              echo "✅ App healthy after ${i}×2s"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "❌ App did not become healthy in 60s"
+          docker compose -C "${{ runner.temp }}/spendify-install-test" logs
+          exit 1
+
+      - name: Verify main page responds
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8501)
+          echo "Main page status: $STATUS"
+          [ "$STATUS" = "200" ] || exit 1
+
+      - name: Teardown
+        if: always()
+        run: |
+          INSTALL_DIR="${{ runner.temp }}/spendify-install-test"
+          if [ -f "$INSTALL_DIR/docker-compose.yml" ]; then
+            docker compose -C "$INSTALL_DIR" down -v
+          fi

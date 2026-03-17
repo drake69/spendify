@@ -13,6 +13,8 @@ jobs:
   sync:
     name: Sync docs/ to GitHub Wiki
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repo
@@ -32,9 +34,22 @@ jobs:
             ["docs/guida_utente.md"]="Guida-Utente.md"
             ["docs/configurazione.md"]="Configurazione.md"
             ["docs/deployment.md"]="Deployment.md"
+            ["docs/installazione.md"]="Installazione.md"
+            ["docs/database.md"]="Database.md"
             ["docs/pipeline.md"]="Pipeline.md"
             ["docs/deterministic_rules.md"]="Regole-Deterministiche.md"
             ["docs/deterministic_tools.md"]="Strumenti-Deterministici.md"
+            ["docs/progetto.en.md"]="Project.md"
+            ["docs/reference_guide.en.md"]="Reference-Guide-EN.md"
+            ["docs/guida_utente.en.md"]="User-Guide.md"
+            ["docs/configurazione.en.md"]="Configuration.md"
+            ["docs/deployment.en.md"]="Deployment-EN.md"
+            ["docs/installazione.en.md"]="Installation.md"
+            ["docs/database.en.md"]="Database-EN.md"
+            ["docs/pipeline.en.md"]="Pipeline-EN.md"
+            ["docs/deterministic_rules.en.md"]="Deterministic-Rules.md"
+            ["docs/deterministic_tools.en.md"]="Deterministic-Tools.md"
+            ["docs/landing_page.en.md"]="Overview.md"
           )
 
           for src in "${!MAP[@]}"; do
