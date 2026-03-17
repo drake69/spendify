@@ -43,8 +43,52 @@ services:
       retries: 3
       start_period: 20s
 
+  # ── LLM locale — Ollama (Linux/server con GPU NVIDIA) ────────────────────────
+  # Avvio con Ollama: docker compose --profile ollama up -d
+  # Poi scarica il modello (una tantum): docker compose exec ollama ollama pull gemma3:12b
+  ollama:
+    image: ollama/ollama:latest
+    container_name: spendify_ollama
+    restart: unless-stopped
+    profiles: ["ollama"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama   # modelli persistiti nel volume
+    # GPU NVIDIA: decommenta le righe seguenti (richiede nvidia-container-toolkit)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  # ── LLM locale — llama.cpp server (Windows/Mac CPU, compatibile OpenAI) ──────
+  # 1. Scarica il modello GGUF e mettilo nella cartella ./models/
+  #    es. https://huggingface.co/bartowski/gemma-3-4b-it-GGUF (raccomandato per CPU)
+  # 2. Imposta LLAMA_MODEL nel .env con il nome del file GGUF
+  # 3. Avvio: docker compose --profile llama-cpp up -d
+  llama-cpp:
+    image: ghcr.io/ggerganov/llama.cpp:server
+    container_name: spendify_llama
+    restart: unless-stopped
+    profiles: ["llama-cpp"]
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./models:/models              # cartella locale ./models/ → /models nel container
+    command: >
+      -m /models/${LLAMA_MODEL:-gemma-3-4b-it-Q4_K_M.gguf}
+      --port 8080
+      --host 0.0.0.0
+      --ctx-size 4096
+      --threads 4
+
 volumes:
   spendify_data:
     driver: local
   spendify_logs:
+    driver: local
+  ollama_models:
     driver: local
