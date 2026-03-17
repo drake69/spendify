@@ -86,3 +86,38 @@ jobs:
       - name: Teardown
         if: always()
         run: docker compose down -v
+
+  installer-validate:
+    name: Installer validation (syntax + compose)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate install.sh syntax
+        run: bash -n install.sh && echo "✅ install.sh syntax OK"
+
+      - name: Validate docker-compose.release.yml
+        run: |
+          # docker compose config validates YAML syntax, anchors and service references
+          # We stub the image pull by overriding image to the locally built one
+          docker compose -f docker-compose.release.yml config --quiet
+          echo "✅ docker-compose.release.yml is valid"
+
+      - name: Validate install.ps1 syntax (PowerShell)
+        run: |
+          # pwsh is available on ubuntu-latest GitHub runners
+          pwsh -NoProfile -Command "
+            \$err = \$null
+            \$null = [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path install.ps1),
+              [ref]\$null,
+              [ref]\$err
+            )
+            if (\$err.Count -gt 0) {
+              \$err | ForEach-Object { Write-Error \$_.Message }
+              exit 1
+            }
+            Write-Host '✅ install.ps1 syntax OK'
+          "
