@@ -11,11 +11,10 @@
 1. [Installazione rapida (one-liner Docker)](#1--installazione-rapida-one-liner-docker)
 2. [Installazione Docker Compose da repository](#2--installazione-docker-compose-da-repository)
 3. [Installazione nativa (sviluppo / Mac)](#3--installazione-nativa-sviluppo--mac)
-4. [Configurazione `.env`](#4--configurazione-env)
-5. [Aggiornare l'applicazione](#5--aggiornare-lapplicazione)
-6. [Comandi operativi Docker](#6--comandi-operativi-docker)
-7. [Risoluzione problemi](#7--risoluzione-problemi)
-8. [Disinstallazione](#8--disinstallazione)
+4. [Aggiornare l'applicazione](#4--aggiornare-lapplicazione)
+5. [Comandi operativi Docker](#5--comandi-operativi-docker)
+6. [Risoluzione problemi](#6--risoluzione-problemi)
+7. [Disinstallazione](#7--disinstallazione)
 
 ---
 
@@ -127,32 +126,7 @@ L'app è disponibile su **http://localhost:8501**
 
 ---
 
-## 4 — Configurazione `.env`
-
-Il file `.env` contiene solo due parametri. Tutte le altre impostazioni (LLM, API key, formato date, lingua, ecc.) si configurano dall'interfaccia nella pagina **⚙️ Impostazioni**.
-
-```bash
-cp .env.example .env
-```
-
-| Parametro | Descrizione | Default |
-|-----------|-------------|---------|
-| `SPENDIFY_DB` | URI del database SQLite | `sqlite:///ledger.db` |
-| `TAXONOMY_PATH` | Percorso del file YAML delle categorie | `taxonomy.yaml` |
-
-```dotenv
-SPENDIFY_DB=sqlite:///ledger.db
-TAXONOMY_PATH=taxonomy.yaml
-
-# Solo per il profilo llama-cpp:
-# LLAMA_MODEL=gemma-3-4b-it-Q4_K_M.gguf
-```
-
-> Non aggiungere mai `.env` a git — verificare che `.gitignore` contenga la riga `.env`.
-
----
-
-## 5 — Aggiornare l'applicazione
+## 4 — Aggiornare l'applicazione
 
 ### One-liner Docker
 
@@ -182,7 +156,7 @@ uv run streamlit run app.py
 
 ---
 
-## 6 — Comandi operativi Docker
+## 5 — Comandi operativi Docker
 
 ```bash
 # Stato container
@@ -208,7 +182,7 @@ Per l'installazione one-liner aggiungere `--project-directory ~/spendify` a ogni
 
 ---
 
-## 7 — Risoluzione problemi
+## 6 — Risoluzione problemi
 
 ### L'app non si avvia / porta 8501 occupata
 
@@ -250,7 +224,7 @@ Errori tipo `database is locked`, corruzione del file, ripristino da backup → 
 
 ---
 
-## 8 — Disinstallazione
+## 7 — Disinstallazione
 
 Gli script di disinstallazione rimuovono interattivamente tutti i componenti Spendify. **Nessun dato viene cancellato senza conferma esplicita.**
 

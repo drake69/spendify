@@ -118,7 +118,7 @@ cd spendify
 
 ```bash
 cp .env.example .env
-# Nessuna modifica necessaria per l'installazione base
+# I valori di default vanno bene — non è necessario modificare nulla
 ```
 
 ### Step 3 — (Opzionale) Abilita GPU NVIDIA

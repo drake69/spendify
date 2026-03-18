@@ -11,11 +11,10 @@
 1. [Quick installation (one-liner Docker)](#1--quick-installation-one-liner-docker)
 2. [Docker Compose installation from repository](#2--docker-compose-installation-from-repository)
 3. [Native installation (development / Mac)](#3--native-installation-development--mac)
-4. [`.env` configuration](#4--env-configuration)
-5. [Updating the application](#5--updating-the-application)
-6. [Docker operational commands](#6--docker-operational-commands)
-7. [Troubleshooting](#7--troubleshooting)
-8. [Uninstall](#8--uninstall)
+4. [Updating the application](#4--updating-the-application)
+5. [Docker operational commands](#5--docker-operational-commands)
+6. [Troubleshooting](#6--troubleshooting)
+7. [Uninstall](#7--uninstall)
 
 ---
 
@@ -127,32 +126,7 @@ The app is available at **http://localhost:8501**
 
 ---
 
-## 4 — `.env` configuration
-
-The `.env` file contains only two parameters. All other settings (LLM, API keys, date format, language, etc.) are configured from the interface on the **⚙️ Settings** page.
-
-```bash
-cp .env.example .env
-```
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `SPENDIFY_DB` | SQLite database URI | `sqlite:///ledger.db` |
-| `TAXONOMY_PATH` | Path to the categories YAML file | `taxonomy.yaml` |
-
-```dotenv
-SPENDIFY_DB=sqlite:///ledger.db
-TAXONOMY_PATH=taxonomy.yaml
-
-# Only for the llama-cpp profile:
-# LLAMA_MODEL=gemma-3-4b-it-Q4_K_M.gguf
-```
-
-> Never add `.env` to git — verify that `.gitignore` contains the line `.env`.
-
----
-
-## 5 — Updating the application
+## 4 — Updating the application
 
 ### One-liner Docker
 
@@ -182,7 +156,7 @@ uv run streamlit run app.py
 
 ---
 
-## 6 — Docker operational commands
+## 5 — Docker operational commands
 
 ```bash
 # Container status
@@ -208,7 +182,7 @@ For the one-liner installation, add `--project-directory ~/spendify` to every co
 
 ---
 
-## 7 — Troubleshooting
+## 6 — Troubleshooting
 
 ### The app does not start / port 8501 is busy
 
@@ -250,7 +224,7 @@ Errors such as `database is locked`, file corruption, restore from backup → [d
 
 ---
 
-## 8 — Uninstall
+## 7 — Uninstall
 
 The uninstall scripts interactively remove all Spendify components. **No data is deleted without explicit confirmation.**
 

@@ -56,7 +56,7 @@ uv sync
 
 ```bash
 cp .env.example .env
-# The .env file requires no changes for a standard local installation
+# Default values work as-is — no changes needed
 ```
 
 ### Step 5 — Install Ollama and download the model
@@ -118,7 +118,7 @@ cd spendify
 
 ```bash
 cp .env.example .env
-# No changes needed for the base installation
+# Default values work as-is — no changes needed
 ```
 
 ### Step 3 — (Optional) Enable NVIDIA GPU
