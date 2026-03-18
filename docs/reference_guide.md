@@ -285,11 +285,13 @@ Le migrazioni dello schema sono idempotenti: vengono eseguite automaticamente ad
 ## Avvio rapido
 
 ```bash
-# Prima installazione
-./setup.sh          # macOS/Linux
-setup.bat           # Windows
+# Installazione Docker one-liner (Mac/Linux)
+curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/install.sh | bash
 
-# Avvio
+# Installazione Docker one-liner (Windows PowerShell)
+# irm https://raw.githubusercontent.com/drake69/spendify/main/installer/install.ps1 | iex
+
+# Avvio sviluppo (build da sorgente)
 uv run streamlit run app.py
 ```
 

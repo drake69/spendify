@@ -968,7 +968,7 @@
           <button class="copy-btn" onclick="copyCode(this, 'mac')">Copia</button>
         </div>
         <div class="code-body">
-          <div><span class="p">$ </span><span class="c">curl</span><span class="a"> -fsSL https://raw.githubusercontent.com/drake69/spendify/main/install.sh | bash</span></div>
+          <div><span class="p">$ </span><span class="c">curl</span><span class="a"> -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/install.sh | bash</span></div>
         </div>
       </div>
     </div>
@@ -984,7 +984,7 @@
           <button class="copy-btn" onclick="copyCode(this, 'win')">Copia</button>
         </div>
         <div class="code-body">
-          <div><span class="p">PS&gt; </span><span class="c">irm</span><span class="a"> https://raw.githubusercontent.com/drake69/spendify/main/install.ps1 | iex</span></div>
+          <div><span class="p">PS&gt; </span><span class="c">irm</span><span class="a"> https://raw.githubusercontent.com/drake69/spendify/main/installer/install.ps1 | iex</span></div>
         </div>
       </div>
     </div>
@@ -1174,8 +1174,8 @@
 
   /* Copy install command */
   const installCmds = {
-    mac: 'curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/install.sh | bash',
-    win: 'irm https://raw.githubusercontent.com/drake69/spendify/main/install.ps1 | iex'
+    mac: 'curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/install.sh | bash',
+    win: 'irm https://raw.githubusercontent.com/drake69/spendify/main/installer/install.ps1 | iex'
   };
   function copyCode(btn, os) {
     navigator.clipboard.writeText(installCmds[os] || installCmds.mac).then(() => {
