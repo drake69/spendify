@@ -247,15 +247,16 @@ uv sync
 
 ```bash
 cp .env.example .env
+# No edits needed for a standard local install — DB path and taxonomy path are already set
 ```
 
-### 4. Pull the local LLM model
+### 4. Pull the local LLM model (optional)
 
 ```bash
-ollama pull gemma3:12b
+ollama pull gemma3:12b   # ~8 GB — skip if you plan to use OpenAI/Anthropic
 ```
 
-> Keep Ollama running (`ollama serve`) while using the app.
+> Keep Ollama running (`ollama serve`) while using the app. LLM backend, model and API keys are configured from **⚙️ Settings** in the UI — not in `.env`.
 
 ---
 

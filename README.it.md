@@ -247,15 +247,16 @@ uv sync
 
 ```bash
 cp .env.example .env
+# Nessuna modifica necessaria per un'installazione locale standard — percorsi già impostati
 ```
 
-### 4. Scarica il modello LLM locale
+### 4. Scarica il modello LLM locale (opzionale)
 
 ```bash
-ollama pull gemma3:12b
+ollama pull gemma3:12b   # ~8 GB — salta se hai intenzione di usare OpenAI/Anthropic
 ```
 
-> Mantieni Ollama in esecuzione (`ollama serve`) durante l'uso dell'app.
+> Mantieni Ollama in esecuzione (`ollama serve`) durante l'uso dell'app. Backend LLM, modello e API key si configurano dalla pagina **⚙️ Impostazioni** — non nel `.env`.
 
 ---
 
