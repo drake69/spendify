@@ -41,7 +41,7 @@ jobs:
             sleep 2
           done
           echo "❌ App did not become healthy in 60s"
-          docker compose -C "${{ runner.temp }}/spendify-install-test" logs
+          docker compose --project-directory "${{ runner.temp }}/spendify-install-test" logs
           exit 1
 
       - name: Verify main page responds
@@ -55,5 +55,5 @@ jobs:
         run: |
           INSTALL_DIR="${{ runner.temp }}/spendify-install-test"
           if [ -f "$INSTALL_DIR/docker-compose.yml" ]; then
-            docker compose -C "$INSTALL_DIR" down -v
+            docker compose --project-directory "$INSTALL_DIR" down -v
           fi
