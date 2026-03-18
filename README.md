@@ -206,6 +206,8 @@ The script downloads the pre-built image from GitHub Container Registry, starts 
 
 ### Developer install (native, Mac recommended)
 
+> Full setup instructions, coding conventions, priority system and PR workflow → **[CONTRIBUTING.md](CONTRIBUTING.md)**
+
 ### Prerequisites
 
 - **Python 3.13+**

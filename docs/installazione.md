@@ -10,9 +10,7 @@
 
 ## Come funziona la configurazione LLM
 
-> **Il backend LLM, l'URL del server, le API key e il modello si configurano dall'app stessa** nella pagina ⚙️ **Impostazioni** — non nel file `.env`.
->
-> Il file `.env` contiene solo il percorso del database e della tassonomia.
+> **Il backend LLM, l'URL del server, le API key e il modello si configurano dall'app stessa** nella pagina ⚙️ **Impostazioni** — non in file di configurazione esterni.
 
 La configurazione viene salvata nel database (`user_settings`) e persiste tra i riavvii. Al primo avvio l'app usa Ollama su `localhost:11434` come default.
 
