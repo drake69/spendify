@@ -66,10 +66,10 @@ jobs:
         run: cp .env.example .env
 
       - name: Build Docker image
-        run: docker compose build --no-cache
+        run: docker compose -f docker/docker-compose.yml build --no-cache
 
       - name: Start container
-        run: docker compose up -d
+        run: docker compose -f docker/docker-compose.yml up -d
 
       - name: Wait for healthcheck to pass (max 60s)
         run: |
@@ -82,18 +82,18 @@ jobs:
             sleep 2
           done
           echo "❌ App did not become healthy in time"
-          docker compose logs
+          docker compose -f docker/docker-compose.yml logs
           exit 1
 
       - name: Smoke test — verify health endpoint
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8501/_stcore/health)
           echo "Health endpoint status: $STATUS"
-          [ "$STATUS" = "200" ] || (docker compose logs && exit 1)
+          [ "$STATUS" = "200" ] || (docker compose -f docker/docker-compose.yml logs && exit 1)
 
       - name: Teardown
         if: always()
-        run: docker compose down -v
+        run: docker compose -f docker/docker-compose.yml down -v
 
   installer-validate:
     name: Installer validation (syntax + compose)
