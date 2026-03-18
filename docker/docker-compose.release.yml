@@ -1,0 +1,91 @@
+# ── Spendify — Avvio rapido (immagine pre-compilata) ─────────────────────────
+#
+# Non serve git clone né build locale.
+# Usa l'immagine pubblicata automaticamente su GitHub Container Registry.
+#
+# SENZA AI LOCALE (usa API key esterna — OpenAI / Anthropic):
+#   docker compose up -d
+#
+# CON AI LOCALE (Ollama + gemma3:12b — nessuna API key, ~8 GB disco):
+#   docker compose --profile ollama up -d
+#   → Il modello viene scaricato automaticamente al primo avvio (~10-15 min)
+#   → Configurare in app: Impostazioni → Backend LLM → Ollama → http://ollama:11434
+#
+# AGGIORNAMENTO:
+#   docker compose [--profile ollama] pull
+#   docker compose [--profile ollama] up -d
+#
+# STOP:
+#   docker compose [--profile ollama] down
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: spendify
+
+services:
+  spendify:
+    image: ghcr.io/drake69/spendify:latest
+    container_name: spendify_app
+    restart: unless-stopped
+
+    ports:
+      - "8501:8501"
+
+    environment:
+      SPENDIFY_DB: "sqlite:////app/data/ledger.db"
+      TAXONOMY_PATH: "/app/taxonomy.yaml"
+
+    volumes:
+      - spendify_data:/app/data
+      - spendify_logs:/app/logs
+
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ── LLM locale — Ollama (attivato con --profile ollama) ──────────────────────
+  # Server Ollama: rimane sempre in esecuzione dopo il primo avvio.
+  ollama:
+    image: ollama/ollama:latest
+    container_name: spendify_ollama
+    restart: unless-stopped
+    profiles: ["ollama"]
+    volumes:
+      - ollama_models:/root/.ollama   # modelli persistiti nel volume (non ri-scaricati)
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18          # attende fino a 3 minuti che ollama sia pronto
+      start_period: 30s
+
+  # Scarica gemma3:12b la prima volta (poi esce; se già presente lo salta).
+  ollama-init:
+    image: ollama/ollama:latest
+    container_name: spendify_ollama_init
+    restart: on-failure
+    profiles: ["ollama"]
+    environment:
+      OLLAMA_HOST: "http://ollama:11434"
+    # Controlla se il modello è già presente prima di scaricarlo
+    command: >
+      /bin/sh -c
+      "ollama list | grep -q 'gemma3:12b'
+       && echo 'gemma3:12b già presente, skip.'
+       || (echo 'Download gemma3:12b (~8 GB)...' && ollama pull gemma3:12b)"
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ollama_models:/root/.ollama
+
+volumes:
+  spendify_data:
+    driver: local
+  spendify_logs:
+    driver: local
+  ollama_models:
+    driver: local

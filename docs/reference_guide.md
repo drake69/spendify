@@ -124,6 +124,7 @@ Un giroconto è un trasferimento tra due conti tuoi (es. "Bonifico a Conto Depos
 | Backend | Dove gira | Privacy | Configurazione |
 |---|---|---|---|
 | **Ollama** | Locale (default) | Totale — nessun dato lascia il tuo PC | Richiede Ollama installato e modello scaricato |
+| **llama.cpp** | Locale (container Docker) | Totale — nessun dato lascia il tuo PC | File GGUF in `models/`, URL `http://llama-cpp:8080/v1` |
 | **OpenAI** | Remoto | PII redatte prima dell'invio | API key in Impostazioni |
 | **Claude** | Remoto | PII redatte prima dell'invio | API key in Impostazioni |
 
@@ -285,11 +286,13 @@ Le migrazioni dello schema sono idempotenti: vengono eseguite automaticamente ad
 ## Avvio rapido
 
 ```bash
-# Prima installazione
-./setup.sh          # macOS/Linux
-setup.bat           # Windows
+# Installazione Docker one-liner (Mac/Linux)
+curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/install.sh | bash
 
-# Avvio
+# Installazione Docker one-liner (Windows PowerShell)
+# irm https://raw.githubusercontent.com/drake69/spendify/main/installer/install.ps1 | iex
+
+# Avvio sviluppo (build da sorgente)
 uv run streamlit run app.py
 ```
 

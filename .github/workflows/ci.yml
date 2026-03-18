@@ -66,10 +66,10 @@ jobs:
         run: cp .env.example .env
 
       - name: Build Docker image
-        run: docker compose build --no-cache
+        run: docker compose -f docker/docker-compose.yml build --no-cache
 
       - name: Start container
-        run: docker compose up -d
+        run: docker compose -f docker/docker-compose.yml up -d
 
       - name: Wait for healthcheck to pass (max 60s)
         run: |
@@ -82,18 +82,18 @@ jobs:
             sleep 2
           done
           echo "❌ App did not become healthy in time"
-          docker compose logs
+          docker compose -f docker/docker-compose.yml logs
           exit 1
 
       - name: Smoke test — verify health endpoint
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8501/_stcore/health)
           echo "Health endpoint status: $STATUS"
-          [ "$STATUS" = "200" ] || (docker compose logs && exit 1)
+          [ "$STATUS" = "200" ] || (docker compose -f docker/docker-compose.yml logs && exit 1)
 
       - name: Teardown
         if: always()
-        run: docker compose down -v
+        run: docker compose -f docker/docker-compose.yml down -v
 
   installer-validate:
     name: Installer validation (syntax + compose)
@@ -104,13 +104,15 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Validate install.sh syntax
-        run: bash -n install.sh && echo "✅ install.sh syntax OK"
+        run: bash -n installer/install.sh && echo "✅ install.sh syntax OK"
+
+      - name: Validate uninstall.sh syntax
+        run: bash -n installer/uninstall.sh && echo "✅ uninstall.sh syntax OK"
 
       - name: Validate docker-compose.release.yml
         run: |
           # docker compose config validates YAML syntax, anchors and service references
-          # We stub the image pull by overriding image to the locally built one
-          docker compose -f docker-compose.release.yml config --quiet
+          docker compose -f docker/docker-compose.release.yml config --quiet
           echo "✅ docker-compose.release.yml is valid"
 
       - name: Validate install.ps1 syntax (PowerShell)
@@ -119,7 +121,7 @@ jobs:
           pwsh -NoProfile -Command "
             \$err = \$null
             \$null = [System.Management.Automation.Language.Parser]::ParseFile(
-              (Resolve-Path install.ps1),
+              (Resolve-Path installer/install.ps1),
               [ref]\$null,
               [ref]\$err
             )
@@ -128,4 +130,20 @@ jobs:
               exit 1
             }
             Write-Host '✅ install.ps1 syntax OK'
+          "
+
+      - name: Validate uninstall.ps1 syntax (PowerShell)
+        run: |
+          pwsh -NoProfile -Command "
+            \$err = \$null
+            \$null = [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path installer/uninstall.ps1),
+              [ref]\$null,
+              [ref]\$err
+            )
+            if (\$err.Count -gt 0) {
+              \$err | ForEach-Object { Write-Error \$_.Message }
+              exit 1
+            }
+            Write-Host '✅ uninstall.ps1 syntax OK'
           "
