@@ -1,0 +1,137 @@
+# ── Spendify — Disinstallatore (Windows PowerShell) ──────────────────────────
+# Uso:
+#   irm https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.ps1 | iex
+#   oppure: powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\spendify\uninstall.ps1"
+# ─────────────────────────────────────────────────────────────────────────────
+
+$InstallDir = if ($env:SPENDIFY_INSTALL_DIR) { $env:SPENDIFY_INSTALL_DIR } else { "$env:USERPROFILE\spendify" }
+
+function Info    { param($msg) Write-Host "[spendify] $msg" -ForegroundColor Cyan }
+function Success { param($msg) Write-Host "✅ $msg" -ForegroundColor Green }
+function Warn    { param($msg) Write-Host "⚠️  $msg" -ForegroundColor Yellow }
+
+function Ask {
+    param([string]$Question)
+    $r = Read-Host "  $Question [s/N]"
+    return ($r -match '^(s|si|y|yes)$')
+}
+
+Write-Host ""
+Write-Host "╔══════════════════════════════════════╗" -ForegroundColor White
+Write-Host "║      Spendify — Disinstallatore      ║" -ForegroundColor White
+Write-Host "╚══════════════════════════════════════╝" -ForegroundColor White
+Write-Host ""
+
+# ── 1. Verifica Docker ────────────────────────────────────────────────────────
+$DockerOk = $false
+if (Get-Command docker -ErrorAction SilentlyContinue) {
+    try {
+        docker info 2>&1 | Out-Null
+        $DockerOk = $true
+    } catch {
+        Warn "Docker non è in esecuzione — salto lo stop dei container."
+    }
+} else {
+    Warn "Docker non trovato — salto lo stop dei container."
+}
+
+# ── 2. Verifica cartella installazione ───────────────────────────────────────
+$ComposeFound = $false
+if (Test-Path "$InstallDir\docker-compose.yml") {
+    Info "Installazione trovata in: $InstallDir"
+    $ComposeFound = $true
+} else {
+    Warn "Nessuna installazione trovata in: $InstallDir"
+    Warn "Imposta SPENDIFY_INSTALL_DIR se hai installato in una cartella diversa."
+}
+
+# ── 3. Scelte utente ──────────────────────────────────────────────────────────
+Write-Host ""
+Write-Host "Cosa vuoi rimuovere?" -ForegroundColor White
+Write-Host ""
+
+$RemoveDb     = Ask "Eliminare il database delle transazioni? (i tuoi dati finanziari)"
+$RemoveOllama = Ask "Eliminare i modelli Ollama (~8 GB su disco)?"
+$RemoveDir    = Ask "Eliminare la cartella di installazione ($InstallDir)?"
+$RemoveDocker = Ask "Mostrare istruzioni per rimuovere Docker Desktop?"
+
+Write-Host ""
+
+# ── 4. Ferma e rimuovi i container ───────────────────────────────────────────
+if ($ComposeFound -and $DockerOk) {
+    Info "Fermo i container Spendify..."
+
+    $ProfileArgs = @()
+    $volumes = docker volume ls --format "{{.Name}}" 2>$null
+    if ($volumes -match "spendify_ollama_models") {
+        $ProfileArgs = @("--profile", "ollama")
+    }
+
+    docker compose --project-directory $InstallDir @ProfileArgs down 2>$null
+    Success "Container fermati e rimossi"
+}
+
+# ── 5. Rimuovi volumi selezionati ─────────────────────────────────────────────
+if ($DockerOk) {
+    if ($RemoveDb) {
+        Info "Rimuovo il database (volume spendify_data e spendify_logs)..."
+        try {
+            docker volume rm spendify_spendify_data 2>$null
+            Success "Volume spendify_data rimosso"
+        } catch {
+            Warn "Volume spendify_data non trovato (già rimosso?)"
+        }
+        try {
+            docker volume rm spendify_spendify_logs 2>$null
+            Success "Volume spendify_logs rimosso"
+        } catch {
+            Warn "Volume spendify_logs non trovato"
+        }
+    }
+
+    if ($RemoveOllama) {
+        Info "Rimuovo i modelli Ollama (volume ollama_models, ~8 GB)..."
+        try {
+            docker volume rm spendify_ollama_models 2>$null
+            Success "Volume ollama_models rimosso"
+        } catch {
+            Warn "Volume ollama_models non trovato (mai installato?)"
+        }
+    }
+}
+
+# ── 6. Rimuovi la cartella di installazione ───────────────────────────────────
+if ($RemoveDir -and (Test-Path $InstallDir)) {
+    Info "Rimuovo la cartella $InstallDir..."
+    Remove-Item -Recurse -Force $InstallDir
+    Success "Cartella rimossa"
+}
+
+# ── 7. Istruzioni rimozione Docker ───────────────────────────────────────────
+if ($RemoveDocker) {
+    Write-Host ""
+    Write-Host "── Come rimuovere Docker Desktop ──────────────────────────────" -ForegroundColor White
+    Write-Host "  Windows:"
+    Write-Host "  1. Pannello di Controllo → Programmi → Disinstalla programma"
+    Write-Host "     → seleziona Docker Desktop → Disinstalla"
+    Write-Host "  oppure da PowerShell (admin):"
+    Write-Host "     winget uninstall Docker.DockerDesktop"
+    Write-Host ""
+    Write-Host "  Pulizia residui (opzionale):"
+    Write-Host "     Remove-Item -Recurse -Force `"`$env:APPDATA\Docker`""
+    Write-Host "     Remove-Item -Recurse -Force `"`$env:LOCALAPPDATA\Docker`""
+    Write-Host "     Remove-Item -Recurse -Force `"`$env:USERPROFILE\.docker`""
+    Write-Host ""
+}
+
+# ── 8. Riepilogo ──────────────────────────────────────────────────────────────
+Write-Host ""
+Write-Host "── Riepilogo ───────────────────────────────────────────────────" -ForegroundColor White
+if ($ComposeFound)  { Success "Container Spendify rimossi" }
+if ($RemoveDb)      { Success "Database transazioni rimosso" } else { Info "Database transazioni conservato" }
+if ($RemoveOllama)  { Success "Modelli Ollama rimossi" }       else { Info "Modelli Ollama conservati" }
+if ($RemoveDir)     { Success "Cartella $InstallDir rimossa" } else { Info "Cartella $InstallDir conservata" }
+Write-Host ""
+Write-Host "  Per reinstallare:"
+Write-Host "  irm https://raw.githubusercontent.com/drake69/spendify/main/installer/install.ps1 | iex" -ForegroundColor Cyan
+Write-Host ""

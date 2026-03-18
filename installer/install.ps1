@@ -100,9 +100,10 @@ if ($UseOllama) {
     Write-Host ""
 }
 $ProfileStr = if ($UseOllama) { " --profile ollama" } else { "" }
-Write-Host "  Fermare:    docker compose --project-directory $InstallDir$ProfileStr down"
-Write-Host "  Aggiornare: docker compose --project-directory $InstallDir$ProfileStr pull; docker compose --project-directory $InstallDir$ProfileStr up -d"
-Write-Host "  Log:        docker compose --project-directory $InstallDir logs -f"
+Write-Host "  Fermare:        docker compose --project-directory $InstallDir$ProfileStr down"
+Write-Host "  Aggiornare:     docker compose --project-directory $InstallDir$ProfileStr pull; docker compose --project-directory $InstallDir$ProfileStr up -d"
+Write-Host "  Log:            docker compose --project-directory $InstallDir logs -f"
+Write-Host "  Disinstallare:  irm https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.ps1 | iex" -ForegroundColor Cyan
 Write-Host ""
 
 Start-Process $AppUrl
