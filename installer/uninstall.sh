@@ -53,6 +53,7 @@ echo ""
 
 REMOVE_DB=$(ask    "Eliminare il database delle transazioni? (i tuoi dati finanziari)")
 REMOVE_OLLAMA=$(ask "Eliminare i modelli Ollama (~8 GB su disco)?")
+REMOVE_LLAMA=$(ask  "Eliminare l'immagine llama.cpp e la cartella models/ (file GGUF)?")
 REMOVE_IMAGES=$(ask "Eliminare le immagini Docker di Spendify/Ollama (libera ~500 MB–1 GB)?")
 REMOVE_DIR=$(ask   "Eliminare la cartella di installazione ($INSTALL_DIR)?")
 REMOVE_DOCKER=$(ask "Mostrare istruzioni per rimuovere Docker Desktop?")
@@ -63,10 +64,13 @@ echo ""
 if $COMPOSE_FOUND && $DOCKER_OK; then
     info "Fermo i container Spendify..."
 
-    # Profili possibili: base + ollama
+    # Profili possibili: base + ollama + llama-cpp
     PROFILE_ARGS=""
     if docker volume ls --format '{{.Name}}' 2>/dev/null | grep -q "spendify_ollama_models"; then
-        PROFILE_ARGS="--profile ollama"
+        PROFILE_ARGS="$PROFILE_ARGS --profile ollama"
+    fi
+    if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q "spendify_llama"; then
+        PROFILE_ARGS="$PROFILE_ARGS --profile llama-cpp"
     fi
 
     # shellcheck disable=SC2086
@@ -85,6 +89,25 @@ if $DOCKER_OK; then
     if $REMOVE_OLLAMA; then
         info "Rimuovo i modelli Ollama (volume ollama_models, ~8 GB)..."
         docker volume rm spendify_ollama_models 2>/dev/null && success "Volume ollama_models rimosso" || warn "Volume ollama_models non trovato (mai installato?)"
+    fi
+
+    if $REMOVE_LLAMA; then
+        info "Rimuovo l'immagine llama.cpp..."
+        if docker images --format '{{.Repository}}' | grep -q "ghcr.io/ggerganov/llama.cpp"; then
+            docker images --format '{{.Repository}}:{{.Tag}}' | grep "ghcr.io/ggerganov/llama.cpp" \
+                | xargs docker rmi 2>/dev/null && success "Immagine llama.cpp rimossa" || warn "Impossibile rimuovere l'immagine llama.cpp (in uso?)"
+        else
+            warn "Immagine llama.cpp non trovata"
+        fi
+        # Rimuovi la cartella models/ (file GGUF — possono essere molti GB)
+        MODELS_DIR="$INSTALL_DIR/models"
+        if [ -d "$MODELS_DIR" ]; then
+            info "Rimuovo la cartella models/ ($MODELS_DIR)..."
+            rm -rf "$MODELS_DIR"
+            success "Cartella models/ rimossa"
+        else
+            warn "Cartella models/ non trovata in $MODELS_DIR"
+        fi
     fi
 
     if $REMOVE_IMAGES; then
@@ -150,6 +173,7 @@ echo -e "${BOLD}── Riepilogo ───────────────�
 $COMPOSE_FOUND  && success "Container Spendify rimossi"       || true
 $REMOVE_DB      && success "Database transazioni rimosso"      || info "Database transazioni conservato"
 $REMOVE_OLLAMA  && success "Modelli Ollama rimossi"            || info "Modelli Ollama conservati"
+$REMOVE_LLAMA   && success "llama.cpp + models/ rimossi"       || info "llama.cpp conservato"
 $REMOVE_IMAGES  && success "Immagini Docker rimosse"           || info "Immagini Docker conservate"
 $REMOVE_DIR     && success "Cartella $INSTALL_DIR rimossa"     || info "Cartella $INSTALL_DIR conservata"
 echo ""
