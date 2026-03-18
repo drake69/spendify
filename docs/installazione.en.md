@@ -4,6 +4,7 @@
 > - **Mac** — native installation (recommended, maximum LLM performance)
 > - **Linux** — Docker with Ollama as a separate container
 > - **Windows** — Docker with llama.cpp server as a separate container
+> - **One-liner** — guided installation from scratch with Docker (AI option included, recommended for non-technical users)
 
 ---
 
@@ -146,7 +147,11 @@ Then in `docker-compose.yml` uncomment:
 docker compose --profile ollama up -d
 ```
 
+> **With the one-liner installation** (`install.sh`) the model is downloaded automatically — this step is not required. The command above is for repository-based installations.
+
 ### Step 5 — Download the model (once)
+
+> **Note:** if you used `install.sh` with local AI, the download is already running in the background via the `ollama-init` container. Check with: `docker compose --project-directory ~/spendify logs -f ollama-init`
 
 ```bash
 # ~8 GB download, a few minutes of waiting
@@ -308,3 +313,12 @@ Yes. The one-liner installation uses the same Docker volume `spendify_data`. →
 
 **Can I move my data to another computer?**
 Yes. → [Moving the database](database.en.md#6--moving-the-database-to-another-computer)
+
+**How do I completely uninstall Spendify?**
+Use the interactive uninstall script:
+```bash
+curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.sh | bash
+# Windows:
+# irm https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.ps1 | iex
+```
+The script asks separately whether to remove: database, Ollama models, llama.cpp image + GGUF files, Docker images, installation folder, and shows instructions for uninstalling Docker Desktop.

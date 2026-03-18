@@ -138,12 +138,12 @@ The only prerequisite is **[Docker Desktop](https://www.docker.com/products/dock
 
 **Mac / Linux:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/install.sh | bash
 ```
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/drake69/spendify/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/drake69/spendify/main/installer/install.ps1 | iex
 ```
 
 The script downloads the image from GitHub Container Registry, starts the container and opens the browser at `http://localhost:8501` automatically.

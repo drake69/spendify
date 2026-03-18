@@ -1,7 +1,7 @@
-# ── Spendify — Docker Compose ────────────────────────────────────────────────
-# Avvio:   docker compose up -d
-# Stop:    docker compose down
-# Logs:    docker compose logs -f spendify
+# ── Spendify — Docker Compose (sviluppo — build da sorgente) ─────────────────
+# Avvio:   docker compose -f docker/docker-compose.yml up -d
+# Stop:    docker compose -f docker/docker-compose.yml down
+# Logs:    docker compose -f docker/docker-compose.yml logs -f spendify
 # Backup:  vedi docs/deployment.md
 
 name: spendify
@@ -10,8 +10,8 @@ services:
 
   spendify:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: docker/Dockerfile
     image: spendify:latest
     container_name: spendify_app
     restart: unless-stopped
@@ -20,7 +20,7 @@ services:
       - "8501:8501"           # cambia il primo numero per usare una porta diversa sull'host
 
     env_file:
-      - .env                   # copia .env.example → .env e compila i valori
+      - ../.env                # copia .env.example → .env e compila i valori
 
     environment:
       # Override del percorso DB → usa il volume /app/data per la persistenza
@@ -33,7 +33,7 @@ services:
       # Log applicazione
       - spendify_logs:/app/logs
       # taxonomy.yaml montato read-only dall'host (per aggiornamenti senza rebuild)
-      - ./taxonomy.yaml:/app/taxonomy.yaml:ro
+      - ../taxonomy.yaml:/app/taxonomy.yaml:ro
 
     healthcheck:
       test: ["CMD", "uv", "run", "python", "-c",
@@ -77,7 +77,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./models:/models              # cartella locale ./models/ → /models nel container
+      - ../models:/models             # cartella locale ./models/ → /models nel container
     command: >
       -m /models/${LLAMA_MODEL:-gemma-3-4b-it-Q4_K_M.gguf}
       --port 8080

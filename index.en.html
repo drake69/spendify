@@ -968,7 +968,7 @@
           <button class="copy-btn" onclick="copyCode(this, 'mac')">Copy</button>
         </div>
         <div class="code-body">
-          <div><span class="p">$ </span><span class="c">curl</span><span class="a"> -fsSL https://raw.githubusercontent.com/drake69/spendify/main/install.sh | bash</span></div>
+          <div><span class="p">$ </span><span class="c">curl</span><span class="a"> -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/install.sh | bash</span></div>
         </div>
       </div>
     </div>
@@ -984,19 +984,21 @@
           <button class="copy-btn" onclick="copyCode(this, 'win')">Copy</button>
         </div>
         <div class="code-body">
-          <div><span class="p">PS&gt; </span><span class="c">irm</span><span class="a"> https://raw.githubusercontent.com/drake69/spendify/main/install.ps1 | iex</span></div>
+          <div><span class="p">PS&gt; </span><span class="c">irm</span><span class="a"> https://raw.githubusercontent.com/drake69/spendify/main/installer/install.ps1 | iex</span></div>
         </div>
       </div>
     </div>
 
     <p class="install-post">
       The script pulls the image from <strong>GitHub Container Registry</strong>, starts the container
-      and opens the browser at <strong>http://localhost:8501</strong> automatically.
+      and opens the browser at <strong>http://localhost:8501</strong> automatically.<br>
+      <strong>Optional local AI:</strong> the installer asks whether to add Ollama with <code>gemma3:12b</code> — downloaded in background (~8 GB). Works on Apple Silicon (arm64) and amd64.<br>
+      <small>To uninstall: <code>curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.sh | bash</code></small>
     </p>
 
     <p class="install-dev-link">
       Developer or native install? →
-      <a href="https://github.com/drake69/spendify/wiki/Installazione" target="_blank">Full guide (Mac native · Linux Docker · Windows llama.cpp)</a>
+      <a href="https://github.com/drake69/spendify/blob/main/docs/installazione.en.md" target="_blank">Full guide (Mac native · Linux Docker · Windows llama.cpp)</a>
     </p>
   </div>
 </section>
@@ -1174,8 +1176,8 @@
 
   /* Copy install command */
   const installCmds = {
-    mac: 'curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/install.sh | bash',
-    win: 'irm https://raw.githubusercontent.com/drake69/spendify/main/install.ps1 | iex'
+    mac: 'curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/install.sh | bash',
+    win: 'irm https://raw.githubusercontent.com/drake69/spendify/main/installer/install.ps1 | iex'
   };
   function copyCode(btn, os) {
     navigator.clipboard.writeText(installCmds[os] || installCmds.mac).then(() => {
