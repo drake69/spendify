@@ -224,6 +224,8 @@ Lo script scarica l'immagine pre-compilata da GitHub Container Registry, avvia i
 
 ### Installazione developer (nativa, consigliata su Mac)
 
+> Setup completo, convenzioni di codice, sistema di priorità e flusso PR → **[CONTRIBUTING.md](CONTRIBUTING.md)**
+
 ### Prerequisiti
 
 - **Python 3.13+**
