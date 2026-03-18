@@ -53,6 +53,7 @@ echo ""
 
 REMOVE_DB=$(ask    "Eliminare il database delle transazioni? (i tuoi dati finanziari)")
 REMOVE_OLLAMA=$(ask "Eliminare i modelli Ollama (~8 GB su disco)?")
+REMOVE_IMAGES=$(ask "Eliminare le immagini Docker di Spendify/Ollama (libera ~500 MB–1 GB)?")
 REMOVE_DIR=$(ask   "Eliminare la cartella di installazione ($INSTALL_DIR)?")
 REMOVE_DOCKER=$(ask "Mostrare istruzioni per rimuovere Docker Desktop?")
 
@@ -84,6 +85,25 @@ if $DOCKER_OK; then
     if $REMOVE_OLLAMA; then
         info "Rimuovo i modelli Ollama (volume ollama_models, ~8 GB)..."
         docker volume rm spendify_ollama_models 2>/dev/null && success "Volume ollama_models rimosso" || warn "Volume ollama_models non trovato (mai installato?)"
+    fi
+
+    if $REMOVE_IMAGES; then
+        info "Rimuovo le immagini Docker..."
+        # Immagine Spendify (tutti i tag ghcr.io/drake69/spendify)
+        if docker images --format '{{.Repository}}' | grep -q "ghcr.io/drake69/spendify"; then
+            docker images --format '{{.Repository}}:{{.Tag}}' | grep "ghcr.io/drake69/spendify" \
+                | xargs docker rmi 2>/dev/null && success "Immagine Spendify rimossa" || warn "Impossibile rimuovere l'immagine Spendify"
+        else
+            warn "Immagine Spendify non trovata"
+        fi
+        # Immagine Ollama
+        if docker images --format '{{.Repository}}' | grep -q "^ollama/ollama$"; then
+            docker rmi ollama/ollama:latest 2>/dev/null && success "Immagine Ollama rimossa" || warn "Impossibile rimuovere l'immagine Ollama (in uso?)"
+        else
+            warn "Immagine Ollama non trovata"
+        fi
+        # Eventuali layer pendenti (dangling)
+        docker image prune -f 2>/dev/null || true
     fi
 fi
 
@@ -127,10 +147,11 @@ fi
 # ── 8. Riepilogo ──────────────────────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}── Riepilogo ───────────────────────────────────────────────────${RESET}"
-$COMPOSE_FOUND  && success "Container Spendify rimossi"  || true
-$REMOVE_DB      && success "Database transazioni rimosso" || info "Database transazioni conservato"
-$REMOVE_OLLAMA  && success "Modelli Ollama rimossi"       || info "Modelli Ollama conservati"
-$REMOVE_DIR     && success "Cartella $INSTALL_DIR rimossa" || info "Cartella $INSTALL_DIR conservata"
+$COMPOSE_FOUND  && success "Container Spendify rimossi"       || true
+$REMOVE_DB      && success "Database transazioni rimosso"      || info "Database transazioni conservato"
+$REMOVE_OLLAMA  && success "Modelli Ollama rimossi"            || info "Modelli Ollama conservati"
+$REMOVE_IMAGES  && success "Immagini Docker rimosse"           || info "Immagini Docker conservate"
+$REMOVE_DIR     && success "Cartella $INSTALL_DIR rimossa"     || info "Cartella $INSTALL_DIR conservata"
 echo ""
 echo -e "  Per reinstallare:"
 echo -e "  ${BOLD}curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/install.sh | bash${RESET}"
