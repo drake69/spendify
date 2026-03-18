@@ -107,9 +107,10 @@ if $USE_OLLAMA; then
     echo -e "    Tipo: Ollama   URL: ${BOLD}http://ollama:11434${RESET}   Modello: ${BOLD}gemma3:12b${RESET}"
     echo ""
 fi
-echo -e "  Fermare:    ${BOLD}docker compose --project-directory $INSTALL_DIR $PROFILE_ARGS down${RESET}"
-echo -e "  Aggiornare: ${BOLD}docker compose --project-directory $INSTALL_DIR $PROFILE_ARGS pull && docker compose --project-directory $INSTALL_DIR $PROFILE_ARGS up -d${RESET}"
-echo -e "  Log:        ${BOLD}docker compose --project-directory $INSTALL_DIR logs -f${RESET}"
+echo -e "  Fermare:        ${BOLD}docker compose --project-directory $INSTALL_DIR $PROFILE_ARGS down${RESET}"
+echo -e "  Aggiornare:     ${BOLD}docker compose --project-directory $INSTALL_DIR $PROFILE_ARGS pull && docker compose --project-directory $INSTALL_DIR $PROFILE_ARGS up -d${RESET}"
+echo -e "  Log:            ${BOLD}docker compose --project-directory $INSTALL_DIR logs -f${RESET}"
+echo -e "  Disinstallare:  ${BOLD}curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.sh | bash${RESET}"
 echo ""
 
 # Apri browser automaticamente se possibile

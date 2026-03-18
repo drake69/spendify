@@ -106,6 +106,9 @@ jobs:
       - name: Validate install.sh syntax
         run: bash -n installer/install.sh && echo "✅ install.sh syntax OK"
 
+      - name: Validate uninstall.sh syntax
+        run: bash -n installer/uninstall.sh && echo "✅ uninstall.sh syntax OK"
+
       - name: Validate docker-compose.release.yml
         run: |
           # docker compose config validates YAML syntax, anchors and service references
@@ -127,4 +130,20 @@ jobs:
               exit 1
             }
             Write-Host '✅ install.ps1 syntax OK'
+          "
+
+      - name: Validate uninstall.ps1 syntax (PowerShell)
+        run: |
+          pwsh -NoProfile -Command "
+            \$err = \$null
+            \$null = [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path installer/uninstall.ps1),
+              [ref]\$null,
+              [ref]\$err
+            )
+            if (\$err.Count -gt 0) {
+              \$err | ForEach-Object { Write-Error \$_.Message }
+              exit 1
+            }
+            Write-Host '✅ uninstall.ps1 syntax OK'
           "
