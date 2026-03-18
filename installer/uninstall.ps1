@@ -52,6 +52,7 @@ Write-Host ""
 
 $RemoveDb     = Ask "Eliminare il database delle transazioni? (i tuoi dati finanziari)"
 $RemoveOllama = Ask "Eliminare i modelli Ollama (~8 GB su disco)?"
+$RemoveImages = Ask "Eliminare le immagini Docker di Spendify/Ollama (libera ~500 MB–1 GB)?"
 $RemoveDir    = Ask "Eliminare la cartella di installazione ($InstallDir)?"
 $RemoveDocker = Ask "Mostrare istruzioni per rimuovere Docker Desktop?"
 
@@ -98,6 +99,30 @@ if ($DockerOk) {
             Warn "Volume ollama_models non trovato (mai installato?)"
         }
     }
+
+    if ($RemoveImages) {
+        Info "Rimuovo le immagini Docker..."
+        # Immagini Spendify
+        $spendifyImages = docker images --format "{{.Repository}}:{{.Tag}}" 2>$null |
+                          Where-Object { $_ -like "ghcr.io/drake69/spendify*" }
+        if ($spendifyImages) {
+            $spendifyImages | ForEach-Object { docker rmi $_ 2>$null }
+            Success "Immagine Spendify rimossa"
+        } else {
+            Warn "Immagine Spendify non trovata"
+        }
+        # Immagine Ollama
+        $ollamaImage = docker images --format "{{.Repository}}:{{.Tag}}" 2>$null |
+                       Where-Object { $_ -like "ollama/ollama*" }
+        if ($ollamaImage) {
+            $ollamaImage | ForEach-Object { docker rmi $_ 2>$null }
+            Success "Immagine Ollama rimossa"
+        } else {
+            Warn "Immagine Ollama non trovata"
+        }
+        # Layer pendenti
+        docker image prune -f 2>$null | Out-Null
+    }
 }
 
 # ── 6. Rimuovi la cartella di installazione ───────────────────────────────────
@@ -128,9 +153,10 @@ if ($RemoveDocker) {
 Write-Host ""
 Write-Host "── Riepilogo ───────────────────────────────────────────────────" -ForegroundColor White
 if ($ComposeFound)  { Success "Container Spendify rimossi" }
-if ($RemoveDb)      { Success "Database transazioni rimosso" } else { Info "Database transazioni conservato" }
-if ($RemoveOllama)  { Success "Modelli Ollama rimossi" }       else { Info "Modelli Ollama conservati" }
-if ($RemoveDir)     { Success "Cartella $InstallDir rimossa" } else { Info "Cartella $InstallDir conservata" }
+if ($RemoveDb)      { Success "Database transazioni rimosso" }  else { Info "Database transazioni conservato" }
+if ($RemoveOllama)  { Success "Modelli Ollama rimossi" }        else { Info "Modelli Ollama conservati" }
+if ($RemoveImages)  { Success "Immagini Docker rimosse" }       else { Info "Immagini Docker conservate" }
+if ($RemoveDir)     { Success "Cartella $InstallDir rimossa" }  else { Info "Cartella $InstallDir conservata" }
 Write-Host ""
 Write-Host "  Per reinstallare:"
 Write-Host "  irm https://raw.githubusercontent.com/drake69/spendify/main/installer/install.ps1 | iex" -ForegroundColor Cyan
