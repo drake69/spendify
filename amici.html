@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spendify — Anteprima per amici</title>
+  <!-- Nascosta ai motori di ricerca -->
+  <meta name="robots" content="noindex, nofollow" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0d1117;
+      --surface:  #161b22;
+      --surface2: #21262d;
+      --border:   #30363d;
+      --blue:     #58a6ff;
+      --green:    #3fb950;
+      --purple:   #bc8cff;
+      --orange:   #e3b341;
+      --red:      #f85149;
+      --text:     #e6edf3;
+      --muted:    #8b949e;
+      --radius:   12px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    /* ── LOCK SCREEN ──────────────────────────────────────────── */
+    #lock-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 1.5rem;
+      padding: 2rem;
+      text-align: center;
+    }
+    #lock-screen h1 { font-size: 2rem; }
+    #lock-screen p { color: var(--muted); max-width: 360px; }
+    #lock-input-wrap { display: flex; gap: .5rem; flex-wrap: wrap; justify-content: center; }
+    #lock-input {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 1rem;
+      padding: .55rem 1rem;
+      width: 220px;
+      outline: none;
+    }
+    #lock-input:focus { border-color: var(--blue); }
+    #lock-btn {
+      background: var(--blue);
+      border: none;
+      border-radius: 8px;
+      color: #0d1117;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 700;
+      padding: .55rem 1.4rem;
+      transition: opacity .2s;
+    }
+    #lock-btn:hover { opacity: .85; }
+    #lock-error { color: var(--red); font-size: .9rem; display: none; }
+
+    /* ── NAV ─────────────────────────────────────────────────── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(13,17,23,0.88);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+    }
+    .nav-logo {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--text);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .nav-logo span { color: var(--blue); }
+    .nav-badge {
+      font-size: .75rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--orange);
+      padding: .2rem .7rem;
+      border-radius: 100px;
+      letter-spacing: .04em;
+      font-weight: 600;
+    }
+
+    /* ── CONTAINER ───────────────────────────────────────────── */
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    /* ── HERO ────────────────────────────────────────────────── */
+    .hero {
+      padding: 5rem 2rem 4rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(88,166,255,.13), transparent),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(63,185,80,.07), transparent);
+      pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-block;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      font-size: .78rem;
+      padding: .3rem .9rem;
+      border-radius: 100px;
+      margin-bottom: 1.5rem;
+      letter-spacing: .03em;
+    }
+    .hero-badge strong { color: var(--orange); }
+    h1 {
+      font-size: clamp(1.9rem, 5vw, 3rem);
+      font-weight: 800;
+      line-height: 1.18;
+      letter-spacing: -.02em;
+      margin: 0 auto 1.2rem;
+    }
+    .hero-sub {
+      font-size: 1.1rem;
+      color: var(--muted);
+      max-width: 560px;
+      margin: 0 auto 2rem;
+    }
+    .hero-sub strong { color: var(--text); }
+
+    /* ── SECTIONS ────────────────────────────────────────────── */
+    section { padding: 3.5rem 2rem; }
+    section + section { border-top: 1px solid var(--border); }
+
+    .section-label {
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: .75rem;
+    }
+    h2 {
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      font-weight: 700;
+      margin-bottom: .75rem;
+      letter-spacing: -.01em;
+    }
+    .section-sub {
+      color: var(--muted);
+      margin-bottom: 2rem;
+      max-width: 600px;
+    }
+
+    /* ── STEPS ───────────────────────────────────────────────── */
+    .steps { display: flex; flex-direction: column; gap: 1.25rem; }
+    .step {
+      display: flex;
+      gap: 1.25rem;
+      align-items: flex-start;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      background: var(--blue);
+      color: #0d1117;
+      border-radius: 50%;
+      font-weight: 800;
+      font-size: .9rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .step-content h3 { font-size: 1rem; margin-bottom: .3rem; }
+    .step-content p  { font-size: .9rem; color: var(--muted); }
+    .step-content p strong { color: var(--text); }
+
+    /* ── CODE BLOCK ──────────────────────────────────────────── */
+    .code-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin: 1.25rem 0;
+    }
+    .code-header {
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      padding: .5rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+    }
+    .code-dots { display: flex; gap: 5px; }
+    .code-dots span { width: 12px; height: 12px; border-radius: 50%; }
+    .d1 { background: #ff5f56; }
+    .d2 { background: #ffbd2e; }
+    .d3 { background: #27c93f; }
+    .code-label { font-size: .75rem; color: var(--muted); flex: 1; }
+    .copy-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: .75rem;
+      padding: .25rem .7rem;
+      transition: background .15s, color .15s;
+    }
+    .copy-btn:hover { background: var(--surface2); color: var(--text); }
+    .code-body {
+      padding: 1.1rem 1.25rem;
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: .88rem;
+      line-height: 1.7;
+    }
+    .code-body .p  { color: var(--muted); user-select: none; }
+    .code-body .c  { color: var(--green); }
+    .code-body .a  { color: var(--text); }
+
+    /* OS TABS */
+    .os-tabs { display: flex; gap: .5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .os-tab {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: .85rem;
+      padding: .4rem 1rem;
+      transition: background .15s, color .15s, border-color .15s;
+    }
+    .os-tab.active {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #0d1117;
+      font-weight: 700;
+    }
+    .os-panel { display: none; }
+    .os-panel.active { display: block; }
+
+    /* ── FEEDBACK GRID ───────────────────────────────────────── */
+    .feedback-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .feedback-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+    }
+    .feedback-card .icon { font-size: 1.5rem; margin-bottom: .5rem; }
+    .feedback-card h3 { font-size: .95rem; margin-bottom: .3rem; }
+    .feedback-card p  { font-size: .85rem; color: var(--muted); }
+
+    /* ── FAQ ─────────────────────────────────────────────────── */
+    .faq { display: flex; flex-direction: column; gap: 1rem; }
+    .faq-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .faq-q {
+      width: 100%;
+      background: none;
+      border: none;
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: .95rem;
+      font-weight: 600;
+      padding: 1rem 1.25rem;
+      text-align: left;
+      gap: 1rem;
+    }
+    .faq-q:hover { background: var(--surface2); }
+    .faq-arrow { flex-shrink: 0; transition: transform .2s; color: var(--muted); }
+    .faq-item.open .faq-arrow { transform: rotate(180deg); }
+    .faq-a {
+      display: none;
+      padding: 0 1.25rem 1rem;
+      color: var(--muted);
+      font-size: .9rem;
+      line-height: 1.65;
+    }
+    .faq-a a { color: var(--blue); }
+    .faq-item.open .faq-a { display: block; }
+
+    /* ── FEEDBACK CTA ────────────────────────────────────────── */
+    .cta-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      text-align: center;
+    }
+    .cta-box h2 { font-size: 1.5rem; margin-bottom: .75rem; }
+    .cta-box p { color: var(--muted); margin-bottom: 1.5rem; max-width: 440px; margin-left: auto; margin-right: auto; }
+    .btn-row { display: flex; gap: .75rem; flex-wrap: wrap; justify-content: center; }
+    .btn {
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: .95rem;
+      font-weight: 700;
+      padding: .65rem 1.4rem;
+      text-decoration: none;
+      border: none;
+      transition: opacity .2s, background .2s;
+      display: inline-flex;
+      align-items: center;
+      gap: .45rem;
+    }
+    .btn-primary   { background: var(--blue);   color: #0d1117; }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-whatsapp  { background: #25d366; color: #fff; }
+    .btn:hover { opacity: .87; }
+
+    /* ── FOOTER ──────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: .85rem;
+    }
+    footer a { color: var(--blue); text-decoration: none; }
+
+    /* ── PRIVACY NOTE ────────────────────────────────────────── */
+    .privacy-strip {
+      background: rgba(63,185,80,.07);
+      border: 1px solid rgba(63,185,80,.25);
+      border-radius: var(--radius);
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .privacy-strip .icon { font-size: 1.4rem; flex-shrink: 0; }
+    .privacy-strip p { font-size: .88rem; color: var(--muted); }
+    .privacy-strip p strong { color: var(--green); }
+
+    code {
+      background: var(--surface2);
+      border-radius: 4px;
+      font-family: "SF Mono","Fira Code",monospace;
+      font-size: .85em;
+      padding: .1em .4em;
+    }
+
+    @media (max-width: 600px) {
+      .step { flex-direction: column; }
+      .btn-row { flex-direction: column; align-items: stretch; }
+      .btn { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════
+     LOCK SCREEN — mostrata se il token non è presente nell'URL
+     Accesso: amici.html?invito=spendify2026
+     ══════════════════════════════════════════════════════════════ -->
+<div id="lock-screen">
+  <div style="font-size:2.5rem">🔒</div>
+  <h1>Pagina riservata</h1>
+  <p>Questa pagina è accessibile solo su invito.<br>Inserisci la parola chiave che ti è stata condivisa.</p>
+  <div id="lock-input-wrap">
+    <input id="lock-input" type="text" placeholder="Parola chiave…" autocomplete="off" />
+    <button class="btn btn-primary" id="lock-btn" onclick="checkToken()">Entra →</button>
+  </div>
+  <p id="lock-error">Parola chiave non corretta. Riprova!</p>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MAIN CONTENT — nascosto finché il token non è valido
+     ══════════════════════════════════════════════════════════════ -->
+<div id="main-content" style="display:none">
+
+  <!-- NAV -->
+  <nav>
+    <a class="nav-logo" href="#">💸 Spend<span>ify</span></a>
+    <span class="nav-badge">🧪 Beta · Solo amici</span>
+  </nav>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="container">
+      <div class="hero-badge">Ciao! 👋 &nbsp;<strong>Stai vedendo un'anteprima esclusiva</strong></div>
+      <h1>Ho fatto un'app per tenere in ordine<br>i conti — e voglio sapere cosa ne pensi</h1>
+      <p class="hero-sub">
+        <strong>Spendify</strong> importa gli estratti conto di tutte le tue banche, li mette insieme in un unico posto, elimina i doppioni e li categorizza automaticamente. Il tutto sul <strong>tuo computer</strong> — nessun dato va da nessuna parte.
+      </p>
+      <a class="btn btn-primary" href="#installa" style="font-size:1rem; padding:.75rem 2rem">▶ Inizia l'installazione</a>
+    </div>
+  </div>
+
+  <!-- COSA FA -->
+  <section>
+    <div class="container">
+      <div class="section-label">In breve</div>
+      <h2>Cosa fa concretamente</h2>
+      <p class="section-sub">Nessuna magia, solo automazione intelligente di cose che sennò faresti a mano su Excel.</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h3>🏦 Importa i tuoi estratti conto</h3>
+            <p>Scarichi il CSV/Excel dalla tua banca (Fineco, ING, BPER, N26, Revolut, Amex…) e lo trascini dentro. L'app capisce da sola il formato — <strong>nessuna configurazione manuale</strong>.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h3>🔄 Elimina i doppioni automaticamente</h3>
+            <p>Se hai sia il conto corrente che la carta di credito sulla stessa banca, i pagamenti non vengono contati due volte. <strong>Zero doppi conteggi</strong>.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h3>🏷️ Categorizza con l'AI locale</h3>
+            <p>L'AI gira sul tuo computer — non su cloud. Assegna automaticamente categorie (Alimentari, Trasporti, Salute…). Puoi correggere e creare regole tue.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <h3>📊 Vedi dove vanno i soldi</h3>
+            <p>Grafici per mese, per categoria, per conto. Esporta in CSV o HTML se vuoi condividere un report. <strong>I dati restano sempre tuoi</strong>.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="privacy-strip">
+        <div class="icon">🔐</div>
+        <p><strong>Privacy by design:</strong> l'app gira interamente in locale sul tuo computer. Non c'è nessun server esterno, nessun account, nessuna password. I tuoi estratti conto non escono mai dalla tua macchina — neanche per un secondo.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- INSTALLAZIONE -->
+  <section id="installa">
+    <div class="container">
+      <div class="section-label">Installazione</div>
+      <h2>Un comando e sei dentro 🚀</h2>
+      <p class="section-sub">L'unico requisito è <a href="https://www.docker.com/products/docker-desktop/" target="_blank" style="color:var(--blue)">Docker Desktop</a> installato e avviato. Scaricalo gratis, è una decina di minuti.</p>
+
+      <div class="os-tabs">
+        <button class="os-tab active" onclick="switchOS('mac')">🍎 Mac / Linux</button>
+        <button class="os-tab" onclick="switchOS('win')">🪟 Windows</button>
+      </div>
+
+      <div class="os-panel active" id="panel-mac">
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+            <span class="code-label">Terminale</span>
+            <button class="copy-btn" onclick="copyCode(this,'mac')">Copia</button>
+          </div>
+          <div class="code-body">
+            <div><span class="p">$ </span><span class="c">curl</span><span class="a"> -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/install.sh | bash</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="os-panel" id="panel-win">
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+            <span class="code-label">PowerShell</span>
+            <button class="copy-btn" onclick="copyCode(this,'win')">Copia</button>
+          </div>
+          <div class="code-body">
+            <div><span class="p">PS&gt; </span><span class="c">irm</span><span class="a"> https://raw.githubusercontent.com/drake69/spendify/main/installer/install.ps1 | iex</span></div>
+          </div>
+        </div>
+      </div>
+
+      <p style="color:var(--muted); font-size:.9rem; margin-top:1rem">
+        Lo script scarica l'immagine, avvia il container e apre automaticamente il browser su <code>http://localhost:8501</code>.<br>
+        Durante l'installazione ti chiederà se vuoi anche l'<strong>AI locale</strong> (Ollama + gemma3:12b, ~8 GB) — puoi rispondere no e configurarla dopo, o usare la tua API key OpenAI dalle Impostazioni dell'app.
+      </p>
+      <p style="color:var(--muted); font-size:.85rem; margin-top:.6rem">
+        Per disinstallare tutto in un colpo: <code>curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.sh | bash</code>
+      </p>
+    </div>
+  </section>
+
+  <!-- FEEDBACK -->
+  <section id="feedback">
+    <div class="container">
+      <div class="section-label">Cosa mi serve da te</div>
+      <h2>Il tuo feedback vale oro 🥇</h2>
+      <p class="section-sub">Non ho bisogno di complimenti — ho bisogno di capire dove si rompe, cosa non si capisce e cosa manca. Anche "non funziona niente" è un feedback utilissimo.</p>
+
+      <div class="feedback-grid">
+        <div class="feedback-card">
+          <div class="icon">🚀</div>
+          <h3>Installazione</h3>
+          <p>Quanto ci hai messo? Qualcosa non ha funzionato? Docker era già installato?</p>
+        </div>
+        <div class="feedback-card">
+          <div class="icon">📥</div>
+          <h3>Import estratti conto</h3>
+          <p>Quale banca hai usato? Ha riconosciuto il formato? Ci sono errori o colonne mancanti?</p>
+        </div>
+        <div class="feedback-card">
+          <div class="icon">🏷️</div>
+          <h3>Categorie</h3>
+          <p>Le categorie assegnate automaticamente hanno senso? Ne mancano? Ce ne sono di strane?</p>
+        </div>
+        <div class="feedback-card">
+          <div class="icon">😵</div>
+          <h3>Cosa non si capisce</h3>
+          <p>Qualcosa nell'interfaccia ti ha fatto dire "ma cosa vuol dire?". Dimmelo!</p>
+        </div>
+        <div class="feedback-card">
+          <div class="icon">💡</div>
+          <h3>Cosa aggiungeresti</h3>
+          <p>Se potessi cambiare una cosa o aggiungere una funzionalità, quale sarebbe?</p>
+        </div>
+        <div class="feedback-card">
+          <div class="icon">⚡</div>
+          <h3>Performance</h3>
+          <p>L'app è lenta? L'AI impega troppo? Su che computer l'hai installata?</p>
+        </div>
+      </div>
+
+      <div class="cta-box">
+        <h2>Mandami il tuo feedback</h2>
+        <p>Scegli il modo che ti è più comodo — anche un messaggio vocale va benissimo!</p>
+        <div class="btn-row">
+          <a class="btn btn-whatsapp" href="https://wa.me/393484862099?text=Ciao%20Luigi%2C%20ho%20provato%20Spendify!%20Ecco%20il%20mio%20feedback%3A%20" target="_blank">
+            💬 Scrivimi su WhatsApp
+          </a>
+          <a class="btn btn-primary" href="https://github.com/drake69/spendify/issues/new?template=feedback_amici.md&labels=beta-feedback" target="_blank">
+            🐛 Apri una segnalazione su GitHub
+          </a>
+          <a class="btn btn-secondary" href="mailto:lcorsaro@icloud.com?subject=Feedback%20Spendify" target="_blank">
+            ✉️ Manda una mail
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section>
+    <div class="container">
+      <div class="section-label">Domande frequenti</div>
+      <h2>Hai dubbi? Li ho anticipati 😄</h2>
+
+      <div class="faq">
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">
+            I miei dati bancari sono al sicuro?
+            <span class="faq-arrow">▼</span>
+          </button>
+          <div class="faq-a">
+            Sì, assolutamente. L'app gira interamente sul tuo computer — non c'è nessun server esterno, nessuna registrazione, nessun account. I tuoi estratti conto non escono mai dalla tua macchina. Se usi l'AI locale (Ollama) anche l'intelligenza artificiale gira in locale. Se usi OpenAI come AI, solo le descrizioni delle transazioni (mai IBAN o importi sensibili) vengono inviate — sempre anonimizzate prima dell'invio.
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">
+            Ho bisogno di Docker? Non l'ho mai installato.
+            <span class="faq-arrow">▼</span>
+          </button>
+          <div class="faq-a">
+            Sì, Docker Desktop è l'unico prerequisito. È gratuito, si installa come qualsiasi app e a installazione completata basta tenerlo aperto in background. Lo trovi su <a href="https://www.docker.com/products/docker-desktop/" target="_blank">docker.com</a> — Mac, Windows e Linux supportati. Se hai problemi con l'installazione scrivimi, ti aiuto.
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">
+            Quale banca posso usare?
+            <span class="faq-arrow">▼</span>
+          </button>
+          <div class="faq-a">
+            Funziona con qualsiasi banca che esporti CSV o Excel. Testata con Fineco, ING, BPER, Mediolanum, N26, Revolut, Amex, Nexi, Hype. Se la tua banca non viene riconosciuta automaticamente, l'app ti guida a mappare le colonne a mano — e il formato viene salvato per le importazioni successive.
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">
+            L'AI locale è obbligatoria? Pesa 8 GB…
+            <span class="faq-arrow">▼</span>
+          </button>
+          <div class="faq-a">
+            No, è completamente opzionale. Durante l'installazione puoi rispondere "no" alla domanda sull'AI — l'app funziona comunque (import, ledger, grafici, regole). Puoi poi configurare la tua API key OpenAI o Anthropic dalla pagina ⚙️ Impostazioni, oppure tornare ad installare Ollama in seguito.
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">
+            Posso disinstallare tutto facilmente?
+            <span class="faq-arrow">▼</span>
+          </button>
+          <div class="faq-a">
+            Sì. Un singolo comando rimuove tutto in modo interattivo — ti chiede per ogni componente (database, modelli AI, immagini Docker, cartella di installazione) prima di cancellare qualcosa:
+            <br><br><code>curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.sh | bash</code>
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">
+            Quanto tempo ci vuole per installare e fare la prima prova?
+            <span class="faq-arrow">▼</span>
+          </button>
+          <div class="faq-a">
+            Se Docker è già installato: 2–3 minuti. Se devi installare Docker prima: altri 10 minuti. L'AI locale richiede ~10–15 minuti di download la prima volta (poi non la riscarichi più). Per fare la prima importazione e vedere i grafici bastano altri 5 minuti.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>Spendify è <a href="https://github.com/drake69/spendify" target="_blank">open source</a> · Questa pagina è riservata agli amici in anteprima · Grazie per il tuo tempo! 🙏</p>
+  </footer>
+
+</div><!-- /main-content -->
+
+<script>
+  /* ── TOKEN CHECK ─────────────────────────────────────────── */
+  const TOKEN = 'spendify2026';
+
+  function unlock() {
+    document.getElementById('lock-screen').style.display = 'none';
+    document.getElementById('main-content').style.display = 'block';
+    sessionStorage.setItem('sp_access', '1');
+  }
+
+  function checkToken() {
+    const val = document.getElementById('lock-input').value.trim().toLowerCase();
+    if (val === TOKEN) {
+      unlock();
+    } else {
+      document.getElementById('lock-error').style.display = 'block';
+      document.getElementById('lock-input').focus();
+    }
+  }
+
+  document.getElementById('lock-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') checkToken();
+  });
+
+  // Controlla URL param (?invito=spendify2026) o sessione già aperta
+  (function init() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('invito') === TOKEN || sessionStorage.getItem('sp_access') === '1') {
+      unlock();
+    }
+  })();
+
+  /* ── OS TABS ─────────────────────────────────────────────── */
+  function switchOS(os) {
+    document.querySelectorAll('.os-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.os-panel').forEach(p => p.classList.remove('active'));
+    document.querySelector(`.os-tab[onclick*="${os}"]`).classList.add('active');
+    document.getElementById('panel-' + os).classList.add('active');
+  }
+
+  /* ── COPY CODE ───────────────────────────────────────────── */
+  const cmds = {
+    mac: 'curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/install.sh | bash',
+    win: 'irm https://raw.githubusercontent.com/drake69/spendify/main/installer/install.ps1 | iex'
+  };
+  function copyCode(btn, os) {
+    navigator.clipboard.writeText(cmds[os] || cmds.mac).then(() => {
+      const orig = btn.textContent;
+      btn.textContent = '✓ Copiato!';
+      setTimeout(() => { btn.textContent = orig; }, 2000);
+    });
+  }
+
+  /* ── FAQ ACCORDION ───────────────────────────────────────── */
+  function toggleFaq(btn) {
+    btn.parentElement.classList.toggle('open');
+  }
+</script>
+</body>
+</html>
