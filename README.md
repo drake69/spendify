@@ -183,20 +183,24 @@ The only prerequisite is **[Docker Desktop](https://www.docker.com/products/dock
 
 **Mac / Linux:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/install.sh | bash
 ```
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/drake69/spendify/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/drake69/spendify/main/installer/install.ps1 | iex
 ```
 
 The script downloads the pre-built image from GitHub Container Registry, starts the container and opens the browser at **http://localhost:8501** automatically.
 
+> **Optional local AI:** the installer prompts whether to add Ollama + `gemma3:12b` (downloaded automatically, ~8 GB). Works on Apple Silicon (arm64) and amd64.
+
 > **Update to latest version:**
 > ```bash
-> docker compose -C ~/spendify pull && docker compose -C ~/spendify up -d
+> docker compose --project-directory ~/spendify pull && docker compose --project-directory ~/spendify up -d
 > ```
+
+> **Uninstall:** `curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.sh | bash`
 
 ---
 

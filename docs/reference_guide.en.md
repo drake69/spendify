@@ -124,6 +124,7 @@ An internal transfer is a transfer between two of your own accounts (e.g., "Tran
 | Backend | Runs | Privacy | Configuration |
 |---|---|---|---|
 | **Ollama** | Local (default) | Total — no data leaves your PC | Requires Ollama installed and model downloaded |
+| **llama.cpp** | Local (Docker container) | Total — no data leaves your PC | GGUF files in `models/`, URL `http://llama-cpp:8080/v1` |
 | **OpenAI** | Remote | PII redacted before sending | API key in Impostazioni |
 | **Claude** | Remote | PII redacted before sending | API key in Impostazioni |
 
@@ -285,11 +286,13 @@ Schema migrations are idempotent: they run automatically at every startup withou
 ## Quick Start
 
 ```bash
-# First installation
-./setup.sh          # macOS/Linux
-setup.bat           # Windows
+# Docker one-liner install (Mac/Linux)
+curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/install.sh | bash
 
-# Start
+# Docker one-liner install (Windows PowerShell)
+# irm https://raw.githubusercontent.com/drake69/spendify/main/installer/install.ps1 | iex
+
+# Development start (build from source)
 uv run streamlit run app.py
 ```
 

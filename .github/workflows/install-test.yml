@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run install.sh (non-interactive, skip browser open)
-        run: bash install.sh
+        run: bash installer/install.sh
         env:
           # Override install dir to a CI temp folder
           SPENDIFY_INSTALL_DIR: "${{ runner.temp }}/spendify-install-test"
