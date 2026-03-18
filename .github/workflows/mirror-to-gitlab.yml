@@ -1,0 +1,27 @@
+name: Mirror → GitLab
+
+on:
+  push:
+    branches: ["**"]
+  delete:                      # propaga anche le branch cancellate
+  workflow_dispatch:           # trigger manuale per il primo sync
+
+jobs:
+  mirror:
+    name: Push mirror to GitLab
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (bare — storia completa)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0       # tutta la storia, non solo ultimo commit
+
+      - name: Push mirror to GitLab
+        env:
+          GITLAB_TOKEN: ${{ secrets.GITLAB_MIRROR_TOKEN }}
+          # Formato: https://oauth2:<token>@gitlab.com/<group>/<repo>.git
+          GITLAB_URL: ${{ secrets.GITLAB_MIRROR_URL }}
+        run: |
+          git remote add gitlab "${GITLAB_URL}"
+          git push gitlab --mirror --force
