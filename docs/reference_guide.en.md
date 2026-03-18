@@ -285,11 +285,13 @@ Schema migrations are idempotent: they run automatically at every startup withou
 ## Quick Start
 
 ```bash
-# First installation
-./setup.sh          # macOS/Linux
-setup.bat           # Windows
+# Docker one-liner install (Mac/Linux)
+curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/install.sh | bash
 
-# Start
+# Docker one-liner install (Windows PowerShell)
+# irm https://raw.githubusercontent.com/drake69/spendify/main/installer/install.ps1 | iex
+
+# Development start (build from source)
 uv run streamlit run app.py
 ```
 
