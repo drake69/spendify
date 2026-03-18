@@ -15,6 +15,7 @@
 5. [Updating the application](#5--updating-the-application)
 6. [Docker operational commands](#6--docker-operational-commands)
 7. [Troubleshooting](#7--troubleshooting)
+8. [Uninstall](#8--uninstall)
 
 ---
 
@@ -41,17 +42,21 @@ The only prerequisite is **[Docker Desktop](https://www.docker.com/products/dock
 
 **Mac / Linux:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/install.sh | bash
 ```
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/drake69/spendify/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/drake69/spendify/main/installer/install.ps1 | iex
 ```
 
 The script creates the `~/spendify/` folder, downloads the image from GitHub Container Registry, starts the container and opens the browser at **http://localhost:8501** automatically.
 
-> **Update:** `docker compose -C ~/spendify pull && docker compose -C ~/spendify up -d`
+> **Local AI included (optional):** the script asks whether to install Ollama with the `gemma3:12b` model — downloaded automatically in the background on first start (~8 GB, ~10–15 minutes). Alternatively you can configure an external API key (OpenAI/Anthropic) from the ⚙️ Settings page.
+
+> **Update:** `docker compose --project-directory ~/spendify pull && docker compose --project-directory ~/spendify up -d`
+
+> **Uninstall:** `curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.sh | bash`
 
 ---
 
@@ -152,8 +157,8 @@ TAXONOMY_PATH=taxonomy.yaml
 ### One-liner Docker
 
 ```bash
-docker compose -C ~/spendify pull
-docker compose -C ~/spendify up -d
+docker compose --project-directory ~/spendify pull
+docker compose --project-directory ~/spendify up -d
 ```
 
 ### Docker Compose from repository
@@ -199,7 +204,7 @@ docker compose down --remove-orphans
 docker compose down -v
 ```
 
-For the one-liner installation, add `-C ~/spendify` to every command, e.g. `docker compose -C ~/spendify logs -f`.
+For the one-liner installation, add `--project-directory ~/spendify` to every command, e.g. `docker compose --project-directory ~/spendify logs -f`.
 
 ---
 
@@ -242,3 +247,29 @@ The `gemma3:12b` model requires ~8 GB of RAM. Change the model from the **⚙️
 ### Database issues
 
 Errors such as `database is locked`, file corruption, restore from backup → [database.en.md](database.en.md).
+
+---
+
+## 8 — Uninstall
+
+The uninstall scripts interactively remove all Spendify components. **No data is deleted without explicit confirmation.**
+
+**Mac / Linux:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.sh | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.ps1 | iex
+```
+
+The script asks separately for each component:
+| What | Detail |
+|------|--------|
+| Transaction database | Volumes `spendify_data` and `spendify_logs` |
+| Ollama models | Volume `ollama_models` (~8 GB) |
+| llama.cpp + models/ folder | `llama.cpp:server` image + GGUF files |
+| Docker images | `ghcr.io/drake69/spendify` + `ollama/ollama` (~500 MB–1 GB) |
+| Installation folder | `~/spendify/` (or `SPENDIFY_INSTALL_DIR`) |
+| Docker Desktop removal guide | Step-by-step guide for macOS / Linux / Windows |

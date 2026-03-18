@@ -124,6 +124,7 @@ Un giroconto è un trasferimento tra due conti tuoi (es. "Bonifico a Conto Depos
 | Backend | Dove gira | Privacy | Configurazione |
 |---|---|---|---|
 | **Ollama** | Locale (default) | Totale — nessun dato lascia il tuo PC | Richiede Ollama installato e modello scaricato |
+| **llama.cpp** | Locale (container Docker) | Totale — nessun dato lascia il tuo PC | File GGUF in `models/`, URL `http://llama-cpp:8080/v1` |
 | **OpenAI** | Remoto | PII redatte prima dell'invio | API key in Impostazioni |
 | **Claude** | Remoto | PII redatte prima dell'invio | API key in Impostazioni |
 

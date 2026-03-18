@@ -4,6 +4,7 @@
 > - **Mac** — installazione nativa (consigliata, massime prestazioni LLM)
 > - **Linux** — Docker con Ollama come container separato
 > - **Windows** — Docker con llama.cpp server come container separato
+> - **One-liner** — installazione guidata da zero con Docker (opzione AI inclusa, consigliata per utenti non tecnici)
 
 ---
 
@@ -146,7 +147,11 @@ Poi in `docker-compose.yml` decommenta:
 docker compose --profile ollama up -d
 ```
 
+> **Con l'installazione one-liner** (`install.sh`) il modello viene scaricato automaticamente — questo step non è necessario. Il comando sopra è per installazioni da repository.
+
 ### Step 5 — Scarica il modello (una tantum)
+
+> **Nota:** se hai usato `install.sh` con AI locale, il download è già avviato in background dal container `ollama-init`. Controlla con: `docker compose --project-directory ~/spendify logs -f ollama-init`
 
 ```bash
 # ~8 GB di download, qualche minuto di attesa
@@ -308,3 +313,12 @@ Sì. L'installazione one-liner usa lo stesso volume Docker `spendify_data`. → 
 
 **Posso spostare i dati su un altro computer?**
 Sì. → [Spostare il database](database.md#6--spostare-il-database-su-un-altro-computer)
+
+**Come disinstallo Spendify completamente?**
+Usa lo script di disinstallazione interattivo:
+```bash
+curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.sh | bash
+# Windows:
+# irm https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.ps1 | iex
+```
+Lo script chiede separatamente se rimuovere: database, modelli Ollama, immagine llama.cpp + files GGUF, immagini Docker, cartella di installazione, e mostra le istruzioni per disinstallare Docker Desktop.
