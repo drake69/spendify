@@ -229,36 +229,35 @@ uv sync
 
 ```bash
 cp .env.example .env
+# No edits needed for a standard local install — DB path and taxonomy path are already set
 ```
 
-### 4. Pull the local LLM model
+### 4. Pull the local LLM model (optional)
 
 ```bash
-ollama pull gemma3:12b
+ollama pull gemma3:12b   # ~8 GB — skip if you plan to use OpenAI/Anthropic
 ```
 
-> Keep Ollama running (`ollama serve`) while using the app.
+> Keep Ollama running (`ollama serve`) while using the app. LLM backend, model and API keys are configured from **⚙️ Settings** in the UI — not in `.env`.
 
 ---
 
 ## Configuration
 
-Minimal required settings in `.env`:
+The `.env` file contains only two infrastructure parameters — everything else (LLM backend, API keys, model, owner names, date format, language…) is configured from the **⚙️ Settings** page and persisted in the DB:
 
 ```dotenv
-# Database (SQLite by default, any SQLAlchemy URL works)
+# Database URI — leave as-is for local use; overridden by docker-compose for Docker installs
 SPENDIFY_DB=sqlite:///ledger.db
 
-# Account owner names to redact before remote calls
-OWNER_NAMES=Mario Rossi,M. Rossi
+# Path to the categories YAML (seed imported into DB on first run)
+TAXONOMY_PATH=taxonomy.yaml
 
-# LLM backend: local_ollama | openai | claude  (also configurable from Settings page)
-LLM_BACKEND=local_ollama
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=gemma3:12b
+# Only needed if using docker compose --profile llama-cpp:
+# LLAMA_MODEL=gemma-3-4b-it-Q4_K_M.gguf
 ```
 
-API keys and model selection can also be set from the **⚙️ Settings** page in the UI — they are persisted in the DB and take priority over `.env` values.
+> **Nothing else belongs in `.env`.** LLM backend, Ollama URL, model name, OpenAI/Anthropic API keys and owner names for PII redaction are all stored in the `user_settings` table and editable live from the UI without restarting the app.
 
 ### Transfer mode (giroconto)
 

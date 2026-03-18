@@ -229,36 +229,35 @@ uv sync
 
 ```bash
 cp .env.example .env
+# Nessuna modifica necessaria per un'installazione locale standard — percorsi già impostati
 ```
 
-### 4. Scarica il modello LLM locale
+### 4. Scarica il modello LLM locale (opzionale)
 
 ```bash
-ollama pull gemma3:12b
+ollama pull gemma3:12b   # ~8 GB — salta se hai intenzione di usare OpenAI/Anthropic
 ```
 
-> Mantieni Ollama in esecuzione (`ollama serve`) durante l'uso dell'app.
+> Mantieni Ollama in esecuzione (`ollama serve`) durante l'uso dell'app. Backend LLM, modello e API key si configurano dalla pagina **⚙️ Impostazioni** — non nel `.env`.
 
 ---
 
 ## Configurazione
 
-Impostazioni minime richieste in `.env`:
+Il file `.env` contiene solo due parametri infrastrutturali — tutto il resto (backend LLM, API key, modello, nomi titolare, formato date, lingua…) si configura dalla pagina **⚙️ Impostazioni** e viene salvato nel DB:
 
 ```dotenv
-# Database (SQLite di default, qualsiasi URL SQLAlchemy)
+# URI del database — lascia il default per uso locale; sovrascritto da docker-compose per Docker
 SPENDIFY_DB=sqlite:///ledger.db
 
-# Nomi del titolare da redarre prima di chiamate remote
-OWNER_NAMES=Mario Rossi,M. Rossi
+# Percorso del file YAML delle categorie (seed importato nel DB al primo avvio)
+TAXONOMY_PATH=taxonomy.yaml
 
-# Backend LLM: local_ollama | openai | claude  (configurabile anche dalla pagina Impostazioni)
-LLM_BACKEND=local_ollama
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=gemma3:12b
+# Solo se si usa docker compose --profile llama-cpp:
+# LLAMA_MODEL=gemma-3-4b-it-Q4_K_M.gguf
 ```
 
-Chiavi API e selezione modello possono essere configurate anche dalla pagina **⚙️ Impostazioni** dell'UI — vengono salvate nel DB e hanno priorità sui valori `.env`.
+> **Nient'altro appartiene al `.env`.** Backend LLM, URL Ollama, nome modello, API key OpenAI/Anthropic e nomi titolare per la redazione PII sono tutti salvati nella tabella `user_settings` e modificabili in tempo reale dall'UI senza riavviare l'app.
 
 ### Modalità giroconto
 
