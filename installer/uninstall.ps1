@@ -52,6 +52,7 @@ Write-Host ""
 
 $RemoveDb     = Ask "Eliminare il database delle transazioni? (i tuoi dati finanziari)"
 $RemoveOllama = Ask "Eliminare i modelli Ollama (~8 GB su disco)?"
+$RemoveLlama  = Ask "Eliminare l'immagine llama.cpp e la cartella models/ (file GGUF)?"
 $RemoveImages = Ask "Eliminare le immagini Docker di Spendify/Ollama (libera ~500 MB–1 GB)?"
 $RemoveDir    = Ask "Eliminare la cartella di installazione ($InstallDir)?"
 $RemoveDocker = Ask "Mostrare istruzioni per rimuovere Docker Desktop?"
@@ -65,7 +66,11 @@ if ($ComposeFound -and $DockerOk) {
     $ProfileArgs = @()
     $volumes = docker volume ls --format "{{.Name}}" 2>$null
     if ($volumes -match "spendify_ollama_models") {
-        $ProfileArgs = @("--profile", "ollama")
+        $ProfileArgs += @("--profile", "ollama")
+    }
+    $containers = docker ps -a --format "{{.Names}}" 2>$null
+    if ($containers -match "spendify_llama") {
+        $ProfileArgs += @("--profile", "llama-cpp")
     }
 
     docker compose --project-directory $InstallDir @ProfileArgs down 2>$null
@@ -97,6 +102,27 @@ if ($DockerOk) {
             Success "Volume ollama_models rimosso"
         } catch {
             Warn "Volume ollama_models non trovato (mai installato?)"
+        }
+    }
+
+    if ($RemoveLlama) {
+        Info "Rimuovo l'immagine llama.cpp..."
+        $llamaImage = docker images --format "{{.Repository}}:{{.Tag}}" 2>$null |
+                      Where-Object { $_ -like "ghcr.io/ggerganov/llama.cpp*" }
+        if ($llamaImage) {
+            $llamaImage | ForEach-Object { docker rmi $_ 2>$null }
+            Success "Immagine llama.cpp rimossa"
+        } else {
+            Warn "Immagine llama.cpp non trovata"
+        }
+        # Rimuovi la cartella models/ (file GGUF)
+        $ModelsDir = Join-Path $InstallDir "models"
+        if (Test-Path $ModelsDir) {
+            Info "Rimuovo la cartella models/ ($ModelsDir)..."
+            Remove-Item -Recurse -Force $ModelsDir
+            Success "Cartella models/ rimossa"
+        } else {
+            Warn "Cartella models/ non trovata in $ModelsDir"
         }
     }
 
@@ -155,6 +181,7 @@ Write-Host "── Riepilogo ─────────────────
 if ($ComposeFound)  { Success "Container Spendify rimossi" }
 if ($RemoveDb)      { Success "Database transazioni rimosso" }  else { Info "Database transazioni conservato" }
 if ($RemoveOllama)  { Success "Modelli Ollama rimossi" }        else { Info "Modelli Ollama conservati" }
+if ($RemoveLlama)   { Success "llama.cpp + models/ rimossi" }   else { Info "llama.cpp conservato" }
 if ($RemoveImages)  { Success "Immagini Docker rimosse" }       else { Info "Immagini Docker conservate" }
 if ($RemoveDir)     { Success "Cartella $InstallDir rimossa" }  else { Info "Cartella $InstallDir conservata" }
 Write-Host ""
