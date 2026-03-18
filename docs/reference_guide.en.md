@@ -124,6 +124,7 @@ An internal transfer is a transfer between two of your own accounts (e.g., "Tran
 | Backend | Runs | Privacy | Configuration |
 |---|---|---|---|
 | **Ollama** | Local (default) | Total — no data leaves your PC | Requires Ollama installed and model downloaded |
+| **llama.cpp** | Local (Docker container) | Total — no data leaves your PC | GGUF files in `models/`, URL `http://llama-cpp:8080/v1` |
 | **OpenAI** | Remote | PII redacted before sending | API key in Impostazioni |
 | **Claude** | Remote | PII redacted before sending | API key in Impostazioni |
 
