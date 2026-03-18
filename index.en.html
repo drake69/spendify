@@ -991,12 +991,14 @@
 
     <p class="install-post">
       The script pulls the image from <strong>GitHub Container Registry</strong>, starts the container
-      and opens the browser at <strong>http://localhost:8501</strong> automatically.
+      and opens the browser at <strong>http://localhost:8501</strong> automatically.<br>
+      <strong>Optional local AI:</strong> the installer asks whether to add Ollama with <code>gemma3:12b</code> — downloaded in background (~8 GB). Works on Apple Silicon (arm64) and amd64.<br>
+      <small>To uninstall: <code>curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.sh | bash</code></small>
     </p>
 
     <p class="install-dev-link">
       Developer or native install? →
-      <a href="https://github.com/drake69/spendify/wiki/Installazione" target="_blank">Full guide (Mac native · Linux Docker · Windows llama.cpp)</a>
+      <a href="https://github.com/drake69/spendify/blob/main/docs/installazione.en.md" target="_blank">Full guide (Mac native · Linux Docker · Windows llama.cpp)</a>
     </p>
   </div>
 </section>
