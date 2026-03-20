@@ -5,60 +5,14 @@ import json
 
 import streamlit as st
 
-from core.categorizer import categorize_batch
-from core.description_cleaner import clean_descriptions_batch
-from core.llm_backends import LLMBackend
-from core.orchestrator import ProcessingConfig, _build_backend, _get_fallback_backend
-from core.sanitizer import SanitizationConfig
-from db.models import Transaction, get_session
-from db.repository import (
-    bulk_set_giroconto_by_description,
-    create_category_rule,
-    delete_transactions_by_filter,
-    get_all_user_settings,
-    get_category_rules,
-    get_cross_account_duplicates,
-    get_similar_transactions,
-    get_taxonomy_config,
-    get_transactions,
-    get_transactions_by_rule_pattern,
-    toggle_transaction_giroconto,
-    update_transaction_category,
-    update_transaction_context,
-)
+from services.review_service import ReviewService
+from services.rule_service import RuleService
+from services.settings_service import SettingsService
+from services.transaction_service import TransactionService
 from support.formatting import format_amount_display, format_date_display
 from support.logging import setup_logging
 
 logger = setup_logging()
-
-
-def _build_pipeline_backend(settings: dict) -> tuple[LLMBackend, LLMBackend | None, SanitizationConfig, str]:
-    """Build LLM backend + sanitize_config from user settings dict.
-
-    Returns (backend, fallback, sanitize_config, description_language).
-    """
-    owner_names = [n.strip() for n in settings.get("owner_names", "").split(",") if n.strip()]
-    config = ProcessingConfig(
-        llm_backend=settings.get("llm_backend", "local_ollama"),
-        ollama_base_url=settings.get("ollama_base_url", "http://localhost:11434"),
-        ollama_model=settings.get("ollama_model", "gemma3:12b"),
-        openai_model=settings.get("openai_model", "gpt-4o-mini"),
-        openai_api_key=settings.get("openai_api_key", ""),
-        claude_model=settings.get("anthropic_model", "claude-3-5-haiku-20241022"),
-        anthropic_api_key=settings.get("anthropic_api_key", ""),
-        compat_base_url=settings.get("compat_base_url", ""),
-        compat_api_key=settings.get("compat_api_key", ""),
-        compat_model=settings.get("compat_model", ""),
-        sanitize_config=SanitizationConfig(
-            owner_names=owner_names,
-            description_language=settings.get("description_language", "it"),
-        ),
-        description_language=settings.get("description_language", "it"),
-    )
-    backend  = _build_backend(config)
-    fallback = _get_fallback_backend(config)
-    return backend, fallback, config.sanitize_config, config.description_language
-
 
 _ALL_TX_TYPES = [
     "tutti", "expense", "income", "card_tx",
@@ -73,9 +27,13 @@ def render_bulk_edit_page(engine):
         "a tutte le transazioni simili. Puoi anche salvare una regola deterministica."
     )
 
-    with get_session(engine) as s:
-        settings  = get_all_user_settings(s)
-        taxonomy  = get_taxonomy_config(s)
+    review_svc = ReviewService(engine)
+    rule_svc   = RuleService(engine)
+    tx_svc     = TransactionService(engine)
+    cfg_svc    = SettingsService(engine)
+
+    settings = cfg_svc.get_all()
+    taxonomy = cfg_svc.get_taxonomy()
 
     _date_fmt = settings.get("date_display_format", "%d/%m/%Y")
     _dec      = settings.get("amount_decimal_sep",  ",")
@@ -110,8 +68,7 @@ def render_bulk_edit_page(engine):
     if only_review:
         filters["to_review"] = True
 
-    with get_session(engine) as s:
-        txs = get_transactions(s, filters=filters, limit=500)
+    txs = tx_svc.get_transactions(filters=filters, limit=500)
 
     if not txs:
         st.info("Nessuna transazione trovata.")
@@ -143,22 +100,10 @@ def render_bulk_edit_page(engine):
     )
 
     # ── Similarity counts ──────────────────────────────────────────────────────
-    with get_session(engine) as s:
-        # exact description match (cleaned field)
-        _same_desc = s.query(Transaction).filter(
-            Transaction.description == sel.description,
-            Transaction.id != sel.id,
-        ).count() if sel.description else 0
-
-        # raw_description match — più affidabile: identifica la stessa "origine bancaria"
-        # indipendentemente da come l'LLM ha estratto la controparte
-        _same_raw = s.query(Transaction).filter(
-            Transaction.raw_description == sel.raw_description,
-            Transaction.id != sel.id,
-        ).count() if sel.raw_description else 0
-
-        _similar_txs = get_similar_transactions(s, sel.description or "", exclude_id=sel.id)
-        _similar_count = len(_similar_txs)
+    _same_desc  = tx_svc.count_by_description(sel.description or "", sel.id) if sel.description else 0
+    _same_raw   = tx_svc.count_by_raw_description(sel.raw_description or "", sel.id) if sel.raw_description else 0
+    _similar_txs = tx_svc.get_similar(sel.description or "", exclude_id=sel.id)
+    _similar_count = len(_similar_txs)
 
     if _same_desc > 0 or _similar_count > 0:
         st.info(
@@ -192,10 +137,10 @@ def render_bulk_edit_page(engine):
 
     rrc1, rrc2 = st.columns(2)
     with rrc1:
-        run_cleaner    = st.checkbox("🔍 Estrai controparte", value=True,  key="rerun_cleaner",
+        run_cleaner    = st.checkbox("🔍 Estrai controparte", value=True, key="rerun_cleaner",
                                      help="Ri-estrae il nome commerciale/controparte dalla raw_description")
     with rrc2:
-        run_categorizer = st.checkbox("🏷️ Ri-categorizza",   value=True,  key="rerun_cat",
+        run_categorizer = st.checkbox("🏷️ Ri-categorizza",  value=True, key="rerun_cat",
                                       help="Ri-applica regole deterministiche e LLM per categoria/sottocategoria")
 
     _rerun_disabled = not run_cleaner and not run_categorizer
@@ -203,144 +148,58 @@ def render_bulk_edit_page(engine):
     if st.button("🔄 Avvia ri-elaborazione", key="rerun_execute", type="primary",
                  disabled=_rerun_disabled, use_container_width=False):
 
-        # ── 1. Carica le tx da ri-elaborare ───────────────────────────────────
-        with get_session(engine) as _s:
-            if rr_scope == _scope_opts[0]:
-                _rerun_txs = [_s.get(Transaction, sel.id)]
-            elif rr_scope == _scope_opts[1]:
-                _rerun_txs = (
-                    _s.query(Transaction)
-                    .filter(Transaction.raw_description == sel.raw_description)
-                    .all()
-                )
-            elif rr_scope == _scope_opts[2]:
-                # Jaccard ≥ 35%: la transazione selezionata + le simili già calcolate
-                _similar_ids = {tx.id for tx in _similar_txs}
-                _similar_ids.add(sel.id)
-                _rerun_txs = (
-                    _s.query(Transaction)
-                    .filter(Transaction.id.in_(_similar_ids))
-                    .all()
-                )
-            elif rr_scope == _scope_opts[3]:
-                _rerun_txs = (
-                    _s.query(Transaction)
-                    .filter(Transaction.to_review.is_(True))
-                    .limit(500).all()
-                )
-            else:  # senza categoria
-                _rerun_txs = (
-                    _s.query(Transaction)
-                    .filter(Transaction.category.is_(None))
-                    .limit(500).all()
-                )
-            _rerun_txs = [t for t in _rerun_txs if t is not None]
+        # ── 1. Determine which tx IDs to re-process ───────────────────────────
+        if rr_scope == _scope_opts[0]:
+            tx_ids = [sel.id]
+        elif rr_scope == _scope_opts[1]:
+            tx_ids = [tx.id for tx in tx_svc.get_by_raw_description_value(sel.raw_description or "")]
+        elif rr_scope == _scope_opts[2]:
+            _similar_ids = {tx.id for tx in _similar_txs}
+            _similar_ids.add(sel.id)
+            tx_ids = list(_similar_ids)
+        elif rr_scope == _scope_opts[3]:
+            tx_ids = [tx.id for tx in tx_svc.get_to_review_batch(500)]
+        else:
+            tx_ids = [tx.id for tx in tx_svc.get_without_category_batch(500)]
 
-            # Converti in dicts (format atteso da cleaner e categorizer)
-            _tx_dicts = [
-                {
-                    "id":              tx.id,
-                    "description":     tx.description or "",
-                    "raw_description": tx.raw_description or "",
-                    "amount":          float(tx.amount or 0),
-                    "doc_type":        tx.doc_type or "",
-                }
-                for tx in _rerun_txs
-            ]
-
-            _user_rules  = get_category_rules(_s)
-            _taxonomy    = get_taxonomy_config(_s)
-
-        if not _tx_dicts:
+        if not tx_ids:
             st.warning("Nessuna transazione trovata per il criterio selezionato.")
         else:
-            n_rerun = len(_tx_dicts)
-            # ── 2. Backend LLM ────────────────────────────────────────────────
-            try:
-                _backend, _fallback, _san_cfg, _lang = _build_pipeline_backend(settings)
-            except Exception as _be:
-                st.error(f"Errore inizializzazione backend LLM: {_be}")
-                st.stop()
+            n_rerun = len(tx_ids)
+            _progress_bar = st.progress(0.0)
+            _status_text  = st.empty()
 
-            _progress_bar   = st.progress(0.0)
-            _status_text    = st.empty()
+            if run_cleaner:
+                _status_text.info(f"⏳ Estrazione controparte per {n_rerun} transazioni…")
 
-            try:
-                # ── 3a. Description cleaner ───────────────────────────────────
-                if run_cleaner:
-                    _status_text.info(f"⏳ Estrazione controparte per {n_rerun} transazioni…")
-                    _tx_dicts = clean_descriptions_batch(
-                        _tx_dicts, _backend, _fallback,
-                        source_name="bulk_rerun",
-                        sanitize_config=_san_cfg,
-                    )
-                    _progress_bar.progress(0.5 if run_categorizer else 1.0)
-
-                # ── 3b. Categorizer ───────────────────────────────────────────
-                _cat_results = None
+            def _cat_progress_cb(p: float):
+                base = 0.5 if run_cleaner else 0.0
+                _progress_bar.progress(base + p * (1.0 - base))
                 if run_categorizer:
-                    _status_text.info(f"⏳ Categorizzazione {n_rerun} transazioni…")
+                    _status_text.info(f"⏳ Categorizzazione {n_rerun} transazioni… {p*100:.0f}%")
 
-                    def _prog_cb(p: float):
-                        _progress_bar.progress(0.5 + p * 0.5 if run_cleaner else p)
-
-                    _cat_results = categorize_batch(
-                        _tx_dicts,
-                        _taxonomy,
-                        _user_rules,
-                        _backend,
-                        sanitize_config=_san_cfg,
-                        fallback_backend=_fallback,
-                        description_language=_lang,
-                        source_name="bulk_rerun",
-                        progress_callback=_prog_cb,
-                    )
-
+            try:
+                n_desc, n_cat, n_review = review_svc.rerun_pipeline_on_txs(
+                    tx_ids, run_cleaner, run_categorizer,
+                    categorizer_progress_callback=_cat_progress_cb if run_categorizer else None,
+                )
             except Exception as _pe:
                 st.error(f"Errore durante la ri-elaborazione: {_pe}")
                 logger.exception("bulk_edit: rerun pipeline error")
                 st.stop()
 
-            # ── 4. Applica risultati al DB ────────────────────────────────────
             _progress_bar.progress(1.0)
             _status_text.empty()
 
-            _n_desc_updated = _n_cat_updated = _n_review = 0
-            with get_session(engine) as ws:
-                for i, td in enumerate(_tx_dicts):
-                    tx = ws.get(Transaction, td["id"])
-                    if tx is None:
-                        continue
-                    if run_cleaner:
-                        new_desc = td.get("description", "")
-                        if new_desc and new_desc != (tx.description or ""):
-                            tx.description = new_desc
-                            _n_desc_updated += 1
-                    if run_categorizer and _cat_results:
-                        r = _cat_results[i]
-                        tx.category            = r.category
-                        tx.subcategory         = r.subcategory
-                        tx.category_confidence = r.confidence.value if hasattr(r.confidence, "value") else str(r.confidence)
-                        tx.category_source     = r.source.value     if hasattr(r.source,     "value") else str(r.source)
-                        tx.to_review           = r.to_review
-                        _n_cat_updated += 1
-                        if r.to_review:
-                            _n_review += 1
-                ws.commit()
-
-            # ── 5. Riepilogo ──────────────────────────────────────────────────
             _parts = []
             if run_cleaner:
-                _parts.append(f"**{_n_desc_updated}** descrizioni aggiornate")
+                _parts.append(f"**{n_desc}** descrizioni aggiornate")
             if run_categorizer:
-                _parts.append(
-                    f"**{_n_cat_updated}** tx categorizzate "
-                    f"({_n_review} ancora da rivedere)"
-                )
+                _parts.append(f"**{n_cat}** tx categorizzate ({n_review} ancora da rivedere)")
             st.success(f"✅ Ri-elaborazione completata su {n_rerun} tx — " + " · ".join(_parts) + ".")
             logger.info(
                 f"bulk_edit: rerun scope={rr_scope!r} n={n_rerun} "
-                f"desc={_n_desc_updated} cat={_n_cat_updated} review={_n_review}"
+                f"desc={n_desc} cat={n_cat} review={n_review}"
             )
             st.rerun()
 
@@ -361,15 +220,13 @@ def render_bulk_edit_page(engine):
         )
     with g2:
         if st.button(giro_label, key="bulk_toggle_giro"):
-            with get_session(engine) as ws:
-                ok, new_type = toggle_transaction_giroconto(ws, sel.id)
-                n_extra = 0
-                if ok and apply_giro_similar and sel.description:
-                    make_giro = new_type in ("internal_out", "internal_in")
-                    n_extra = bulk_set_giroconto_by_description(
-                        ws, sel.description, make_giro, exclude_id=sel.id
-                    )
-                ws.commit()
+            ok, new_type = tx_svc.toggle_giroconto(sel.id)
+            n_extra = 0
+            if ok and apply_giro_similar and sel.description:
+                make_giro = new_type in ("internal_out", "internal_in")
+                n_extra = tx_svc.bulk_set_giroconto_by_description(
+                    sel.description, make_giro, exclude_id=sel.id
+                )
             if ok:
                 action = "rimossa dai giroconti" if new_type in ("expense", "income") \
                          else "segnata come giroconto"
@@ -409,23 +266,14 @@ def render_bulk_edit_page(engine):
         )
     with cx3:
         if st.button("💾 Applica contesto", key="bulk_ctx_save", use_container_width=True):
-            with get_session(engine) as cs:
-                update_transaction_context(cs, sel.id, new_ctx_value)
-                n_extra = 0
-                if apply_ctx_same and sel.description:
-                    same_txs = cs.query(Transaction).filter(
-                        Transaction.description == sel.description,
-                        Transaction.id != sel.id,
-                    ).all()
-                    for stx in same_txs:
-                        update_transaction_context(cs, stx.id, new_ctx_value)
-                        n_extra += 1
-                if apply_ctx_similar:
-                    for stx in _similar_txs:
-                        if stx.id != sel.id:
-                            update_transaction_context(cs, stx.id, new_ctx_value)
-                            n_extra += 1
-                cs.commit()
+            tx_svc.update_context(sel.id, new_ctx_value)
+            n_extra = 0
+            if apply_ctx_same and sel.description:
+                same_txs = tx_svc.get_by_description(sel.description, sel.id)
+                n_extra += tx_svc.update_context_bulk([t.id for t in same_txs], new_ctx_value)
+            if apply_ctx_similar:
+                similar_ids = [t.id for t in _similar_txs if t.id != sel.id]
+                n_extra += tx_svc.update_context_bulk(similar_ids, new_ctx_value)
             ctx_display = new_ctx_value or "nessuno"
             extra = f" · {n_extra} simili aggiornate." if n_extra else ""
             st.success(f"Contesto impostato: **{ctx_display}**.{extra}")
@@ -482,46 +330,39 @@ def render_bulk_edit_page(engine):
             )
 
         if st.button("💾 Applica categoria", type="primary", key="bulk_cat_save"):
-            with get_session(engine) as ws:
-                ok = update_transaction_category(ws, sel.id, new_cat, new_sub)
-                if ok:
-                    rule_msg = ""
-                    n_similar = 0
+            ok = tx_svc.update_category(sel.id, new_cat, new_sub)
+            if ok:
+                rule_msg = ""
+                n_similar = 0
 
-                    if save_rule and sel.description:
-                        _, created = create_category_rule(
-                            session=ws,
-                            pattern=sel.description,
-                            match_type="contains",
-                            category=new_cat,
-                            subcategory=new_sub,
-                            priority=10,
-                        )
-                        rule_tag = "creata" if created else "aggiornata"
-                        rule_msg = f" · Regola {rule_tag}."
-
-                    if apply_to_similar_cat and sel.description:
-                        similar = get_transactions_by_rule_pattern(
-                            ws, sel.description, "contains"
-                        )
-                        for stx in similar:
-                            if stx.id != sel.id:
-                                update_transaction_category(ws, stx.id, new_cat, new_sub)
-                                n_similar += 1
-                        if n_similar:
-                            rule_msg += f" · {n_similar} tx simili aggiornate."
-
-                    ws.commit()
-                    st.success(
-                        f"Categoria aggiornata: **{new_cat}** / {new_sub}.{rule_msg}"
+                if save_rule and sel.description:
+                    _, created = rule_svc.create_rule(
+                        pattern=sel.description,
+                        match_type="contains",
+                        category=new_cat,
+                        subcategory=new_sub,
+                        priority=10,
                     )
-                    logger.info(
-                        f"bulk_edit: cat tx={sel.id} cat={new_cat}/{new_sub} "
-                        f"rule={save_rule} similar={n_similar}"
-                    )
-                    st.rerun()
-                else:
-                    st.error("Transazione non trovata.")
+                    rule_tag = "creata" if created else "aggiornata"
+                    rule_msg = f" · Regola {rule_tag}."
+
+                if apply_to_similar_cat and sel.description:
+                    similar = tx_svc.get_by_rule_pattern(sel.description, "contains")
+                    for stx in similar:
+                        if stx.id != sel.id:
+                            tx_svc.update_category(stx.id, new_cat, new_sub)
+                            n_similar += 1
+                    if n_similar:
+                        rule_msg += f" · {n_similar} tx simili aggiornate."
+
+                st.success(f"Categoria aggiornata: **{new_cat}** / {new_sub}.{rule_msg}")
+                logger.info(
+                    f"bulk_edit: cat tx={sel.id} cat={new_cat}/{new_sub} "
+                    f"rule={save_rule} similar={n_similar}"
+                )
+                st.rerun()
+            else:
+                st.error("Transazione non trovata.")
     else:
         st.info("Transazione marcata come giroconto — la correzione categoria non è applicabile.")
 
@@ -534,12 +375,8 @@ def render_bulk_edit_page(engine):
         "eliminate e conferma. **L'operazione è irreversibile.**"
     )
 
-    with get_session(engine) as s:
-        _del_accounts = sorted({
-            r[0] for r in s.query(Transaction.account_label).distinct().all() if r[0]
-        })
+    _del_accounts = tx_svc.get_distinct_account_labels()
 
-    # — Filtri eliminazione —
     de1, de2, de3, de4 = st.columns(4)
     with de1:
         del_date_from = st.date_input("Da", key="del_date_from", value=None)
@@ -565,7 +402,6 @@ def render_bulk_edit_page(engine):
             key="del_cat",
         )
 
-    # — Costruisci filtri e conta —
     _del_filters: dict = {}
     if del_date_from:
         _del_filters["date_from"] = del_date_from.isoformat()
@@ -580,9 +416,9 @@ def render_bulk_edit_page(engine):
     if del_cat != "tutte":
         _del_filters["category"] = del_cat
 
-    with get_session(engine) as s:
-        _del_preview = get_transactions(s, filters=_del_filters, limit=10)
-        _del_count   = len(get_transactions(s, filters=_del_filters))
+    _del_preview = tx_svc.get_transactions(filters=_del_filters, limit=10)
+    _all_del     = tx_svc.get_transactions(filters=_del_filters)
+    _del_count   = len(_all_del)
 
     if not _del_filters:
         st.warning("⚠️ Nessun filtro impostato — imposta almeno un criterio prima di procedere.")
@@ -594,8 +430,8 @@ def render_bulk_edit_page(engine):
                 f"🗑️ **{_del_count} transazioni** verranno eliminate in modo permanente."
             )
 
-            # Anteprima (max 10 righe)
             with st.expander(f"👁 Anteprima prime {min(10, _del_count)} righe"):
+                import pandas as _pd
                 _prev_rows = [
                     {
                         "Data":        format_date_display(tx.date, _date_fmt),
@@ -607,10 +443,8 @@ def render_bulk_edit_page(engine):
                     }
                     for tx in _del_preview
                 ]
-                import pandas as _pd
                 st.dataframe(_pd.DataFrame(_prev_rows), use_container_width=True, hide_index=True)
 
-            # — Conferma —
             st.markdown(
                 "Per confermare, digita esattamente **`ELIMINA`** nel campo qui sotto "
                 "e poi premi il pulsante."
@@ -630,12 +464,9 @@ def render_bulk_edit_page(engine):
                     key="del_execute",
                     use_container_width=True,
                 ):
-                    with get_session(engine) as ws:
-                        n_deleted = delete_transactions_by_filter(ws, _del_filters)
-                        ws.commit()
+                    n_deleted = tx_svc.delete_by_filter(_del_filters)
                     st.success(f"✅ Eliminate **{n_deleted}** transazioni.")
                     logger.info(f"bulk_edit: deleted {n_deleted} tx filters={_del_filters}")
-                    # reset conferma e rerun
                     if "del_confirm" in st.session_state:
                         del st.session_state["del_confirm"]
                     st.rerun()
@@ -650,12 +481,14 @@ def render_bulk_edit_page(engine):
         "sovrapposte (es. estratto conto + file carta)."
     )
 
-    with get_session(engine) as s:
-        _dup_groups = get_cross_account_duplicates(s)
+    _dup_groups = tx_svc.get_cross_account_duplicates()
 
     if not _dup_groups:
         st.success("Nessun duplicato tra conti trovato.")
     else:
+        import pandas as _pd
+        from itertools import combinations
+
         n_groups = len(_dup_groups)
         n_extra  = sum(len(g) - 1 for g in _dup_groups)
         st.warning(
@@ -663,31 +496,23 @@ def render_bulk_edit_page(engine):
             f"**{n_extra} transazioni in eccesso** (una per gruppo è quella originale)."
         )
 
-        import pandas as _pd
-        from itertools import combinations
-
-        # ── Pivot: conti × conti (triangolo inferiore) ────────────────────────
-        _all_accounts = sorted({
+        _all_accounts_dup = sorted({
             tx.account_label or ""
             for g in _dup_groups for tx in g
         })
-        if len(_all_accounts) >= 2:
-            # Count duplicate groups per account pair (lower triangle only)
+        if len(_all_accounts_dup) >= 2:
             _pair_counts: dict[tuple[str, str], int] = {}
             for g in _dup_groups:
                 accts = sorted({tx.account_label or "" for tx in g})
                 for a, b in combinations(accts, 2):
                     _pair_counts[(a, b)] = _pair_counts.get((a, b), 0) + 1
 
-            # Build lower-triangle DataFrame
-            _pivot = _pd.DataFrame("", index=_all_accounts, columns=_all_accounts)
+            _pivot = _pd.DataFrame("", index=_all_accounts_dup, columns=_all_accounts_dup)
             for (a, b), cnt in _pair_counts.items():
-                # a < b (sorted), so b is the row and a is the column
                 _pivot.loc[b, a] = cnt
 
-            # Hide upper triangle and diagonal
-            for i, row in enumerate(_all_accounts):
-                for j, col in enumerate(_all_accounts):
+            for i, row in enumerate(_all_accounts_dup):
+                for j, col in enumerate(_all_accounts_dup):
                     if j >= i:
                         _pivot.loc[row, col] = ""
 
@@ -700,17 +525,16 @@ def render_bulk_edit_page(engine):
                 use_container_width=True,
             )
 
-        # Tabella riassuntiva
         _dup_rows = []
         for g in _dup_groups:
             ref = g[0]
             _dup_rows.append({
-                "Data":         format_date_display(ref.date, _date_fmt),
-                "Raw desc":     (ref.raw_description or "")[:80],
-                "Importo":      float(ref.amount),
-                "Conti":        ", ".join(sorted({tx.account_label or "" for tx in g})),
-                "N copie":      len(g),
-                "IDs":          ", ".join(tx.id[:8] for tx in g),
+                "Data":     format_date_display(ref.date, _date_fmt),
+                "Raw desc": (ref.raw_description or "")[:80],
+                "Importo":  float(ref.amount),
+                "Conti":    ", ".join(sorted({tx.account_label or "" for tx in g})),
+                "N copie":  len(g),
+                "IDs":      ", ".join(tx.id[:8] for tx in g),
             })
         st.dataframe(
             _pd.DataFrame(_dup_rows),
@@ -738,23 +562,7 @@ def render_bulk_edit_page(engine):
                 key="dup_execute",
                 use_container_width=True,
             ):
-                deleted = 0
-                with get_session(engine) as ws:
-                    for g in _dup_groups:
-                        # Keep g[0], delete the rest
-                        for tx in g[1:]:
-                            from db.models import ReconciliationLink, InternalTransferLink
-                            ws.query(ReconciliationLink).filter(
-                                (ReconciliationLink.settlement_id == tx.id) |
-                                (ReconciliationLink.detail_id == tx.id)
-                            ).delete(synchronize_session=False)
-                            ws.query(InternalTransferLink).filter(
-                                (InternalTransferLink.out_id == tx.id) |
-                                (InternalTransferLink.in_id == tx.id)
-                            ).delete(synchronize_session=False)
-                            ws.delete(tx)
-                            deleted += 1
-                    ws.commit()
+                deleted = tx_svc.delete_duplicate_groups(_dup_groups)
                 st.success(f"✅ Eliminati **{deleted}** duplicati.")
                 logger.info(f"bulk_edit: deleted {deleted} cross-account duplicates")
                 if "dup_confirm" in st.session_state:

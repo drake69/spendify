@@ -8,16 +8,8 @@ from decimal import Decimal
 import pandas as pd
 import streamlit as st
 
-from db.models import Transaction, get_session
-from db.repository import (
-    get_all_user_settings,
-    get_taxonomy_config,
-    get_transactions,
-    toggle_transaction_giroconto,
-    update_transaction_category,
-    update_transaction_context,
-)
-from reports.generator import generate_csv_export, generate_xlsx_export
+from services.settings_service import SettingsService
+from services.transaction_service import TransactionService
 from support.formatting import format_amount_display, format_date_display
 from support.logging import setup_logging
 
@@ -30,19 +22,15 @@ _ALL_TX_TYPES = [
 ]
 
 
-def _get_distinct_accounts(engine) -> list[str]:
-    with get_session(engine) as s:
-        rows = s.query(Transaction.account_label).distinct().all()
-        return sorted({r[0] for r in rows if r[0]})
-
-
 def render_registry_page(engine):
     st.header("📋 Ledger — Registro Transazioni")
 
+    cfg_svc = SettingsService(engine)
+    tx_svc  = TransactionService(engine)
+
     # ── Settings & taxonomy ────────────────────────────────────────────────────
-    with get_session(engine) as s:
-        settings = get_all_user_settings(s)
-        taxonomy = get_taxonomy_config(s)
+    settings = cfg_svc.get_all()
+    taxonomy = cfg_svc.get_taxonomy()
 
     _date_fmt = settings.get("date_display_format", "%d/%m/%Y")
     _dec = settings.get("amount_decimal_sep", ",")
@@ -65,7 +53,7 @@ def render_registry_page(engine):
         for sub in taxonomy.valid_subcategories(cat)
     })
 
-    _accounts = _get_distinct_accounts(engine)
+    _accounts = tx_svc.get_distinct_account_labels()
     today = date.today()
 
     # ── Date preset initialisation (default: mese corrente) ───────────────────
@@ -74,14 +62,11 @@ def render_registry_page(engine):
     if "ledger_to" not in st.session_state:
         st.session_state["ledger_to"] = today
 
-    # ── Quick date presets ─────────────────────────────────────────────────────
     _first_cur  = today.replace(day=1)
     _three_ago  = today - timedelta(days=90)
     _first_year = today.replace(month=1, day=1)
 
-    # "Mese precedente" is relative to the currently displayed ledger_from,
-    # so pressing it repeatedly navigates backwards month by month.
-    _cur_from   = st.session_state.get("ledger_from", _first_cur)
+    _cur_from = st.session_state.get("ledger_from", _first_cur)
     if not isinstance(_cur_from, date):
         _cur_from = _first_cur
     _rel_last_prev  = _cur_from - timedelta(days=1)
@@ -92,8 +77,6 @@ def render_registry_page(engine):
     if pc1.button("📅 Mese corrente",  key="preset_cur",  use_container_width=True):
         st.session_state["ledger_from"] = _first_cur
         st.session_state["ledger_to"]   = today
-        # No st.rerun() — lo script continua e renderizza tutti i widget
-        # con le nuove date E gli altri filtri già in session_state invariati.
     if pc2.button("⏮ Mese precedente", key="preset_prev", use_container_width=True):
         st.session_state["ledger_from"] = _rel_first_prev
         st.session_state["ledger_to"]   = _rel_last_prev
@@ -104,8 +87,6 @@ def render_registry_page(engine):
         st.session_state["ledger_from"] = _first_year
         st.session_state["ledger_to"]   = today
     if pc5.button("♾ Tutto",            key="preset_all",  use_container_width=True):
-        # "Tutto" deve azzerare esplicitamente TUTTI i filtri; il rerun
-        # è necessario qui per far rieseguire il blocco di init delle date.
         for _k in ("ledger_from", "ledger_to", "ledger_account", "ledger_type",
                    "ledger_cat", "ledger_desc", "ledger_review"):
             if _k in st.session_state:
@@ -164,8 +145,7 @@ def render_registry_page(engine):
     if review_only:
         filters["to_review"] = True
 
-    with get_session(engine) as s:
-        txs = get_transactions(s, filters=filters)
+    txs = tx_svc.get_transactions(filters=filters)
 
     if not txs:
         st.info("Nessuna transazione trovata con i filtri selezionati.")
@@ -179,8 +159,8 @@ def render_registry_page(engine):
 
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("Transazioni", len(txs))
-    m2.metric("Saldo netto",  format_amount_display(float(net),         _dec, _thou))
-    m3.metric("Entrate",      format_amount_display(float(income_t),    _dec, _thou))
+    m2.metric("Saldo netto",  format_amount_display(float(net),            _dec, _thou))
+    m3.metric("Entrate",      format_amount_display(float(income_t),       _dec, _thou))
     m4.metric("Uscite",       format_amount_display(float(abs(expense_t)), _dec, _thou))
 
     # ── Pagination ────────────────────────────────────────────────────────────
@@ -236,7 +216,7 @@ def render_registry_page(engine):
     orig_df = pd.DataFrame(orig_rows)
 
     _col_cfg: dict = {
-        "_id":            None,   # hidden
+        "_id":            None,
         "⚠️":             st.column_config.CheckboxColumn("⚠️",  disabled=True, width=40),
         "Data":           st.column_config.TextColumn("Data",         disabled=True, width="small"),
         "Descrizione":    st.column_config.TextColumn("Descrizione",  disabled=True),
@@ -279,36 +259,31 @@ def render_registry_page(engine):
         n_cat  = 0
         n_ctx  = 0
         n_giro = 0
-        with get_session(engine) as save_s:
-            for idx in range(len(orig_df)):
-                orig = orig_df.iloc[idx]
-                edit = edited_df.iloc[idx]
-                tx_id = orig["_id"]
+        for idx in range(len(orig_df)):
+            orig = orig_df.iloc[idx]
+            edit = edited_df.iloc[idx]
+            tx_id = orig["_id"]
 
-                cat_changed  = str(edit["Categoria"])      != str(orig["Categoria"])
-                sub_changed  = str(edit["Sottocategoria"]) != str(orig["Sottocategoria"])
-                ctx_changed  = str(edit["Contesto"])       != str(orig["Contesto"])
-                giro_changed = bool(edit["🔄 Giroconto"])  != bool(orig["🔄 Giroconto"])
+            cat_changed  = str(edit["Categoria"])      != str(orig["Categoria"])
+            sub_changed  = str(edit["Sottocategoria"]) != str(orig["Sottocategoria"])
+            ctx_changed  = str(edit["Contesto"])       != str(orig["Contesto"])
+            giro_changed = bool(edit["🔄 Giroconto"])  != bool(orig["🔄 Giroconto"])
 
-                if cat_changed or sub_changed:
-                    update_transaction_category(
-                        save_s, tx_id,
-                        edit["Categoria"]      or orig["Categoria"],
-                        edit["Sottocategoria"] or orig["Sottocategoria"],
-                    )
-                    n_cat += 1
+            if cat_changed or sub_changed:
+                tx_svc.update_category(
+                    tx_id,
+                    edit["Categoria"]      or orig["Categoria"],
+                    edit["Sottocategoria"] or orig["Sottocategoria"],
+                )
+                n_cat += 1
 
-                if ctx_changed:
-                    update_transaction_context(
-                        save_s, tx_id, edit["Contesto"] or None
-                    )
-                    n_ctx += 1
+            if ctx_changed:
+                tx_svc.update_context(tx_id, edit["Contesto"] or None)
+                n_ctx += 1
 
-                if giro_changed:
-                    toggle_transaction_giroconto(save_s, tx_id)
-                    n_giro += 1
-
-            save_s.commit()
+            if giro_changed:
+                tx_svc.toggle_giroconto(tx_id)
+                n_giro += 1
 
         total_saved = n_cat + n_ctx + n_giro
         if total_saved:
@@ -337,18 +312,17 @@ def render_registry_page(engine):
 
     # ── Export ────────────────────────────────────────────────────────────────
     st.divider()
-    with get_session(engine) as s:
-        ec1, ec2 = st.columns(2)
-        with ec1:
-            csv_bytes = generate_csv_export(s, filters=filters)
-            st.download_button(
-                "📥 Esporta CSV", csv_bytes, "spendify_export.csv", "text/csv",
-                use_container_width=True,
-            )
-        with ec2:
-            xlsx_bytes = generate_xlsx_export(s, filters=filters)
-            st.download_button(
-                "📥 Esporta XLSX", xlsx_bytes, "spendify_export.xlsx",
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True,
-            )
+    ec1, ec2 = st.columns(2)
+    with ec1:
+        csv_bytes = tx_svc.export_csv(filters=filters)
+        st.download_button(
+            "📥 Esporta CSV", csv_bytes, "spendify_export.csv", "text/csv",
+            use_container_width=True,
+        )
+    with ec2:
+        xlsx_bytes = tx_svc.export_xlsx(filters=filters)
+        st.download_button(
+            "📥 Esporta XLSX", xlsx_bytes, "spendify_export.xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True,
+        )
