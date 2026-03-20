@@ -7,25 +7,16 @@ from datetime import datetime, timezone
 import pandas as pd
 import streamlit as st
 
-from core.models import Confidence, DocumentType, GirocontoMode, SignConvention
-from core.normalizer import compute_columns_key, compute_header_sha256, detect_skip_rows, load_raw_head
-from core.orchestrator import ProcessingConfig, load_raw_dataframe, process_files
-from core.sanitizer import SanitizationConfig
-from core.schemas import DocumentSchema
-from db.models import get_session
-from db.repository import get_accounts
-from db.repository import (
-    create_import_job,
-    find_schema_by_header_sha256,
-    get_all_user_settings,
-    get_category_rules,
-    get_document_schema,
-    get_existing_tx_ids,
-    get_latest_import_job,
-    get_taxonomy_config,
-    persist_import_result,
-    update_import_job,
+from services.import_service import (
+    Confidence,
+    DocumentSchema,
+    DocumentType,
+    FileAnalysis,
+    ImportService,
+    ProcessingConfig,
+    SignConvention,
 )
+from services.settings_service import SettingsService
 from support.logging import setup_logging
 
 logger = setup_logging()
@@ -34,41 +25,8 @@ logger = setup_logging()
 _DB_WRITE_INTERVAL = 1.5
 
 
-def _build_config(engine, test_mode: bool | None = None) -> ProcessingConfig:
-    mode_str = st.session_state.get("giroconto_mode", "neutral")
-    with get_session(engine) as _s:
-        s = get_all_user_settings(_s)
-
-    use_owner_giroconto = s.get("use_owner_names_giroconto", "false").lower() == "true"
-    if test_mode is None:
-        test_mode = s.get("import_test_mode", "false").lower() == "true"
-    owner_names = [n.strip() for n in s.get("owner_names", "").split(",") if n.strip()]
-
-    return ProcessingConfig(
-        llm_backend=s.get("llm_backend", "local_ollama"),
-        giroconto_mode=GirocontoMode(mode_str),
-        use_owner_names_for_giroconto=use_owner_giroconto,
-        sanitize_config=SanitizationConfig(
-            owner_names=owner_names,
-            description_language=s.get("description_language", "it"),
-        ),
-        ollama_base_url=s.get("ollama_base_url", "http://localhost:11434"),
-        ollama_model=s.get("ollama_model", "gemma3:12b"),
-        openai_model=s.get("openai_model", "gpt-4o-mini"),
-        openai_api_key=s.get("openai_api_key", ""),
-        claude_model=s.get("anthropic_model", "claude-3-5-haiku-20241022"),
-        anthropic_api_key=s.get("anthropic_api_key", ""),
-        compat_base_url=s.get("compat_base_url", ""),
-        compat_api_key=s.get("compat_api_key", ""),
-        compat_model=s.get("compat_model", ""),
-        description_language=s.get("description_language", "it"),
-        test_mode=test_mode,
-        max_transaction_amount=float(s.get("max_transaction_amount", "1000000")),
-    )
-
-
 @st.fragment(run_every="2s")
-def _render_job_status_poll(engine) -> None:
+def _render_job_status_poll(import_svc: ImportService) -> None:
     """Auto-refreshing job-status fragment (polls DB every 2 s).
 
     Renders progress/result widgets without blocking the main script thread,
@@ -78,9 +36,7 @@ def _render_job_status_poll(engine) -> None:
     - not running → running : full app rerun to lock the file-uploader form.
     - running → completed/error : full app rerun to unlock the form.
     """
-    with get_session(engine) as s:
-        job = get_latest_import_job(s)
-
+    job = import_svc.get_latest_job()
     was_running: bool = st.session_state.get("_upload_job_was_running", False)
 
     if job is None:
@@ -95,8 +51,6 @@ def _render_job_status_poll(engine) -> None:
         st.caption(f"Avanzamento: {int(pct * 100)}% · aggiornamento automatico ogni 2 s")
         st.session_state["_upload_job_was_running"] = True
         if not was_running:
-            # Newly detected running job (started from another browser session).
-            # Full rerun so main script enters the "job running" block and hides the form.
             st.rerun()
 
     elif job.status == "completed":
@@ -105,7 +59,6 @@ def _render_job_status_poll(engine) -> None:
         if job.detail_message:
             st.caption(job.detail_message)
         if was_running:
-            # Transition: running → completed. Full rerun to unlock the form.
             st.session_state["_upload_job_was_running"] = False
             st.rerun()
 
@@ -149,14 +102,14 @@ def _render_last_import_summary():
                     )
 
 
-def _render_schema_review(engine, config, taxonomy, user_rules) -> bool:
+def _render_schema_review(import_svc: ImportService, config: ProcessingConfig) -> bool:
     """Show editable schema form for files with medium/low confidence.
     Returns True if the user confirmed and re-import was triggered."""
     pending = st.session_state.get("_pending_schema_reviews", [])
     if not pending:
         return False
 
-    # Deduplica per filename — stessa entry può finire in lista più volte
+    # Deduplica per filename
     seen: set[str] = set()
     pending = [e for e in pending if not (e["filename"] in seen or seen.add(e["filename"]))]  # type: ignore[func-returns-value]
 
@@ -173,7 +126,7 @@ def _render_schema_review(engine, config, taxonomy, user_rules) -> bool:
 
     for _idx, entry in enumerate(pending):
         filename = entry["filename"]
-        _key = f"{_idx}_{filename}"  # indice + filename → chiave sempre unica
+        _key = f"{_idx}_{filename}"
         result = entry["result"]
         schema = result.doc_schema
         cols = result.available_columns
@@ -189,7 +142,7 @@ def _render_schema_review(engine, config, taxonomy, user_rules) -> bool:
             # Raw file preview (no skip, no preprocessing)
             st.markdown("**Struttura raw del file (prime 10 righe, senza pre-elaborazione):**")
             try:
-                df_raw_preview = load_raw_head(entry["raw_bytes"], filename, n=10)
+                df_raw_preview = import_svc.get_raw_head(entry["raw_bytes"], filename, n=10)
                 st.dataframe(df_raw_preview, use_container_width=True, hide_index=False)
             except Exception as e:
                 st.caption(f"Anteprima raw non disponibile: {e}")
@@ -207,6 +160,7 @@ def _render_schema_review(engine, config, taxonomy, user_rules) -> bool:
             )
 
             c3, c4, c5 = st.columns(3)
+
             def _col_idx(val):
                 return col_options.index(val) if val in col_options else 0
 
@@ -250,27 +204,29 @@ def _render_schema_review(engine, config, taxonomy, user_rules) -> bool:
                 date_format="%d/%m/%Y", account_label="", confidence=Confidence.high,
             )
             confirmed_schemas[filename] = base.model_copy(update={
-                "doc_type": DocumentType(doc_type_sel),
-                "account_label": account_sel,
-                "amount_col": "" if amount_sel == none_option else amount_sel,
-                "date_col": "" if date_sel == none_option else date_sel,
-                "sign_convention": SignConvention(sign_sel),
-                "debit_col": None if debit_sel == none_option else debit_sel,
-                "credit_col": None if credit_sel == none_option else credit_sel,
-                "invert_sign": invert,
-                "confidence": Confidence.high,  # user confirmed → treat as high
-                "skip_rows": schema.skip_rows if schema else 0,
-                "header_sha256": entry.get("header_sha256", ""),
+                "doc_type":         DocumentType(doc_type_sel),
+                "account_label":    account_sel,
+                "amount_col":       "" if amount_sel == none_option else amount_sel,
+                "date_col":         "" if date_sel == none_option else date_sel,
+                "sign_convention":  SignConvention(sign_sel),
+                "debit_col":        None if debit_sel == none_option else debit_sel,
+                "credit_col":       None if credit_sel == none_option else credit_sel,
+                "invert_sign":      invert,
+                "confidence":       Confidence.high,
+                "skip_rows":        schema.skip_rows if schema else 0,
+                "header_sha256":    entry.get("header_sha256", ""),
             })
 
-            # Preview: apply schema and show normalised result — same layout as ledger
+            # Normalised preview
             st.markdown("**Anteprima normalizzata** — così appariranno nel ledger:")
             try:
-                from core.orchestrator import _normalize_df_with_schema, load_raw_dataframe
-                import pandas as pd
                 _skip_override = (schema.skip_rows or None) if schema else None
-                df_raw_prev, _, _ = load_raw_dataframe(entry["raw_bytes"], filename, skip_rows_override=_skip_override)
-                preview_txs = _normalize_df_with_schema(df_raw_prev.head(30), confirmed_schemas[filename], filename)
+                preview_txs = import_svc.get_normalized_preview(
+                    entry["raw_bytes"], filename,
+                    confirmed_schemas[filename],
+                    n=30,
+                    skip_rows_override=_skip_override,
+                )
                 if preview_txs:
                     preview_rows = [
                         {
@@ -299,49 +255,36 @@ def _render_schema_review(engine, config, taxonomy, user_rules) -> bool:
                 st.caption(f"Anteprima non disponibile: {e}")
 
     if st.button("✅ Conferma schemi e importa", type="primary"):
-        from core.orchestrator import process_file
         results = []
         prog = st.progress(0.0)
-        with get_session(engine) as session:
-            taxonomy_c = taxonomy
-            user_rules_c = user_rules
-            for i, entry in enumerate(pending):
-                raw_bytes = entry["raw_bytes"]
-                filename = entry["filename"]
-                confirmed = confirmed_schemas[filename]
-                prog.progress((i + 1) / len(pending))
+        for i, entry in enumerate(pending):
+            raw_bytes = entry["raw_bytes"]
+            filename = entry["filename"]
+            confirmed = confirmed_schemas[filename]
+            prog.progress((i + 1) / len(pending))
 
-                def _make_existing_checker(eng):
-                    def _checker(tx_ids):
-                        with get_session(eng) as s:
-                            return get_existing_tx_ids(s, tx_ids)
-                    return _checker
-
-                result = process_file(
-                    raw_bytes=raw_bytes,
-                    filename=filename,
-                    config=config,
-                    taxonomy=taxonomy_c,
-                    user_rules=user_rules_c,
-                    known_schema=confirmed,
-                    existing_tx_ids_checker=_make_existing_checker(engine),
-                    account_label_override=entry.get("account_label_override"),
-                )
-                with get_session(engine) as s2:
-                    persist_import_result(s2, result)
-                results.append(result)
+            result = import_svc.process_file_single(
+                raw_bytes=raw_bytes,
+                filename=filename,
+                config=config,
+                known_schema=confirmed,
+                account_label_override=entry.get("account_label_override"),
+            )
+            import_svc.persist_result(result)
+            results.append(result)
 
         st.session_state["_pending_schema_reviews"] = []
         existing = st.session_state.get("last_import_results", [])
         st.session_state["last_import_results"] = existing + results
 
-        # Update job status message so the banner shows ✅ instead of ⏸️
+        # Update job status so the banner shows ✅ instead of ⏸️
         _pending_job_id = st.session_state.pop("_pending_schema_job_id", None)
         if _pending_job_id:
             n_confirmed = sum(len(r.transactions) for r in results)
-            with get_session(engine) as _sj:
-                update_import_job(_sj, _pending_job_id,
-                                  status_message=f"✅ Completato — {n_confirmed:,} nuove transazioni")
+            import_svc.update_job(
+                _pending_job_id,
+                status_message=f"✅ Completato — {n_confirmed:,} nuove transazioni",
+            )
 
         st.rerun()
 
@@ -351,26 +294,22 @@ def _render_schema_review(engine, config, taxonomy, user_rules) -> bool:
 def render_upload_page(engine):
     st.header("📥 Import — Caricamento Estratti Conto")
 
+    import_svc = ImportService(engine)
+    cfg_svc    = SettingsService(engine)
+
     # Guard: owner names must be configured before any import
-    with get_session(engine) as _s:
-        _owner_names = get_all_user_settings(_s).get("owner_names", "").strip()
-    if not _owner_names:
+    if not import_svc.get_owner_names():
         st.error(
             "⚠️ **Nomi titolari non configurati.** "
             "Vai in ⚙️ Impostazioni e compila il campo *Nomi titolari* prima di importare."
         )
         return
 
-    # Check for an active running job *before* rendering the form.
-    # If a job is running: show only the progress view (block the form).
-    # If completed/error: fall through and show form + summary below.
-    with get_session(engine) as _js:
-        _active_job = get_latest_import_job(_js)
-
-    if _active_job and _active_job.status == "running":
+    # Check for an active running job before rendering the form.
+    active_job = import_svc.get_latest_job()
+    if active_job and active_job.status == "running":
         st.info("⏳ Importazione in corso — attendere il completamento prima di caricare nuovi file.")
-        # Fragment polls every 2 s; calls st.rerun() when job completes to unlock the form.
-        _render_job_status_poll(engine)
+        _render_job_status_poll(import_svc)
         return
 
     uploaded_files = st.file_uploader(
@@ -381,15 +320,13 @@ def render_upload_page(engine):
 
     if not uploaded_files:
         st.info("Carica uno o più file per avviare l'elaborazione.")
-        # Fragment polls every 2 s and detects jobs started from other browser sessions.
-        _render_job_status_poll(engine)
+        _render_job_status_poll(import_svc)
         _render_last_import_summary()
         return
 
     # Per-file account selector
-    with get_session(engine) as _acc_s:
-        _accounts = get_accounts(_acc_s)
-    _account_names = [a.name for a in _accounts]
+    _accounts     = cfg_svc.get_accounts()
+    _account_names  = [a.name for a in _accounts]
     _account_options = ["— rilevamento automatico —"] + _account_names
 
     if not _account_names:
@@ -401,16 +338,13 @@ def render_upload_page(engine):
     st.markdown("**Associa ogni file a un conto:**")
     _file_account_map: dict[str, str | None] = {}
     _file_skip_map: dict[str, int] = {}
+
     for uf in uploaded_files:
         raw_preview = uf.getvalue()
-        _detected_skip, _skip_certain = detect_skip_rows(raw_preview, uf.name)
-
-        # SHA256 hit → schema (and skip_rows) already known, no input needed
-        with get_session(engine) as _prev_s:
-            _sha256_hit = find_schema_by_header_sha256(_prev_s, compute_header_sha256(raw_preview, uf.name))
+        _detected_skip, _skip_certain = import_svc.detect_skip_rows(raw_preview, uf.name)
+        _sha256_hit = import_svc.find_schema_by_header(raw_preview, uf.name)
 
         if _sha256_hit or _skip_certain:
-            # Detection confident or schema cached → silent
             c1, c2 = st.columns([3, 2])
             c1.caption(f"📄 {uf.name}")
             sel = c2.selectbox(
@@ -421,7 +355,6 @@ def render_upload_page(engine):
             )
             _file_skip_map[uf.name] = _sha256_hit.skip_rows if _sha256_hit else _detected_skip
         else:
-            # Detection uncertain → ask user
             c1, c2, c3 = st.columns([3, 2, 2])
             c1.caption(f"📄 {uf.name}")
             sel = c2.selectbox(
@@ -441,168 +374,132 @@ def render_upload_page(engine):
         _file_account_map[uf.name] = sel if sel != "— rilevamento automatico —" else None
 
     if st.button("▶️ Elabora file", type="primary"):
-        config = _build_config(engine)
+        giroconto_mode = st.session_state.get("giroconto_mode", "neutral")
+        config = import_svc.build_config(giroconto_mode=giroconto_mode)
 
-        # Prepare file list and load known schemas
-        files = []
-        known_schemas = {}
-        _file_header_sha256: dict[str, str] = {}
-        with get_session(engine) as session:
-            taxonomy = get_taxonomy_config(session)
-            user_rules = get_category_rules(session)
-            for uf in uploaded_files:
-                raw_bytes = uf.read()
-                # Compute header SHA256 for fast schema lookup
-                h_sha256 = compute_header_sha256(raw_bytes, uf.name)
-                _file_header_sha256[uf.name] = h_sha256
-                # Check header SHA256 cache first (avoids loading DataFrame for known formats)
-                cached_schema = find_schema_by_header_sha256(session, h_sha256)
-                if cached_schema:
-                    logger.info(f"upload_page: header_sha256 cache hit for {uf.name} — reusing schema")
-                    known_schemas[uf.name] = cached_schema
-                    files.append((raw_bytes, uf.name, 0))
-                else:
-                    df_raw, _, _preprocess_info = load_raw_dataframe(raw_bytes, uf.name)
-                    # Use columns BEFORE drop_low_variability_columns for a stable key:
-                    # the drop ratio is relative to file size, so monthly exports of the
-                    # same bank can produce different post-drop column sets → cache miss.
-                    stable_cols = _preprocess_info.columns_before_drop or list(df_raw.columns)
-                    cols_key = compute_columns_key(pd.DataFrame(columns=stable_cols))
-                    schema = get_document_schema(session, cols_key)
-                    if schema:
-                        known_schemas[uf.name] = schema
-                    files.append((raw_bytes, uf.name, len(df_raw)))
+        # Analyse each file (schema cache lookup)
+        files: list[tuple[bytes, str, int]] = []
+        known_schemas: dict[str, object] = {}
+        file_header_sha256: dict[str, str] = {}
+
+        for uf in uploaded_files:
+            raw_bytes = uf.read()
+            analysis: FileAnalysis = import_svc.analyze_file(raw_bytes, uf.name)
+            file_header_sha256[uf.name] = analysis.header_sha256
+            if analysis.known_schema:
+                logger.info(f"upload_page: schema cache hit for {uf.name}")
+                known_schemas[uf.name] = analysis.known_schema
+            files.append((raw_bytes, uf.name, analysis.n_rows))
 
         total_files = len(files)
 
-        # Create job record in DB
-        with get_session(engine) as s:
-            job = create_import_job(s, n_files=total_files)
-            job_id = job.id
+        # Create job record
+        job = import_svc.create_job(n_files=total_files)
+        job_id = job.id
 
-        # Live widgets for the originating session
+        # Live progress widgets for this session
         _progress_bar = st.progress(0.0)
-        _status_text = st.empty()
+        _status_text  = st.empty()
         _counter_text = st.empty()
 
         results = []
-        with get_session(engine) as session2:
-            for i, (raw_bytes, filename, n_rows) in enumerate(files):
-                file_start = i / total_files
-                file_end = (i + 1) / total_files
+        for i, (raw_bytes, filename, _n_rows) in enumerate(files):
+            file_start = i / total_files
+            file_end   = (i + 1) / total_files
 
-                _status_text.text(f"File {i + 1}/{total_files} — {filename}")
-                _counter_text.caption("Avvio elaborazione...")
+            _status_text.text(f"File {i + 1}/{total_files} — {filename}")
+            _counter_text.caption("Avvio elaborazione...")
 
-                # Write file-start to DB
-                with get_session(engine) as s:
-                    update_import_job(s, job_id,
-                                      progress=file_start,
-                                      status_message=f"File {i + 1}/{total_files} — {filename}")
+            import_svc.update_job(
+                job_id,
+                progress=file_start,
+                status_message=f"File {i + 1}/{total_files} — {filename}",
+            )
 
-                # Throttle state for DB writes inside the callback
-                _last_db_write = [0.0]
+            _last_db_write = [0.0]
 
-                def _make_cb(start: float, end: float, fname: str,
-                              fidx: int, ftot: int, jid: int,
-                              _last: list):
-                    def _cb(p: float):
-                        pct = start + (end - start) * p
-                        # Update live widgets in originating session
-                        _progress_bar.progress(min(pct, 1.0))
-                        _status_text.text(f"File {fidx + 1}/{ftot} — {fname}")
-                        _counter_text.caption(f"Avanzamento file: {int(p * 100)}%")
-                        # Throttled DB write so other sessions see live progress
-                        now = time.time()
-                        if now - _last[0] >= _DB_WRITE_INTERVAL:
-                            _last[0] = now
-                            with get_session(engine) as s:
-                                update_import_job(
-                                    s, jid,
-                                    progress=round(pct, 4),
-                                    status_message=f"File {fidx + 1}/{ftot} — {fname} ({int(p * 100)}%)",
-                                )
-                    return _cb
+            def _make_cb(start: float, end: float, fname: str,
+                         fidx: int, ftot: int, jid: int, _last: list):
+                def _cb(p: float):
+                    pct = start + (end - start) * p
+                    _progress_bar.progress(min(pct, 1.0))
+                    _status_text.text(f"File {fidx + 1}/{ftot} — {fname}")
+                    _counter_text.caption(f"Avanzamento file: {int(p * 100)}%")
+                    now = time.time()
+                    if now - _last[0] >= _DB_WRITE_INTERVAL:
+                        _last[0] = now
+                        import_svc.update_job(
+                            jid,
+                            progress=round(pct, 4),
+                            status_message=f"File {fidx + 1}/{ftot} — {fname} ({int(p * 100)}%)",
+                        )
+                return _cb
 
-                def _make_existing_checker(eng):
-                    def _checker(tx_ids: list[str]) -> set[str]:
-                        with get_session(eng) as s:
-                            return get_existing_tx_ids(s, tx_ids)
-                    return _checker
+            result = import_svc.process_file_single(
+                raw_bytes=raw_bytes,
+                filename=filename,
+                config=config,
+                known_schema=known_schemas.get(filename),
+                progress_callback=_make_cb(
+                    file_start, file_end, filename, i, total_files,
+                    job_id, _last_db_write,
+                ),
+                account_label_override=_file_account_map.get(filename),
+                skip_rows_override=_file_skip_map.get(filename),
+            )
 
-                from core.orchestrator import process_file
-                result = process_file(
-                    raw_bytes=raw_bytes,
-                    filename=filename,
-                    config=config,
-                    taxonomy=taxonomy,
-                    user_rules=user_rules,
-                    known_schema=known_schemas.get(filename),
-                    progress_callback=_make_cb(
-                        file_start, file_end, filename, i, total_files,
-                        job_id, _last_db_write,
-                    ),
-                    existing_tx_ids_checker=_make_existing_checker(engine),
-                    account_label_override=_file_account_map.get(filename),
-                    skip_rows_override=_file_skip_map.get(filename),
-                )
-                if result.needs_schema_review:
-                    # Do NOT persist — wait for user confirmation
-                    pending = st.session_state.get("_pending_schema_reviews", [])
-                    pending.append({
-                        "raw_bytes": raw_bytes,
-                        "filename": filename,
-                        "result": result,
-                        "account_label_override": _file_account_map.get(filename),
-                        "header_sha256": _file_header_sha256.get(filename, ""),
-                    })
-                    st.session_state["_pending_schema_reviews"] = pending
-                    st.session_state["_pending_schema_job_id"] = job_id
-                else:
-                    persist_import_result(session2, result)
-                results.append(result)
-                _progress_bar.progress(file_end)
+            if result.needs_schema_review:
+                pending = st.session_state.get("_pending_schema_reviews", [])
+                pending.append({
+                    "raw_bytes":              raw_bytes,
+                    "filename":               filename,
+                    "result":                 result,
+                    "account_label_override": _file_account_map.get(filename),
+                    "header_sha256":          file_header_sha256.get(filename, ""),
+                })
+                st.session_state["_pending_schema_reviews"] = pending
+                st.session_state["_pending_schema_job_id"]  = job_id
+            else:
+                import_svc.persist_result(result)
 
-                # Write file-end to DB
-                with get_session(engine) as s:
-                    update_import_job(s, job_id, progress=file_end)
+            results.append(result)
+            _progress_bar.progress(file_end)
+            import_svc.update_job(job_id, progress=file_end)
 
         n_pending = len(st.session_state.get("_pending_schema_reviews", []))
-        n_tx = sum(len(r.transactions) for r in results if not r.needs_schema_review)
+        n_tx      = sum(len(r.transactions) for r in results if not r.needs_schema_review)
         n_skipped = sum(r.skipped_count for r in results)
+
         if n_pending:
             final_msg = f"⏸️ {n_pending} file in attesa di revisione schema"
         else:
             final_msg = f"✅ Completato — {n_tx:,} nuove transazioni"
         if n_skipped:
             final_msg += f" · {n_skipped:,} già presenti (saltate)"
+
         final_detail = (
             f"{total_files} file elaborati · "
             f"{datetime.now(timezone.utc).strftime('%H:%M:%S')} UTC"
         )
 
-        # Mark job completed in DB
-        with get_session(engine) as s:
-            update_import_job(s, job_id,
-                              status="completed",
-                              progress=1.0,
-                              status_message=final_msg,
-                              detail_message=final_detail,
-                              n_transactions=n_tx,
-                              completed_at=datetime.now(timezone.utc))
+        import_svc.update_job(
+            job_id,
+            status="completed",
+            progress=1.0,
+            status_message=final_msg,
+            detail_message=final_detail,
+            n_transactions=n_tx,
+            completed_at=datetime.now(timezone.utc),
+        )
 
         st.session_state["last_import_results"] = [r for r in results if not r.needs_schema_review]
 
-    # Schema review gate: shown when a file has medium/low confidence
+    # Schema review gate
     if st.session_state.get("_pending_schema_reviews"):
-        with get_session(engine) as _rs:
-            _config = _build_config(engine)
-            _taxonomy = get_taxonomy_config(_rs)
-            _user_rules = get_category_rules(_rs)
-        _render_schema_review(engine, _config, _taxonomy, _user_rules)
+        giroconto_mode = st.session_state.get("giroconto_mode", "neutral")
+        config = import_svc.build_config(giroconto_mode=giroconto_mode)
+        _render_schema_review(import_svc, config)
         return
 
-    # Always rendered: reads job state from DB + summary from session_state.
-    # Fragment auto-refreshes every 2 s — no time.sleep() needed here.
-    _render_job_status_poll(engine)
+    _render_job_status_poll(import_svc)
     _render_last_import_summary()

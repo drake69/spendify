@@ -10,38 +10,25 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-from db.models import Transaction, get_session
-from db.repository import get_all_user_settings, get_taxonomy_config, get_transactions
-from reports.generator import generate_html_report
+from services.settings_service import SettingsService
+from services.transaction_service import TransactionService
 from support.formatting import format_amount_display
 from support.logging import setup_logging
 
 logger = setup_logging()
 
-# Always excluded from analytics (technical/settlement types, never meaningful)
 _ALWAYS_EXCLUDED = {"card_settlement", "aggregate_debit"}
-# Excluded only when giroconto_mode == "exclude"
 _GIROCONTO_TYPES = {"internal_out", "internal_in"}
-
-
-def _get_distinct_accounts(engine) -> list[str]:
-    with get_session(engine) as s:
-        rows = s.query(Transaction.account_label).distinct().all()
-        return sorted({r[0] for r in rows if r[0]})
-
-
-def _get_distinct_contexts(engine) -> list[str]:
-    with get_session(engine) as s:
-        rows = s.query(Transaction.context).distinct().all()
-        return sorted({r[0] for r in rows if r[0]})
 
 
 def render_analysis_page(engine):
     st.header("📊 Analytics — Analisi Finanziaria")
 
-    with get_session(engine) as session:
-        settings = get_all_user_settings(session)
-        taxonomy = get_taxonomy_config(session)
+    cfg_svc = SettingsService(engine)
+    tx_svc  = TransactionService(engine)
+
+    settings = cfg_svc.get_all()
+    taxonomy = cfg_svc.get_taxonomy()
 
     _dec          = settings.get("amount_decimal_sep", ",")
     _thou         = settings.get("amount_thousands_sep", ".")
@@ -51,8 +38,8 @@ def render_analysis_page(engine):
     _income_cats  = sorted(taxonomy.all_income_categories)
     _all_cats     = _expense_cats + _income_cats
 
-    _accounts = _get_distinct_accounts(engine)
-    _contexts = _get_distinct_contexts(engine)
+    _accounts = tx_svc.get_distinct_account_labels()
+    _contexts = tx_svc.get_distinct_context_values()
     today     = date.today()
 
     # ── Date preset session init ───────────────────────────────────────────────
@@ -61,7 +48,6 @@ def render_analysis_page(engine):
     if "analytics_to" not in st.session_state:
         st.session_state["analytics_to"] = today
 
-    # ── Quick date presets (same relative logic as ledger) ─────────────────────
     _first_cur = today.replace(day=1)
     _cur_from  = st.session_state.get("analytics_from", _first_cur)
     if not isinstance(_cur_from, date):
@@ -92,7 +78,6 @@ def render_analysis_page(engine):
         st.session_state.pop("analytics_to",   None)
         st.rerun()
 
-    # ── Filter row 1: date + account ───────────────────────────────────────────
     fc1, fc2, fc3 = st.columns([2, 2, 2])
     with fc1:
         date_from = st.date_input("Da", key="analytics_from")
@@ -103,7 +88,6 @@ def render_analysis_page(engine):
             "Conto", ["tutti i conti"] + _accounts, key="an_account"
         )
 
-    # ── Filter row 2: taxonomy (categoria → sottocategoria) + contesto ─────────
     fc4, fc5, fc6 = st.columns([2, 2, 2])
     with fc4:
         cat_filter = st.selectbox(
@@ -123,7 +107,6 @@ def render_analysis_page(engine):
         ctx_options = ["tutti i contesti"] + _contexts
         ctx_filter  = st.selectbox("Contesto", ctx_options, key="an_ctx")
 
-    # ── Build query filters ────────────────────────────────────────────────────
     filters: dict = {}
     if date_from:
         filters["date_from"] = date_from.isoformat()
@@ -138,14 +121,12 @@ def render_analysis_page(engine):
     if ctx_filter != "tutti i contesti":
         filters["context"] = ctx_filter
 
-    with get_session(engine) as session:
-        txs = get_transactions(session, filters=filters)
+    txs = tx_svc.get_transactions(filters=filters)
 
     if not txs:
         st.info("Nessuna transazione disponibile con i filtri selezionati.")
         return
 
-    # ── Giroconto mode ─────────────────────────────────────────────────────────
     excluded = set(_ALWAYS_EXCLUDED)
     if giroconto_mode == "exclude":
         excluded |= _GIROCONTO_TYPES
@@ -153,7 +134,6 @@ def render_analysis_page(engine):
     else:
         st.caption("ℹ️ Giroconti inclusi nell'analisi (modalità *Neutrale*). Puoi cambiarla in ⚙️ Impostazioni.")
 
-    # ── Build DataFrames ───────────────────────────────────────────────────────
     rows = []
     for tx in txs:
         if tx.tx_type in excluded:
@@ -518,12 +498,10 @@ def render_analysis_page(engine):
 
     # ── HTML report download ───────────────────────────────────────────────────
     st.divider()
-    with get_session(engine) as session:
-        html_str = generate_html_report(
-            session,
-            date_from=filters.get("date_from"),
-            date_to=filters.get("date_to"),
-        )
+    html_str = tx_svc.export_html(
+        date_from=filters.get("date_from"),
+        date_to=filters.get("date_to"),
+    )
     st.download_button(
         "📥 Scarica Report HTML",
         html_str.encode("utf-8"),
