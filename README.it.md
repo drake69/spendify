@@ -1,4 +1,4 @@
-# Spendify v2.4
+# Spendify v3.0
 
 [![CI](https://github.com/drake69/spendify/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/drake69/spendify/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/drake69/spendify/graph/badge.svg)](https://codecov.io/gh/drake69/spendify)
@@ -46,6 +46,8 @@ Aggrega estratti conto eterogenei (conti correnti, carte di credito, carte di de
 | **Categorizzazione a cascata (RF-05)** | Regole utente → regex statiche → LLM strutturato → fallback "Altro" |
 | **Motore regole con applicazione retroattiva** | Le regole deterministiche vengono applicate a tutte le transazioni esistenti al momento del salvataggio, non solo alle future importazioni |
 | **Sottocategoria come fonte di verità** | La sottocategoria è la chiave primaria: se LLM o regola assegna una sottocategoria presente in tassonomia, la categoria genitore viene risolta automaticamente |
+| **Wizard di onboarding guidato** | Wizard in 4 step al primo avvio: selezione lingua (rilevata dal browser), nomi titolari, conti bancari, conferma. Scrittura atomica: il DB viene popolato solo al clic su "Inizia!". Saltato automaticamente se esiste già una tassonomia (installazioni esistenti). |
+| **Tassonomia multi-lingua** | Template built-in in 5 lingue (🇮🇹 🇬🇧 🇫🇷 🇩🇪 🇪🇸). Salvati nella tabella `taxonomy_default` del DB (nessun file YAML richiesto). Lingua scelta all'onboarding; reimpostabile da Impostazioni in qualsiasi momento. |
 | **Tassonomia a 2 livelli nel DB** | 15 categorie di spesa + 7 di entrata; gestita dalla pagina Tassonomia (DB-backed, nessun restart richiesto) |
 | **Backend LLM multi-provider** | Ollama (locale, default), OpenAI, Claude — interfaccia astratta comune, nessun LangChain |
 | **Config LLM nell'UI** | Backend, modello e chiavi API configurabili dalla pagina Impostazioni senza toccare `.env` |
@@ -55,7 +57,8 @@ Aggrega estratti conto eterogenei (conti correnti, carte di credito, carte di de
 | **Re-run LLM su fallimenti** | Pulsante nella pagina Review che rielabora solo le transazioni in cui l'LLM aveva fallito (`description == raw_description`) |
 | **Rilevamento giroconti cross-account** | Pulsante nella pagina Review che riesegue `detect_internal_transfers` globalmente su tutte le transazioni, intercettando le coppie non trovate in fase di import |
 | **Permutazioni nome titolare** | Tutte le permutazioni dei token del nome del titolare vengono verificate per il rilevamento giroconti, evitando i falsi negativi quando l'ordine varia tra i file |
-| **Persistenza SQLAlchemy** | 10 tabelle ORM; CRUD idempotente; migrazioni automatiche all'avvio |
+| **Service layer + CI coupling gate** | Tutte le pagine UI importano solo da `services.*`, mai da `core.*` o `db.*` direttamente. `tools/coupling_check.py --strict` applica il vincolo in CI; le violazioni bloccano la PR. |
+| **Persistenza SQLAlchemy** | 11 tabelle ORM; CRUD idempotente; migrazioni automatiche all'avvio |
 | **Progresso import cross-session** | Stato del job di importazione salvato nel DB; tutte le sessioni browser vedono il progresso in tempo reale |
 | **Export report** | HTML standalone (Plotly), CSV, XLSX |
 | **UI Streamlit 9 pagine** | Import → Ledger → Modifiche massive → Analytics → Review → Regole → Tassonomia → Impostazioni → Check List |
@@ -68,9 +71,10 @@ Aggrega estratti conto eterogenei (conti correnti, carte di credito, carte di de
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                            app.py  (Streamlit)                           │
-│  upload │ ledger │ bulk-edit │ analytics │ review │ rules │ taxonomy │ settings  │
+│  [onboarding gate] → sidebar → upload │ ledger │ bulk-edit │ analytics  │
+│                               review │ rules │ taxonomy │ settings       │
 └──────────────────────────┬───────────────────────────────────────────────┘
-                           │
+                           │ services.*  (facade layer)
                core/orchestrator.py
                ProcessingConfig  ·  process_file()
                            │
@@ -98,7 +102,8 @@ Aggrega estratti conto eterogenei (conti correnti, carte di credito, carte di de
     db/repository.py   (SQLAlchemy, idempotente)
     └─ Transaction · ImportBatch · DocumentSchemaModel
        ReconciliationLink · InternalTransferLink · CategoryRule
-       UserSettings · ImportJob · TaxonomyCategory · TaxonomySubcategory
+       UserSettings · ImportJob · Account
+       TaxonomyCategory · TaxonomySubcategory · TaxonomyDefault
         │
     reports/generator.py
     └─ HTML (Jinja2+Plotly) · CSV · XLSX
@@ -119,8 +124,7 @@ Aggrega estratti conto eterogenei (conti correnti, carte di credito, carte di de
 
 ```
 spendify/
-├── app.py                  # Entry point Streamlit (9 pagine)
-├── taxonomy.yaml           # Seed iniziale tassonomia (importato nel DB al primo avvio)
+├── app.py                  # Entry point Streamlit — onboarding gate + 9 pagine
 ├── .env.example            # Template variabili d'ambiente
 ├── pyproject.toml          # Dipendenze (uv / pip)
 │
@@ -135,16 +139,24 @@ spendify/
 │   └── orchestrator.py     # Pipeline principale: ProcessingConfig · process_file()
 │
 ├── db/
-│   ├── models.py           # ORM SQLAlchemy (9 tabelle) + migrazioni automatiche
-│   └── repository.py       # CRUD idempotente · persist_import_result() · CRUD tassonomia
-│                           #   bulk_set_giroconto_by_description()
-│                           #   get_transactions_by_rule_pattern()
+│   ├── models.py           # ORM SQLAlchemy (11 tabelle) + migrazioni automatiche
+│   ├── repository.py       # CRUD idempotente · persist_import_result() · CRUD tassonomia
+│   │                       #   bulk_set_giroconto_by_description()
+│   │                       #   get_transactions_by_rule_pattern()
+│   │                       #   seed_user_taxonomy_from_default()
+│   └── taxonomy_defaults.py  # Template tassonomia built-in (5 lingue: it/en/fr/de/es)
+│                              #   TAXONOMY_DEFAULTS · SUPPORTED_LANGUAGES
+│
+├── services/               # Facade layer — la UI importa solo da qui, mai da core.* o db.*
+│   ├── settings_service.py # SettingsService: CRUD impostazioni + tassonomia + conti + onboarding
+│   └── import_service.py   # ImportService: analisi file, pipeline, cache schema + re-export tipi
 │
 ├── reports/
 │   ├── generator.py        # HTML (Jinja2+Plotly) · CSV · XLSX
 │   └── template_report.html.j2
 │
 ├── ui/
+│   ├── onboarding_page.py  # Wizard primo avvio (4 step: lingua → titolari → conti → conferma)
 │   ├── sidebar.py          # Pulsanti navigazione (9 pagine) + modalità giroconto
 │   ├── upload_page.py      # Import multi-file + progress bar cross-session
 │   ├── registry_page.py    # Ledger filtrabile + selezione al click + bulk giroconto
@@ -155,8 +167,13 @@ spendify/
 │   ├── bulk_edit_page.py   # Operazioni massive: categoria/contesto/giroconto + eliminazione da filtro
 │   ├── rules_page.py       # CRUD completo regole + "Esegui tutte le regole" bulk re-categorizzazione
 │   ├── taxonomy_page.py    # CRUD DB-backed per categorie e sottocategorie
-│   ├── settings_page.py    # Locale (formato data/importo), lingua, config backend LLM
+│   ├── settings_page.py    # Locale, lingua, config LLM, expander reset tassonomia
 │   └── checklist_page.py   # Pivot mese × conto: checklist presenza transazioni
+│
+├── tools/
+│   ├── coupling_check.py   # Validatore accoppiamento architetturale (UI → services.* only)
+│   │                       #   --strict: applica baseline, usato in CI
+│   └── coupling_baseline.json  # Soglie max violazioni per file (attualmente tutte zero)
 │
 ├── prompts/
 │   ├── classifier.json     # Prompt Flow 2 (hint invert_sign per file carta)
@@ -166,7 +183,8 @@ spendify/
 │   ├── test_normalizer.py          # Test deterministici (parse_amount, SHA-256 …)
 │   ├── test_backends.py            # Factory backend, validazione, mock Ollama
 │   ├── test_categorizer.py         # Regole statiche, cascata, risoluzione tassonomia
-│   └── test_repository_rules.py    # Upsert regole, pattern matching, toggle giroconto, bulk ops
+│   ├── test_repository_rules.py    # Upsert regole, pattern matching, toggle giroconto, bulk ops
+│   └── test_taxonomy_onboarding.py # Template multi-lingua + servizi onboarding (27 test)
 │
 └── support/
     ├── formatting.py       # format_amount_display, format_date_display, format_raw_amount_display
@@ -243,22 +261,14 @@ ollama pull gemma3:12b
 
 ## Configurazione
 
-Impostazioni minime richieste in `.env`:
+Il file `.env` contiene solo parametri infrastrutturali. Tutto il resto — backend LLM, chiavi API, modello, nomi titolari per PII redaction, formato data, lingua — è configurabile dalla pagina **⚙️ Impostazioni** e persiste nel DB:
 
 ```dotenv
-# Database (SQLite di default, qualsiasi URL SQLAlchemy)
+# URI database — lascia invariato per uso locale; sovrascritto da docker-compose per Docker
 SPENDIFY_DB=sqlite:///ledger.db
-
-# Nomi del titolare da redarre prima di chiamate remote
-OWNER_NAMES=Mario Rossi,M. Rossi
-
-# Backend LLM: local_ollama | openai | claude  (configurabile anche dalla pagina Impostazioni)
-LLM_BACKEND=local_ollama
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=gemma3:12b
 ```
 
-Chiavi API e selezione modello possono essere configurate anche dalla pagina **⚙️ Impostazioni** dell'UI — vengono salvate nel DB e hanno priorità sui valori `.env`.
+> **Nient'altro appartiene al `.env`.** Backend LLM, URL Ollama, nome modello, chiavi API OpenAI/Anthropic e nomi titolari sono tutti salvati nella tabella `user_settings` e modificabili live dall'UI senza riavviare l'app.
 
 ### Modalità giroconto
 
@@ -293,6 +303,8 @@ uv run streamlit run app.py
 streamlit run app.py
 ```
 
+Al **primo avvio** appare automaticamente il wizard di onboarding (4 step: lingua, nomi titolari, conti, conferma). Le installazioni esistenti con dati già nella tassonomia vengono rilevate automaticamente e saltano il wizard.
+
 L'app si apre su `http://localhost:8501` con 9 pagine:
 
 | Pagina | Descrizione |
@@ -311,7 +323,15 @@ L'app si apre su `http://localhost:8501` con 9 pagine:
 
 ## Tassonomia
 
-La tassonomia è memorizzata nel database (tabelle `taxonomy_category` / `taxonomy_subcategory`) e gestita dalla pagina **🗂️ Tassonomia**. Al primo avvio il DB viene popolato da `taxonomy.yaml`.
+La tassonomia è memorizzata nel database (tabelle `taxonomy_category` / `taxonomy_subcategory`) e gestita dalla pagina **🗂️ Tassonomia**.
+
+### Template multi-lingua built-in
+
+La tabella `taxonomy_default` contiene template immutabili in 5 lingue — Italiano, Inglese, Francese, Tedesco, Spagnolo. Vengono popolati da `db/taxonomy_defaults.py` al primo avvio (nessun file YAML). Durante l'onboarding l'utente seleziona la lingua e il template viene copiato nella tassonomia utente.
+
+Per reimpostare la tassonomia su una lingua diversa in qualsiasi momento: **⚙️ Impostazioni → 🔄 Reset tassonomia**.
+
+### Tassonomia di default (Italiano)
 
 **Categorie di spesa (15):** Casa · Alimentari · Ristorazione · Trasporti · Salute · Istruzione · Abbigliamento · Comunicazioni · Svago e tempo libero · Animali domestici · Finanza e assicurazioni · Cura personale · Tasse e tributi · Regali e donazioni · Altro
 
@@ -432,6 +452,7 @@ uv run python -m pytest tests/ --cov=core --cov=db --cov-report=term-missing
 | `test_backends.py` | Factory backend, validazione, mock Ollama |
 | `test_categorizer.py` | Regole statiche, cascata 4-step, risoluzione tassonomia |
 | `test_repository_rules.py` | Upsert regole, `get_transactions_by_rule_pattern` (tutti i tipi + regressione LLM-sourced), `apply_rules_to_review_transactions`, `toggle_transaction_giroconto`, `bulk_set_giroconto_by_description` |
+| `test_taxonomy_onboarding.py` | Struttura `TAXONOMY_DEFAULTS` (5 lingue), migrazione `taxonomy_default` (seeding + idempotenza), metodi onboarding di `SettingsService`, auto-skip per utenti esistenti |
 
 Tutti i test usano un database SQLite in-memory — nessun I/O su file, nessun servizio esterno richiesto.
 
@@ -495,7 +516,7 @@ Il categorizzatore tratta la sottocategoria come autoritativa. `TaxonomyConfig.f
 
 ### Tassonomia nel DB
 
-La tassonomia a 2 livelli (categorie + sottocategorie) risiede in due tabelle DB (`taxonomy_category`, `taxonomy_subcategory`). Viene popolata da `taxonomy.yaml` al primo avvio e poi gestita interamente dall'UI — nessuna modifica di file o restart richiesto.
+La tassonomia a 2 livelli (categorie + sottocategorie) risiede in due tabelle DB (`taxonomy_category`, `taxonomy_subcategory`). Al primo avvio il wizard di onboarding copia il template della lingua scelta dalla tabella immutabile `taxonomy_default` nella tassonomia utente. Nessun file YAML. Le modifiche successive sono gestite interamente dall'UI — nessun restart richiesto.
 
 ### PII sanitization come precondizione
 
