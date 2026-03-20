@@ -82,6 +82,7 @@ def create_tables(engine=None):
     _migrate_add_description_rules(engine)
     _migrate_add_rule_context(engine)
     _migrate_add_header_sha256(engine)
+    _migrate_set_onboarding_done_for_existing_users(engine)  # must run last
     return engine
 
 
@@ -602,6 +603,30 @@ def _migrate_add_rule_context(engine) -> None:
                 pass
             else:
                 raise
+
+
+def _migrate_set_onboarding_done_for_existing_users(engine) -> None:
+    """Mark onboarding as complete for DBs that already have taxonomy data.
+
+    Prevents existing users from seeing the onboarding wizard after upgrading.
+    Runs after all other migrations so taxonomy_category is guaranteed to exist.
+    Condition: taxonomy_category has rows (= app was already set up before onboarding
+    was introduced).  Does nothing if onboarding_done is already set.
+    """
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        existing = conn.execute(_text(
+            "SELECT value FROM user_settings WHERE key='onboarding_done'"
+        )).scalar()
+        if existing is not None:
+            return  # already decided — don't touch
+        count = conn.execute(_text("SELECT COUNT(*) FROM taxonomy_category")).scalar()
+        if count and count > 0:
+            conn.execute(_text(
+                "INSERT OR REPLACE INTO user_settings (key, value) "
+                "VALUES ('onboarding_done', 'true')"
+            ))
+            conn.commit()
 
 
 def _migrate_add_header_sha256(engine) -> None:
