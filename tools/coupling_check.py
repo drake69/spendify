@@ -8,13 +8,22 @@ Indicatori raccolti:
   - API_COVERAGE: % metodi service esposti via API
 
 Exit code:
-  0  — nessuna violazione (o soglia rispettata)
-  1  — violazioni sopra soglia (usare in CI con --max-violations N)
+  0  — nessuna violazione (o soglia rispettata / baseline rispettato)
+  1  — violazioni sopra soglia o fuori baseline
 
 Uso:
-  python tools/coupling_check.py                    # report completo
-  python tools/coupling_check.py --max-violations 0 # fail se ci sono violazioni
-  python tools/coupling_check.py --json             # output JSON per integrazione
+  python tools/coupling_check.py                     # report completo, nessun gate
+  python tools/coupling_check.py --max-violations 0  # fail se ci sono violazioni
+  python tools/coupling_check.py --strict            # fail su regressioni vs baseline
+  python tools/coupling_check.py --json              # output JSON per integrazione
+  python tools/coupling_check.py --strict --json     # strict + JSON (per CI)
+
+Modalità --strict (consigliata in CI):
+  Legge tools/coupling_baseline.json.
+  - Qualsiasi file NON nel baseline con violazioni > 0 → FAIL immediato.
+  - Qualsiasi file nel baseline che supera il suo max_violations → FAIL.
+  - Se un file migliora (scende sotto il baseline) → WARNING: aggiorna il baseline.
+  Questo garantisce che il debito tecnico possa solo diminuire, mai crescere.
 """
 from __future__ import annotations
 
@@ -25,6 +34,8 @@ import sys
 from collections import defaultdict
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
+
+BASELINE_FILE = Path(__file__).resolve().parent / "coupling_baseline.json"
 
 # ── Configurazione ─────────────────────────────────────────────────────────────
 
@@ -300,13 +311,109 @@ def print_json(report: CouplingReport) -> None:
     print(json.dumps(out, indent=2))
 
 
+# ── Baseline (strict mode) ─────────────────────────────────────────────────────
+
+def _load_baseline() -> dict:
+    """Carica coupling_baseline.json. Ritorna {} se non esiste."""
+    if not BASELINE_FILE.exists():
+        return {}
+    try:
+        raw = json.loads(BASELINE_FILE.read_text(encoding="utf-8"))
+        return {k: v for k, v in raw.items() if not k.startswith("_comment")}
+    except Exception:
+        return {}
+
+
+@dataclass
+class StrictResult:
+    failures: list[str] = field(default_factory=list)   # → exit 1
+    warnings: list[str] = field(default_factory=list)   # → exit 0, ma avvisa
+    passed:   list[str] = field(default_factory=list)
+
+    @property
+    def ok(self) -> bool:
+        return len(self.failures) == 0
+
+
+def check_strict(report: CouplingReport) -> StrictResult:
+    """Confronta il report col baseline. Ritorna failures (exit 1) e warnings."""
+    baseline = _load_baseline()
+    result   = StrictResult()
+
+    for fr in report.files:
+        n     = len(fr.violations)
+        entry = baseline.get(fr.path)
+
+        if entry is None:
+            # File NON nel baseline: deve avere 0 violazioni
+            if n > 0:
+                result.failures.append(
+                    f"  ❌ {fr.path} — {n} violazione/i "
+                    f"(file non nel baseline: deve avere 0 violazioni)\n"
+                    + "\n".join(f"       L{v.line:>4}  {v.statement}" for v in fr.violations)
+                )
+            else:
+                result.passed.append(f"  ✅ {fr.path} — 0 violazioni")
+        else:
+            max_allowed = entry["max_violations"]
+            if n > max_allowed:
+                result.failures.append(
+                    f"  ❌ {fr.path} — {n} violazioni > baseline {max_allowed} "
+                    f"(peggiorato di {n - max_allowed})"
+                )
+            elif n < max_allowed:
+                result.warnings.append(
+                    f"  ⚠️  {fr.path} — {n} violazioni < baseline {max_allowed}: "
+                    f"aggiorna il baseline a {n} (o a 0 se completamente pulito)"
+                )
+            else:
+                result.passed.append(
+                    f"  ✅ {fr.path} — {n}/{max_allowed} violazioni (baseline rispettato)"
+                )
+
+    return result
+
+
+def print_strict_report(result: StrictResult) -> None:
+    print(f"\n{_BOLD}Strict mode — Baseline check{_RESET}")
+    print(f"{'─' * 64}")
+    for msg in result.passed:
+        print(msg)
+    for msg in result.warnings:
+        print(f"{_YELLOW}{msg}{_RESET}")
+    for msg in result.failures:
+        print(f"{_RED}{msg}{_RESET}")
+    print()
+    if result.ok:
+        print(f"{_GREEN}{_BOLD}✅  PASS — nessuna regressione di accoppiamento{_RESET}")
+    else:
+        print(
+            f"{_RED}{_BOLD}❌  FAIL — {len(result.failures)} file oltre il baseline.{_RESET}\n"
+            f"  Per i file nuovi: porta le violazioni a 0 prima del merge.\n"
+            f"  Per i file nel baseline: non superare il max_violations consentito.\n"
+            f"  Baseline: {BASELINE_FILE}"
+        )
+    print()
+
+
+def _strict_json(result: StrictResult) -> dict:
+    return {
+        "strict_pass": result.ok,
+        "failures":    result.failures,
+        "warnings":    result.warnings,
+        "passed":      result.passed,
+    }
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main() -> int:
     import argparse
     parser = argparse.ArgumentParser(description="UI ↔ Service coupling checker")
     parser.add_argument("--max-violations", type=int, default=None,
-                        help="Exit 1 se violazioni > N (usare in CI)")
+                        help="Exit 1 se violazioni totali > N")
+    parser.add_argument("--strict", action="store_true",
+                        help="Modalità ratchet: usa coupling_baseline.json come soglia per file")
     parser.add_argument("--json", action="store_true",
                         help="Output JSON invece di testo")
     args = parser.parse_args()
@@ -321,10 +428,50 @@ def main() -> int:
         api_endpoints=api_endpoints,
     )
 
+    strict_result = check_strict(report) if args.strict else None
+
     if args.json:
-        print_json(report)
+        out = json.loads(
+            json.dumps({
+                "coupling_score":    round(report.coupling_score, 4),
+                "api_coverage":      round(report.api_coverage, 4),
+                "total_violations":  report.total_violations,
+                "total_compliant":   report.total_compliant,
+                "total_raw_queries": report.total_raw_queries,
+                "files": [
+                    {
+                        "path":        f.path,
+                        "violations":  len(f.violations),
+                        "compliant":   len(f.compliant),
+                        "raw_queries": len(f.raw_queries),
+                        "score":       round(f.score, 4),
+                        "violation_details": [
+                            {"line": v.line, "statement": v.statement}
+                            for v in f.violations
+                        ],
+                    }
+                    for f in report.files
+                ],
+                "service_methods": {
+                    svc: {
+                        "total":     len(methods),
+                        "covered":   sum(1 for m in methods if any(m in ep for ep in report.api_endpoints)),
+                        "uncovered": [m for m in methods if not any(m in ep for ep in report.api_endpoints)],
+                    }
+                    for svc, methods in report.service_methods.items()
+                },
+                **({"strict": _strict_json(strict_result)} if strict_result else {}),
+            })
+        )
+        print(json.dumps(out, indent=2))
     else:
         print_report(report)
+        if strict_result:
+            print_strict_report(strict_result)
+
+    # ── Exit code ──────────────────────────────────────────────────────────────
+    if args.strict and strict_result and not strict_result.ok:
+        return 1
 
     if args.max_violations is not None and report.total_violations > args.max_violations:
         if not args.json:

@@ -100,3 +100,38 @@ class SettingsService:
             result = repository.delete_account(s, account_id)
             s.commit()
             return result
+
+    # ── Bulk settings save ────────────────────────────────────────────────────
+
+    def set_bulk(self, settings: dict[str, str]) -> None:
+        """Persist multiple key/value settings in a single transaction."""
+        with self._session() as s:
+            for key, value in settings.items():
+                repository.set_user_setting(s, key, value)
+            s.commit()
+
+    # ── Raw taxonomy queries (avoid DetachedInstanceError in UI) ──────────────
+
+    def get_taxonomy_raw(self, type_key: str) -> tuple[list, list]:
+        """Return (cat_rows, sub_rows) as plain SQLAlchemy Row tuples.
+
+        cat_rows: (id, name, type, sort_order) for the given type_key
+        sub_rows: (id, category_id, name, sort_order) for ALL subcategories
+        """
+        from sqlalchemy import text as _sql
+        with self._session() as s:
+            cat_rows = s.execute(
+                _sql(
+                    "SELECT id, name, type, sort_order "
+                    "FROM taxonomy_category "
+                    "WHERE type=:t ORDER BY name COLLATE NOCASE"
+                ),
+                {"t": type_key},
+            ).fetchall()
+            sub_rows = s.execute(
+                _sql(
+                    "SELECT id, category_id, name, sort_order "
+                    "FROM taxonomy_subcategory ORDER BY name COLLATE NOCASE"
+                ),
+            ).fetchall()
+        return cat_rows, sub_rows
