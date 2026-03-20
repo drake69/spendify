@@ -283,6 +283,57 @@ Schema migrations are idempotent: they run automatically at every startup withou
 
 ---
 
+## REST API
+
+The FastAPI layer (`api/`) exposes the same ledger features over HTTP/JSON — independent of the Streamlit UI, usable from scripts, automation, or future mobile/desktop apps.
+
+**Port:** `8000` · **Interactive docs:** `http://localhost:8000/docs`
+
+### Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Liveness check |
+| GET | `/transactions` | List transactions with filters |
+| PATCH | `/transactions/{id}/category` | Update category/subcategory |
+| PATCH | `/transactions/{id}/context` | Update life context |
+| POST | `/transactions/{id}/toggle-giroconto` | Toggle internal transfer flag |
+| DELETE | `/transactions` | Bulk delete by filter |
+| GET | `/rules/category` | List categorisation rules |
+| POST | `/rules/category` | Create rule |
+| PATCH | `/rules/category/{id}` | Update rule |
+| DELETE | `/rules/category/{id}` | Delete rule |
+| POST | `/rules/category/apply-to-review` | Apply rules to pending transactions |
+| POST | `/rules/category/apply-to-all` | Apply rules to entire ledger |
+| GET/POST/DELETE | `/rules/description` | Description rule CRUD |
+| GET | `/settings` | All settings (API keys redacted) |
+| GET/PUT | `/settings/{key}` | Read/write setting |
+| GET/POST/DELETE | `/accounts` | Account CRUD |
+| GET/POST/PATCH/DELETE | `/taxonomy/categories` | Category CRUD |
+| POST/PATCH/DELETE | `/taxonomy/categories/{id}/subcategories` | Subcategory CRUD |
+| GET | `/import/jobs/latest` | Latest import job status |
+
+### Query filters — GET /transactions
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `from_date` | `YYYY-MM-DD` | Start date |
+| `to_date` | `YYYY-MM-DD` | End date |
+| `account_label` | string | Bank account |
+| `category` | string | Category |
+| `tx_type` | string | Transaction type |
+| `to_review` | bool | Pending review only |
+| `limit` | int (1–5000) | Max results (default 500) |
+| `offset` | int | Pagination offset |
+
+### Security notes
+
+- `openai_api_key` and `anthropic_api_key` are always masked (`***`) in responses
+- The same keys cannot be updated via API (403) — Settings UI only
+- `DELETE /transactions` requires at least one filter (422 without filters)
+
+---
+
 ## Quick Start
 
 ```bash
