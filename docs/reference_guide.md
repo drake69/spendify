@@ -283,6 +283,57 @@ Le migrazioni dello schema sono idempotenti: vengono eseguite automaticamente ad
 
 ---
 
+## REST API
+
+Il layer FastAPI (`api/`) espone le stesse funzionalità del ledger via HTTP/JSON — indipendente dalla UI Streamlit, usabile da script, automazioni o future app mobile/desktop.
+
+**Porta:** `8000` · **Docs interattive:** `http://localhost:8000/docs`
+
+### Endpoint
+
+| Metodo | Path | Descrizione |
+|--------|------|-------------|
+| GET | `/health` | Liveness check |
+| GET | `/transactions` | Lista transazioni con filtri |
+| PATCH | `/transactions/{id}/category` | Aggiorna categoria/sottocategoria |
+| PATCH | `/transactions/{id}/context` | Aggiorna contesto di vita |
+| POST | `/transactions/{id}/toggle-giroconto` | Alterna flag giroconto |
+| DELETE | `/transactions` | Eliminazione massiva per filtro |
+| GET | `/rules/category` | Lista regole di categorizzazione |
+| POST | `/rules/category` | Crea regola |
+| PATCH | `/rules/category/{id}` | Modifica regola |
+| DELETE | `/rules/category/{id}` | Elimina regola |
+| POST | `/rules/category/apply-to-review` | Applica regole ai pending |
+| POST | `/rules/category/apply-to-all` | Applica regole a tutto il ledger |
+| GET/POST/DELETE | `/rules/description` | CRUD regole descrizione |
+| GET | `/settings` | Tutte le impostazioni (API key oscurate) |
+| GET/PUT | `/settings/{key}` | Lettura/scrittura impostazione |
+| GET/POST/DELETE | `/accounts` | CRUD conti bancari |
+| GET/POST/PATCH/DELETE | `/taxonomy/categories` | CRUD categorie |
+| POST/PATCH/DELETE | `/taxonomy/categories/{id}/subcategories` | CRUD sottocategorie |
+| GET | `/import/jobs/latest` | Stato ultimo job importazione |
+
+### Filtri query — GET /transactions
+
+| Parametro | Tipo | Descrizione |
+|-----------|------|-------------|
+| `from_date` | `YYYY-MM-DD` | Data inizio |
+| `to_date` | `YYYY-MM-DD` | Data fine |
+| `account_label` | string | Conto bancario |
+| `category` | string | Categoria |
+| `tx_type` | string | Tipo transazione |
+| `to_review` | bool | Solo da rivedere |
+| `limit` | int (1–5000) | Numero massimo risultati (default 500) |
+| `offset` | int | Paginazione |
+
+### Note sicurezza
+
+- `openai_api_key` e `anthropic_api_key` sono sempre oscurate (`***`) nelle risposte
+- Le stesse chiavi non sono modificabili via API (403) — solo dall'UI Impostazioni
+- `DELETE /transactions` richiede almeno un filtro (422 senza filtri)
+
+---
+
 ## Avvio rapido
 
 ```bash
