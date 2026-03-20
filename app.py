@@ -1,13 +1,13 @@
 """Spendify – Streamlit entrypoint (RF-08).
 
-Nine pages:
+Pages:
   📥 Import             – upload + pipeline processing
   📋 Ledger             – filterable transaction table + export
   ✏️ Modifiche massive  – bulk edits: category, context, deletion
   📊 Analytics          – interactive charts (Plotly)
   🔍 Review             – manual review of low-confidence items
   📏 Regole             – manage category rules (edit / delete / create)
-  🗂️ Tassonomia         – manage categories and subcategories in taxonomy.yaml
+  🗂️ Tassonomia         – manage categories and subcategories
   ⚙️ Impostazioni       – locale and language preferences
   ✅ Check List         – monthly tx presence per account (pivot table)
 """
@@ -29,9 +29,6 @@ DB_URL = os.getenv("SPENDIFY_DB", "sqlite:///ledger.db")
 engine = create_tables(get_engine(DB_URL))
 
 # ── Startup cleanup ───────────────────────────────────────────────────────────
-# Reset any import jobs left in "running" state from a previous server process.
-# Runs once per browser session (session_state is empty on first connection
-# after a server restart, so the guard fires exactly once per new session).
 if "stale_jobs_reset" not in st.session_state:
     st.session_state["stale_jobs_reset"] = True
     from db.models import get_session
@@ -47,6 +44,16 @@ st.set_page_config(
     layout="wide",
     page_icon="🏦",
 )
+
+# ── Onboarding gate ───────────────────────────────────────────────────────────
+# Show the onboarding wizard on first run (when onboarding_done != 'true').
+# This also re-shows if taxonomy_category was somehow wiped.
+from services.settings_service import SettingsService as _SvcCheck
+_cfg_check = _SvcCheck(engine)
+if not _cfg_check.is_onboarding_done():
+    from ui.onboarding_page import render_onboarding_page
+    render_onboarding_page(engine)
+    st.stop()
 
 # ── Sidebar navigation ────────────────────────────────────────────────────────
 from ui.sidebar import render_sidebar
