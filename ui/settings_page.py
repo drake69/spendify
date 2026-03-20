@@ -414,3 +414,38 @@ def render_settings_page(engine):
         st.success("Impostazioni salvate.")
         logger.info(f"settings_page: saved backend={backend!r} ollama_url={ollama_url!r}")
         st.rerun()
+
+    # ── Reset tassonomia ───────────────────────────────────────────────────────
+    st.divider()
+    with st.expander("🔄 Reset tassonomia", expanded=False):
+        st.warning(
+            "⚠️ Questa operazione **sostituisce** tutte le categorie e sottocategorie "
+            "con il template di default per la lingua selezionata. "
+            "Le transazioni già categorizzate **non** vengono modificate."
+        )
+        lang_options = cfg_svc.get_default_taxonomy_languages()   # [(code, label)]
+        lang_labels  = [label for _, label in lang_options]
+        lang_codes   = [code  for code, _ in lang_options]
+        current_lang = settings.get("description_language", "it")
+        default_idx  = lang_codes.index(current_lang) if current_lang in lang_codes else 0
+        reset_lang_label = st.selectbox(
+            "Lingua tassonomia da applicare",
+            options=lang_labels,
+            index=default_idx,
+            key="settings_reset_tax_lang",
+        )
+        reset_lang_code = lang_codes[lang_labels.index(reset_lang_label)]
+        confirm_reset = st.checkbox(
+            "Confermo: voglio sovrascrivere la tassonomia corrente",
+            key="settings_reset_tax_confirm",
+        )
+        if st.button(
+            "🔄 Applica tassonomia default",
+            type="secondary",
+            disabled=not confirm_reset,
+            key="settings_reset_tax_btn",
+        ):
+            n = cfg_svc.apply_default_taxonomy(reset_lang_code)
+            st.success(f"✅ Tassonomia **{reset_lang_label}** applicata — {n} categorie create.")
+            logger.info(f"settings_page: reset taxonomy lang={reset_lang_code!r} categories={n}")
+            st.rerun()

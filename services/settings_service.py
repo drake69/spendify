@@ -135,3 +135,43 @@ class SettingsService:
                 ),
             ).fetchall()
         return cat_rows, sub_rows
+
+    # ── Default taxonomy & onboarding ─────────────────────────────────────────
+
+    def get_default_taxonomy_languages(self) -> list[tuple[str, str]]:
+        """Return list of (code, label) for all languages in taxonomy_default."""
+        from db.taxonomy_defaults import TAXONOMY_DEFAULTS
+        with self._session() as s:
+            codes = repository.get_default_taxonomy_languages(s)
+        return [(code, TAXONOMY_DEFAULTS[code]["label"]) for code in codes if code in TAXONOMY_DEFAULTS]
+
+    def apply_default_taxonomy(self, language: str) -> int:
+        """Replace user taxonomy with the built-in template for *language*.
+
+        Also persists description_language = language in user_settings.
+        Returns the number of categories applied.
+        """
+        with self._session() as s:
+            n = repository.seed_user_taxonomy_from_default(s, language)
+        self.set_bulk({"description_language": language})
+        return n
+
+    def is_onboarding_done(self) -> bool:
+        """Return True if the user has completed onboarding."""
+        with self._session() as s:
+            val = repository.get_user_setting(s, "onboarding_done", "false")
+        return (val or "false").lower() == "true"
+
+    def set_onboarding_done(self) -> None:
+        with self._session() as s:
+            repository.set_user_setting(s, "onboarding_done", "true")
+            s.commit()
+
+    def get_default_taxonomy_preview(self, language: str) -> dict:
+        """Return {'expenses': [category_name, ...], 'income': [category_name, ...]} for *language*."""
+        from db.taxonomy_defaults import TAXONOMY_DEFAULTS
+        data = TAXONOMY_DEFAULTS.get(language, {})
+        return {
+            "expenses": [e["category"] for e in data.get("expenses", [])],
+            "income":   [e["category"] for e in data.get("income", [])],
+        }
