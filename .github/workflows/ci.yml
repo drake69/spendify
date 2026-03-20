@@ -95,6 +95,34 @@ jobs:
         if: always()
         run: docker compose -f docker/docker-compose.yml down -v
 
+  coupling-check:
+    name: Coupling check (UI ↔ Service layer)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run coupling check (report only — no threshold yet)
+        run: uv run python tools/coupling_check.py --json | tee coupling_report.json
+
+      - name: Upload coupling report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coupling-report
+          path: coupling_report.json
+          retention-days: 30
+
   installer-validate:
     name: Installer validation (syntax + compose)
     runs-on: ubuntu-latest
