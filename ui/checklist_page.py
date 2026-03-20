@@ -10,10 +10,9 @@ from datetime import date, datetime
 
 import pandas as pd
 import streamlit as st
-from sqlalchemy import func
 
-from db.models import Account, Transaction, get_session
-from db.repository import get_accounts
+from services.settings_service import SettingsService
+from services.transaction_service import TransactionService
 from support.logging import setup_logging
 
 logger = setup_logging()
@@ -21,13 +20,13 @@ logger = setup_logging()
 
 # ── Costanti di visualizzazione ───────────────────────────────────────────────
 
-_ICON_NO_TX    = "—"          # cella senza transazioni
-_ICON_HAS_TX   = ""           # prefisso celle con transazioni (stringa vuota → solo numero)
-_COLOR_NO_TX   = "#c8c8c8"    # grigio chiaro
-_COLOR_LOW     = "#9ecae1"    # azzurro tenue (1–4 tx)
-_COLOR_MED     = "#4292c6"    # azzurro medio (5–19 tx)
-_COLOR_HIGH    = "#084594"    # azzurro scuro (≥20 tx)
-_COLOR_TEXT_DK = "#ffffff"    # testo su sfondo scuro
+_ICON_NO_TX    = "—"
+_ICON_HAS_TX   = ""
+_COLOR_NO_TX   = "#c8c8c8"
+_COLOR_LOW     = "#9ecae1"
+_COLOR_MED     = "#4292c6"
+_COLOR_HIGH    = "#084594"
+_COLOR_TEXT_DK = "#ffffff"
 
 
 def _month_label(ym: str) -> str:
@@ -54,7 +53,6 @@ def _cell_fmt(val: int) -> str:
 
 def _all_months_range(oldest_ym: str, newest_ym: str) -> list[str]:
     """Return every 'YYYY-MM' string from newest_ym down to oldest_ym (inclusive)."""
-    from datetime import date
     y_new, m_new = int(newest_ym[:4]), int(newest_ym[5:])
     y_old, m_old = int(oldest_ym[:4]), int(oldest_ym[5:])
     months = []
@@ -69,23 +67,16 @@ def _all_months_range(oldest_ym: str, newest_ym: str) -> list[str]:
 
 
 def _build_pivot(
-    rows: list,                    # (year_month, account_label, tx_count)
+    rows: list,
     all_accounts: list[str],
     current_ym: str,
 ) -> pd.DataFrame:
-    """Build a month × account DataFrame of tx counts.
-
-    Every month from current_ym down to the oldest month with data is
-    included, even if it has zero transactions for every account.
-    """
-    # Find oldest month with data
+    """Build a month × account DataFrame of tx counts."""
     data_months = [r.year_month for r in rows if r.year_month]
     oldest_ym = min(data_months) if data_months else current_ym
 
-    # Generate the full continuous range: current → oldest (no gaps)
     months_sorted = _all_months_range(oldest_ym, current_ym)
 
-    # Build count dict (initialise all months to empty so gaps stay at 0)
     data: dict[str, dict[str, int]] = {ym: {} for ym in months_sorted}
     for r in rows:
         ym = r.year_month
@@ -95,7 +86,6 @@ def _build_pivot(
         if ym in data:
             data[ym][acc] = int(r.tx_count)
 
-    # Pivot
     records = []
     for ym in months_sorted:
         row: dict = {"Mese": _month_label(ym)}
@@ -115,37 +105,21 @@ def render_checklist_page(engine) -> None:
         "**—** indica nessuna transazione per quel mese."
     )
 
+    cfg_svc = SettingsService(engine)
+    tx_svc  = TransactionService(engine)
+
     today = date.today()
     current_ym = today.strftime("%Y-%m")
 
     # ── Carica dati ───────────────────────────────────────────────────────────
-    with get_session(engine) as session:
-        # 1. Conti definiti (Account table)
-        account_rows = get_accounts(session)
-        defined_accounts: list[str] = [a.name for a in account_rows]
+    account_rows      = cfg_svc.get_accounts()
+    defined_accounts  = [a.name for a in account_rows]
+    tx_account_labels = tx_svc.get_distinct_account_labels()
+    tx_account_set    = set(tx_account_labels)
+    extra             = sorted(tx_account_set - set(defined_accounts))
+    all_accounts      = defined_accounts + extra
 
-        # 2. account_label presenti nelle transazioni (anche non definiti formalmente)
-        tx_labels = session.query(Transaction.account_label).distinct().all()
-        tx_account_set: set[str] = {r[0] for r in tx_labels if r[0]}
-
-        # Unione ordinata: definiti prima, poi eventuali extra da transazioni
-        extra = sorted(tx_account_set - set(defined_accounts))
-        all_accounts: list[str] = defined_accounts + extra
-
-        # 3. Conteggio tx per (mese, conto)
-        count_rows = (
-            session.query(
-                func.strftime("%Y-%m", Transaction.date).label("year_month"),
-                Transaction.account_label,
-                func.count(Transaction.id).label("tx_count"),
-            )
-            .group_by(
-                func.strftime("%Y-%m", Transaction.date),
-                Transaction.account_label,
-            )
-            .order_by(func.strftime("%Y-%m", Transaction.date).desc())
-            .all()
-        )
+    count_rows = tx_svc.get_monthly_tx_counts()
 
     # ── Stato vuoto ───────────────────────────────────────────────────────────
     if not all_accounts and not count_rows:
@@ -155,7 +129,6 @@ def render_checklist_page(engine) -> None:
         )
         return
 
-    # Se non ci sono conti definiti ma ci sono transazioni, mostra comunque
     if not all_accounts:
         all_accounts = sorted({r.account_label for r in count_rows if r.account_label})
 
@@ -191,7 +164,6 @@ def render_checklist_page(engine) -> None:
             help="Non mostra i mesi in cui nessun conto ha transazioni.",
         )
 
-    # Applica filtri
     display_df = df.copy()
     if filter_accounts:
         cols_to_keep = [c for c in display_df.columns if c in filter_accounts]
@@ -208,7 +180,6 @@ def render_checklist_page(engine) -> None:
         st.warning("Nessun dato da mostrare con i filtri selezionati.")
         return
 
-    # Styler: colorazione celle + formattazione numerica
     styled = (
         display_df.style
         .applymap(_cell_color)
@@ -223,7 +194,6 @@ def render_checklist_page(engine) -> None:
 
     st.dataframe(styled, use_container_width=True)
 
-    # ── Legenda colori ────────────────────────────────────────────────────────
     with st.expander("ℹ️ Legenda colori", expanded=False):
         st.markdown(
             f"""
@@ -236,7 +206,6 @@ def render_checklist_page(engine) -> None:
 """
         )
 
-    # ── Download CSV ──────────────────────────────────────────────────────────
     csv = display_df.reset_index().to_csv(index=False).encode("utf-8")
     st.download_button(
         label="⬇️ Scarica CSV",
