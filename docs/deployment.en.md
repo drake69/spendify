@@ -88,6 +88,8 @@ docker compose up -d --build
 
 The app is available at **http://localhost:8501**
 
+> The REST API is available at **http://localhost:8000** · Interactive docs: **http://localhost:8000/docs**
+
 ### 2.4 — With local LLM (optional)
 
 ```bash
@@ -122,6 +124,12 @@ uv run streamlit run app.py
 ```
 
 The app is available at **http://localhost:8501**
+
+To also start the REST API in development:
+
+```bash
+uv run uvicorn api.main:app --host 0.0.0.0 --port 8000
+```
 
 > The `ledger.db` database is created automatically in the project folder on first launch.
 

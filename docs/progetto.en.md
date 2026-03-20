@@ -34,6 +34,31 @@ Processing is **offline-first**: the default LLM backend is local Ollama; OpenAI
 
 ## 3. System Architecture
 
+### 3.0 Architectural layers
+
+```
+┌─────────────────────────────────────────────────┐
+│  Presentation                                   │
+│  ├─ Streamlit UI  (ui/, app.py)   :8501         │
+│  └─ FastAPI REST  (api/)          :8000         │
+├─────────────────────────────────────────────────┤
+│  Service layer   (services/)                    │
+│  TransactionService · RuleService               │
+│  SettingsService · CategoryService              │
+│  ImportService                                  │
+├─────────────────────────────────────────────────┤
+│  Business logic  (core/)                        │
+│  classifier · normalizer · categorizer          │
+│  sanitizer · description_cleaner · orchestrator │
+├─────────────────────────────────────────────────┤
+│  Persistence     (db/)                          │
+│  models (SQLAlchemy ORM) · repository (CRUD)    │
+│  SQLite: ledger.db                              │
+└─────────────────────────────────────────────────┘
+```
+
+The UI and API are fully independent and interchangeable: both rely on the service layer, which has no knowledge of HTTP or Streamlit.
+
 ### 3.1 Import Pipeline
 
 ```
@@ -363,7 +388,46 @@ Two DB tables: `taxonomy_category` and `taxonomy_subcategory`. Initial seeding f
 
 ---
 
-## 12. Tests
+## 12. REST API
+
+The FastAPI layer (`api/`) exposes the same ledger operations over HTTP/JSON, without touching the Streamlit UI.
+
+**Start:** `uv run uvicorn api.main:app --host 0.0.0.0 --port 8000`
+**Interactive docs:** `http://localhost:8000/docs` (Swagger UI)
+
+### Main endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Liveness check |
+| GET | `/transactions` | List with filters (date, category, account, to_review) |
+| PATCH | `/transactions/{id}/category` | Update category and subcategory |
+| PATCH | `/transactions/{id}/context` | Update life context |
+| POST | `/transactions/{id}/toggle-giroconto` | Toggle internal transfer flag |
+| DELETE | `/transactions` | Bulk delete by filter (at least 1 filter required) |
+| GET/POST/PATCH/DELETE | `/rules/category` | Category rule CRUD |
+| POST | `/rules/category/apply-to-review` | Apply rules to pending review |
+| POST | `/rules/category/apply-to-all` | Apply rules to all transactions |
+| GET/POST/DELETE | `/rules/description` | Description rule CRUD |
+| GET | `/settings` | All settings (API keys redacted) |
+| GET/PUT | `/settings/{key}` | Read/write a single setting |
+| GET/POST/DELETE | `/accounts` | Account CRUD |
+| GET/POST/PATCH/DELETE | `/taxonomy/categories` | Taxonomy category CRUD |
+| GET | `/import/jobs/latest` | Latest import job status |
+
+### Security
+
+- API keys (`openai_api_key`, `anthropic_api_key`) are always redacted (`***`) in GET responses
+- The same keys cannot be updated via API (403 Forbidden) — only from the Settings UI
+- CORS configured for `localhost:8501` (Streamlit) by default
+
+### Docker
+
+In Docker Compose, the `api` service shares the `spendify_data` volume (same `ledger.db`) with the Streamlit service.
+
+---
+
+## 13. Tests
 
 ```bash
 # Full suite
