@@ -78,7 +78,7 @@ App disponibile su `http://localhost:8501`.
 `.env` contiene solo:
 
 ```
-DATABASE_URL=sqlite:///ledger.db   # percorso DB SQLite
+SPENDIFY_DB=sqlite:///ledger.db   # percorso DB SQLite
 ```
 
 La configurazione LLM (backend, modello, API key) vive nel database e si gestisce dall'UI → Impostazioni.

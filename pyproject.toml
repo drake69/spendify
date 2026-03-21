@@ -1,6 +1,6 @@
 [project]
 name = "spendify"
-version = "2.1.0"
+version = "3.0.0"
 description = "Unified personal finance ledger with hybrid LLM pipeline"
 readme = "README.md"
 license = { file = "LICENSE" }
