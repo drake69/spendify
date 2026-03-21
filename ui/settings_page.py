@@ -5,8 +5,7 @@ import json
 
 import streamlit as st
 
-from db.models import get_session
-from db.repository import get_all_user_settings, set_user_setting, get_accounts, create_account, delete_account
+from services.settings_service import SettingsService
 from support.logging import setup_logging
 
 logger = setup_logging()
@@ -60,11 +59,10 @@ def _key_for(options: dict, value: str) -> str:
 def render_settings_page(engine):
     st.header("⚙️ Impostazioni")
 
-    with get_session(engine) as session:
-        settings = get_all_user_settings(session)
+    cfg_svc = SettingsService(engine)
+    settings = cfg_svc.get_all()
 
     # Sync session_state immediately so other pages (upload, ledger) see current values
-    # even if the user hasn't clicked Save yet.
     st.session_state.setdefault("giroconto_mode", settings.get("giroconto_mode", "neutral"))
 
     # ── Formato visualizzazione ────────────────────────────────────────────────
@@ -183,7 +181,6 @@ def render_settings_page(engine):
     except Exception:
         _ctx_list = ["Quotidianità", "Lavoro", "Vacanza"]
 
-    # Initialise session state for contexts editor
     if "settings_contexts" not in st.session_state:
         st.session_state["settings_contexts"] = list(_ctx_list)
 
@@ -248,10 +245,8 @@ def render_settings_page(engine):
         "Associa ogni file al conto corretto nella pagina Import."
     )
 
-    with get_session(engine) as _acc_s:
-        _accounts = get_accounts(_acc_s)
+    _accounts = cfg_svc.get_accounts()
 
-    # Add new account
     with st.form("new_account_form", clear_on_submit=True):
         col_name, col_bank, col_btn = st.columns([2, 2, 1])
         new_acc_name = col_name.text_input("Nome conto", placeholder="Conto corrente POPSO")
@@ -259,9 +254,7 @@ def render_settings_page(engine):
         if col_btn.form_submit_button("➕ Aggiungi", width="stretch"):
             if new_acc_name.strip():
                 try:
-                    with get_session(engine) as _s:
-                        create_account(_s, new_acc_name, new_acc_bank)
-                        _s.commit()
+                    cfg_svc.create_account(new_acc_name, new_acc_bank or "")
                     st.success(f"Conto '{new_acc_name}' aggiunto.")
                     st.rerun()
                 except ValueError as e:
@@ -269,16 +262,13 @@ def render_settings_page(engine):
             else:
                 st.warning("Il nome del conto non può essere vuoto.")
 
-    # List existing accounts
     if _accounts:
         for acc in _accounts:
             c1, c2, c3 = st.columns([3, 3, 1])
             c1.markdown(f"**{acc.name}**")
             c2.caption(acc.bank_name or "—")
             if c3.button("🗑️", key=f"del_acc_{acc.id}", help="Elimina conto"):
-                with get_session(engine) as _s:
-                    delete_account(_s, acc.id)
-                    _s.commit()
+                cfg_svc.delete_account(acc.id)
                 st.rerun()
     else:
         st.info("Nessun conto configurato. Aggiungine uno per associarlo ai file importati.")
@@ -393,37 +383,69 @@ def render_settings_page(engine):
 
     # ── Salva ──────────────────────────────────────────────────────────────────
     if st.button("💾 Salva impostazioni", type="primary"):
-        with get_session(engine) as session2:
-            set_user_setting(session2, "date_display_format", _DATE_FORMAT_OPTIONS[date_label])
-            set_user_setting(session2, "amount_decimal_sep", _DECIMAL_SEP_OPTIONS[dec_label])
-            set_user_setting(session2, "amount_thousands_sep", _THOUSANDS_SEP_OPTIONS[thou_label])
-            set_user_setting(session2, "description_language", _LANGUAGE_OPTIONS[lang_label])
-            set_user_setting(session2, "giroconto_mode", _GIROCONTO_OPTIONS[giroconto_label])
-            set_user_setting(session2, "llm_backend", backend)
-            set_user_setting(session2, "ollama_base_url", ollama_url)
-            set_user_setting(session2, "ollama_model", ollama_model)
-            set_user_setting(session2, "openai_api_key", openai_key)
-            set_user_setting(session2, "openai_model", openai_model)
-            set_user_setting(session2, "anthropic_api_key", anthropic_key)
-            set_user_setting(session2, "anthropic_model", anthropic_model)
-            set_user_setting(session2, "compat_base_url", compat_base_url)
-            set_user_setting(session2, "compat_api_key", compat_api_key)
-            set_user_setting(session2, "compat_model", compat_model)
-            set_user_setting(session2, "owner_names", owner_names_raw.strip())
-            set_user_setting(session2, "use_owner_names_giroconto", "true" if use_owner_giroconto else "false")
-            set_user_setting(session2, "import_test_mode", "true" if import_test_mode else "false")
-            set_user_setting(session2, "max_transaction_amount", str(int(max_tx_amount)))
-            _ctx_clean = [c for c in st.session_state.get("settings_contexts", _ctx_list) if c]
-            set_user_setting(session2, "contexts", json.dumps(_ctx_clean, ensure_ascii=False))
-            session2.commit()
+        _ctx_clean = [c for c in st.session_state.get("settings_contexts", _ctx_list) if c]
+        cfg_svc.set_bulk({
+            "date_display_format":    _DATE_FORMAT_OPTIONS[date_label],
+            "amount_decimal_sep":     _DECIMAL_SEP_OPTIONS[dec_label],
+            "amount_thousands_sep":   _THOUSANDS_SEP_OPTIONS[thou_label],
+            "description_language":   _LANGUAGE_OPTIONS[lang_label],
+            "giroconto_mode":         _GIROCONTO_OPTIONS[giroconto_label],
+            "llm_backend":            backend,
+            "ollama_base_url":        ollama_url,
+            "ollama_model":           ollama_model,
+            "openai_api_key":         openai_key,
+            "openai_model":           openai_model,
+            "anthropic_api_key":      anthropic_key,
+            "anthropic_model":        anthropic_model,
+            "compat_base_url":        compat_base_url,
+            "compat_api_key":         compat_api_key,
+            "compat_model":           compat_model,
+            "owner_names":            owner_names_raw.strip(),
+            "use_owner_names_giroconto": "true" if use_owner_giroconto else "false",
+            "import_test_mode":       "true" if import_test_mode else "false",
+            "max_transaction_amount": str(int(max_tx_amount)),
+            "contexts":               json.dumps(_ctx_clean, ensure_ascii=False),
+        })
 
-        # Sync session_state so rest of app picks up changes immediately
         st.session_state["giroconto_mode"] = _GIROCONTO_OPTIONS[giroconto_label]
         st.session_state["llm_backend"] = backend
         st.session_state["ollama_base_url"] = ollama_url
-
-        # Reset context editor state so it reloads fresh values
         st.session_state.pop("settings_contexts", None)
         st.success("Impostazioni salvate.")
         logger.info(f"settings_page: saved backend={backend!r} ollama_url={ollama_url!r}")
         st.rerun()
+
+    # ── Reset tassonomia ───────────────────────────────────────────────────────
+    st.divider()
+    with st.expander("🔄 Reset tassonomia", expanded=False):
+        st.warning(
+            "⚠️ Questa operazione **sostituisce** tutte le categorie e sottocategorie "
+            "con il template di default per la lingua selezionata. "
+            "Le transazioni già categorizzate **non** vengono modificate."
+        )
+        lang_options = cfg_svc.get_default_taxonomy_languages()   # [(code, label)]
+        lang_labels  = [label for _, label in lang_options]
+        lang_codes   = [code  for code, _ in lang_options]
+        current_lang = settings.get("description_language", "it")
+        default_idx  = lang_codes.index(current_lang) if current_lang in lang_codes else 0
+        reset_lang_label = st.selectbox(
+            "Lingua tassonomia da applicare",
+            options=lang_labels,
+            index=default_idx,
+            key="settings_reset_tax_lang",
+        )
+        reset_lang_code = lang_codes[lang_labels.index(reset_lang_label)]
+        confirm_reset = st.checkbox(
+            "Confermo: voglio sovrascrivere la tassonomia corrente",
+            key="settings_reset_tax_confirm",
+        )
+        if st.button(
+            "🔄 Applica tassonomia default",
+            type="secondary",
+            disabled=not confirm_reset,
+            key="settings_reset_tax_btn",
+        ):
+            n = cfg_svc.apply_default_taxonomy(reset_lang_code)
+            st.success(f"✅ Tassonomia **{reset_lang_label}** applicata — {n} categorie create.")
+            logger.info(f"settings_page: reset taxonomy lang={reset_lang_code!r} categories={n}")
+            st.rerun()

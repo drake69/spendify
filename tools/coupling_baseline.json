@@ -1,0 +1,6 @@
+{
+  "_comment": "Baseline delle violazioni di accoppiamento UI ↔ Service layer note e accettate.",
+  "_comment2": "Ogni file qui elencato può avere al massimo 'max_violations' violazioni.",
+  "_comment3": "Qualsiasi file NON in questa lista deve avere 0 violazioni (rifiutato in CI).",
+  "_comment4": "Per ridurre il debito: diminuisci 'max_violations' dopo ogni refactoring."
+}
