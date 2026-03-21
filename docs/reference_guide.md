@@ -1,6 +1,6 @@
 # Spendify — Reference Guide
 
-> Per la configurazione dettagliata di tutti i parametri e dei provider LLM vedi **[configurazione.md](configurazione.md)**.
+> Per la configurazione dettagliata di tutti i parametri e dei provider LLM vedi **[developer_guide.md](developer_guide.md)** e la documentazione tecnica in `documents/configurazione.md`.
 
 ---
 
@@ -216,7 +216,7 @@ Permette di eliminare in blocco transazioni selezionate tramite filtri combinabi
 - Il contatore mostra in tempo reale il numero di transazioni che verranno cancellate
 - Un'anteprima espandibile mostra le prime 10 righe corrispondenti
 - La conferma richiede di digitare esattamente `ELIMINA` nel campo testo prima di abilitare il pulsante
-- L'eliminazione è **irreversibile** — assicurarsi di avere un backup prima di procedere (vedi `deployment.md`)
+- L'eliminazione è **irreversibile** — assicurarsi di avere un backup prima di procedere (vedi `documents/deployment.md`)
 - I link di riconciliazione e giroconti associati alle transazioni eliminate vengono rimossi in cascade
 
 ---

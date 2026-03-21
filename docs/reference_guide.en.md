@@ -1,6 +1,6 @@
 # Spendify — Reference Guide
 
-> For detailed configuration of all parameters and LLM providers see **[configurazione.md](configurazione.md)**.
+> For detailed configuration of all parameters and LLM providers see **[developer_guide.en.md](developer_guide.en.md)** and the technical documentation in `documents/configurazione.en.md`.
 
 ---
 
@@ -216,7 +216,7 @@ Allows bulk deletion of transactions selected via combinable filters:
 - The counter shows in real time the number of transactions that will be deleted
 - An expandable preview shows the first 10 matching rows
 - Confirmation requires typing exactly `ELIMINA` in the text field before enabling the button
-- Deletion is **irreversible** — make sure you have a backup before proceeding (see `deployment.md`)
+- Deletion is **irreversible** — make sure you have a backup before proceeding (see `documents/deployment.md`)
 - Reconciliation and internal transfer links associated with deleted transactions are removed in cascade
 
 ---
