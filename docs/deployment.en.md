@@ -146,7 +146,7 @@ cp .env.example .env
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `SPENDIFY_DB` | SQLite database URI | `sqlite:///ledger.db` |
-| `TAXONOMY_PATH` | Path to the categories YAML file | `taxonomy.yaml` |
+| `TAXONOMY_PATH` | Path to the YAML file used as initial seed for categories. At runtime the taxonomy lives in the DB (`taxonomy_category` / `taxonomy_subcategory`) and is managed from the UI. The YAML is read only on first start or when changing language. | `taxonomy.yaml` |
 
 ```dotenv
 SPENDIFY_DB=sqlite:///ledger.db
