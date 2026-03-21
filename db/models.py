@@ -74,6 +74,7 @@ def create_tables(engine=None):
     _migrate_add_user_settings(engine)
     _migrate_add_import_job(engine)
     _migrate_add_invert_sign(engine)
+    _migrate_add_taxonomy_default(engine)   # must run before _migrate_add_taxonomy
     _migrate_add_taxonomy(engine)
     _migrate_add_accounts(engine)
     _migrate_add_description_cols(engine)
@@ -81,6 +82,7 @@ def create_tables(engine=None):
     _migrate_add_description_rules(engine)
     _migrate_add_rule_context(engine)
     _migrate_add_header_sha256(engine)
+    _migrate_set_onboarding_done_for_existing_users(engine)  # must run last
     return engine
 
 
@@ -325,6 +327,24 @@ class TaxonomySubcategory(Base):
     category = relationship("TaxonomyCategory", back_populates="subcategories")
 
 
+class TaxonomyDefault(Base):
+    """Built-in taxonomy templates, one row per (language, type, category, subcategory).
+
+    These rows are seeded from db.taxonomy_defaults.TAXONOMY_DEFAULTS and never
+    modified by the user.  On onboarding the user picks a language and the rows
+    are copied into taxonomy_category / taxonomy_subcategory (user-editable).
+    """
+    __tablename__ = "taxonomy_default"
+
+    id             = Column(Integer, primary_key=True, autoincrement=True)
+    language       = Column(String(8),   nullable=False)   # "it" | "en" | "fr" | "de" | "es"
+    type           = Column(String(8),   nullable=False)   # "expense" | "income"
+    category       = Column(String(128), nullable=False)
+    subcategory    = Column(String(128), nullable=True)     # NULL for category-level rows
+    sort_order_cat = Column(Integer, default=0)
+    sort_order_sub = Column(Integer, default=0)
+
+
 class Account(Base):
     """User-defined bank account.  Provides a stable dedup key (name) that is
     independent of the filename used when importing the file."""
@@ -355,8 +375,50 @@ def _migrate_add_import_job(engine) -> None:
         conn.commit()
 
 
+def _migrate_add_taxonomy_default(engine) -> None:
+    """Create taxonomy_default table and seed all built-in language templates (idempotent)."""
+    from sqlalchemy import text as _text
+    from db.taxonomy_defaults import TAXONOMY_DEFAULTS
+
+    with engine.connect() as conn:
+        conn.execute(_text(
+            'CREATE TABLE IF NOT EXISTS taxonomy_default ('
+            'id INTEGER PRIMARY KEY AUTOINCREMENT, '
+            'language VARCHAR(8) NOT NULL, '
+            'type VARCHAR(8) NOT NULL, '
+            'category VARCHAR(128) NOT NULL, '
+            'subcategory VARCHAR(128), '
+            'sort_order_cat INTEGER DEFAULT 0, '
+            'sort_order_sub INTEGER DEFAULT 0)'
+        ))
+        conn.execute(_text(
+            'CREATE UNIQUE INDEX IF NOT EXISTS uq_taxonomy_default '
+            'ON taxonomy_default(language, type, category, COALESCE(subcategory, \'\'))'
+        ))
+        conn.commit()
+
+        # Seed all languages from the Python definitions (INSERT OR IGNORE = idempotent)
+        for lang, data in TAXONOMY_DEFAULTS.items():
+            for type_key, entries in (("expense", data["expenses"]), ("income", data["income"])):
+                for sort_cat, entry in enumerate(entries):
+                    cat_name = entry["category"]
+                    conn.execute(_text(
+                        'INSERT OR IGNORE INTO taxonomy_default '
+                        '(language, type, category, subcategory, sort_order_cat, sort_order_sub) '
+                        'VALUES (:lang, :type, :cat, NULL, :sc, 0)'
+                    ), {"lang": lang, "type": type_key, "cat": cat_name, "sc": sort_cat})
+                    for sort_sub, sub in enumerate(entry.get("subcategories", [])):
+                        conn.execute(_text(
+                            'INSERT OR IGNORE INTO taxonomy_default '
+                            '(language, type, category, subcategory, sort_order_cat, sort_order_sub) '
+                            'VALUES (:lang, :type, :cat, :sub, :sc, :ss)'
+                        ), {"lang": lang, "type": type_key, "cat": cat_name,
+                            "sub": sub, "sc": sort_cat, "ss": sort_sub})
+        conn.commit()
+
+
 def _migrate_add_taxonomy(engine) -> None:
-    """Create taxonomy tables and seed from taxonomy.yaml (idempotent)."""
+    """Create taxonomy tables and seed from taxonomy_default (idempotent)."""
     from sqlalchemy import text as _text
     with engine.connect() as conn:
         conn.execute(_text(
@@ -400,50 +462,55 @@ def _migrate_add_taxonomy(engine) -> None:
             conn.commit()
 
 
-def _seed_taxonomy(conn) -> None:
-    """Seed taxonomy_category/subcategory from taxonomy.yaml or hardcoded defaults."""
-    import os
-    import yaml
+def _seed_taxonomy(conn, language: str = "it") -> None:
+    """Seed taxonomy_category/subcategory from taxonomy_default for *language*.
+
+    Falls back to the Python TAXONOMY_DEFAULTS dict if taxonomy_default is empty
+    (e.g. during the very first migration run before _migrate_add_taxonomy_default
+    has committed its data).
+    """
     from sqlalchemy import text as _text
 
-    taxonomy_path = os.getenv("TAXONOMY_PATH", "taxonomy.yaml")
-    try:
-        import pathlib
-        p = pathlib.Path(taxonomy_path)
-        if p.exists():
-            with open(p, "r", encoding="utf-8") as f:
-                data = yaml.safe_load(f) or {}
-        else:
-            data = {}
-    except Exception:
-        data = {}
+    # Try reading from the taxonomy_default table first
+    rows = conn.execute(_text(
+        'SELECT type, category, subcategory, sort_order_cat, sort_order_sub '
+        'FROM taxonomy_default WHERE language = :lang AND subcategory IS NOT NULL '
+        'ORDER BY sort_order_cat, sort_order_sub'
+    ), {"lang": language}).fetchall()
 
-    expenses = data.get("expenses", [])
-    income = data.get("income", [])
+    if not rows:
+        # Fallback: read from Python dict (covers the migration ordering edge case)
+        from db.taxonomy_defaults import TAXONOMY_DEFAULTS
+        data = TAXONOMY_DEFAULTS.get(language, TAXONOMY_DEFAULTS["it"])
+        for type_key, entries in (("expense", data["expenses"]), ("income", data["income"])):
+            for sort_i, entry in enumerate(entries):
+                r = conn.execute(_text(
+                    "INSERT OR IGNORE INTO taxonomy_category (name, type, sort_order) VALUES (:n,:t,:s)"
+                ), {"n": entry["category"], "t": type_key, "s": sort_i})
+                cat_id = r.lastrowid
+                for sort_j, sub in enumerate(entry.get("subcategories", [])):
+                    conn.execute(_text(
+                        "INSERT INTO taxonomy_subcategory (category_id, name, sort_order) VALUES (:c,:n,:s)"
+                    ), {"c": cat_id, "n": sub, "s": sort_j})
+        return
 
-    for sort_i, entry in enumerate(expenses):
-        r = conn.execute(
-            _text("INSERT OR IGNORE INTO taxonomy_category (name, type, sort_order) VALUES (:n,:t,:s)"),
-            {"n": entry["category"], "t": "expense", "s": sort_i},
-        )
-        cat_id = r.lastrowid
-        for sort_j, sub in enumerate(entry.get("subcategories", [])):
-            conn.execute(
-                _text("INSERT INTO taxonomy_subcategory (category_id, name, sort_order) VALUES (:c,:n,:s)"),
-                {"c": cat_id, "n": sub, "s": sort_j},
-            )
-
-    for sort_i, entry in enumerate(income):
-        r = conn.execute(
-            _text("INSERT OR IGNORE INTO taxonomy_category (name, type, sort_order) VALUES (:n,:t,:s)"),
-            {"n": entry["category"], "t": "income", "s": sort_i},
-        )
-        cat_id = r.lastrowid
-        for sort_j, sub in enumerate(entry.get("subcategories", [])):
-            conn.execute(
-                _text("INSERT INTO taxonomy_subcategory (category_id, name, sort_order) VALUES (:c,:n,:s)"),
-                {"c": cat_id, "n": sub, "s": sort_j},
-            )
+    # Normal path: copy from taxonomy_default
+    cat_id_map: dict[tuple[str, str], int] = {}
+    for row in rows:
+        type_key, cat_name, sub_name, sort_cat, sort_sub = row
+        key = (type_key, cat_name)
+        if key not in cat_id_map:
+            r = conn.execute(_text(
+                "INSERT OR IGNORE INTO taxonomy_category (name, type, sort_order) VALUES (:n,:t,:s)"
+            ), {"n": cat_name, "t": type_key, "s": sort_cat})
+            # lastrowid is 0 on IGNORE — fetch the real id
+            existing = conn.execute(_text(
+                "SELECT id FROM taxonomy_category WHERE name=:n AND type=:t"
+            ), {"n": cat_name, "t": type_key}).scalar()
+            cat_id_map[key] = existing
+        conn.execute(_text(
+            "INSERT INTO taxonomy_subcategory (category_id, name, sort_order) VALUES (:c,:n,:s)"
+        ), {"c": cat_id_map[key], "n": sub_name, "s": sort_sub})
 
 
 def _migrate_add_accounts(engine) -> None:
@@ -536,6 +603,30 @@ def _migrate_add_rule_context(engine) -> None:
                 pass
             else:
                 raise
+
+
+def _migrate_set_onboarding_done_for_existing_users(engine) -> None:
+    """Mark onboarding as complete for DBs that already have taxonomy data.
+
+    Prevents existing users from seeing the onboarding wizard after upgrading.
+    Runs after all other migrations so taxonomy_category is guaranteed to exist.
+    Condition: taxonomy_category has rows (= app was already set up before onboarding
+    was introduced).  Does nothing if onboarding_done is already set.
+    """
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        existing = conn.execute(_text(
+            "SELECT value FROM user_settings WHERE key='onboarding_done'"
+        )).scalar()
+        if existing is not None:
+            return  # already decided — don't touch
+        count = conn.execute(_text("SELECT COUNT(*) FROM taxonomy_category")).scalar()
+        if count and count > 0:
+            conn.execute(_text(
+                "INSERT OR REPLACE INTO user_settings (key, value) "
+                "VALUES ('onboarding_done', 'true')"
+            ))
+            conn.commit()
 
 
 def _migrate_add_header_sha256(engine) -> None:

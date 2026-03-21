@@ -43,6 +43,41 @@ services:
       retries: 3
       start_period: 20s
 
+  # ── REST API — FastAPI + uvicorn ──────────────────────────────────────────────
+  # Espone le stesse operazioni del ledger via HTTP/JSON (UI-independent).
+  # Docs interattive: http://localhost:8000/docs
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: spendify:latest
+    container_name: spendify_api
+    restart: unless-stopped
+    command: ["uv", "run", "uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+    ports:
+      - "8000:8000"
+
+    environment:
+      DATABASE_URL: "sqlite:////app/data/ledger.db"
+      TAXONOMY_PATH: "/app/taxonomy.yaml"
+
+    volumes:
+      - spendify_data:/app/data
+      - ../taxonomy.yaml:/app/taxonomy.yaml:ro
+
+    depends_on:
+      spendify:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "uv", "run", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
   # ── LLM locale — Ollama (Linux/server con GPU NVIDIA) ────────────────────────
   # Avvio con Ollama: docker compose --profile ollama up -d
   # Poi scarica il modello (una tantum): docker compose exec ollama ollama pull gemma3:12b

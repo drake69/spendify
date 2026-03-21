@@ -95,6 +95,134 @@ jobs:
         if: always()
         run: docker compose -f docker/docker-compose.yml down -v
 
+  coupling-check:
+    name: Coupling check (UI ↔ Service layer)
+    runs-on: ubuntu-latest
+    # Serve solo write su pull_request per poter postare il commento
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run coupling check — strict mode (ratchet baseline)
+        # Exit 1 se un file non nel baseline ha violazioni,
+        # o se un file nel baseline supera il suo max_violations.
+        # Il JSON viene salvato per i passi successivi.
+        run: uv run python tools/coupling_check.py --strict --json | tee coupling_report.json
+        # Il job fallisce se il comando esce con codice 1.
+        # continue-on-error: false  ← default, esplicito per chiarezza
+
+      - name: Upload coupling report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coupling-report
+          path: coupling_report.json
+          retention-days: 30
+
+      - name: Post PR comment with coupling summary
+        # Posta un commento sulla PR con il riepilogo del report.
+        # Viene eseguito anche in caso di failure del check precedente
+        # (if: always()) così il contributore vede subito cosa ha rotto.
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let report;
+            try {
+              report = JSON.parse(fs.readFileSync('coupling_report.json', 'utf8'));
+            } catch (e) {
+              console.log('coupling_report.json not found, skipping comment');
+              return;
+            }
+
+            const strict    = report.strict || {};
+            const passed    = strict.strict_pass;
+            const icon      = passed ? '✅' : '❌';
+            const headline  = passed
+              ? '**Coupling check PASSED** — nessuna regressione di accoppiamento.'
+              : '**Coupling check FAILED** — nuove violazioni di accoppiamento rilevate.';
+
+            // Tabella per file
+            const rows = report.files
+              .map(f => {
+                const status = f.violations === 0
+                  ? '✅'
+                  : (strict.failures && strict.failures.some(s => s.includes(f.path)) ? '❌' : '⚠️');
+                return `| ${status} | \`${f.path}\` | ${f.violations} | ${f.compliant} | ${(f.score * 100).toFixed(0)}% |`;
+              })
+              .join('\n');
+
+            // Dettaglio violazioni nei file falliti
+            let violationDetail = '';
+            if (!passed && strict.failures && strict.failures.length > 0) {
+              violationDetail = '\n### Violazioni da correggere\n```\n'
+                + strict.failures.join('\n')
+                + '\n```\n';
+            }
+
+            // Avvisi baseline migliorato (opportunità di abbassare il baseline)
+            let warningDetail = '';
+            if (strict.warnings && strict.warnings.length > 0) {
+              warningDetail = '\n### ⚠️ Baseline migliorato — aggiorna coupling_baseline.json\n'
+                + strict.warnings.map(w => `- ${w.trim()}`).join('\n') + '\n';
+            }
+
+            const body = [
+              `## ${icon} Coupling Report — UI ↔ Service layer`,
+              '',
+              headline,
+              '',
+              `**Violazioni totali:** ${report.total_violations} | **File puliti:** ${report.files.filter(f => f.violations === 0).length}/${report.files.length} | **Coupling score:** ${(report.coupling_score * 100).toFixed(0)}%`,
+              '',
+              '| | File | Violazioni | Compliant | Score |',
+              '|---|---|---|---|---|',
+              rows,
+              violationDetail,
+              warningDetail,
+              '',
+              '> **Regola:** ogni file nuovo deve avere 0 violazioni.',
+              '> Le eccezioni note sono in [`tools/coupling_baseline.json`](tools/coupling_baseline.json).',
+            ].join('\n');
+
+            // Cerca un commento precedente di questo bot e aggiornalo
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes('Coupling Report — UI ↔ Service layer')
+            );
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner:      context.repo.owner,
+                repo:       context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner:       context.repo.owner,
+                repo:        context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
   installer-validate:
     name: Installer validation (syntax + compose)
     runs-on: ubuntu-latest

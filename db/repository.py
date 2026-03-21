@@ -1064,3 +1064,62 @@ def get_transactions_by_raw_pattern(
             except re.error:
                 pass
     return result
+
+
+# ── TaxonomyDefault ───────────────────────────────────────────────────────────
+
+def get_default_taxonomy_languages(session: Session) -> list[str]:
+    """Return the list of language codes present in taxonomy_default, in insertion order."""
+    from sqlalchemy import text as _text
+    rows = session.execute(
+        _text("SELECT language FROM taxonomy_default GROUP BY language ORDER BY MIN(id)")
+    ).fetchall()
+    return [r[0] for r in rows]
+
+
+def seed_user_taxonomy_from_default(session: Session, language: str) -> int:
+    """Replace the user taxonomy with the built-in template for *language*.
+
+    Clears taxonomy_category (cascades to taxonomy_subcategory) then copies
+    rows from taxonomy_default.  Returns the number of categories inserted.
+    """
+    from sqlalchemy import text as _text
+    from db.models import TaxonomyCategory, TaxonomySubcategory
+
+    # Clear existing user taxonomy
+    session.query(TaxonomySubcategory).delete(synchronize_session=False)
+    session.query(TaxonomyCategory).delete(synchronize_session=False)
+    session.flush()
+
+    rows = session.execute(_text(
+        'SELECT type, category, subcategory, sort_order_cat, sort_order_sub '
+        'FROM taxonomy_default WHERE language = :lang AND subcategory IS NOT NULL '
+        'ORDER BY sort_order_cat, sort_order_sub'
+    ), {"lang": language}).fetchall()
+
+    if not rows:
+        # Language not found — fall back to 'it'
+        rows = session.execute(_text(
+            'SELECT type, category, subcategory, sort_order_cat, sort_order_sub '
+            'FROM taxonomy_default WHERE language = :lang AND subcategory IS NOT NULL '
+            'ORDER BY sort_order_cat, sort_order_sub'
+        ), {"lang": "it"}).fetchall()
+
+    cat_map: dict[tuple[str, str], TaxonomyCategory] = {}
+    for row in rows:
+        type_key, cat_name, sub_name, sort_cat, sort_sub = row
+        key = (type_key, cat_name)
+        if key not in cat_map:
+            cat = TaxonomyCategory(name=cat_name, type=type_key, sort_order=sort_cat)
+            session.add(cat)
+            session.flush()  # get cat.id
+            cat_map[key] = cat
+        sub = TaxonomySubcategory(
+            category_id=cat_map[key].id,
+            name=sub_name,
+            sort_order=sort_sub,
+        )
+        session.add(sub)
+
+    session.commit()
+    return len(cat_map)
