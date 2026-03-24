@@ -139,12 +139,16 @@ This is passed to the LLM categoriser prompt to help it correctly interpret tran
 
 **Path:** Impostazioni → 🔄 Modalità Giroconti
 
-| Mode | Behaviour in Ledger | Behaviour in Analytics |
-|---|---|---|
-| **Show (neutral)** | 🔄 rows are visible (grey/neutral) | Excluded from income/expense totals |
-| **Exclude from register** | 🔄 rows do not appear | Excluded |
+Internal transfers (giroconti) between your own accounts are **always detected and always saved** to the database, regardless of the selected mode. This ensures reconciliation and data integrity. The mode controls **only the visibility** in views (Ledger, Analytics, Reports).
+
+| Mode | Behaviour in views (Ledger, Analytics, Reports) |
+|---|---|
+| **Show (neutral)** | 🔄 rows are visible (grey/neutral), excluded from income/expense totals |
+| **Exclude from views** | 🔄 rows do not appear in the UI (but remain in the database) |
 
 The mode applies globally. You can override it for a single view using the *Nascondi giroconti* checkbox in Ledger.
+
+> **Technical note:** internal transfers are marked as `internal_in`/`internal_out` in the ledger. Even in "Exclude" mode, they remain available for reconciliation and audit.
 
 ---
 

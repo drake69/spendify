@@ -101,6 +101,22 @@ class SettingsService:
             s.commit()
             return result
 
+    def rename_account(
+        self, account_id: int, new_name: str, new_bank_name: str | None = None
+    ) -> int:
+        """Rename account and cascade to transactions. Returns count updated."""
+        with self._session() as s:
+            result = repository.rename_account(s, account_id, new_name, new_bank_name)
+            s.commit()
+            return result
+
+    def delete_all_schemas(self) -> int:
+        """Delete all cached document schemas. Returns count deleted."""
+        with self._session() as s:
+            count = repository.delete_all_schemas(s)
+            s.commit()
+            return count
+
     # ── Bulk settings save ────────────────────────────────────────────────────
 
     def set_bulk(self, settings: dict[str, str]) -> None:

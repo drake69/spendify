@@ -120,12 +120,22 @@ git clone https://github.com/drake69/spendify.git spendify
 cd spendify
 uv sync
 cp .env.example .env
+
+# Script di avvio (consigliato)
+./start.sh          # solo UI (default)
+./start.sh api      # solo REST API
+./start.sh all      # UI + API
+
+# Su Windows
+start.bat           # stesse opzioni: ui | api | all
+
+# Oppure manualmente
 uv run streamlit run app.py
 ```
 
 L'app è disponibile su **http://localhost:8501**
 
-Per avviare anche la REST API in sviluppo:
+Per avviare anche la REST API manualmente:
 
 ```bash
 uv run uvicorn api.main:app --host 0.0.0.0 --port 8000

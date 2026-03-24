@@ -39,15 +39,46 @@ L'app ti mostra automaticamente il **wizard di configurazione iniziale** (4 step
 
 **Cosa succede dietro le quinte:** Spendify assegna a ogni transazione un codice univoco basato sul contenuto. Se importi lo stesso file due volte non succede nulla di male — i duplicati vengono scartati silenziosamente.
 
+### Importazione automatica e revisione schema
+
+Spendify analizza la struttura di ogni file e calcola un **punteggio di confidenza** (da 0 a 100%) su quanto ha capito del formato.
+
+- **Confidenza >= 80%** — l'importazione procede in automatico, senza chiederti nulla.
+- **Confidenza < 80%** — compare un form di revisione dove puoi verificare le colonne rilevate (data, importo, descrizione, tipo documento) e correggerle se necessario. Dopo la conferma manuale, la confidenza sale a 100%.
+
+Una volta confermato lo schema di un file, tutte le importazioni successive dello stesso formato saranno automatiche — Spendify ricorda la struttura.
+
 ### Righe da saltare — quando compare questo campo?
 
-Alcuni file di banca hanno righe di intestazione prima della tabella dati (nome della banca, periodo, numero conto…). Spendify le rileva automaticamente e le salta.
+Alcuni file di banca hanno righe di intestazione prima della tabella dati (nome della banca, periodo, numero conto…) e righe di riepilogo/totali in fondo. Spendify usa un'analisi basata sulla densità dei dati per individuare automaticamente dove inizia e dove finisce la tabella reale, rimuovendo sia le righe di contorno in alto che i totali in basso. Nella maggior parte dei casi non serve impostare nulla manualmente.
 
 Se però il rilevamento automatico **non è riuscito** (file con formato insolito, tutto numerico, senza intestazioni testuali), comparirà il campo **"Righe da saltare"** accanto al nome del file. Inserisci quante righe vuoi saltare prima dell'intestazione della tabella.
 
 > **Esempio:** Apri il file CSV con un editor di testo. Se le prime 3 righe sono `Banca XYZ`, `Conto 123`, `Dal 01/01 al 31/01` e la riga 4 è `Data,Importo,Descrizione`, inserisci `3`.
 
 Una volta confermato lo schema del file, alle importazioni successive non vedrai più questo campo — Spendify lo ricorda automaticamente.
+
+### Riepilogo importazione
+
+Al termine dell'elaborazione, per ogni file importato viene mostrato un riepilogo dettagliato:
+
+| Metrica | Significato |
+|---------|-------------|
+| **Righe E/C** | Numero totale di righe dati nell'estratto conto (escluse intestazioni) |
+| **Importate** | Nuove transazioni salvate nel database |
+| **Già presenti** | Transazioni già importate in precedenza (duplicate, saltate) |
+| **Giroconti** | Trasferimenti interni rilevati (tooltip con dettaglio). I giroconti vengono **sempre salvati** nel database, anche con modalità "Escludi" — l'impostazione controlla solo la visibilità nelle viste |
+| **Scartate** | Righe che non è stato possibile importare |
+
+Se ci sono righe scartate, un avviso mostra il motivo per ciascuna:
+- **Data mancante** — la cella della data è vuota
+- **Data non parsabile** — il formato della data non corrisponde allo schema
+- **Importo non parsabile** — il valore dell'importo non è riconoscibile
+- **Importo: entrambe le colonne Dare/Avere vuote** — nei file con colonne separate per dare e avere, nessuna delle due contiene un valore per quella riga
+
+Puoi espandere il dettaglio per vedere i dati originali di ogni riga scartata, utile per capire se c'è un problema nel file o nello schema.
+
+> **Consiglio:** se i numeri non tornano (es. righe nel file ≠ somma di importate + già presenti + scartate + intestazione), potrebbe indicare un problema nello schema. Prova a cancellare lo schema salvato da ⚙️ Impostazioni e reimportare il file.
 
 ---
 
@@ -205,6 +236,37 @@ Vai su **Impostazioni**:
 > **Nota sulla privacy:** Se usi un backend remoto (OpenAI o Claude), Spendify rimuove automaticamente IBAN, numeri carta, codice fiscale e nome del titolare prima di inviare qualsiasi dato.
 
 Per istruzioni dettagliate su dove registrarsi e come ottenere le API key di ogni provider, consulta il **[Manuale di Configurazione](configurazione.md)**.
+
+### Scaricare un modello (Ollama)
+
+Se usi Ollama come backend, puoi scaricare o aggiornare il modello direttamente dall'app senza aprire il terminale:
+
+1. Vai su **⚙️ Impostazioni → 🤖 Configurazione LLM**
+2. Inserisci il nome del modello (es. `gemma3:12b`)
+3. Clicca **⬇️ Pull modello**
+
+Una barra di progresso mostra i MB scaricati. Il download può richiedere qualche minuto (il modello `gemma3:12b` pesa circa 8 GB).
+
+### Verificare che il modello funzioni
+
+Per qualsiasi backend (Ollama, OpenAI, Claude, Compatible):
+
+1. Configura backend, URL/API key e modello
+2. Clicca **🧪 Test LLM**
+
+Spendify invia un prompt di prova ("PAGAMENTO POS FARMACIA") e mostra la risposta del modello (categoria + livello di confidenza). Se qualcosa non va, il messaggio di errore indica se il problema è la connessione, l'API key o il modello.
+
+> **Consiglio:** fai sempre il test dopo aver cambiato modello o backend, prima di lanciare un import.
+
+### Cancellare gli schemi dei file
+
+Spendify memorizza la struttura di ogni file importato (colonne, formato date, convenzione di segno) per velocizzare le importazioni successive. Se un file viene importato con lo schema sbagliato — ad esempio mancano le entrate o le colonne sono invertite — puoi resettare la cache:
+
+1. Vai su **⚙️ Impostazioni → 📐 Schema file importati**
+2. Clicca **🗑️ Cancella tutti gli schemi salvati**
+3. Reimporta il file — Spendify lo rianalizza da zero e ti chiede di confermare lo schema
+
+> **Quando serve:** se il riepilogo import mostra righe scartate con motivo "Importo non parsabile" per le entrate (o le uscite), lo schema salvato probabilmente usa una convenzione di segno sbagliata. Cancella e reimporta.
 
 **Reset tassonomia:** se vuoi cambiare la lingua della tassonomia dopo l'onboarding, vai in **⚙️ Impostazioni → 🔄 Reset tassonomia**, scegli la lingua e conferma. Le categorie esistenti vengono sostituite con quelle del template scelto.
 

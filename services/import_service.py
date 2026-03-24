@@ -23,6 +23,7 @@ from core.normalizer import (
 from core.orchestrator import (
     ImportResult,
     ProcessingConfig,
+    SkippedRow,  # noqa: F401 — re-exported for UI
     _normalize_df_with_schema,
     load_raw_dataframe,
     process_file as _process_file,
@@ -167,7 +168,8 @@ class ImportService:
         df_raw, _, _ = load_raw_dataframe(
             raw_bytes, filename, skip_rows_override=skip_rows_override
         )
-        return _normalize_df_with_schema(df_raw.head(n), schema, filename)
+        txs, _, _ = _normalize_df_with_schema(df_raw.head(n), schema, filename)
+        return txs
 
     # ── Single-file import ─────────────────────────────────────────────────────
 

@@ -47,10 +47,13 @@ class PreprocessInfo:
     or display what was stripped/dropped without re-running the analysis.
     """
     skipped_rows: int = 0
+    footer_rows_stripped: int = 0
     dropped_columns: list[str] = field(default_factory=list)
     columns_before_drop: list[str] = field(default_factory=list)
     """Column names captured AFTER preheader-strip but BEFORE drop_low_variability_columns.
     Used for stable schema lookup (cols_key) regardless of file size."""
+    header_certain: bool = False
+    """Whether the pre-load header detection was certain (used for confidence scoring)."""
 
 
 # ── Encoding / format detection ───────────────────────────────────────────────
@@ -72,28 +75,72 @@ def detect_delimiter(content: str) -> str:
     return max(counts, key=counts.get)
 
 
-def detect_header_row(lines: list[str]) -> tuple[int, bool]:
-    """Return (index, certain) of the first line with ≥2 non-empty, non-numeric fields.
+def _row_density(fields: list[str]) -> float:
+    """Fraction of non-empty fields in a row."""
+    if not fields:
+        return 0.0
+    return sum(1 for f in fields if f.strip()) / len(fields)
 
-    certain=True  → a matching line was found (header detected with confidence).
-    certain=False → no line matched; defaulted to 0 (ambiguous, ask the user).
+
+def _row_non_numeric_count(fields: list[str]) -> int:
+    """Count non-empty, non-numeric fields (text = likely column names)."""
+    return sum(
+        1 for f in fields
+        if f.strip() and not re.match(r'^[\d\.\,\-\+\s€$£%]+$', f.strip())
+    )
+
+
+def detect_header_row(lines: list[str]) -> tuple[int, bool]:
+    """Detect the header row using density analysis.
+
+    Algorithm:
+    1. Parse each line into fields.
+    2. The header row is the one with the highest density (most non-empty cells).
+    3. Tiebreak: prefer the row with more non-numeric fields (text = column names).
+    4. certain=True if the winner has density ≥ 0.5 AND ≥ 2 non-numeric fields.
+
+    Returns (index, certain).
     """
-    for i, line in enumerate(lines):
-        fields = [f.strip() for f in re.split(r'[,;\t|]', line)]
-        non_numeric = sum(
-            1 for f in fields
-            if f and not re.match(r'^[\d\.\,\-\+\s€$£%]+$', f)
+    if not lines:
+        return 0, False
+
+    max_scan = min(len(lines), 50)
+    best_idx = 0
+    best_density = 0.0
+    best_text_count = 0
+
+    logger.info("── detect_header_row: scanning %d lines ──", max_scan)
+    for i in range(max_scan):
+        fields = [f.strip() for f in re.split(r'[,;\t|]', lines[i])]
+        density = _row_density(fields)
+        text_count = _row_non_numeric_count(fields)
+        n_fields = len([f for f in fields if f])
+
+        logger.info(
+            "  row %2d | density=%.2f | text_fields=%d | filled=%d/%d | preview=%.80s",
+            i, density, text_count, n_fields, len(fields),
+            lines[i][:80].replace("\n", ""),
         )
-        if non_numeric >= 2:
-            return i, True
-    return 0, False
+
+        # Prefer higher density; tiebreak by more non-numeric (text) fields
+        if (density > best_density) or (density == best_density and text_count > best_text_count):
+            best_idx = i
+            best_density = density
+            best_text_count = text_count
+
+    certain = best_density >= 0.5 and best_text_count >= 2
+    logger.info(
+        "── detect_header_row result: row=%d density=%.2f text_count=%d certain=%s ──",
+        best_idx, best_density, best_text_count, certain,
+    )
+    return best_idx, certain
 
 
 def detect_header_row_excel(raw_bytes: bytes) -> tuple[int, bool]:
-    """Detect header row in an Excel file by scanning the best sheet's cell values.
+    """Detect header row in an Excel file using density analysis.
 
-    Applies the same ≥2 non-numeric fields heuristic as detect_header_row.
-    Returns (skip_rows, certain) with identical semantics.
+    Same density-based algorithm as detect_header_row but operates on
+    openpyxl worksheet rows.  Returns (skip_rows, certain).
     """
     import io as _io
     try:
@@ -101,18 +148,38 @@ def detect_header_row_excel(raw_bytes: bytes) -> tuple[int, bool]:
         wb = openpyxl.load_workbook(_io.BytesIO(raw_bytes), read_only=True, data_only=True)
         sheet_name = detect_best_sheet(wb)
         ws = wb[sheet_name]
-        for i, row in enumerate(ws.iter_rows(values_only=True, max_row=30)):
-            values = [str(v).strip() for v in row if v is not None]
-            non_numeric = sum(
-                1 for v in values
-                if v and not re.match(r'^[\d\.\,\-\+\s€$£%]+$', v)
+
+        best_idx = 0
+        best_density = 0.0
+        best_text_count = 0
+
+        logger.info("── detect_header_row_excel: sheet='%s' ──", sheet_name)
+        for i, row in enumerate(ws.iter_rows(values_only=True, max_row=50)):
+            fields = [str(v).strip() if v is not None else "" for v in row]
+            density = _row_density(fields)
+            text_count = _row_non_numeric_count(fields)
+            n_fields = len([f for f in fields if f])
+
+            logger.info(
+                "  row %2d | density=%.2f | text_fields=%d | filled=%d/%d | values=%s",
+                i, density, text_count, n_fields, len(fields),
+                [f[:30] for f in fields if f][:6],
             )
-            if non_numeric >= 2:
-                wb.close()
-                return i, True
+
+            if (density > best_density) or (density == best_density and text_count > best_text_count):
+                best_idx = i
+                best_density = density
+                best_text_count = text_count
+
         wb.close()
-    except Exception:
-        pass
+        certain = best_density >= 0.5 and best_text_count >= 2
+        logger.info(
+            "── detect_header_row_excel result: row=%d density=%.2f text_count=%d certain=%s ──",
+            best_idx, best_density, best_text_count, certain,
+        )
+        return best_idx, certain
+    except Exception as exc:
+        logger.warning("detect_header_row_excel failed: %s", exc)
     return 0, False
 
 
@@ -123,11 +190,17 @@ def detect_skip_rows(raw_bytes: bytes, filename: str) -> tuple[int, bool]:
       certain=True  → detection confident, use skip_rows silently.
       certain=False → could not determine; surface a number_input to the user.
     """
+    logger.info("══ detect_skip_rows [%s] (%d bytes, type=%s) ══",
+                filename, len(raw_bytes),
+                "excel" if filename.lower().endswith((".xlsx", ".xls")) else "csv")
     if filename.lower().endswith((".xlsx", ".xls")):
-        return detect_header_row_excel(raw_bytes)
-    encoding = detect_encoding(raw_bytes)
-    text = raw_bytes.decode(encoding, errors="replace")
-    return detect_header_row(text.splitlines())
+        skip, certain = detect_header_row_excel(raw_bytes)
+    else:
+        encoding = detect_encoding(raw_bytes)
+        text = raw_bytes.decode(encoding, errors="replace")
+        skip, certain = detect_header_row(text.splitlines())
+    logger.info("══ detect_skip_rows result: skip_rows=%d, certain=%s ══", skip, certain)
+    return skip, certain
 
 
 def detect_best_sheet(workbook) -> str:
@@ -371,6 +444,8 @@ def load_raw_head(raw_bytes: bytes, filename: str, n: int = 10) -> "pd.DataFrame
             engine="python",
             on_bad_lines="skip",
         )
+    # Defensive: coerce column names to str (Excel datetime headers, etc.)
+    df.columns = [str(c) for c in df.columns]
     return df
 
 
@@ -381,6 +456,12 @@ def detect_and_strip_preheader_rows(
     source_name: str = "",
 ) -> tuple[pd.DataFrame, int]:
     """Remove spurious metadata rows that appear *before* the actual column header.
+
+    NOTE: This function is currently bypassed when the pre-load density-based
+    header detection (detect_skip_rows) returns certain=True. It is kept as a
+    fallback for edge cases where pre-load detection fails. The pre-load approach
+    is preferred because it avoids loading garbage data into pandas and then
+    trying to clean it up post-hoc.
 
     Banks occasionally export files where the first few rows contain account
     info, report titles, or empty lines before the real transaction table
@@ -416,11 +497,13 @@ def detect_and_strip_preheader_rows(
             safety caps, indicating the file probably does not start with a
             transaction table at all.
     """
+    logger.info("── detect_and_strip_preheader_rows [%s] ──", source_name)
     if len(df) < 4:
-        # Too short to run safely; nothing to strip.
+        logger.info("  DataFrame too short (%d rows), skipping strip.", len(df))
         return df, 0
 
     total_rows = len(df) + 1  # +1 for the reconstructed header row
+    logger.info("  total_rows (incl header)=%d, columns=%s", total_rows, list(df.columns)[:8])
 
     # Step 1 – Reconstruct the pandas-consumed header row.
     header_values: list = [
@@ -428,6 +511,8 @@ def detect_and_strip_preheader_rows(
         for c in df.columns
     ]
     n_cols = len(header_values)
+    logger.info("  pandas header (row 0): %s", [str(v)[:25] for v in header_values])
+
     header_series = pd.Series(header_values, index=df.columns)
     df_full = pd.concat(
         [header_series.to_frame().T, df.reset_index(drop=True)],
@@ -440,9 +525,16 @@ def detect_and_strip_preheader_rows(
         for _, row in df_full.iterrows()
     ]
 
+    # Log first 25 rows with density
+    for i, d in enumerate(densities[:25]):
+        row_vals = [str(v)[:20] for v in df_full.iloc[i] if pd.notna(v)][:5]
+        logger.info("  row %2d | density=%.2f | values=%s", i, d, row_vals)
+
     # Step 3 – Median density.
     med = median(densities)
     threshold = med * _PREHEADER_DENSITY_THRESHOLD
+    logger.info("  median_density=%.2f, threshold=%.2f (median × %.2f)",
+                med, threshold, _PREHEADER_DENSITY_THRESHOLD)
 
     # Step 4 – Contiguous sparse rows at the start.
     n_sparse = 0
@@ -452,10 +544,17 @@ def detect_and_strip_preheader_rows(
         else:
             break  # stop at first non-sparse row
 
+    logger.info("  contiguous sparse rows from top: %d", n_sparse)
+
     if n_sparse == 0:
+        logger.info("  → No pre-header rows to strip.")
         return df, 0
 
     # Step 5 – Safety caps.
+    ratio = n_sparse / total_rows
+    logger.info("  n_sparse=%d, ratio=%.2f%%, cap_abs=%d, cap_ratio=%.0f%%",
+                n_sparse, ratio * 100, _PREHEADER_MAX_ROWS, _PREHEADER_MAX_RATIO * 100)
+
     if n_sparse > _PREHEADER_MAX_ROWS:
         raise ValueError(
             f"[{source_name}] detect_and_strip_preheader_rows: "
@@ -463,7 +562,6 @@ def detect_and_strip_preheader_rows(
             f"absolute cap of {_PREHEADER_MAX_ROWS}. "
             "The file may not contain a standard transaction table."
         )
-    ratio = n_sparse / total_rows
     if ratio > _PREHEADER_MAX_RATIO:
         raise ValueError(
             f"[{source_name}] detect_and_strip_preheader_rows: "
@@ -478,15 +576,79 @@ def detect_and_strip_preheader_rows(
         (str(v).strip() if pd.notna(v) and str(v).strip() else f"Unnamed: {i}")
         for i, v in enumerate(new_header_row)
     ]
+    logger.info("  → New header from row %d: %s", n_sparse, new_columns[:8])
+
     result = df_full.iloc[n_sparse + 1:].copy()
     result.columns = new_columns
     result = result.reset_index(drop=True)
 
     logger.info(
-        "[%s] Stripped %d pre-header row(s) (density threshold=%.2f × median %.2f)",
+        "[%s] Stripped %d pre-header row(s) (density threshold=%.2f × median %.2f). "
+        "Result: %d rows, columns=%s",
         source_name, n_sparse, _PREHEADER_DENSITY_THRESHOLD, med,
+        len(result), list(result.columns)[:8],
     )
     return result, n_sparse
+
+
+# ── Footer detection constants ────────────────────────────────────────────────
+_FOOTER_MAX_ROWS: int = 5
+_FOOTER_MAX_RATIO: float = 0.05  # 5 % of total rows
+
+
+def detect_and_strip_footer_rows(
+    df: pd.DataFrame,
+    source_name: str = "",
+) -> tuple[pd.DataFrame, int]:
+    """Remove summary/totale rows at the bottom of the table using IQR outlier detection.
+
+    Algorithm (language-agnostic, statistical):
+    1. Compute per-row density (non-null fraction).
+    2. Compute Q1, Q3, IQR = Q3 - Q1.
+    3. lower_fence = Q1 - 1.5 × IQR.
+    4. Scan from the bottom: collect contiguous rows whose density < lower_fence.
+    5. Safety caps: max _FOOTER_MAX_ROWS or _FOOTER_MAX_RATIO × total_rows.
+
+    Returns:
+        (trimmed_df, n_stripped) — n_stripped == 0 if nothing was removed.
+    """
+    if len(df) < 5:
+        return df, 0
+
+    n_cols = len(df.columns)
+    if n_cols == 0:
+        return df, 0
+
+    densities = [row.notna().sum() / n_cols for _, row in df.iterrows()]
+
+    sorted_d = sorted(densities)
+    n = len(sorted_d)
+    q1 = sorted_d[n // 4]
+    q3 = sorted_d[(3 * n) // 4]
+    iqr = q3 - q1
+    lower_fence = q1 - 1.5 * iqr
+
+    # Scan from bottom upward: collect contiguous sparse rows
+    n_footer = 0
+    for d in reversed(densities):
+        if d < lower_fence:
+            n_footer += 1
+        else:
+            break
+
+    if n_footer == 0:
+        return df, 0
+
+    # Safety caps
+    max_allowed = min(_FOOTER_MAX_ROWS, int(len(df) * _FOOTER_MAX_RATIO))
+    n_footer = min(n_footer, max(max_allowed, 1))
+
+    result = df.iloc[:-n_footer].copy().reset_index(drop=True)
+    logger.info(
+        "[%s] Stripped %d footer row(s) (IQR lower_fence=%.2f, Q1=%.2f, Q3=%.2f)",
+        source_name, n_footer, lower_fence, q1, q3,
+    )
+    return result, n_footer
 
 
 def drop_low_variability_columns(

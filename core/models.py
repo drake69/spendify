@@ -32,6 +32,15 @@ class Confidence(str, Enum):
     medium = "medium"
     low = "low"
 
+    @classmethod
+    def from_score(cls, score: float) -> "Confidence":
+        """Derive a categorical confidence level from a numeric score (0.0-1.0)."""
+        if score >= 0.80:
+            return cls.high
+        elif score >= 0.50:
+            return cls.medium
+        return cls.low
+
 
 class MatchType(str, Enum):
     contains = "contains"

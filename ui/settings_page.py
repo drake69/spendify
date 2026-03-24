@@ -56,6 +56,108 @@ def _key_for(options: dict, value: str) -> str:
     return next(iter(options))
 
 
+def _do_ollama_pull(base_url: str, model: str) -> None:
+    """Pull (download/update) an Ollama model with streaming progress."""
+    import requests
+
+    base_url = base_url.rstrip("/")
+    try:
+        with st.spinner(f"Download modello **{model}**…"):
+            resp = requests.post(
+                f"{base_url}/api/pull",
+                json={"name": model, "stream": True},
+                stream=True,
+                timeout=600,
+            )
+            resp.raise_for_status()
+
+            progress_bar = st.progress(0.0)
+            status_text = st.empty()
+
+            for line in resp.iter_lines():
+                if not line:
+                    continue
+                import json as _json
+                data = _json.loads(line)
+                status = data.get("status", "")
+                total = data.get("total", 0)
+                completed = data.get("completed", 0)
+
+                if total > 0:
+                    pct = completed / total
+                    progress_bar.progress(min(pct, 1.0))
+                    size_mb = total / (1024 * 1024)
+                    done_mb = completed / (1024 * 1024)
+                    status_text.caption(f"{status} — {done_mb:.0f}/{size_mb:.0f} MB")
+                else:
+                    status_text.caption(status)
+
+            progress_bar.progress(1.0)
+            st.success(f"✅ Modello **{model}** pronto.")
+    except requests.ConnectionError:
+        st.error(f"❌ Impossibile connettersi a Ollama su {base_url}. Verifica che il server sia avviato.")
+    except requests.HTTPError as exc:
+        st.error(f"❌ Errore dal server Ollama: {exc}")
+    except Exception as exc:
+        st.error(f"❌ Errore durante il pull: {exc}")
+
+
+def _do_llm_test(
+    backend: str,
+    base_url: str = "",
+    api_key: str = "",
+    model: str = "",
+) -> None:
+    """Send a minimal test prompt to the configured LLM backend."""
+    from core.llm_backends import BackendFactory, LLMValidationError
+
+    try:
+        kwargs: dict = {"timeout": 15}
+        if backend == "local_ollama":
+            kwargs["base_url"] = base_url
+            kwargs["model"] = model
+        elif backend == "openai":
+            kwargs["api_key"] = api_key
+            kwargs["model"] = model
+        elif backend == "claude":
+            kwargs["api_key"] = api_key
+            kwargs["model"] = model
+        elif backend == "openai_compatible":
+            kwargs["base_url"] = base_url
+            kwargs["api_key"] = api_key
+            kwargs["model"] = model
+
+        llm = BackendFactory.create(backend, **kwargs)
+
+        with st.spinner("Invio prompt di test…"):
+            result = llm.complete_structured(
+                system_prompt="Rispondi in JSON.",
+                user_prompt='Classifica questa transazione: "PAGAMENTO POS FARMACIA". Rispondi con category e confidence.',
+                json_schema={
+                    "type": "object",
+                    "properties": {
+                        "category": {"type": "string"},
+                        "confidence": {"type": "string", "enum": ["high", "medium", "low"]},
+                    },
+                    "required": ["category", "confidence"],
+                },
+            )
+            cat = result.get("category", "?")
+            conf = result.get("confidence", "?")
+            st.success(f'✅ LLM risponde! Test: "FARMACIA" → **{cat}** (confidence: {conf})')
+
+    except LLMValidationError as exc:
+        st.error(f"❌ LLM ha risposto ma con errore di validazione: {exc}")
+    except Exception as exc:
+        error_msg = str(exc)
+        if "Connection" in error_msg or "refused" in error_msg:
+            st.error(f"❌ Impossibile connettersi al backend. Verifica URL e che il server sia avviato.\n\n`{error_msg}`")
+        elif "401" in error_msg or "auth" in error_msg.lower():
+            st.error(f"❌ Errore di autenticazione. Verifica la API key.\n\n`{error_msg}`")
+        else:
+            st.error(f"❌ Errore: {error_msg}")
+
+
 def render_settings_page(engine):
     st.header("⚙️ Impostazioni")
 
@@ -264,14 +366,60 @@ def render_settings_page(engine):
 
     if _accounts:
         for acc in _accounts:
-            c1, c2, c3 = st.columns([3, 3, 1])
+            c1, c2, c3, c4 = st.columns([3, 3, 1, 1])
             c1.markdown(f"**{acc.name}**")
             c2.caption(acc.bank_name or "—")
-            if c3.button("🗑️", key=f"del_acc_{acc.id}", help="Elimina conto"):
+            edit_key = f"edit_acc_{acc.id}"
+            if c3.button("✏️", key=edit_key, help="Modifica conto"):
+                st.session_state[f"_editing_acc"] = acc.id
+            if c4.button("🗑️", key=f"del_acc_{acc.id}", help="Elimina conto"):
                 cfg_svc.delete_account(acc.id)
                 st.rerun()
+
+            if st.session_state.get("_editing_acc") == acc.id:
+                with st.container(border=True):
+                    ec1, ec2 = st.columns(2)
+                    edited_name = ec1.text_input(
+                        "Nome", value=acc.name, key=f"ren_name_{acc.id}"
+                    )
+                    edited_bank = ec2.text_input(
+                        "Banca", value=acc.bank_name or "", key=f"ren_bank_{acc.id}"
+                    )
+                    bc1, bc2 = st.columns(2)
+                    if bc1.button("Salva", key=f"save_acc_{acc.id}", type="primary"):
+                        if not edited_name.strip():
+                            st.error("Il nome del conto non può essere vuoto.")
+                        else:
+                            try:
+                                n = cfg_svc.rename_account(
+                                    acc.id, edited_name, edited_bank or None
+                                )
+                                st.session_state.pop("_editing_acc", None)
+                                st.success(
+                                    f"Conto rinominato. {n} transazion{'e' if n == 1 else 'i'} aggiornat{'a' if n == 1 else 'e'}."
+                                )
+                                st.rerun()
+                            except ValueError as e:
+                                st.error(str(e))
+                    if bc2.button("Annulla", key=f"cancel_acc_{acc.id}"):
+                        st.session_state.pop("_editing_acc", None)
+                        st.rerun()
     else:
         st.info("Nessun conto configurato. Aggiungine uno per associarlo ai file importati.")
+
+    st.divider()
+
+    # ── Schema cache ──────────────────────────────────────────────────────────
+    st.subheader("📐 Schema file importati")
+    st.caption(
+        "Spendify memorizza la struttura dei file importati per velocizzare le importazioni successive. "
+        "Se un file viene importato con lo schema sbagliato (es. colonne mancanti), "
+        "cancella la cache e reimporta."
+    )
+    if st.button("🗑️ Cancella tutti gli schemi salvati", help="Rimuove tutti gli schemi dalla cache. Al prossimo import il file verrà rianalizzato."):
+        n = cfg_svc.delete_all_schemas()
+        st.success(f"Eliminati {n} schemi dalla cache.")
+        st.rerun()
 
     st.divider()
 
@@ -299,6 +447,16 @@ def render_settings_page(engine):
                 "Modello",
                 value=settings.get("ollama_model", "gemma3:12b"),
             )
+
+        # ── Pull model + Test LLM ────────────────────────────────────────────
+        btn_col1, btn_col2, btn_col3 = st.columns([1, 1, 2])
+        with btn_col1:
+            if st.button("⬇️ Pull modello", help="Scarica o aggiorna il modello su Ollama"):
+                _do_ollama_pull(ollama_url, ollama_model)
+        with btn_col2:
+            if st.button("🧪 Test LLM", help="Verifica che il backend LLM risponda correttamente"):
+                _do_llm_test(backend, ollama_url, ollama_model)
+
         openai_key = settings.get("openai_api_key", "")
         openai_model = settings.get("openai_model", "gpt-4o-mini")
         anthropic_key = settings.get("anthropic_api_key", "")
@@ -318,6 +476,8 @@ def render_settings_page(engine):
                 "Modello",
                 value=settings.get("openai_model", "gpt-4o-mini"),
             )
+        if st.button("🧪 Test LLM", key="test_openai", help="Verifica che il backend LLM risponda"):
+            _do_llm_test(backend, api_key=openai_key, model=openai_model)
         ollama_url = settings.get("ollama_base_url", "http://localhost:11434")
         ollama_model = settings.get("ollama_model", "gemma3:12b")
         anthropic_key = settings.get("anthropic_api_key", "")
@@ -337,6 +497,8 @@ def render_settings_page(engine):
                 "Modello",
                 value=settings.get("anthropic_model", "claude-3-5-haiku-20241022"),
             )
+        if st.button("🧪 Test LLM", key="test_claude", help="Verifica che il backend LLM risponda"):
+            _do_llm_test(backend, api_key=anthropic_key, model=anthropic_model)
         ollama_url = settings.get("ollama_base_url", "http://localhost:11434")
         ollama_model = settings.get("ollama_model", "gemma3:12b")
         openai_key = settings.get("openai_api_key", "")
@@ -367,6 +529,8 @@ def render_settings_page(engine):
                 value=settings.get("compat_model", ""),
                 placeholder="gemma3-12b-it",
             )
+        if st.button("🧪 Test LLM", key="test_compat", help="Verifica che il backend LLM risponda"):
+            _do_llm_test(backend, base_url=compat_base_url, api_key=compat_api_key, model=compat_model)
         ollama_url      = settings.get("ollama_base_url", "http://localhost:11434")
         ollama_model    = settings.get("ollama_model", "gemma3:12b")
         openai_key      = settings.get("openai_api_key", "")

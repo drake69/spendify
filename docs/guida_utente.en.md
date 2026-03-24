@@ -24,15 +24,46 @@ You download your bank statements, drag them into Spendify, it unifies them, cla
 
 **What happens behind the scenes:** Spendify assigns each transaction a unique code based on its content. If you import the same file twice nothing bad happens — duplicates are silently discarded.
 
+### Automatic import and schema review
+
+Spendify analyses the structure of each file and computes a **confidence score** (from 0 to 100%) on how well it understood the format.
+
+- **Confidence >= 80%** — import proceeds automatically, with no user interaction needed.
+- **Confidence < 80%** — a review form appears where you can verify the detected columns (date, amount, description, document type) and correct them if needed. After manual confirmation, the confidence is set to 100%.
+
+Once a file's schema is confirmed, all subsequent imports of the same format will be automatic — Spendify remembers the structure.
+
 ### Rows to skip — when does this field appear?
 
-Some bank files have header rows before the data table (bank name, period, account number…). Spendify detects and skips them automatically.
+Some bank files have header rows before the data table (bank name, period, account number…) and summary/total rows at the bottom. Spendify uses density-based analysis to automatically detect where the actual data table starts and ends, removing both preamble rows at the top and totals at the bottom. In most cases no manual configuration is needed.
 
 If automatic detection **fails** (unusual format, fully numeric, no text headers), a **"Rows to skip"** field will appear next to the filename. Enter how many rows to skip before the table header.
 
 > **Example:** Open the CSV file in a text editor. If the first 3 rows are `Bank XYZ`, `Account 123`, `From 01/01 to 31/01` and row 4 is `Date,Amount,Description`, enter `3`.
 
 Once the file schema is confirmed, you won't see this field on subsequent imports — Spendify remembers it automatically.
+
+### Import summary
+
+After processing, a detailed summary is shown for each imported file:
+
+| Metric | Meaning |
+|--------|---------|
+| **Righe E/C** (Statement rows) | Total number of data rows in the bank statement (excluding headers) |
+| **Imported** | New transactions saved to the database |
+| **Already present** | Previously imported transactions (duplicates, skipped) |
+| **Giroconti** (Internal transfers) | Internal transfers detected (tooltip with details). Internal transfers are **always saved** to the database, even in "Exclude" mode — the setting only controls visibility in views |
+| **Discarded** | Rows that could not be imported |
+
+If there are discarded rows, a warning shows the reason for each:
+- **Missing date** — the date cell is empty
+- **Unparseable date** — the date format doesn't match the schema
+- **Unparseable amount** — the amount value is not recognisable
+- **Amount: both Debit/Credit columns empty** — in files with separate debit and credit columns, neither column has a value for that row
+
+You can expand the detail to see the original data of each discarded row, useful for understanding whether there's a problem with the file or the schema.
+
+> **Tip:** if the numbers don't add up (e.g. rows in file ≠ sum of imported + already present + discarded + header), it may indicate a schema problem. Try clearing the saved schema from ⚙️ Settings and re-importing the file.
 
 ---
 
@@ -178,11 +209,11 @@ You can download the table as CSV with the **⬇️ Scarica CSV** button.
 
 ---
 
-## 9. Impostazioni: changing the AI model
+## 9. Settings: changing the AI model
 
 **Situation:** You want to use a different model for classification (e.g. Claude instead of local Ollama).
 
-Go to **Impostazioni**:
+Go to **⚙️ Impostazioni**:
 - **Backend LLM:** choose between Ollama (local, free, private), OpenAI, Claude, or any OpenAI-compatible provider (Groq, Google AI Studio, etc.)
 - **Model:** specify the model name (e.g. `gpt-4o-mini`, `claude-3-5-haiku-20241022`, `gemma2-9b-it`)
 - **API Key:** enter the key if you use a remote service
@@ -190,6 +221,37 @@ Go to **Impostazioni**:
 > **Privacy note:** If you use a remote backend (OpenAI or Claude), Spendify automatically removes IBANs, card numbers, tax identification numbers, and the account holder's name before sending any data.
 
 For detailed instructions on where to register and how to obtain API keys for each provider, see the **[Configuration Manual](configurazione.en.md)**.
+
+### Downloading a model (Ollama)
+
+If you use Ollama as your backend, you can download or update the model directly from the app without opening a terminal:
+
+1. Go to **⚙️ Impostazioni → 🤖 Configurazione LLM**
+2. Enter the model name (e.g. `gemma3:12b`)
+3. Click **⬇️ Pull modello**
+
+A progress bar shows the downloaded MB. The download may take a few minutes (`gemma3:12b` is about 8 GB).
+
+### Checking that the model works
+
+For any backend (Ollama, OpenAI, Claude, Compatible):
+
+1. Configure backend, URL/API key, and model
+2. Click **🧪 Test LLM**
+
+Spendify sends a test prompt ("PAGAMENTO POS FARMACIA") and shows the model's response (category + confidence level). If something is wrong, the error message indicates whether the problem is the connection, the API key, or the model.
+
+> **Tip:** always run the test after changing model or backend, before starting an import.
+
+### Clearing saved file schemas
+
+Spendify remembers the structure of each imported file (columns, date format, sign convention) to speed up future imports. If a file was imported with the wrong schema — for example, income rows are missing or columns are swapped — you can reset the cache:
+
+1. Go to **⚙️ Impostazioni → 📐 Schema file importati**
+2. Click **🗑️ Cancella tutti gli schemi salvati**
+3. Re-import the file — Spendify re-analyses it from scratch and asks you to confirm the schema
+
+> **When to use:** if the import summary shows discarded rows with reason "Importo non parsabile" for income (or expense) rows, the saved schema probably uses the wrong sign convention. Clear and re-import.
 
 ---
 

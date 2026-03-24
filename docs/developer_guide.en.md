@@ -68,6 +68,13 @@ git clone https://github.com/drake69/spendify.git
 cd spendify
 uv sync
 cp .env.example .env
+
+# Startup script (recommended)
+./start.sh          # UI only (default)
+./start.sh api      # REST API only
+./start.sh all      # UI + API
+
+# Or manually
 uv run streamlit run app.py
 ```
 
@@ -140,6 +147,8 @@ config   = svc.build_config(giroconto_mode="neutral")
 result   = svc.process_file_single(raw_bytes, filename, config)
 svc.persist_result(result)
 ```
+
+> **Note:** `giroconto_mode` (`neutral`/`exclude`) controls only the visibility in views (Ledger, Analytics, Reports). Internal transfers are **always detected and always persisted** to the database as `internal_in`/`internal_out`, regardless of the chosen mode. This ensures reconciliation and data integrity.
 
 ### SettingsService — user configuration
 

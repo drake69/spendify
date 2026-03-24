@@ -25,6 +25,7 @@ from pathlib import Path
 import pandas as pd
 
 from core.llm_backends import LLMBackend, SanitizationRequiredError, call_with_fallback
+from core.models import Confidence
 from core.normalizer import compute_columns_key
 from core.sanitizer import SanitizationConfig, sanitize_dataframe_descriptions
 from core.schemas import DocumentSchema
@@ -49,6 +50,56 @@ _PROMPTS = _load_prompts()
 _AMOUNT_PLAUSIBILITY_CAP_DEFAULT = 1_000_000
 
 
+def compute_confidence_score(schema_dict: dict, header_certain: bool = True) -> float:
+    """Compute a deterministic confidence score (0.0-1.0) from schema fields.
+
+    Weighted components:
+      - Header detection certain:      0.15
+      - Date column found:             0.15
+      - Amount/Debit-Credit resolved:  0.25
+      - Description column found:      0.10
+      - Sign convention resolved:      0.15
+      - Doc type set:                  0.10
+      - Account label present:         0.10
+    """
+    score = 0.0
+
+    # Header detection certain
+    if header_certain:
+        score += 0.15
+
+    # Date column found
+    if schema_dict.get("date_col"):
+        score += 0.15
+
+    # Amount or Debit+Credit resolved
+    if schema_dict.get("amount_col"):
+        score += 0.25
+    elif schema_dict.get("debit_col") and schema_dict.get("credit_col"):
+        score += 0.25
+
+    # Description column found
+    if schema_dict.get("description_col"):
+        score += 0.10
+
+    # Sign convention resolved
+    sign_conv = schema_dict.get("sign_convention")
+    if sign_conv is not None and sign_conv != "":
+        score += 0.15
+
+    # Doc type set
+    doc_type = schema_dict.get("doc_type")
+    if doc_type is not None and doc_type != "" and doc_type != "unknown":
+        score += 0.10
+
+    # Account label present
+    account_label = schema_dict.get("account_label")
+    if account_label is not None and account_label != "":
+        score += 0.10
+
+    return round(min(score, 1.0), 2)
+
+
 def classify_document(
     df_raw: pd.DataFrame,
     llm_backend: LLMBackend,
@@ -57,6 +108,7 @@ def classify_document(
     sanitize_config: SanitizationConfig | None = None,
     fallback_backend: LLMBackend | None = None,
     amount_plausibility_cap: float = _AMOUNT_PLAUSIBILITY_CAP_DEFAULT,
+    header_certain: bool = True,
 ) -> DocumentSchema | None:
     """
     Flow 2: classify a raw DataFrame and return a DocumentSchema.
@@ -68,6 +120,7 @@ def classify_document(
         sanitize: whether to sanitize descriptions before sending to LLM.
         sanitize_config: PII sanitization configuration.
         fallback_backend: fallback LLM backend (must be local).
+        header_certain: whether pre-load header detection was certain.
 
     Returns:
         DocumentSchema or None if classification failed.
@@ -87,7 +140,7 @@ def classify_document(
             )
 
     sample_json = sample.to_json(orient="records", force_ascii=False)
-    columns_list = df_raw.columns.tolist()
+    columns_list = [str(c) for c in df_raw.columns]
 
     # ── Phase 0: Python deterministic pre-analysis (before LLM) ──────────────
     step0 = _run_step0_analysis(
@@ -141,6 +194,15 @@ def classify_document(
 
     # Safety net: re-enforce invert_sign after merge (catches any LLM re-override).
     result = _apply_step0_invert_sign(result, source_name)
+
+    # Compute deterministic confidence score from merged result
+    score = compute_confidence_score(result, header_certain=header_certain)
+    result["confidence_score"] = score
+    result["confidence"] = Confidence.from_score(score).value
+    logger.info(
+        f"classify_document: confidence_score={score} "
+        f"(confidence={result['confidence']}) for {source_name}"
+    )
 
     try:
         doc_schema = DocumentSchema(**result)
@@ -363,6 +425,53 @@ def _classify_column_content(
     return "text"
 
 
+def _assign_debit_credit_roles(
+    df: pd.DataFrame, c1: str, c2: str, d1: float, d2: float,
+) -> tuple[str, str]:
+    """Deterministically assign debit/credit roles to two complementary columns.
+
+    Strategy (language-agnostic, inspects actual values):
+    1. Parse numeric values for each column.
+    2. Column with negative values → debit (expenses/outflows).
+    3. Column with only positive values → credit (income/inflows).
+    4. If both have negatives or neither does, the denser column is debit
+       (in a typical bank account, expenses outnumber income).
+
+    Returns (debit_col, credit_col).
+    """
+    def _has_negatives(col_name: str) -> bool:
+        vals = pd.to_numeric(
+            df[col_name].astype(str)
+            .str.replace(r"[€$£\s]", "", regex=True)
+            .str.replace(",", ".", regex=False),
+            errors="coerce",
+        ).dropna()
+        return (vals < 0).any()
+
+    c1_neg = _has_negatives(c1)
+    c2_neg = _has_negatives(c2)
+
+    logger.info(
+        "Phase 0 role assignment: '%s' has_neg=%s density=%.0f%% | '%s' has_neg=%s density=%.0f%%",
+        c1, c1_neg, d1 * 100, c2, c2_neg, d2 * 100,
+    )
+
+    if c1_neg and not c2_neg:
+        # c1 has negatives → debit (expenses), c2 → credit (income)
+        return c1, c2
+    elif c2_neg and not c1_neg:
+        return c2, c1
+    else:
+        # Ambiguous sign → denser column is debit (more expense rows)
+        logger.info(
+            "Phase 0 role assignment: ambiguous sign, using density tiebreak "
+            "(denser='%s' → debit)", c1 if d1 >= d2 else c2,
+        )
+        if d1 >= d2:
+            return c1, c2
+        return c2, c1
+
+
 def _run_step0_analysis(
     columns: list[str],
     df_raw: pd.DataFrame | None = None,
@@ -384,6 +493,8 @@ def _run_step0_analysis(
     data sample is too small to reach the confidence threshold.
     """
     r = _Step0Result()
+    # Coerce all column names to str — Excel files may have datetime/numeric headers
+    columns = [str(c) for c in columns]
     lower_to_orig: dict[str, str] = {c.lower(): c for c in columns}
 
     # ── Content-type classification ───────────────────────────────────────────
@@ -470,54 +581,62 @@ def _run_step0_analysis(
                     break
 
     # ── Amount / sign columns ─────────────────────────────────────────────────
-    if amount_cols_found:
-        # Tiebreaker: use name synonyms to distinguish debit / credit / neutral
-        debit_found  = [c for c in amount_cols_found if any(syn in c.lower() for syn in _DEBIT_COLUMN_SYNONYMS)]
-        credit_found = [c for c in amount_cols_found if any(syn in c.lower() for syn in _CREDIT_COLUMN_SYNONYMS)]
+    # PRIMARY: density-based analysis (language-agnostic).
+    # SECONDARY: name synonyms only as fallback for role assignment.
+    if amount_cols_found and len(amount_cols_found) >= 2 and df_raw is not None:
+        # Check for complementary density pattern (e.g. Entrate/Uscite split
+        # where each row fills only one column).  This is language-agnostic.
+        densities = {c: df_raw[c].notna().mean() for c in amount_cols_found}
+        logger.info(
+            "Phase 0: amount column densities: %s",
+            {c: f"{d:.0%}" for c, d in densities.items()},
+        )
+        # Try all pairs when > 2 amount columns.
+        # Complementary = sum ≈ 1.0 (>0.85) and neither is 100% (<0.98).
+        # A bank account may have 90% expenses / 10% income — perfectly normal.
+        best_pair = None
+        best_complement = 0.0
+        for i, c1 in enumerate(amount_cols_found):
+            for c2 in amount_cols_found[i + 1:]:
+                d1, d2 = densities[c1], densities[c2]
+                complement = d1 + d2
+                if complement > 0.85 and max(d1, d2) < 0.98 and complement > best_complement:
+                    best_pair = (c1, c2, d1, d2)
+                    best_complement = complement
 
-        if debit_found and credit_found:
-            r.debit_col = debit_found[0]
-            r.credit_col = credit_found[0]
+        if best_pair:
+            c1, c2, d1, d2 = best_pair
+            # Assign roles DETERMINISTICALLY by inspecting actual values:
+            # - Column with negative values → debit (expenses)
+            # - Column with positive/no-neg values → credit (income)
+            # If both or neither have negatives, the denser column is debit.
+            debit_col, credit_col = _assign_debit_credit_roles(
+                df_raw, c1, c2, d1, d2
+            )
+            r.debit_col = debit_col
+            r.credit_col = credit_col
             r.amount_semantics = "debit_positive"
-        elif debit_found:
-            r.amount_col = debit_found[0]
-            r.amount_semantics = "outflow"
-            r.invert_sign = True
-        elif credit_found:
-            r.amount_col = credit_found[0]
-            r.amount_semantics = "inflow"
-            r.invert_sign = False
+            logger.info(
+                "Phase 0: complementary density RESOLVED — "
+                "debit_col='%s' (%.0f%%), credit_col='%s' (%.0f%%) → debit_positive",
+                debit_col, densities[debit_col] * 100,
+                credit_col, densities[credit_col] * 100,
+            )
         else:
-            # No name hint → neutral; leave invert_sign for Phase 0.5 / LLM
+            # No complementary pattern; fall back to single column
             r.amount_col = amount_cols_found[0]
             r.amount_semantics = "neutral"
-    else:
-        # Fallback: synonym matching on column names
-        debit_candidates:   list[str] = []
-        credit_candidates:  list[str] = []
-        neutral_candidates: list[str] = []
-        for col_low, col_orig in lower_to_orig.items():
-            if any(syn in col_low for syn in _DEBIT_COLUMN_SYNONYMS):
-                debit_candidates.append(col_orig)
-            elif any(syn in col_low for syn in _CREDIT_COLUMN_SYNONYMS):
-                credit_candidates.append(col_orig)
-            elif any(syn in col_low for syn in _AMOUNT_NEUTRAL_SYNONYMS):
-                neutral_candidates.append(col_orig)
-        if debit_candidates and credit_candidates:
-            r.debit_col = debit_candidates[0]
-            r.credit_col = credit_candidates[0]
-            r.amount_semantics = "debit_positive"
-        elif debit_candidates:
-            r.amount_col = debit_candidates[0]
-            r.amount_semantics = "outflow"
-            r.invert_sign = True
-        elif credit_candidates:
-            r.amount_col = credit_candidates[0]
-            r.amount_semantics = "inflow"
-            r.invert_sign = False
-        elif neutral_candidates:
-            r.amount_col = neutral_candidates[0]
-            r.amount_semantics = "neutral"
+            logger.info(
+                "Phase 0: no complementary pattern found among %s → single amount_col='%s'",
+                list(densities.keys()), r.amount_col,
+            )
+    elif amount_cols_found and len(amount_cols_found) == 1:
+        r.amount_col = amount_cols_found[0]
+        r.amount_semantics = "neutral"
+    elif not amount_cols_found:
+        # No content-detected amount columns — leave everything unresolved
+        # for the LLM (Phase 1) to determine from column names and sample data.
+        r.amount_semantics = "unclear"
 
     return r
 
@@ -605,15 +724,29 @@ def _format_step0_for_prompt(r: _Step0Result) -> str:
 
     # Amount / sign
     if r.amount_semantics == "debit_positive":
-        lines.append("- sign_convention = 'debit_positive'  [RESOLVED]")
-        lines.append(f"- debit_col = '{r.debit_col}'  [RESOLVED]")
-        lines.append(f"- credit_col = '{r.credit_col}'  [RESOLVED]")
+        lines.append("- sign_convention = 'debit_positive'  [RESOLVED by density + sign analysis]")
+        lines.append(f"- debit_col = '{r.debit_col}'  [RESOLVED — expenses/outflows column]")
+        lines.append(f"- credit_col = '{r.credit_col}'  [RESOLVED — income/inflows column]")
+        lines.append("- amount_col: not applicable (using debit/credit split)")
+        lines.append("- invert_sign: not applicable (debit_positive convention)")
+    elif r.amount_semantics == "debit_positive_candidates":
+        lines.append("- sign_convention = 'debit_positive'  [RESOLVED by density analysis]")
+        lines.append(
+            f"- Two complementary amount columns detected: '{r.debit_col}' and '{r.credit_col}'"
+        )
+        lines.append(
+            "- IMPORTANT: assign debit_col and credit_col based on column names and sample values. "
+            "The column with expenses/outflows is debit_col; the column with income/inflows is credit_col."
+        )
         lines.append("- invert_sign: not applicable (debit_positive convention)")
     elif r.amount_col:
         lines.append(
             f"- amount_col = '{r.amount_col}'  "
             f"[RESOLVED, semantics={r.amount_semantics}]"
         )
+        # Add density hint if we have column density info
+        if hasattr(r, '_density_info') and r._density_info:
+            lines.append(f"  Column density: {r._density_info}")
         if r.invert_sign is not None:
             reason = (
                 "column contains negative values → signs already embedded"
@@ -681,11 +814,30 @@ def _merge_step0_into_result(result: dict, step0: _Step0Result, source_name: str
 
     # Amount / sign — override when Phase 0 resolved it
     if step0.amount_semantics == "debit_positive":
-        _set("sign_convention", "debit_positive", "debit+credit columns found")
+        _set("sign_convention", "debit_positive", "debit+credit columns found (density + sign)")
         if step0.debit_col:
-            _set("debit_col", step0.debit_col, "deterministic match")
+            _set("debit_col", step0.debit_col, "deterministic: sign analysis")
         if step0.credit_col:
-            _set("credit_col", step0.credit_col, "deterministic match")
+            _set("credit_col", step0.credit_col, "deterministic: sign analysis")
+        # Clear amount_col — with debit/credit split it's not used and would
+        # cause income rows to be lost (the exact bug we're fixing).
+        if out.get("amount_col"):
+            logger.info(
+                "classify_document [%s]: Step 0 merge — clearing amount_col='%s' "
+                "(debit/credit split takes precedence)",
+                source_name, out.get("amount_col"),
+            )
+            out["amount_col"] = None
+    elif step0.amount_semantics == "debit_positive_candidates":
+        # Density detected the split pattern; sign_convention is debit_positive.
+        # LLM assigns which candidate is debit and which is credit.
+        _set("sign_convention", "debit_positive", "density complementary pattern")
+        # LLM's debit_col/credit_col take precedence (it sees column names+values).
+        # Only fill in from Phase 0 if the LLM left them blank.
+        if not out.get("debit_col"):
+            _set("debit_col", step0.debit_col, "density candidate (LLM did not assign)")
+        if not out.get("credit_col"):
+            _set("credit_col", step0.credit_col, "density candidate (LLM did not assign)")
     else:
         if step0.invert_sign is not None:
             _set("invert_sign", step0.invert_sign, f"semantics={step0.amount_semantics}")
@@ -697,23 +849,16 @@ def _merge_step0_into_result(result: dict, step0: _Step0Result, source_name: str
 
 # ── Post-LLM safety net ───────────────────────────────────────────────────────
 
-# Aliases so the safety-net function reuses the same synonym tables as Phase 0.
-_OUTFLOW_SYNONYMS: frozenset[str] = _DEBIT_COLUMN_SYNONYMS
-_INFLOW_SYNONYMS: frozenset[str] = _CREDIT_COLUMN_SYNONYMS
-
 
 def _apply_step0_invert_sign(result: dict, source_name: str) -> dict:
-    """Post-merge safety net: re-enforce invert_sign from doc_type + amount column semantics.
+    """Post-merge safety net: re-enforce invert_sign from doc_type.
 
     Runs after _merge_step0_into_result so both the LLM's doc_type and Phase 0
     column findings are available.  Only applies when sign_convention == signed_single.
 
-    Rules (in priority order):
-    1. credit_card doc_type → invert_sign=True always (positive=charge, negative=payment).
-       Breaks the circular dependency: doc_type comes from LLM, invert_sign is then
-       resolved deterministically here without needing it during Phase 0.
-    2. Outflow column name → invert_sign=True (unless it's a bank account).
-    3. Inflow column name → invert_sign=False.
+    Rule: credit_card doc_type → invert_sign=True always (positive=charge,
+    negative=payment).  All other role assignments come from the LLM (Phase 1)
+    — no language-dependent synonym matching here.
     """
     out = dict(result)
 
@@ -722,9 +867,8 @@ def _apply_step0_invert_sign(result: dict, source_name: str) -> dict:
         return out
 
     doc_type = str(out.get("doc_type", "")).lower()
-    amount_col = str(out.get("amount_col") or "").strip().lower()
 
-    # Rule 1: credit card → charges are positive → must invert
+    # credit card → charges are positive → must invert
     if doc_type in _CREDIT_CARD_DOC_TYPES:
         if not out.get("invert_sign"):
             logger.info(
@@ -732,26 +876,6 @@ def _apply_step0_invert_sign(result: dict, source_name: str) -> dict:
                 f"doc_type=credit_card → invert_sign=True"
             )
             out["invert_sign"] = True
-        return out
-
-    # Rule 2/3: column-name semantics
-    is_outflow = any(syn in amount_col for syn in _OUTFLOW_SYNONYMS)
-    is_inflow = any(syn in amount_col for syn in _INFLOW_SYNONYMS)
-
-    if is_outflow and doc_type not in _BANK_DOC_TYPES:
-        if not out.get("invert_sign"):
-            logger.info(
-                f"classify_document [{source_name}]: safety-net — "
-                f"amount_col='{out.get('amount_col')}' is outflow → invert_sign=True"
-            )
-            out["invert_sign"] = True
-    elif is_inflow:
-        if out.get("invert_sign"):
-            logger.info(
-                f"classify_document [{source_name}]: safety-net — "
-                f"amount_col='{out.get('amount_col')}' is inflow → invert_sign=False"
-            )
-            out["invert_sign"] = False
 
     return out
 
@@ -761,6 +885,7 @@ def _coerce_column_names(result: dict, available: list[str], source_name: str) -
     in `available`. Tries case-insensitive match first; nullifies on no match.
     Logs a warning for each correction so debugging is easy.
     """
+    available = [str(c) for c in available]
     lower_map = {c.lower(): c for c in available}
     out = dict(result)
     for col_field in _COLUMN_FIELDS:

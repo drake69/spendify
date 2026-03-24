@@ -139,12 +139,16 @@ Viene passata al prompt del categorizzatore LLM per aiutarlo a interpretare corr
 
 **Percorso:** Impostazioni → 🔄 Modalità Giroconti
 
-| Modalità | Comportamento nel Ledger | Comportamento in Analytics |
-|---|---|---|
-| **Mostra (neutral)** | Le righe 🔄 sono visibili (grigie/neutre) | Escluse dai totali entrate/uscite |
-| **Escludi dal registro** | Le righe 🔄 non compaiono | Escluse |
+I giroconti (trasferimenti interni tra tuoi conti) vengono **sempre rilevati e sempre salvati** nel database, indipendentemente dalla modalità scelta. Questo garantisce la riconciliazione e l'integrità dei dati. La modalità controlla **solo la visibilità** nelle viste (Ledger, Analytics, Report).
+
+| Modalità | Comportamento nelle viste (Ledger, Analytics, Report) |
+|---|---|
+| **Mostra (neutral)** | Le righe 🔄 sono visibili (grigie/neutre), escluse dai totali entrate/uscite |
+| **Escludi dalle viste** | Le righe 🔄 non compaiono nelle schermate (ma restano nel database) |
 
 La modalità si applica globalmente. Puoi sovrascriverla per singola vista usando il checkbox *Nascondi giroconti* nel Ledger.
+
+> **Nota tecnica:** i giroconti sono marcati come `internal_in`/`internal_out` nel ledger. Anche con modalità "Escludi", restano disponibili per riconciliazione e audit.
 
 ---
 

@@ -69,6 +69,16 @@ def _render_job_status_poll(import_svc: ImportService) -> None:
             st.rerun()
 
 
+_SKIP_REASON_LABELS: dict[str, str] = {
+    "date_nan": "Data mancante (NaN)",
+    "date_parse": "Data non parsabile",
+    "amount_none": "Importo non parsabile",
+    "amount_none_dc": "Importo: entrambe le colonne Dare/Avere vuote",
+    "balance_row": "Riga saldo carta rimossa",
+    "merged": "Duplicato intra-file (aggregato)",
+}
+
+
 def _render_last_import_summary():
     results = st.session_state.get("last_import_results")
     if not results:
@@ -80,11 +90,36 @@ def _render_last_import_summary():
             if result.errors:
                 st.error("Errori: " + "; ".join(result.errors))
             else:
-                col1, col2, col3, col4 = st.columns(4)
-                col1.metric("Nuove transazioni", len(result.transactions))
-                col2.metric("Già importate (saltate)", result.skipped_count)
-                col3.metric("Riconciliazioni", len(result.reconciliations))
-                col4.metric("Flusso", result.flow_used.upper() if result.flow_used != "unknown" else "—")
+                # ── Row-level breakdown ──
+                n_new = len(result.transactions)
+                n_dedup = result.skipped_count
+                n_skipped = len(result.skipped_rows) if result.skipped_rows else 0
+                n_merged = result.merged_count
+                n_header = result.header_rows_skipped
+                n_total = result.total_file_rows
+
+                n_giro = getattr(result, "internal_transfer_count", 0)
+
+                cols = st.columns(7)
+                cols[0].metric("Righe E/C", n_total + n_header,
+                               help="Righe totali nel file (intestazione + dati)")
+                cols[1].metric("Intestazione", n_header)
+                cols[2].metric("Importate", n_new)
+                cols[3].metric("Già presenti", n_dedup)
+                cols[4].metric("Scartate", n_skipped)
+                cols[5].metric("Aggregate", n_merged,
+                               help="Righe duplicate nel file sommate in un'unica transazione")
+                cols[6].metric("Giroconti", n_giro,
+                               help="Trasferimenti interni tra conti propri (salvati nel ledger, esclusi dai report)")
+
+                # Sanity check: if numbers don't add up, show a warning
+                accounted = n_new + n_dedup + n_skipped + n_merged
+                if n_total and accounted < n_total:
+                    st.caption(
+                        f"⚠️ {n_total - accounted} righe non contabilizzate "
+                        f"(righe dati={n_total}, importate={n_new}, già presenti={n_dedup}, "
+                        f"scartate={n_skipped}, aggregate={n_merged})"
+                    )
 
                 if result.skipped_count and not result.transactions:
                     st.info("⏭️ Tutte le transazioni erano già presenti nel database.")
@@ -94,11 +129,38 @@ def _render_last_import_summary():
                 if to_review:
                     st.warning(f"{to_review} transazioni richiedono revisione manuale → pagina Review")
 
+                # ── Skipped rows detail ──
+                if result.skipped_rows:
+                    # Group by reason
+                    from collections import Counter
+                    reason_counts = Counter(s.reason for s in result.skipped_rows)
+                    reason_summary = ", ".join(
+                        f"{_SKIP_REASON_LABELS.get(r, r)}: {c}"
+                        for r, c in reason_counts.most_common()
+                    )
+                    st.warning(f"⚠️ {n_skipped} righe scartate — {reason_summary}")
+
+                    with st.expander(f"🔍 Dettaglio {n_skipped} righe scartate", expanded=False):
+                        skip_rows_data = [
+                            {
+                                "Riga": s.row_index + 1,
+                                "Motivo": _SKIP_REASON_LABELS.get(s.reason, s.reason),
+                                **{k: v for k, v in s.raw_values.items()},
+                            }
+                            for s in result.skipped_rows
+                        ]
+                        st.dataframe(
+                            pd.DataFrame(skip_rows_data),
+                            use_container_width=True,
+                            hide_index=True,
+                        )
+
                 if result.doc_schema:
+                    _conf_score = getattr(result.doc_schema, 'confidence_score', 0.0)
                     st.caption(
                         f"Schema: {result.doc_schema.doc_type} | "
                         f"Account: {result.doc_schema.account_label} | "
-                        f"Confidence: {result.doc_schema.confidence}"
+                        f"Confidence: {_conf_score:.2f} ({result.doc_schema.confidence})"
                     )
 
 
@@ -133,19 +195,21 @@ def _render_schema_review(import_svc: ImportService, config: ProcessingConfig) -
         col_options = [none_option] + cols
 
         evidence = schema.semantic_evidence if schema else []
+        _conf_score = getattr(schema, 'confidence_score', 0.0) if schema else 0.0
         confidence_label = schema.confidence.value if schema else "unknown"
 
-        with st.expander(f"📄 {filename}  [confidence: {confidence_label}]", expanded=True):
+        with st.expander(f"📄 {filename}  [confidence: {_conf_score:.2f} ({confidence_label})]", expanded=True):
             if evidence:
                 st.caption("Ragionamento LLM: " + " · ".join(evidence))
 
-            # Raw file preview (no skip, no preprocessing)
-            st.markdown("**Struttura raw del file (prime 10 righe, senza pre-elaborazione):**")
-            try:
-                df_raw_preview = import_svc.get_raw_head(entry["raw_bytes"], filename, n=10)
-                st.dataframe(df_raw_preview, use_container_width=True, hide_index=False)
-            except Exception as e:
-                st.caption(f"Anteprima raw non disponibile: {e}")
+            # Raw file preview — only when no rows to skip (otherwise it shows garbage pre-header data)
+            if not (schema and schema.skip_rows and schema.skip_rows > 0):
+                st.markdown("**Struttura raw del file (prime 10 righe, senza pre-elaborazione):**")
+                try:
+                    df_raw_preview = import_svc.get_raw_head(entry["raw_bytes"], filename, n=10)
+                    st.dataframe(df_raw_preview, use_container_width=True, hide_index=False)
+                except Exception as e:
+                    st.caption(f"Anteprima raw non disponibile: {e}")
 
             c1, c2 = st.columns(2)
             doc_type_val = schema.doc_type.value if schema else doc_type_options[0]
@@ -181,18 +245,23 @@ def _render_schema_review(import_svc: ImportService, config: ProcessingConfig) -
                 key=f"rev_sign_{_key}",
             )
 
-            c6, c7, c8 = st.columns(3)
-            debit_sel = c6.selectbox(
+            c6, c7, c8, c9 = st.columns(4)
+            description_sel = c6.selectbox(
+                "Colonna descrizione", col_options,
+                index=_col_idx(schema.description_col if schema and schema.description_col else none_option),
+                key=f"rev_description_{_key}",
+            )
+            debit_sel = c7.selectbox(
                 "Colonna addebiti (opt.)", col_options,
                 index=_col_idx(schema.debit_col if schema and schema.debit_col else none_option),
                 key=f"rev_debit_{_key}",
             )
-            credit_sel = c7.selectbox(
+            credit_sel = c8.selectbox(
                 "Colonna accrediti (opt.)", col_options,
                 index=_col_idx(schema.credit_col if schema and schema.credit_col else none_option),
                 key=f"rev_credit_{_key}",
             )
-            invert = c8.checkbox(
+            invert = c9.checkbox(
                 "Inverti segno", value=schema.invert_sign if schema else False,
                 key=f"rev_invert_{_key}",
             )
@@ -208,11 +277,13 @@ def _render_schema_review(import_svc: ImportService, config: ProcessingConfig) -
                 "account_label":    account_sel,
                 "amount_col":       "" if amount_sel == none_option else amount_sel,
                 "date_col":         "" if date_sel == none_option else date_sel,
+                "description_col":  None if description_sel == none_option else description_sel,
                 "sign_convention":  SignConvention(sign_sel),
                 "debit_col":        None if debit_sel == none_option else debit_sel,
                 "credit_col":       None if credit_sel == none_option else credit_sel,
                 "invert_sign":      invert,
                 "confidence":       Confidence.high,
+                "confidence_score": 1.0,  # user-confirmed schema is fully trusted
                 "skip_rows":        schema.skip_rows if schema else 0,
                 "header_sha256":    entry.get("header_sha256", ""),
             })
@@ -461,6 +532,14 @@ def render_upload_page(engine):
                 st.session_state["_pending_schema_job_id"]  = job_id
             else:
                 import_svc.persist_result(result)
+                # Show auto-import success for high-confidence Flow 2 files
+                if result.flow_used == "flow2" and result.doc_schema:
+                    _auto_score = getattr(result.doc_schema, 'confidence_score', 0.0)
+                    if _auto_score >= 0.80:
+                        st.success(
+                            f"✅ {filename} — auto-importato con confidence {_auto_score:.2f} "
+                            f"({result.doc_schema.confidence})"
+                        )
 
             results.append(result)
             _progress_bar.progress(file_end)

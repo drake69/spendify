@@ -9,11 +9,12 @@ class DocumentSchema(BaseModel):
     # required
     doc_type: DocumentType
     date_col: str
-    amount_col: str
+    amount_col: Optional[str] = None  # None when debit_col+credit_col split is used
     sign_convention: SignConvention
     date_format: str
     account_label: str
     confidence: Confidence
+    confidence_score: float = 0.0  # 0.0-1.0 deterministic score
 
     # optional column mappings
     date_accounting_col: Optional[str] = None
@@ -54,7 +55,7 @@ class DocumentSchema(BaseModel):
                 "currency_col", "default_currency", "date_format", "sign_convention",
                 "is_zero_sum", "invert_sign", "internal_transfer_patterns",
                 "account_label", "encoding", "sheet_name", "skip_rows", "delimiter",
-                "confidence", "positive_ratio", "negative_ratio", "semantic_evidence",
+                "positive_ratio", "negative_ratio", "semantic_evidence",
                 "normalization_case_id",
             ],
             "additionalProperties": False,
@@ -65,7 +66,7 @@ class DocumentSchema(BaseModel):
                 },
                 "date_col": {"type": "string"},
                 "date_accounting_col": {"type": ["string", "null"]},
-                "amount_col": {"type": "string"},
+                "amount_col": {"type": ["string", "null"]},
                 "debit_col": {"type": ["string", "null"]},
                 "credit_col": {"type": ["string", "null"]},
                 "description_col": {"type": ["string", "null"]},

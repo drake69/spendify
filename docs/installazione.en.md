@@ -1,8 +1,9 @@
 # Spendify — Installation Guide
 
-> Three scenarios covered:
+> Scenarios covered:
 > - **Mac** — native installation (recommended, maximum LLM performance)
-> - **Linux** — Docker with Ollama as a separate container
+> - **Linux native** — direct installation with local Ollama
+> - **Linux Docker** — Docker with Ollama as a separate container
 > - **Windows** — Docker with llama.cpp server as a separate container
 > - **One-liner** — guided installation from scratch with Docker (AI option included, recommended for non-technical users)
 
@@ -31,6 +32,11 @@ The configuration is saved in the database (`user_settings`) and persists across
 ### Why native on Mac?
 
 Ollama on Mac uses **Metal (Apple Silicon)** or **OpenCL (Intel)** acceleration. Inside Docker this acceleration is not available → inference is 5-10x slower.
+
+### Prerequisites
+
+- **Python >= 3.13** — check with `python3 --version`. On macOS: `brew install python@3.13`
+- **Git**
 
 ### Step 1 — Clone the repository
 
@@ -80,6 +86,12 @@ ollama pull gemma3:12b
 ### Step 6 — Start the app
 
 ```bash
+# Startup script (recommended) — checks prerequisites, activates virtualenv and starts
+./start.sh          # UI only (default)
+./start.sh api      # REST API only
+./start.sh all      # UI + API
+
+# Or manually
 uv run streamlit run app.py
 ```
 
@@ -96,7 +108,87 @@ Go to ⚙️ **Settings** → **LLM Backend** section:
 
 ```bash
 ollama serve &          # if not already running
-uv run streamlit run app.py
+./start.sh              # or: uv run streamlit run app.py
+```
+
+---
+
+## 🐧 Linux — Native installation
+
+Same procedure as Mac, but without Metal acceleration. Recommended if you have an NVIDIA GPU with CUDA drivers or want to avoid Docker.
+
+### Prerequisites
+
+- **Python >= 3.13** — check with `python3 --version`. On Ubuntu/Debian: `sudo add-apt-repository ppa:deadsnakes/ppa && sudo apt install python3.13 python3.13-venv`
+- **Git** — `sudo apt install git`
+- **curl** — `sudo apt install curl`
+
+### Step 1 — Clone the repository
+
+```bash
+git clone https://github.com/drake69/spendify.git spendify
+cd spendify
+```
+
+### Step 2 — Install uv
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source ~/.bashrc   # or reopen the terminal
+```
+
+### Step 3 — Install dependencies
+
+```bash
+uv sync
+```
+
+### Step 4 — Configure the .env file
+
+```bash
+cp .env.example .env
+# The .env file requires no changes for a standard local installation
+```
+
+### Step 5 — Install Ollama and download the model
+
+```bash
+# Install Ollama (once)
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Start the Ollama server
+ollama serve &
+
+# Download the model (once — ~8 GB for gemma3:12b, ~2 GB for gemma3:4b)
+ollama pull gemma3:12b
+# Lighter version for systems with < 16 GB RAM:
+# ollama pull gemma3:4b
+```
+
+> If you have an NVIDIA GPU, Ollama uses it automatically with CUDA drivers installed.
+
+### Step 6 — Start the app
+
+```bash
+./start.sh          # UI only (default)
+./start.sh api      # REST API only
+./start.sh all      # UI + API
+```
+
+The app is available at **http://localhost:8501**
+
+### Step 7 — Configure the LLM backend in the app
+
+Go to ⚙️ **Settings** → **LLM Backend** section:
+- Backend: `Ollama (local)`
+- URL: `http://localhost:11434`
+- Model: `gemma3:12b` (or the model you downloaded)
+
+### Quick start for subsequent launches
+
+```bash
+ollama serve &          # if not already running
+./start.sh
 ```
 
 ---
@@ -281,7 +373,8 @@ For backup, restore, moving to another computer and direct inspection → **[Dat
 
 | Scenario | Command |
 |----------|---------|
-| Native Mac | `uv run streamlit run app.py` |
+| Native Mac | `./start.sh` |
+| Native Linux | `./start.sh` |
 | Linux + Ollama Docker | `docker compose --profile ollama up -d` |
 | Windows + llama.cpp Docker | `docker compose --profile llama-cpp up -d` |
 | Windows + external LM Studio | `docker compose up -d` |

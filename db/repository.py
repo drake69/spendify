@@ -101,6 +101,13 @@ def find_schema_by_header_sha256(session: Session, header_sha256: str) -> Option
     return _row_to_schema(row)
 
 
+def delete_all_schemas(session: Session) -> int:
+    """Delete all cached document schemas. Returns the number of rows deleted."""
+    count = session.query(DocumentSchemaModel).delete()
+    session.flush()
+    return count
+
+
 def upsert_document_schema(session: Session, schema: DocumentSchema) -> DocumentSchemaModel:
     row = session.query(DocumentSchemaModel).filter_by(
         source_identifier=schema.source_identifier
@@ -131,6 +138,7 @@ def upsert_document_schema(session: Session, schema: DocumentSchema) -> Document
     row.skip_rows = schema.skip_rows
     row.delimiter = schema.delimiter
     row.confidence = schema.confidence.value if hasattr(schema.confidence, 'value') else schema.confidence
+    row.confidence_score = getattr(schema, 'confidence_score', None)
     if schema.header_sha256:
         row.header_sha256 = schema.header_sha256
 
@@ -162,6 +170,7 @@ def _row_to_schema(row: DocumentSchemaModel) -> DocumentSchema:
         skip_rows=row.skip_rows or 0,
         delimiter=row.delimiter,
         confidence=Confidence(row.confidence or "low"),
+        confidence_score=getattr(row, 'confidence_score', None) or 0.0,
         source_identifier=row.source_identifier,
         header_sha256=getattr(row, 'header_sha256', None),
     )
@@ -886,6 +895,41 @@ def delete_account(session: Session, account_id: int) -> bool:
     session.delete(acc)
     session.flush()
     return True
+
+
+def rename_account(
+    session: Session,
+    account_id: int,
+    new_name: str,
+    new_bank_name: str | None = None,
+) -> int:
+    """Rename an account and cascade to all transactions.
+
+    Returns the number of transactions updated, or -1 if account not found.
+    Raises ValueError if the new name collides with an existing account.
+    """
+    from db.models import Account, Transaction
+    from sqlalchemy.exc import IntegrityError
+
+    acc = session.get(Account, account_id)
+    if acc is None:
+        return -1
+    old_name = acc.name
+    acc.name = new_name.strip()
+    if new_bank_name is not None:
+        acc.bank_name = new_bank_name.strip() or None
+    try:
+        session.flush()
+    except IntegrityError:
+        session.rollback()
+        raise ValueError(f"Conto '{new_name}' già esistente")
+    updated = (
+        session.query(Transaction)
+        .filter(Transaction.account_label == old_name)
+        .update({Transaction.account_label: acc.name})
+    )
+    session.flush()
+    return updated
 
 
 # ── DescriptionRule ───────────────────────────────────────────────────────────

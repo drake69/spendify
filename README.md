@@ -299,11 +299,16 @@ Configurable from the app sidebar:
 ## Running the app
 
 ```bash
-# With uv
-uv run streamlit run app.py
+# Startup script (recommended) — checks prerequisites, activates virtualenv and starts
+./start.sh          # UI only (default)
+./start.sh api      # REST API only
+./start.sh all      # UI + API
 
-# Or directly
-streamlit run app.py
+# On Windows
+start.bat           # same options: ui | api | all
+
+# Or manually
+uv run streamlit run app.py
 ```
 
 On the **first run** the onboarding wizard appears automatically (4 steps: language, owner names, bank accounts, confirmation). Existing installations with data already in the taxonomy are detected automatically and skip the wizard.

@@ -68,6 +68,13 @@ git clone https://github.com/drake69/spendify.git
 cd spendify
 uv sync
 cp .env.example .env
+
+# Script di avvio (consigliato)
+./start.sh          # solo UI (default)
+./start.sh api      # solo REST API
+./start.sh all      # UI + API
+
+# Oppure manualmente
 uv run streamlit run app.py
 ```
 
@@ -140,6 +147,8 @@ config   = svc.build_config(giroconto_mode="neutral")
 result   = svc.process_file_single(raw_bytes, filename, config)
 svc.persist_result(result)
 ```
+
+> **Nota:** `giroconto_mode` (`neutral`/`exclude`) controlla solo la visibilita nelle viste (Ledger, Analytics, Report). I giroconti vengono **sempre rilevati e sempre persistiti** nel database come `internal_in`/`internal_out`, indipendentemente dalla modalita scelta. Questo garantisce riconciliazione e integrita dei dati.
 
 ### SettingsService — configurazione utente
 

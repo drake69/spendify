@@ -45,12 +45,14 @@ from core.normalizer import (
     compute_file_hash,
     compute_header_sha256,
     compute_transaction_id,
+    detect_and_strip_footer_rows,
     detect_and_strip_preheader_rows,
     detect_best_sheet,
     detect_delimiter,
     detect_encoding,
     detect_header_row,
     detect_internal_transfers,
+    detect_skip_rows,
     drop_low_variability_columns,
     find_card_settlement_matches,
     load_raw_head,
@@ -110,6 +112,14 @@ class ProcessingConfig:
 
 
 @dataclass
+class SkippedRow:
+    """Detail of a row that was skipped during normalisation."""
+    row_index: int            # 0-based index in the raw DataFrame
+    reason: str               # "date_nan" | "date_parse" | "amount_none" | "balance_row" | "merged"
+    raw_values: dict          # raw cell values for this row (column_name → value)
+
+
+@dataclass
 class ImportResult:
     batch_sha256: str
     source_name: str
@@ -123,6 +133,11 @@ class ImportResult:
     flow_used: str = "unknown"  # "flow1" or "flow2"
     needs_schema_review: bool = False   # True when confidence is medium/low → user must confirm schema
     available_columns: list[str] = field(default_factory=list)  # column names for review UI
+    total_file_rows: int = 0          # total rows in the raw DataFrame (after header stripping)
+    header_rows_skipped: int = 0      # rows stripped as header/pre-header
+    skipped_rows: list[SkippedRow] = field(default_factory=list)  # rows skipped during normalisation
+    merged_count: int = 0             # intra-file duplicate rows merged
+    internal_transfer_count: int = 0  # transactions detected as giroconti (always saved)
 
 
 def _build_backend(config: ProcessingConfig) -> LLMBackend:
@@ -182,6 +197,16 @@ def load_raw_dataframe(
     name_lower = filename.lower()
     logger.info(f"load_raw_dataframe: detected encoding {encoding} for {filename}")
 
+    # ── Pre-load header detection ─────────────────────────────────────────
+    # detect_skip_rows combines CSV and Excel detection into a single call.
+    # When skip_rows_override is provided the user already told us how many
+    # rows to skip, so we trust that unconditionally.
+    if skip_rows_override is not None:
+        skip_rows = skip_rows_override
+        skip_certain = True  # treat manual override as certain
+    else:
+        skip_rows, skip_certain = detect_skip_rows(raw_bytes, filename)
+
     if name_lower.endswith((".xlsx", ".xls")):
         try:
             import openpyxl
@@ -191,30 +216,49 @@ def load_raw_dataframe(
         except Exception:
             sheet_name = 0  # fallback to first sheet
 
-        skip = skip_rows_override if skip_rows_override is not None else 0
-        df = pd.read_excel(io.BytesIO(raw_bytes), sheet_name=sheet_name, skiprows=skip if skip > 0 else None)
+        df = pd.read_excel(
+            io.BytesIO(raw_bytes),
+            sheet_name=sheet_name,
+            skiprows=skip_rows if skip_rows > 0 else None,
+        )
 
     else:
         # CSV / text
         text = raw_bytes.decode(encoding, errors="replace")
         delimiter = detect_delimiter(text)
-        lines = text.splitlines()
-        _detected, _ = detect_header_row(lines)
-        skip_rows = skip_rows_override if skip_rows_override is not None else _detected
 
         df = pd.read_csv(
             io.StringIO(text),
             sep=delimiter,
-            skiprows=skip_rows,
+            skiprows=skip_rows if skip_rows > 0 else None,
             engine="python",
             on_bad_lines="skip",
         )
 
-    # Phase-0 preprocessing (runs on both CSV and Excel)
-    if skip_rows_override is None:
-        df, skipped_rows = detect_and_strip_preheader_rows(df, source_name=filename)
-    else:
+    # Defensive: coerce all column names to str — Excel files may have datetime
+    # or numeric objects as column headers, which crash downstream .lower() calls.
+    df.columns = [str(c) for c in df.columns]
+
+    # Phase-0 preprocessing: post-load preheader strip
+    # When pre-load detection was certain (and skip_rows > 0), the pre-header
+    # rows were already excluded at load time — no need for the post-hoc strip.
+    if skip_certain and skip_rows > 0:
+        logger.info("Skipping post-load preheader strip: pre-load detection was certain (skip_rows=%d)", skip_rows)
+        skipped_rows = skip_rows
+    elif skip_rows_override is not None:
         skipped_rows = skip_rows_override
+    else:
+        try:
+            df, skipped_rows = detect_and_strip_preheader_rows(df, source_name=filename)
+        except ValueError as exc:
+            # Safety caps exceeded — don't crash; log the warning and continue
+            # with 0 rows stripped. The user will see an incorrect schema review
+            # and can set skip_rows manually.
+            logger.warning(f"load_raw_dataframe: preheader detection exceeded safety caps: {exc}")
+            skipped_rows = 0
+
+    # Footer detection: remove summary/totale rows at the bottom using IQR
+    df, footer_stripped = detect_and_strip_footer_rows(df, source_name=filename)
 
     # Capture column names BEFORE drop_low_variability_columns — used for stable
     # cols_key lookup: drop ratio depends on file size so it varies across monthly
@@ -224,8 +268,10 @@ def load_raw_dataframe(
 
     info = PreprocessInfo(
         skipped_rows=skipped_rows,
+        footer_rows_stripped=footer_stripped,
         dropped_columns=dropped_cols,
         columns_before_drop=cols_before_drop,
+        header_certain=skip_certain,
     )
     return df, encoding, info
 
@@ -234,18 +280,29 @@ def _normalize_df_with_schema(
     df: pd.DataFrame,
     schema: DocumentSchema,
     source_name: str,
-) -> list[dict]:
+) -> tuple[list[dict], list[SkippedRow], int]:
     """
     Apply DocumentSchema to produce a list of canonical transaction dicts.
+
+    Returns:
+        (transactions, skipped_rows, merge_count) — skipped_rows contains details
+        of each row that was dropped during normalisation; merge_count is the number
+        of intra-file duplicate rows that were aggregated (summed) into existing ones.
     """
     transactions = []
+    skipped_rows: list[SkippedRow] = []
     skip_date_nan = skip_date_parse = skip_amount = 0
 
-    for _, row in df.iterrows():
+    def _row_raw_values(r, idx: int) -> dict:
+        """Extract raw values for a skipped row (for diagnostics)."""
+        return {c: str(r.get(c, ""))[:120] for c in df.columns}
+
+    for row_idx, (_, row) in enumerate(df.iterrows()):
         # Parse date — Excel cells arrive as datetime/date objects, not strings
         raw_date = row.get(schema.date_col, "")
         if raw_date is None or (isinstance(raw_date, float) and pd.isna(raw_date)):
             skip_date_nan += 1
+            skipped_rows.append(SkippedRow(row_idx, "date_nan", _row_raw_values(row, row_idx)))
             continue
         if hasattr(raw_date, "date"):          # datetime → date
             tx_date = raw_date.date()
@@ -257,6 +314,7 @@ def _normalize_df_with_schema(
             tx_date = None
         if tx_date is None:
             skip_date_parse += 1
+            skipped_rows.append(SkippedRow(row_idx, "date_parse", _row_raw_values(row, row_idx)))
             continue  # skip rows with unparseable date
 
         # Parse accounting date
@@ -280,6 +338,12 @@ def _normalize_df_with_schema(
         )
         if amount is None:
             skip_amount += 1
+            # Distinguish between single-column parse failure and debit/credit both empty
+            if schema.sign_convention in (SignConvention.debit_positive, SignConvention.credit_negative):
+                reason = "amount_none_dc"
+            else:
+                reason = "amount_none"
+            skipped_rows.append(SkippedRow(row_idx, reason, _row_raw_values(row, row_idx)))
             continue
 
         # Card files often store expenses as positive values.
@@ -403,7 +467,7 @@ def _normalize_df_with_schema(
             f"_normalize_df_with_schema [{source_name}]: "
             f"merged {merge_count} duplicate row(s) into {len(merged)} unique transactions"
         )
-    return merged
+    return merged, skipped_rows, merge_count
 
 
 def _infer_tx_type(
@@ -483,6 +547,7 @@ def process_file(
         else (known_schema.skip_rows if (known_schema and known_schema.skip_rows) else None)
     )
     df_raw, encoding, _preprocess_info = load_raw_dataframe(raw_bytes, filename, skip_rows_override=skip_override)
+    _header_rows_skipped = _preprocess_info.skipped_rows if isinstance(_preprocess_info.skipped_rows, int) else 0
     logger.info(
         f"process_file: loaded {filename} | rows={len(df_raw)} "
         f"ncols={len(df_raw.columns)} | known_schema={'yes' if known_schema else 'no'}"
@@ -505,6 +570,8 @@ def process_file(
             reconciliations=[],
             transfer_links=[],
             errors=["Empty file or no data found"],
+            total_file_rows=0,
+            header_rows_skipped=_header_rows_skipped,
         )
 
     flow_used = "flow1"
@@ -518,6 +585,31 @@ def process_file(
         )
         doc_schema = None
 
+    # Safety net: if the cached schema uses signed_single but the actual file has
+    # separate debit/credit columns (e.g. "Uscite" + "Entrate"), re-run Phase 0
+    # to upgrade the convention to debit_positive — prevents silent data loss.
+    if (
+        doc_schema is not None
+        and str(doc_schema.sign_convention) in ("signed_single", "SignConvention.signed_single")
+        and not doc_schema.debit_col
+        and not doc_schema.credit_col
+    ):
+        from core.classifier import (
+            _DEBIT_COLUMN_SYNONYMS,
+            _CREDIT_COLUMN_SYNONYMS,
+            _run_step0_analysis,
+        )
+        _step0 = _run_step0_analysis(list(df_raw.columns), df_raw=df_raw)
+        if _step0.amount_semantics == "debit_positive" and _step0.debit_col and _step0.credit_col:
+            logger.warning(
+                f"process_file: cached schema uses signed_single but Phase 0 found "
+                f"debit_col='{_step0.debit_col}', credit_col='{_step0.credit_col}' "
+                f"→ upgrading to debit_positive for {filename}"
+            )
+            doc_schema.sign_convention = SignConvention.debit_positive
+            doc_schema.debit_col = _step0.debit_col
+            doc_schema.credit_col = _step0.credit_col
+
     # Flow 2: classify document if no known schema
     if doc_schema is None:
         flow_used = "flow2"
@@ -530,22 +622,37 @@ def process_file(
             sanitize_config=config.sanitize_config,
             fallback_backend=fallback,
             amount_plausibility_cap=config.max_transaction_amount,
+            header_certain=_preprocess_info.header_certain,
         )
         _progress(0.25)
-        # Always stop on Flow 2: user must confirm schema before any data is imported
-        logger.info(f"process_file: Flow 2 for {filename} — stopping for mandatory user schema review")
-        return ImportResult(
-            batch_sha256=batch_sha256,
-            source_name=filename,
-            transactions=[],
-            doc_schema=doc_schema,
-            reconciliations=[],
-            transfer_links=[],
-            errors=[],
-            flow_used=flow_used,
-            needs_schema_review=True,
-            available_columns=list(df_raw.columns),
-        )
+
+        # Confidence-based auto-import decision
+        _score = doc_schema.confidence_score if doc_schema else 0.0
+        if _score >= config.confidence_threshold:
+            logger.info(
+                f"process_file: Flow 2 for {filename} — confidence_score={_score} >= "
+                f"{config.confidence_threshold} → auto-importing"
+            )
+            # Fall through to normalisation below (do NOT return early)
+        else:
+            logger.info(
+                f"process_file: Flow 2 for {filename} — confidence_score={_score} < "
+                f"{config.confidence_threshold} → stopping for user schema review"
+            )
+            return ImportResult(
+                batch_sha256=batch_sha256,
+                source_name=filename,
+                transactions=[],
+                doc_schema=doc_schema,
+                reconciliations=[],
+                transfer_links=[],
+                errors=[],
+                flow_used=flow_used,
+                total_file_rows=len(df_raw),
+                header_rows_skipped=_header_rows_skipped,
+                needs_schema_review=True,
+                available_columns=list(df_raw.columns),
+            )
     else:
         _progress(0.10)
 
@@ -558,7 +665,8 @@ def process_file(
         )
 
     # Apply schema → canonical transactions
-    transactions = _normalize_df_with_schema(df_raw, doc_schema, filename)
+    _total_file_rows = len(df_raw)
+    transactions, _norm_skipped, _merge_count = _normalize_df_with_schema(df_raw, doc_schema, filename)
     _progress(0.35)
 
     # Case 5: remove within-file card balance/totale summary row (double-counting guard)
@@ -568,11 +676,22 @@ def process_file(
         _owner_label: str | None = None
         if config.use_owner_names_for_giroconto and config.sanitize_config.owner_names:
             _owner_label = ", ".join(config.sanitize_config.owner_names)
+        _len_before_balance = len(transactions)
         transactions, _balance_removed = remove_card_balance_row(
             transactions, epsilon=config.tolerance, owner_name_label=_owner_label
         )
-        if _balance_removed:
-            action = "relabelled" if _owner_label else "removed"
+        if _balance_removed and not _owner_label:
+            # Row was removed (not relabelled) — track it
+            _norm_skipped.append(SkippedRow(
+                row_index=-1, reason="balance_row",
+                raw_values={"nota": "Riga saldo/totale carta rimossa (importo = somma altre righe)"},
+            ))
+            action = "removed"
+        elif _balance_removed:
+            action = "relabelled"
+        else:
+            action = ""
+        if action:
             logger.info(f"process_file: balance/totale row {action} from {filename}")
 
     if not transactions:
@@ -585,6 +704,10 @@ def process_file(
             transfer_links=[],
             errors=["No transactions could be parsed with the schema"],
             flow_used=flow_used,
+            total_file_rows=_total_file_rows,
+            header_rows_skipped=_header_rows_skipped,
+            skipped_rows=_norm_skipped,
+            merged_count=_merge_count,
         )
 
     # ── Per-transaction dedup: filter already-imported rows BEFORE any LLM call ──
@@ -612,6 +735,10 @@ def process_file(
                 transfer_links=[],
                 skipped_count=skipped_count,
                 flow_used=flow_used,
+                total_file_rows=_total_file_rows,
+                header_rows_skipped=_header_rows_skipped,
+                skipped_rows=_norm_skipped,
+                merged_count=_merge_count,
             )
     _progress(0.38)
 
@@ -747,10 +874,16 @@ def process_file(
             tx["category_source"] = result.source.value
             tx["to_review"] = result.to_review
 
-    # Apply giroconto mode
-    if config.giroconto_mode == GirocontoMode.exclude:
-        excluded_types = {TransactionType.internal_out.value, TransactionType.internal_in.value}
-        transactions = [tx for tx in transactions if tx["tx_type"] not in excluded_types]
+    # Giroconti are ALWAYS persisted in the ledger regardless of giroconto_mode.
+    # The mode only affects downstream views (analytics, reports, registry).
+    _giro_count = sum(1 for tx in transactions if tx.get("tx_type") in (
+        TransactionType.internal_out.value, TransactionType.internal_in.value))
+    if _giro_count:
+        logger.info(
+            f"process_file: {_giro_count} internal transfers detected, "
+            f"all saved to ledger (giroconto_mode={config.giroconto_mode.value} "
+            f"applied only in views)"
+        )
 
     return ImportResult(
         batch_sha256=batch_sha256,
@@ -761,6 +894,11 @@ def process_file(
         transfer_links=transfer_links,
         skipped_count=skipped_count,
         flow_used=flow_used,
+        total_file_rows=_total_file_rows,
+        header_rows_skipped=_header_rows_skipped,
+        skipped_rows=_norm_skipped,
+        merged_count=_merge_count,
+        internal_transfer_count=_giro_count,
     )
 
 

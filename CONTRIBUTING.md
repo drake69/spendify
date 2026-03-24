@@ -102,6 +102,13 @@ git clone https://github.com/drake69/spendify.git
 cd spendify
 uv sync
 cp .env.example .env
+
+# Script di avvio (consigliato)
+./start.sh          # solo UI (default)
+./start.sh api      # solo REST API
+./start.sh all      # UI + API
+
+# Oppure manualmente
 uv run streamlit run app.py
 ```
 
