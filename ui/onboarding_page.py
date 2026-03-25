@@ -177,7 +177,7 @@ def _step1_owners(lang: str) -> None:
     )
     st.info(
         "💡 Esempio: `Mario Rossi, Maria Rossi` "
-        "— includi tutte le varianti del nome con cui appaiono negli estratti conto."
+        "— includi tutte le varianti del nome con cui appaiono nei file movimenti."
     )
 
     names = st.text_input(

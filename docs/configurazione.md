@@ -484,5 +484,5 @@ Alla prima installazione il database viene inizializzato con questi valori:
 [ ] 4. Step 3: aggiungi i tuoi conti bancari (o salta e aggiungili dopo)
 [ ] 5. Step 4: clicca "Inizia!" per completare la configurazione
 [ ] 6. (Opzionale) Vai in ⚙️ Impostazioni → configura il backend LLM
-[ ] 7. Vai in 📥 Import e carica il primo estratto conto
+[ ] 7. Vai in 📥 Import e carica il primo file movimenti
 ```

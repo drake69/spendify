@@ -6,7 +6,7 @@
 
 ## The idea in one sentence
 
-You download your bank statements, drag them into Spendify, it unifies them, classifies them, and tells you where your money goes. That's it.
+You download your transaction files from the bank, drag them into Spendify, it unifies them, classifies them, and tells you where your money goes. That's it.
 
 ---
 
@@ -27,7 +27,7 @@ The app automatically shows the **onboarding wizard** (4 steps). No need to look
 
 ## 2. First import
 
-**Situation:** You've completed the wizard and want to load your bank statements.
+**Situation:** You've completed the wizard and want to load your transaction files.
 
 1. Go to **Import** (the first button at the top left).
 2. Drag one or more files into the dashed area — CSV, XLSX, XLS all work together.
@@ -50,7 +50,7 @@ Once a file's schema is confirmed, all subsequent imports of the same format wil
 
 > **Auto-selected account:** if the file format matches a schema previously imported for a specific account, Spendify automatically pre-selects that account in the dropdown. No need to choose it every time.
 
-> **First upload warning:** when you upload a file with a format never seen before (first upload) and the file contains fewer than 50 rows, a yellow warning appears: *"For optimal recognition, upload the bank statement as downloaded from the bank, without modifications, ideally with 250-300 transactions."* This is because automatic schema detection works better with more data.
+> **First upload warning:** when you upload a file with a format never seen before (first upload) and the file contains fewer than 50 rows, a yellow warning appears: *"For optimal recognition, upload the transactions file as downloaded from the bank, without modifications, ideally with 250-300 transactions."* This is because automatic schema detection works better with more data.
 
 ### Rows to skip — when does this field appear?
 
@@ -68,7 +68,7 @@ After processing, a detailed summary is shown for each imported file:
 
 | Metric | Meaning |
 |--------|---------|
-| **Righe E/C** (Statement rows) | Total number of data rows in the bank statement (excluding headers) |
+| **Righe E/C** (Statement rows) | Total number of data rows in the transactions file (excluding headers) |
 | **Imported** | New transactions saved to the database |
 | **Already present** | Previously imported transactions (duplicates, skipped) |
 | **Giroconti** (Internal transfers) | Internal transfers detected (tooltip with details). Internal transfers are **always saved** to the database, even in "Exclude" mode — the setting only controls visibility in views |
@@ -179,7 +179,7 @@ If you have created many rules across different sessions and want to apply them 
 
 ## 6. Modifiche massive: category, context, and bulk deletion
 
-**Situation:** You've imported years of bank statements and want to clean up incorrect data or remove an entire account you no longer want to track.
+**Situation:** You've imported years of transaction files and want to clean up incorrect data or remove an entire account you no longer want to track.
 
 Go to **✏️ Modifiche massive**. The page is divided into two main areas.
 
@@ -204,7 +204,7 @@ Go to **✏️ Modifiche massive**. The page is divided into two main areas.
 
 > ⚠️ **Deletion is irreversible.** Always make a backup of the `ledger.db` file before deleting large amounts of data (see the Deployment guide).
 
-> **Example:** You accidentally imported the bank statement of an account that isn't yours. You filter by account, see 200 transactions in the preview, type ELIMINA, and remove them all at once.
+> **Example:** You accidentally imported the transactions file of an account that isn't yours. You filter by account, see 200 transactions in the preview, type ELIMINA, and remove them all at once.
 
 ---
 
@@ -236,7 +236,7 @@ Use the filters at the top to narrow down to a specific period or account.
 
 ## 9. Check List: is everything in order?
 
-**Situation:** You want to check at a glance whether you are regularly importing all your bank statements, without gaps of months.
+**Situation:** You want to check at a glance whether you are regularly importing all your transaction files, without gaps of months.
 
 Go to **✅ Check List**. You'll find a table with:
 - **One row for each month**, from the current month going back into the past
@@ -244,7 +244,7 @@ Go to **✅ Check List**. You'll find a table with:
 
 Each cell shows the number of transactions imported for that month and account. If the number is **—** (grey), you have no transactions for that combination.
 
-> **Practical example:** You have three accounts — Conto Corrente, Carta Visa, Conto Deposito. You look at the check list and see that July 2024 shows "—" for Conto Deposito. This means you never imported the bank statement for that deposit account for that month. Go download it from the bank and import it.
+> **Practical example:** You have three accounts — Conto Corrente, Carta Visa, Conto Deposito. You look at the check list and see that July 2024 shows "—" for Conto Deposito. This means you never imported the transactions file for that deposit account for that month. Go download it from the bank and import it.
 
 **How to read the colours:**
 - **—** grey = no transactions

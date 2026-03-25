@@ -363,7 +363,7 @@ def _render_schema_review(import_svc: ImportService, config: ProcessingConfig) -
 
 
 def render_upload_page(engine):
-    st.header("📥 Import — Caricamento Estratti Conto")
+    st.header("📥 Import — Caricamento Movimenti")
 
     import_svc = ImportService(engine)
     cfg_svc    = SettingsService(engine)
@@ -439,7 +439,7 @@ def render_upload_page(engine):
             if _row_count < 50:
                 st.warning(
                     f"⚠️ **{uf.name}** — Primo caricamento di questo formato con poche righe ({_row_count}). "
-                    "Per un riconoscimento ottimale, carica l'estratto conto così come scaricato dalla banca, "
+                    "Per un riconoscimento ottimale, carica il file movimenti così come scaricato dalla banca, "
                     "senza modifiche, idealmente con 250-300 transazioni."
                 )
             c1, c2, c3 = st.columns([3, 2, 2])

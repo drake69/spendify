@@ -6,7 +6,7 @@
 
 ## L'idea in una frase
 
-Scarichi gli estratti conto dalla banca, li trascini in Spendify, lui li unifica, li classifica e ti dice dove vanno i tuoi soldi. Fine.
+Scarichi i file movimenti dalla banca, li trascini in Spendify, lui li unifica, li classifica e ti dice dove vanno i tuoi soldi. Fine.
 
 ---
 
@@ -27,7 +27,7 @@ L'app ti mostra automaticamente il **wizard di configurazione iniziale** (4 step
 
 ## 2. Prima importazione
 
-**Situazione:** Hai completato il wizard e vuoi caricare i tuoi estratti conto.
+**Situazione:** Hai completato il wizard e vuoi caricare i tuoi file movimenti.
 
 1. Vai su **Import** (il primo pulsante in alto a sinistra).
 2. Trascina uno o più file nell'area tratteggiata — vanno bene CSV, XLSX, XLS tutti insieme.
@@ -50,7 +50,7 @@ Una volta confermato lo schema di un file, tutte le importazioni successive dell
 
 > **Conto pre-selezionato:** se il formato del file corrisponde a uno schema gia importato in passato per un certo conto, Spendify pre-seleziona automaticamente quel conto nel menu a tendina. Non serve sceglierlo ogni volta.
 
-> **Avviso primo caricamento:** quando carichi un file con un formato mai visto prima (primo upload) e il file contiene meno di 50 righe, compare un avviso giallo: *"Per un riconoscimento ottimale, carica l'estratto conto cosi come scaricato dalla banca, senza modifiche, idealmente con 250-300 transazioni."* Questo perche il rilevamento automatico dello schema funziona meglio con piu dati.
+> **Avviso primo caricamento:** quando carichi un file con un formato mai visto prima (primo upload) e il file contiene meno di 50 righe, compare un avviso giallo: *"Per un riconoscimento ottimale, carica il file movimenti cosi come scaricato dalla banca, senza modifiche, idealmente con 250-300 transazioni."* Questo perche il rilevamento automatico dello schema funziona meglio con piu dati.
 
 ### Righe da saltare — quando compare questo campo?
 
@@ -68,7 +68,7 @@ Al termine dell'elaborazione, per ogni file importato viene mostrato un riepilog
 
 | Metrica | Significato |
 |---------|-------------|
-| **Righe E/C** | Numero totale di righe dati nell'estratto conto (escluse intestazioni) |
+| **Righe E/C** | Numero totale di righe dati nel file movimenti (escluse intestazioni) |
 | **Importate** | Nuove transazioni salvate nel database |
 | **Già presenti** | Transazioni già importate in precedenza (duplicate, saltate) |
 | **Giroconti** | Trasferimenti interni rilevati (tooltip con dettaglio). I giroconti vengono **sempre salvati** nel database, anche con modalità "Escludi" — l'impostazione controlla solo la visibilità nelle viste |
@@ -179,7 +179,7 @@ Se hai creato molte regole in sessioni diverse e vuoi applicarle tutte in una vo
 
 ## 6. Modifiche massive: categoria, contesto e eliminazione in blocco
 
-**Situazione:** Hai importato anni di estratti conto e vuoi pulire dati sbagliati o rimuovere un intero conto che non vuoi più tracciare.
+**Situazione:** Hai importato anni di movimenti e vuoi pulire dati sbagliati o rimuovere un intero conto che non vuoi più tracciare.
 
 Vai su **✏️ Modifiche massive**. La pagina è divisa in due aree principali.
 
@@ -204,7 +204,7 @@ Vai su **✏️ Modifiche massive**. La pagina è divisa in due aree principali.
 
 > ⚠️ **L'eliminazione è irreversibile.** Fai sempre un backup del file `ledger.db` prima di eliminare grandi quantità di dati (vedi la guida Deployment).
 
-> **Esempio:** Hai importato per errore l'estratto conto di un conto corrente che non è tuo. Filtri per conto, vedi 200 transazioni nell'anteprima, digiti ELIMINA e le rimuovi in un colpo solo.
+> **Esempio:** Hai importato per errore il file movimenti di un conto corrente che non è tuo. Filtri per conto, vedi 200 transazioni nell'anteprima, digiti ELIMINA e le rimuovi in un colpo solo.
 
 ---
 
@@ -236,7 +236,7 @@ Usa i filtri in alto per restringere a un periodo o a un conto specifico.
 
 ## 9. Check List: tutto in ordine?
 
-**Situazione:** Vuoi controllare a colpo d'occhio se stai importando regolarmente tutti i tuoi estratti conto, senza buchi di mesi.
+**Situazione:** Vuoi controllare a colpo d'occhio se stai importando regolarmente tutti i tuoi file movimenti, senza buchi di mesi.
 
 Vai su **✅ Check List**. Trovi una tabella con:
 - **Una riga per ogni mese**, dal mese corrente in poi verso il passato
@@ -244,7 +244,7 @@ Vai su **✅ Check List**. Trovi una tabella con:
 
 Ogni cella mostra il numero di transazioni importate per quel mese e quel conto. Se il numero è **—** (grigio), non hai transazioni per quella combinazione.
 
-> **Esempio pratico:** Hai tre conti — Conto Corrente, Carta Visa, Conto Deposito. Guardi la check list e vedi che Luglio 2024 ha "—" per il Conto Deposito. Significa che non hai mai importato l'estratto conto del conto deposito di quel mese. Vai a scaricarlo dalla banca e importalo.
+> **Esempio pratico:** Hai tre conti — Conto Corrente, Carta Visa, Conto Deposito. Guardi la check list e vedi che Luglio 2024 ha "—" per il Conto Deposito. Significa che non hai mai importato i movimenti del conto deposito di quel mese. Vai a scaricarli dalla banca e importali.
 
 **Come leggere i colori:**
 - **—** grigio = nessuna transazione

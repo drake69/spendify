@@ -1,12 +1,12 @@
 # Transaction Classification Guide
 
-> How Spendify turns your bank statements into categorised data with minimal manual effort.
+> How Spendify turns your bank transactions into categorised data with minimal manual effort.
 
 ---
 
 ## 1. Import
 
-Upload your bank statement (CSV, XLSX, XLS) by dragging it into the upload area.
+Upload your transactions file (CSV, XLSX, XLS) by dragging it into the upload area.
 
 - Spendify recognises the file schema automatically and computes a **confidence score** (0-100%).
 - If confidence is >= 80%, import proceeds without user intervention.

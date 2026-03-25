@@ -125,7 +125,7 @@ def render_checklist_page(engine) -> None:
     if not all_accounts and not count_rows:
         st.info(
             "Nessun conto e nessuna transazione trovati. "
-            "Aggiungi conti dalla pagina **Impostazioni** e importa gli estratti conto."
+            "Aggiungi conti dalla pagina **Impostazioni** e importa i file movimenti."
         )
         return
 

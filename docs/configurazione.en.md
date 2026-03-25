@@ -484,5 +484,5 @@ On first installation the database is initialised with these values:
 [ ] 4. Step 3: add your bank accounts (or skip and add later)
 [ ] 5. Step 4: click "Inizia!" to complete the setup
 [ ] 6. (Optional) Go to ⚙️ Impostazioni → configure the LLM backend
-[ ] 7. Go to 📥 Import and load the first bank statement
+[ ] 7. Go to 📥 Import and load the first transactions file
 ```

@@ -1,12 +1,12 @@
 # Guida alla Classificazione delle Transazioni
 
-> Come Spendify trasforma i tuoi estratti conto in dati categorizzati con il minimo intervento manuale.
+> Come Spendify trasforma i tuoi movimenti bancari in dati categorizzati con il minimo intervento manuale.
 
 ---
 
 ## 1. Import
 
-Carica l'estratto conto (CSV, XLSX, XLS) trascinandolo nell'area di upload.
+Carica il file movimenti (CSV, XLSX, XLS) trascinandolo nell'area di upload.
 
 - Spendify riconosce lo schema del file automaticamente e calcola un **confidence score** (0-100%).
 - Se la confidenza e >= 80%, l'importazione procede senza intervento.

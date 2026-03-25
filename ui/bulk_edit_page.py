@@ -478,7 +478,7 @@ def render_bulk_edit_page(engine):
     st.caption(
         "Transazioni con stessa **data**, **descrizione raw** e **importo** "
         "presenti su più conti diversi. Tipicamente causati da importazioni "
-        "sovrapposte (es. estratto conto + file carta)."
+        "sovrapposte (es. file movimenti conto + file carta)."
     )
 
     _dup_groups = tx_svc.get_cross_account_duplicates()
