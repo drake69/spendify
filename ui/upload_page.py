@@ -415,22 +415,39 @@ def render_upload_page(engine):
         _detected_skip, _skip_certain = import_svc.detect_skip_rows(raw_preview, uf.name)
         _sha256_hit = import_svc.find_schema_by_header(raw_preview, uf.name)
 
+        # ── I-02: auto-select account from cached schema ─────────────
+        _auto_account_idx = 0  # default: "— rilevamento automatico —"
+        if _sha256_hit and getattr(_sha256_hit, "account_label", None):
+            _cached_label = _sha256_hit.account_label
+            if _cached_label in _account_names:
+                _auto_account_idx = _account_names.index(_cached_label) + 1  # +1 for the "auto" option
+
         if _sha256_hit or _skip_certain:
             c1, c2 = st.columns([3, 2])
             c1.caption(f"📄 {uf.name}")
             sel = c2.selectbox(
                 "Conto",
                 options=_account_options,
+                index=_auto_account_idx,
                 key=f"file_account_{uf.name}",
                 label_visibility="collapsed",
             )
             _file_skip_map[uf.name] = _sha256_hit.skip_rows if _sha256_hit else _detected_skip
         else:
+            # ── I-01: warning primo caricamento ──────────────────────
+            _row_count = raw_preview.count(b"\n") if isinstance(raw_preview, bytes) else 50
+            if _row_count < 50:
+                st.warning(
+                    f"⚠️ **{uf.name}** — Primo caricamento di questo formato con poche righe ({_row_count}). "
+                    "Per un riconoscimento ottimale, carica l'estratto conto così come scaricato dalla banca, "
+                    "senza modifiche, idealmente con 250-300 transazioni."
+                )
             c1, c2, c3 = st.columns([3, 2, 2])
             c1.caption(f"📄 {uf.name}")
             sel = c2.selectbox(
                 "Conto",
                 options=_account_options,
+                index=_auto_account_idx,
                 key=f"file_account_{uf.name}",
                 label_visibility="collapsed",
             )
