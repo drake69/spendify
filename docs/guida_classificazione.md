@@ -1,0 +1,91 @@
+# Guida alla Classificazione delle Transazioni
+
+> Come Spendify trasforma i tuoi estratti conto in dati categorizzati con il minimo intervento manuale.
+
+---
+
+## 1. Import
+
+Carica l'estratto conto (CSV, XLSX, XLS) trascinandolo nell'area di upload.
+
+- Spendify riconosce lo schema del file automaticamente e calcola un **confidence score** (0-100%).
+- Se la confidenza e >= 80%, l'importazione procede senza intervento.
+- Le transazioni vengono categorizzate dall'AI (LLM) e dalle regole deterministiche gia presenti.
+
+---
+
+## 2. Review
+
+Le transazioni su cui l'AI non era sicura vengono marcate con il flag di warning.
+
+- Le transazioni incerte sono marcate con **warning** (da rivedere)
+- Per ciascuna puoi correggere **categoria**, **sottocategoria** e **contesto** dai menu a tendina
+- Conferma con **Validato** per dire a Spendify "questa classificazione e corretta"
+- Puoi anche creare una regola direttamente dalla Review, come nel Ledger
+
+---
+
+## 3. Ledger — Il centro di comando
+
+Vista completa di tutte le transazioni importate, con filtri per data, conto, categoria e tipo.
+
+**Modifica diretta:** cambia categoria, sottocategoria e contesto direttamente nella griglia. Ogni modifica aggiorna il campo `classification_source` a "manual".
+
+**Validazione:** spunta la checkbox Validato per confermare che la categoria e corretta. Il salvataggio e immediato, il flag di warning viene rimosso automaticamente.
+
+**Crea regola da una transazione:**
+
+1. Seleziona **1 riga** nella griglia del ledger
+2. Compare il form **"Crea regola"**, pre-compilato con:
+   - **Pattern**: estratto dalla controparte della transazione (es. `ESSELUNGA`)
+   - **Tipo match**: `contains` (default)
+   - **Categoria/Sottocategoria/Contesto**: copiati dalla transazione selezionata
+3. L'**anteprima** mostra quante transazioni verranno matchate dalla regola
+4. Click su **"Crea regola e applica"**:
+   - La regola viene salvata nel database
+   - Viene applicata **retroattivamente** a tutte le transazioni matching non ancora validate
+
+---
+
+## 4. Regole automatiche
+
+Le regole create (dal Ledger, dalla Review o dalla pagina Regole) si applicano automaticamente ai prossimi import.
+
+- **Priorita**: le regole piu specifiche hanno priorita piu alta. Il primo match vince.
+- **Tipi di match**: esatto, contiene, regex.
+- **Pagina Regole**: gestisci, modifica, elimina le regole esistenti. Usa il pulsante "Esegui tutte le regole" per applicarle in blocco a tutto lo storico.
+
+---
+
+## 5. Il ciclo virtuoso
+
+```
+Import --> AI categorizza --> Utente rivede --> Crea regola --> Prossimo import: 0 interventi
+```
+
+Piu usi Spendify, meno lavoro manuale. Ogni regola creata riduce il numero di transazioni da rivedere al prossimo import. Obiettivo: **zero pain**.
+
+---
+
+## Colonne indicatore
+
+| Indicatore | Significato |
+|------------|------------|
+| Warning | Da rivedere (classificazione incerta) |
+| Validato | Validata dall'utente |
+| Giroconto | Giroconto interno (bonifico tra propri conti) |
+
+---
+
+## Badge fonte classificazione
+
+| Badge | Significato |
+|-------|------------|
+| AI | Categorizzata dall'intelligenza artificiale |
+| Regola | Categorizzata da regola deterministica |
+| Manuale | Modificata manualmente dall'utente |
+| Storico | Categorizzata dallo storico (futuro) |
+
+---
+
+Per dettagli operativi su ogni pagina, consulta la [Guida Utente](guida_utente.md).

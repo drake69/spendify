@@ -98,6 +98,10 @@ Go to **Ledger**. You'll find the complete list in chronological order, with fil
 
 **Bulk validation:** select one or more transactions and click **Valida selezionate** to confirm that the assigned categories are correct, without having to modify them. Validating a transaction tells Spendify "this category is correct" — the information is used to improve future classifications.
 
+### Creating rules from the Ledger
+
+Select a row in the grid and click **Create rule**: a pre-filled form appears with the pattern extracted from the counterpart, plus the category and context from the transaction. A preview shows how many transactions will be matched. After confirmation, the rule is applied retroactively to all matching transactions. For the full workflow, see the [Classification Guide](guida_classificazione.en.md).
+
 ---
 
 ## 3. Review: transactions to check

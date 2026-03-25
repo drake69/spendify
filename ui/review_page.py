@@ -252,6 +252,19 @@ def render_review_page(engine):
             key="review_save_rule",
         )
 
+        # Preview and retroactive options (shown when save_rule is checked)
+        if save_rule and selected_tx.description:
+            _preview_pattern = selected_tx.description
+            _preview_matching = tx_svc.get_by_rule_pattern(_preview_pattern, "contains")
+            st.info(f"Matcherà {len(_preview_matching)} transazioni")
+            review_retroactive = st.checkbox(
+                "Applica retroattivamente a tutte le transazioni",
+                value=True,
+                key="review_retroactive",
+            )
+        else:
+            review_retroactive = False
+
         if st.button("💾 Applica correzione", type="primary"):
             ok = tx_svc.update_category(selected_tx.id, new_cat, new_sub)
             if ok:
@@ -264,16 +277,20 @@ def render_review_page(engine):
                         subcategory=new_sub,
                         priority=10,
                     )
-                    similar = tx_svc.get_by_rule_pattern(selected_tx.description, "contains")
-                    n_similar = 0
-                    for stx in similar:
-                        if stx.id != selected_tx.id:
-                            tx_svc.update_category(stx.id, new_cat, new_sub)
-                            n_similar += 1
                     rule_tag = "creata" if created else "aggiornata"
                     rule_msg = f" · Regola {rule_tag}"
-                    if n_similar:
-                        rule_msg += f" · {n_similar} transazioni simili aggiornate."
+                    if review_retroactive:
+                        n_matched, _ = rule_svc.apply_to_all()
+                        rule_msg += f" · {n_matched} transazioni aggiornate retroattivamente."
+                    else:
+                        similar = tx_svc.get_by_rule_pattern(selected_tx.description, "contains")
+                        n_similar = 0
+                        for stx in similar:
+                            if stx.id != selected_tx.id:
+                                tx_svc.update_category(stx.id, new_cat, new_sub)
+                                n_similar += 1
+                        if n_similar:
+                            rule_msg += f" · {n_similar} transazioni simili aggiornate."
                 st.success(f"Categoria aggiornata: {new_cat} / {new_sub}{rule_msg}")
                 st.rerun()
             else:

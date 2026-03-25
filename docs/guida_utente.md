@@ -113,6 +113,10 @@ Vai su **Ledger**. Trovi la lista completa in ordine cronologico, con filtri per
 
 **Validazione in blocco:** seleziona una o più transazioni e clicca **Valida selezionate** per confermare che le categorie assegnate sono corrette, senza doverle modificare. Validare una transazione significa dire a Spendify "questa categoria è giusta" — l'informazione viene usata per migliorare le classificazioni future.
 
+### Creare regole dal Ledger
+
+Seleziona una riga nella griglia e clicca **Crea regola**: compare un form pre-compilato con il pattern estratto dalla controparte, la categoria e il contesto della transazione. Un'anteprima mostra quante transazioni verranno matchate. Dopo la conferma, la regola si applica retroattivamente a tutte le transazioni corrispondenti. Per il flusso completo, vedi la [Guida alla Classificazione](guida_classificazione.md).
+
 ---
 
 ## 4. Review: le transazioni da controllare

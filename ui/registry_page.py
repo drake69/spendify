@@ -8,6 +8,7 @@ from decimal import Decimal
 import pandas as pd
 import streamlit as st
 
+from services.rule_service import RuleService
 from services.settings_service import SettingsService
 from services.transaction_service import TransactionService
 from support.formatting import format_amount_display, format_date_display
@@ -25,8 +26,9 @@ _ALL_TX_TYPES = [
 def render_registry_page(engine):
     st.header("📋 Ledger — Registro Transazioni")
 
-    cfg_svc = SettingsService(engine)
-    tx_svc  = TransactionService(engine)
+    cfg_svc  = SettingsService(engine)
+    tx_svc   = TransactionService(engine)
+    rule_svc = RuleService(engine)
 
     # ── Settings & taxonomy ────────────────────────────────────────────────────
     settings = cfg_svc.get_all()
@@ -357,6 +359,83 @@ def render_registry_page(engine):
             st.rerun()
         else:
             st.info("Nessuna modifica rilevata.")
+
+    # ── Crea regola dalla selezione ──────────────────────────────────────────
+    if len(_sel_ids) == 1:
+        _rule_tx_id = _sel_ids[0]
+        _rule_tx_row = orig_df[orig_df["_id"] == _rule_tx_id].iloc[0]
+        _rule_tx_desc = _rule_tx_row["Descrizione"]
+        _rule_tx_cat = _rule_tx_row["Categoria"]
+        _rule_tx_sub = _rule_tx_row["Sottocategoria"]
+        _rule_tx_ctx = _rule_tx_row["Contesto"]
+
+        with st.expander("📏 Crea regola dalla selezione", expanded=True):
+            rc1, rc2 = st.columns([3, 1])
+            with rc1:
+                rule_pattern = st.text_input(
+                    "Pattern", value=_rule_tx_desc, key="rule_create_pattern"
+                )
+            with rc2:
+                rule_match_type = st.selectbox(
+                    "Tipo match", ["contains", "exact", "regex"],
+                    index=0, key="rule_create_match_type",
+                )
+
+            rc3, rc4, rc5, rc6 = st.columns(4)
+            with rc3:
+                _rc_cat_idx = (_all_cats.index(_rule_tx_cat)
+                               if _rule_tx_cat in _all_cats else 0)
+                rule_category = st.selectbox(
+                    "Categoria", options=_all_cats,
+                    index=_rc_cat_idx, key="rule_create_category",
+                )
+            with rc4:
+                _rc_sub_idx = (_all_sub.index(_rule_tx_sub)
+                               if _rule_tx_sub in _all_sub else 0)
+                rule_subcategory = st.selectbox(
+                    "Sottocategoria", options=_all_sub,
+                    index=_rc_sub_idx, key="rule_create_subcategory",
+                )
+            with rc5:
+                _ctx_options = ["— nessuno —"] + _contexts
+                _rc_ctx_idx = (_ctx_options.index(_rule_tx_ctx)
+                               if _rule_tx_ctx in _ctx_options else 0)
+                rule_context = st.selectbox(
+                    "Contesto", options=_ctx_options,
+                    index=_rc_ctx_idx, key="rule_create_context",
+                )
+            with rc6:
+                rule_priority = st.number_input(
+                    "Priorità", value=10, min_value=0, max_value=100,
+                    key="rule_create_priority",
+                )
+
+            # Preview matching transactions
+            if rule_pattern.strip():
+                _rule_matching = tx_svc.get_by_rule_pattern(
+                    rule_pattern.strip(), rule_match_type
+                )
+                st.info(f"Questa regola matcherà {len(_rule_matching)} transazioni")
+
+            if st.button("📏 Crea regola e applica", key="rule_create_apply"):
+                _ctx_val = rule_context if rule_context != "— nessuno —" else None
+                rule_svc.create_rule(
+                    pattern=rule_pattern.strip(),
+                    match_type=rule_match_type,
+                    category=rule_category,
+                    subcategory=rule_subcategory,
+                    context=_ctx_val,
+                    priority=rule_priority,
+                )
+                n_matched, n_cleared = rule_svc.apply_to_all()
+                st.toast(f"📏 Regola creata — {n_matched} transazioni aggiornate")
+                logger.info(
+                    f"ledger_page: rule created pattern={rule_pattern!r} "
+                    f"matched={n_matched} cleared={n_cleared}"
+                )
+                st.rerun()
+    elif len(_sel_ids) != 1:
+        st.caption("Seleziona una riga per creare una regola")
 
     # ── Page navigation ───────────────────────────────────────────────────────
     nav1, nav2, _ = st.columns([1, 1, 5])
