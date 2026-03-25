@@ -10,9 +10,24 @@ You download your bank statements, drag them into Spendify, it unifies them, cla
 
 ---
 
-## 1. First import
+## 1. First launch — onboarding wizard
 
-**Situation:** You've just installed Spendify and want to load your bank statements.
+**Situation:** You've just installed Spendify and are launching it for the first time.
+
+The app automatically shows the **onboarding wizard** (4 steps). No need to look for any menu.
+
+1. **Step 1 — Language:** choose the taxonomy language. The wizard suggests your browser language. This also sets date format and number separators (e.g. `31/12/2025` with `,` separator for Italian).
+2. **Step 2 — Holders:** enter your name (and the variants used by the bank — e.g. `Mario Rossi, ROSSI MARIO`). These names are used to protect your privacy in LLM prompts and to detect internal transfers.
+3. **Step 3 — Accounts:** add your bank accounts (name + bank + account type). The account type is mandatory and indicates the financial instrument: *Bank account*, *Credit card*, *Debit card*, *Prepaid card*, *Savings account* or *Cash*. You can skip this step and add them later from Settings.
+4. **Step 4 — Confirm:** review the summary and click **Inizia!** — data is saved only at this point.
+
+> **Updating from a previous version?** The wizard does not appear if the database already has data — the app opens normally.
+
+---
+
+## 2. First import
+
+**Situation:** You've completed the wizard and want to load your bank statements.
 
 1. Go to **Import** (the first button at the top left).
 2. Drag one or more files into the dashed area — CSV, XLSX, XLS all work together.
@@ -67,7 +82,7 @@ You can expand the detail to see the original data of each discarded row, useful
 
 ---
 
-## 2. The Ledger: viewing all transactions
+## 3. The Ledger: viewing all transactions
 
 **Situation:** You want to check what has been imported.
 
@@ -108,7 +123,7 @@ For the full workflow, see the [Classification Guide](guida_classificazione.en.m
 
 ---
 
-## 3. Review: transactions to check
+## 4. Review: transactions to check
 
 **Situation:** Spendify was not confident about some classifications and has put them on hold.
 
@@ -137,7 +152,7 @@ At the bottom of the Review page there is the **🔄 Rielabora con LLM** button.
 
 ---
 
-## 4. Regole: don't correct the same thing twice
+## 5. Regole: don't correct the same thing twice
 
 **Situation:** Every month "ADDEBITO SDD ENEL ENERGIA" shows up and every month you have to correct it manually.
 
@@ -158,7 +173,7 @@ If you have created many rules across different sessions and want to apply them 
 
 ---
 
-## 5. Modifiche massive: category, context, and bulk deletion
+## 6. Modifiche massive: category, context, and bulk deletion
 
 **Situation:** You've imported years of bank statements and want to clean up incorrect data or remove an entire account you no longer want to track.
 
@@ -189,7 +204,7 @@ Go to **✏️ Modifiche massive**. The page is divided into two main areas.
 
 ---
 
-## 6. Correcting descriptions in bulk (Review page)
+## 7. Correcting descriptions in bulk (Review page)
 
 **Situation:** The bank writes "SOTTOSCRIZIONI FONDI E SICAV SOTTOSCRIZIONE ETICA AZIONARIO R DEP.TITOLI 081/663905/000" — an unreadable mess. You want to replace it with "Fondo Etico Azionario" for all occurrences.
 
@@ -202,7 +217,7 @@ All matching transactions are updated immediately and the rule is saved for futu
 
 ---
 
-## 7. Analytics: the charts
+## 8. Analytics: the charts
 
 **Situation:** You want to understand where you spend the most.
 
@@ -215,7 +230,7 @@ Use the filters at the top to narrow down to a specific period or account.
 
 ---
 
-## 8. Check List: is everything in order?
+## 9. Check List: is everything in order?
 
 **Situation:** You want to check at a glance whether you are regularly importing all your bank statements, without gaps of months.
 
@@ -242,7 +257,7 @@ You can download the table as CSV with the **⬇️ Scarica CSV** button.
 
 ---
 
-## 9. Settings: changing the AI model
+## 10. Settings: changing the AI model
 
 **Situation:** You want to use a different model for classification (e.g. Claude instead of local Ollama).
 
@@ -254,6 +269,21 @@ Go to **⚙️ Impostazioni**:
 > **Privacy note:** If you use a remote backend (OpenAI or Claude), Spendify automatically removes IBANs, card numbers, tax identification numbers, and the account holder's name before sending any data.
 
 For detailed instructions on where to register and how to obtain API keys for each provider, see the **[Configuration Manual](configurazione.en.md)**.
+
+### Account type
+
+Every account has a mandatory **type** indicating the financial instrument:
+
+| Type | Label |
+|------|-------|
+| `bank_account` | Conto corrente |
+| `credit_card` | Carta di credito |
+| `debit_card` | Carta di debito |
+| `prepaid_card` | Carta prepagata |
+| `savings_account` | Conto risparmio |
+| `cash` | Contanti |
+
+The account type is used during import to guide automatic format detection: for example, a **credit card** automatically forces `invert_sign=True` (expenses in the CSV are positive but must be recorded as outflows). The type is shown in the account list with an Italian label.
 
 ### Renaming an account
 

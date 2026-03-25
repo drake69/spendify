@@ -31,7 +31,7 @@ Al primo avvio l'app mostra automaticamente il **wizard di onboarding** (4 step)
 |---|---|
 | **1 — Lingua** | Lingua della tassonomia di default (italiano, inglese, francese, tedesco, spagnolo). Pre-selezionata dalla lingua del browser. Influenza anche il formato data e i separatori numerici. |
 | **2 — Titolari** | Nomi dei titolari del conto (obbligatori). Usati per PII redaction e rilevamento giroconti. |
-| **3 — Conti** | Conti bancari (nome + banca). Facoltativi: si può saltare con avviso e aggiungere in seguito dalle Impostazioni. |
+| **3 — Conti** | Conti bancari (nome + banca + tipo conto obbligatorio). Facoltativi: si può saltare con avviso e aggiungere in seguito dalle Impostazioni. |
 | **4 — Conferma** | Riepilogo e pulsante "Inizia!" — solo qui i dati vengono scritti nel DB. |
 
 > **Installazioni esistenti:** se il database contiene già dati (aggiornamento da versione precedente), il wizard viene saltato automaticamente e l'app si apre direttamente.
@@ -50,6 +50,20 @@ Definisce i conti correnti, carte e depositi che possiedi. Ogni conto ha:
 |---|---|---|
 | **Nome conto** | ✅ Sì | Identificativo univoco (es. `Conto corrente BPER`, `Carta Visa BNL`) |
 | **Banca** | No | Nome della banca per riferimento (non influenza l'elaborazione) |
+| **Tipo conto** | ✅ Sì | Tipo di strumento finanziario (vedi tabella sotto) |
+
+### Valori tipo conto
+
+| Valore | Etichetta | Note |
+|---|---|---|
+| `bank_account` | Conto corrente | Flussi misti entrate/uscite |
+| `credit_card` | Carta di credito | Forza `invert_sign=True` (spese positive nel CSV → uscite) |
+| `debit_card` | Carta di debito | Addebito immediato |
+| `prepaid_card` | Carta prepagata | Ricariche come entrate |
+| `savings_account` | Conto risparmio | Prevalenza giroconti |
+| `cash` | Contanti | Movimenti in contanti |
+
+Il tipo conto viene usato come vincolo nella classificazione dello schema file: biasa il rilevamento automatico del `doc_type` e, per le carte di credito, forza automaticamente l'inversione del segno degli importi.
 
 ### Perché definire i conti
 

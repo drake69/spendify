@@ -18,7 +18,7 @@ L'app ti mostra automaticamente il **wizard di configurazione iniziale** (4 step
 
 1. **Step 1 — Lingua:** scegli la lingua della tassonomia. Il wizard suggerisce la lingua del tuo browser. Questa scelta imposta anche il formato delle date e i separatori numerici (es. `31/12/2025` con separatore `,` per l'italiano).
 2. **Step 2 — Titolari:** inserisci il tuo nome (e le varianti usate dalla banca — es. `Mario Rossi, ROSSI MARIO`). Questi nomi vengono usati per proteggere la tua privacy nei prompt LLM e per riconoscere i tuoi bonifici interni.
-3. **Step 3 — Conti:** aggiungi i tuoi conti bancari (nome + banca). Puoi saltare questo step e aggiungerli dopo dalle Impostazioni.
+3. **Step 3 — Conti:** aggiungi i tuoi conti bancari (nome + banca + tipo conto). Il tipo conto è obbligatorio e indica lo strumento finanziario: *Conto corrente*, *Carta di credito*, *Carta di debito*, *Carta prepagata*, *Conto risparmio* o *Contanti*. Puoi saltare questo step e aggiungerli dopo dalle Impostazioni.
 4. **Step 4 — Conferma:** controlla il riepilogo e clicca **Inizia!** — solo a questo punto i dati vengono salvati.
 
 > **Aggiornamento da versione precedente?** Il wizard non compare se il database ha già dati — l'app si apre direttamente come sempre.
@@ -269,6 +269,21 @@ Vai su **Impostazioni**:
 > **Nota sulla privacy:** Se usi un backend remoto (OpenAI o Claude), Spendify rimuove automaticamente IBAN, numeri carta, codice fiscale e nome del titolare prima di inviare qualsiasi dato.
 
 Per istruzioni dettagliate su dove registrarsi e come ottenere le API key di ogni provider, consulta il **[Manuale di Configurazione](configurazione.md)**.
+
+### Tipo conto
+
+Ogni conto ha un **tipo** obbligatorio che indica lo strumento finanziario:
+
+| Tipo | Etichetta |
+|------|-----------|
+| `bank_account` | Conto corrente |
+| `credit_card` | Carta di credito |
+| `debit_card` | Carta di debito |
+| `prepaid_card` | Carta prepagata |
+| `savings_account` | Conto risparmio |
+| `cash` | Contanti |
+
+Il tipo conto viene usato durante l'importazione per guidare il rilevamento automatico del formato: ad esempio, una **carta di credito** forza automaticamente `invert_sign=True` (le spese nel CSV sono positive ma vanno registrate come uscite). Il tipo viene mostrato nella lista conti con etichetta italiana.
 
 ### Rinominare un conto
 

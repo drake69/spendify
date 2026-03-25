@@ -31,7 +31,7 @@ On first launch the app automatically shows the **onboarding wizard** (4 steps).
 |---|---|
 | **1 — Language** | Taxonomy language (Italian, English, French, German, Spanish). Pre-selected from the browser language. Also sets date format and number separators. |
 | **2 — Holders** | Account holder names (required). Used for PII redaction and internal transfer detection. |
-| **3 — Accounts** | Bank accounts (name + bank). Optional: can be skipped and added later from Impostazioni. |
+| **3 — Accounts** | Bank accounts (name + bank + mandatory account type). Optional: can be skipped and added later from Impostazioni. |
 | **4 — Confirm** | Summary and "Inizia!" button — only here is data written to the DB. |
 
 > **Updating from a previous version?** The wizard is skipped automatically if the database already contains data — the app opens normally.
@@ -50,6 +50,20 @@ Defines the current accounts, cards, and deposit accounts you own. Each account 
 |---|---|---|
 | **Account name** | ✅ Yes | Unique identifier (e.g. `Conto corrente BPER`, `Carta Visa BNL`) |
 | **Bank** | No | Bank name for reference (does not affect processing) |
+| **Account type** | ✅ Yes | Financial instrument type (see table below) |
+
+### Account type values
+
+| Value | Label | Notes |
+|---|---|---|
+| `bank_account` | Conto corrente | Mixed income/expense flows |
+| `credit_card` | Carta di credito | Forces `invert_sign=True` (positive expenses in CSV become outflows) |
+| `debit_card` | Carta di debito | Immediate debit |
+| `prepaid_card` | Carta prepagata | Top-ups as income |
+| `savings_account` | Conto risparmio | Mostly internal transfers |
+| `cash` | Contanti | Cash movements |
+
+The account type is used as a constraint during file schema classification: it biases automatic `doc_type` detection and, for credit cards, automatically forces amount sign inversion.
 
 ### Why define accounts
 
