@@ -48,6 +48,10 @@ Spendify analyses the structure of each file and computes a **confidence score**
 
 Once a file's schema is confirmed, all subsequent imports of the same format will be automatic — Spendify remembers the structure.
 
+> **Auto-selected account:** if the file format matches a schema previously imported for a specific account, Spendify automatically pre-selects that account in the dropdown. No need to choose it every time.
+
+> **First upload warning:** when you upload a file with a format never seen before (first upload) and the file contains fewer than 50 rows, a yellow warning appears: *"For optimal recognition, upload the bank statement as downloaded from the bank, without modifications, ideally with 250-300 transactions."* This is because automatic schema detection works better with more data.
+
 ### Rows to skip — when does this field appear?
 
 Some bank files have header rows before the data table (bank name, period, account number…) and summary/total rows at the bottom. Spendify uses density-based analysis to automatically detect where the actual data table starts and ends, removing both preamble rows at the top and totals at the bottom. In most cases no manual configuration is needed.

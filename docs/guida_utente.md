@@ -48,6 +48,10 @@ Spendify analizza la struttura di ogni file e calcola un **punteggio di confiden
 
 Una volta confermato lo schema di un file, tutte le importazioni successive dello stesso formato saranno automatiche — Spendify ricorda la struttura.
 
+> **Conto pre-selezionato:** se il formato del file corrisponde a uno schema gia importato in passato per un certo conto, Spendify pre-seleziona automaticamente quel conto nel menu a tendina. Non serve sceglierlo ogni volta.
+
+> **Avviso primo caricamento:** quando carichi un file con un formato mai visto prima (primo upload) e il file contiene meno di 50 righe, compare un avviso giallo: *"Per un riconoscimento ottimale, carica l'estratto conto cosi come scaricato dalla banca, senza modifiche, idealmente con 250-300 transazioni."* Questo perche il rilevamento automatico dello schema funziona meglio con piu dati.
+
 ### Righe da saltare — quando compare questo campo?
 
 Alcuni file di banca hanno righe di intestazione prima della tabella dati (nome della banca, periodo, numero conto…) e righe di riepilogo/totali in fondo. Spendify usa un'analisi basata sulla densità dei dati per individuare automaticamente dove inizia e dove finisce la tabella reale, rimuovendo sia le righe di contorno in alto che i totali in basso. Nella maggior parte dei casi non serve impostare nulla manualmente.
