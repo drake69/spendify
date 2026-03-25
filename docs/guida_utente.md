@@ -96,13 +96,20 @@ Vai su **Ledger**. Trovi la lista completa in ordine cronologico, con filtri per
 - ☑ **Nascondi giroconti** — esclude bonifici tra tuoi stessi conti dai risultati (default: segue l'impostazione globale)
 - ☑ **Mostra raw** — aggiunge la colonna "Raw description" nella tabella per confrontare il testo originale della banca con quello rielaborato
 
-**Icone nelle colonne:**
-- 🔄 = giroconto interno (es. bonifico tra tuoi conti) — escluso dai totali
-- ⚠️ = da rivedere (la classificazione automatica non era sicura)
+**Colonne indicatore (emoji, sola lettura):**
+- ⚠️ = da rivedere (la classificazione automatica non era sicura) — mostra "·" quando inattivo
+- ✅ = transazione validata dall'utente — mostra "·" quando inattivo
+- 🔄 = giroconto interno (es. bonifico tra tuoi conti, escluso dai totali) — mostra "·" quando inattivo
 
-**Colonne di tracking classificazione:**
-- **Fonte** — mostra chi ha assegnato la categoria corrente: 🤖 LLM, 📏 Regola, 👤 Manuale, 📚 Storico
-- **Validato** — ✅ se hai esplicitamente confermato la categorizzazione
+**Colonne checkbox (dopo le emoji):**
+- **Validato ☐** — checkbox cliccabile per validare/invalidare una transazione. Il salvataggio è immediato (non serve premere Salva). Quando validi, il flag ⚠️ viene automaticamente rimosso. Quando rimuovi la validazione, `human_validated` torna a False.
+- **🔄 Giroconto ☐** — checkbox cliccabile per segnare/rimuovere un giroconto (si salva con il pulsante Salva)
+
+**Ordine colonne (parte destra della griglia):**
+`... | Fonte | ⚠️ | ✅ | 🔄 | Validato ☐ | 🔄 Giroconto ☐`
+
+**Colonna Fonte (tracking classificazione):**
+- Mostra chi ha assegnato la categoria corrente: 🧠 AI, 📏 Regola, 👤 Manuale, 📚 Storico
 
 **Validazione in blocco:** seleziona una o più transazioni e clicca **Valida selezionate** per confermare che le categorie assegnate sono corrette, senza doverle modificare. Validare una transazione significa dire a Spendify "questa categoria è giusta" — l'informazione viene usata per migliorare le classificazioni future.
 
@@ -116,9 +123,15 @@ Vai su **Review**. Trovi le transazioni con il ⚠️. Per ognuna puoi:
 - Cambiare categoria/sottocategoria dal menu a tendina
 - Confermare cliccando **Salva**
 
-**Colonne di tracking classificazione:**
-- **Fonte** — badge che indica chi ha assegnato la categoria: 🤖 LLM, 📏 Regola, 👤 Manuale, 📚 Storico
-- **Validato** — ✅ se la transazione è stata confermata dall'utente
+**Colonne indicatore (emoji, sola lettura):**
+- ⚠️ = da rivedere — mostra "·" quando inattivo
+- ✅ = transazione validata dall'utente — mostra "·" quando inattivo
+
+**Colonne checkbox (dopo le emoji):**
+- **Validato ☐** — checkbox cliccabile per validare/invalidare una transazione. Il salvataggio è immediato. Quando validi, il flag ⚠️ viene automaticamente rimosso.
+
+**Colonna Fonte (tracking classificazione):**
+- Badge che indica chi ha assegnato la categoria: 🧠 AI, 📏 Regola, 👤 Manuale, 📚 Storico
 
 **Validazione in blocco:** seleziona le transazioni di cui sei sicuro e clicca **Valida selezionate** per confermarle tutte in una volta. Quando validi una transazione stai dicendo a Spendify: "questa classificazione è corretta". La validazione non cambia la categoria — conferma solo che è giusta.
 

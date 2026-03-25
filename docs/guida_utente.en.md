@@ -81,13 +81,20 @@ Go to **Ledger**. You'll find the complete list in chronological order, with fil
 - ☑ **Nascondi giroconti** — excludes transfers between your own accounts from the results (default: follows the global setting)
 - ☑ **Mostra raw** — adds the "Raw description" column to the table so you can compare the bank's original text with the processed version
 
-**Icons in columns:**
-- 🔄 = internal transfer (e.g. bank transfer between your own accounts) — excluded from totals
-- ⚠️ = needs review (automatic classification was not confident)
+**Indicator columns (emoji, read-only):**
+- ⚠️ = needs review (automatic classification was not confident) — shows "·" when inactive
+- ✅ = transaction validated by the user — shows "·" when inactive
+- 🔄 = internal transfer (e.g. bank transfer between your own accounts, excluded from totals) — shows "·" when inactive
 
-**Classification tracking columns:**
-- **Fonte** (Source) — shows who assigned the current category: 🤖 LLM, 📏 Rule, 👤 Manual, 📚 History
-- **Validato** (Validated) — ✅ if you have explicitly confirmed the categorisation
+**Checkbox columns (after the emoji columns):**
+- **Validato ☐** (Validated) — clickable checkbox to validate/unvalidate a transaction. Saves immediately on click (no need to press Save). When you validate, the ⚠️ flag is automatically cleared. When you unvalidate, `human_validated` is set back to False.
+- **🔄 Giroconto ☐** — clickable checkbox to mark/unmark an internal transfer (saves with the Save button)
+
+**Column order (right side of the grid):**
+`... | Fonte | ⚠️ | ✅ | 🔄 | Validato ☐ | 🔄 Giroconto ☐`
+
+**Fonte column (classification tracking):**
+- Shows who assigned the current category: 🧠 AI, 📏 Rule, 👤 Manual, 📚 History
 
 **Bulk validation:** select one or more transactions and click **Valida selezionate** to confirm that the assigned categories are correct, without having to modify them. Validating a transaction tells Spendify "this category is correct" — the information is used to improve future classifications.
 
@@ -101,9 +108,15 @@ Go to **Review**. You'll find the transactions marked with ⚠️. For each one 
 - Change the category/subcategory from the dropdown menu
 - Confirm by clicking **Salva**
 
-**Classification tracking columns:**
-- **Fonte** (Source) — badge showing who assigned the category: 🤖 LLM, 📏 Rule, 👤 Manual, 📚 History
-- **Validato** (Validated) — ✅ if the transaction has been confirmed by the user
+**Indicator columns (emoji, read-only):**
+- ⚠️ = needs review — shows "·" when inactive
+- ✅ = transaction validated by the user — shows "·" when inactive
+
+**Checkbox columns (after the emoji columns):**
+- **Validato ☐** (Validated) — clickable checkbox to validate/unvalidate a transaction. Saves immediately on click. When you validate, the ⚠️ flag is automatically cleared.
+
+**Fonte column (classification tracking):**
+- Badge showing who assigned the category: 🧠 AI, 📏 Rule, 👤 Manual, 📚 History
 
 **Bulk validation:** select the transactions you are sure about and click **Valida selezionate** to confirm them all at once. When you validate a transaction you are telling Spendify: "this classification is correct". Validation does not change the category — it only confirms it is right.
 
