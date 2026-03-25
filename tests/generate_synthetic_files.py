@@ -443,6 +443,46 @@ class Transaction:
     description: str
     amount: float  # positive = income, negative = expense
     is_giroconto: bool = False
+    expected_category: str = ""  # ground truth category for testing
+
+
+# ── Category mapping (internal key → user-facing category/subcategory) ────
+CATEGORY_MAP: dict[str, str] = {
+    # Expenses
+    "grocery": "Alimentari/Supermercato",
+    "restaurant": "Ristorazione/Ristorante",
+    "housing_utility": "Casa/Utenze",
+    "housing_mortgage": "Casa/Mutuo",
+    "housing_condo": "Casa/Condominio",
+    "housing_maint": "Casa/Manutenzione",
+    "transport_fuel": "Trasporti/Carburante",
+    "transport_toll": "Trasporti/Pedaggi",
+    "transport_insurance": "Trasporti/Assicurazione",
+    "transport_train": "Trasporti/Treno",
+    "transport_mechanic": "Trasporti/Manutenzione",
+    "health": "Salute/Visite e farmaci",
+    "education": "Istruzione/Scuola e università",
+    "clothing": "Abbigliamento/Vestiario",
+    "tech_purchase": "Tecnologia/Acquisti",
+    "tech_subscription": "Tecnologia/Abbonamenti",
+    "vacation": "Vacanze/Viaggi",
+    "weekend": "Svago/Weekend",
+    "professional": "Lavoro/Spese professionali",
+    "nonna_small": "Quotidiano/Spese correnti",
+    "nonna_service": "Casa/Servizi alla persona",
+    "misc": "Altro/Varie",
+    "atm": "Contanti/Prelievo",
+    # Incomes
+    "salary": "Entrate/Stipendio",
+    "professional_income": "Entrate/Fatture clienti",
+    "pension": "Entrate/Pensione",
+    "savings_interest": "Entrate/Interessi",
+    "income_misc": "Entrate/Rimborsi",
+    # Giroconti
+    "giroconto_small": "Giroconto/Ricarica carta",
+    "giroconto_medium": "Giroconto/Trasferimento",
+    "giroconto_savings": "Giroconto/Accantonamento",
+}
 
 
 def _generate_expense(templates: list[str], category: str, d: date) -> Transaction:
@@ -450,7 +490,8 @@ def _generate_expense(templates: list[str], category: str, d: date) -> Transacti
     tmpl = random.choice(templates)
     desc = _fill_template(tmpl, amount, d)
     valuta = d + timedelta(days=random.choice([0, 0, 0, 1, 2]))
-    return Transaction(date=d, valuta_date=valuta, description=desc, amount=-amount)
+    return Transaction(date=d, valuta_date=valuta, description=desc, amount=-amount,
+                       expected_category=CATEGORY_MAP.get(category, "Altro/Varie"))
 
 
 def _generate_income(templates: list[str], category: str, d: date) -> Transaction:
@@ -458,7 +499,8 @@ def _generate_income(templates: list[str], category: str, d: date) -> Transactio
     tmpl = random.choice(templates)
     desc = _fill_template(tmpl, amount, d)
     valuta = d + timedelta(days=random.choice([0, 0, 1]))
-    return Transaction(date=d, valuta_date=valuta, description=desc, amount=amount)
+    return Transaction(date=d, valuta_date=valuta, description=desc, amount=amount,
+                       expected_category=CATEGORY_MAP.get(category, "Entrate/Altro"))
 
 
 def _generate_giroconto_pair(
@@ -496,10 +538,13 @@ def _generate_giroconto_pair(
         desc_in = desc_out
 
     valuta = d + timedelta(days=random.choice([0, 1]))
+    expected_cat = CATEGORY_MAP.get(cat, "Giroconto/Trasferimento")
     tx_out = Transaction(date=d, valuta_date=valuta, description=desc_out,
-                         amount=-amount, is_giroconto=True)
+                         amount=-amount, is_giroconto=True,
+                         expected_category=expected_cat)
     tx_in = Transaction(date=d, valuta_date=valuta, description=desc_in,
-                        amount=amount, is_giroconto=True)
+                        amount=amount, is_giroconto=True,
+                        expected_category=expected_cat)
     return tx_out, tx_in
 
 
@@ -1244,7 +1289,7 @@ def write_ground_truth(
         writer = csv.writer(f)
         writer.writerow([
             "row_num", "date", "amount", "description_raw",
-            "tx_type", "is_internal_transfer",
+            "tx_type", "is_internal_transfer", "expected_category",
         ])
         for row_num, txn in enumerate(transactions, start=1):
             tx_type = _classify_tx(txn)
@@ -1258,6 +1303,7 @@ def write_ground_truth(
                 txn.description,
                 tx_type,
                 is_internal,
+                txn.expected_category,
             ])
 
             if canonical_amount > 0:
