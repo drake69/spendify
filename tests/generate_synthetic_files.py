@@ -1187,6 +1187,11 @@ class ManifestRow:
     amount_format: str
     has_debit_credit_split: str
     column_names: str
+    total_income: float = 0.0
+    total_expense: float = 0.0
+    n_internal_transfers: int = 0
+    n_income_rows: int = 0
+    n_expense_rows: int = 0
 
 
 def write_manifest(rows: list[ManifestRow], path: Path) -> None:
@@ -1196,15 +1201,82 @@ def write_manifest(rows: list[ManifestRow], path: Path) -> None:
             "filename", "doc_type", "account_id", "bank", "format",
             "separator", "n_rows_total", "n_header_rows", "n_data_rows",
             "n_footer_rows", "amount_format", "has_debit_credit_split",
-            "column_names",
+            "column_names", "total_income", "total_expense",
+            "n_internal_transfers", "n_income_rows", "n_expense_rows",
         ])
         for r in rows:
             writer.writerow([
                 r.filename, r.doc_type, r.account_id, r.bank, r.format,
                 r.separator, r.n_rows_total, r.n_header_rows, r.n_data_rows,
                 r.n_footer_rows, r.amount_format, r.has_debit_credit_split,
-                r.column_names,
+                r.column_names, f"{r.total_income:.2f}",
+                f"{r.total_expense:.2f}", r.n_internal_transfers,
+                r.n_income_rows, r.n_expense_rows,
             ])
+
+
+# ── Ground truth generation ───────────────────────────────────────────────
+
+def _classify_tx(txn: Transaction) -> str:
+    """Classify a transaction into tx_type based on amount and giroconto flag."""
+    if txn.is_giroconto:
+        return "internal_out" if txn.amount < 0 else "internal_in"
+    return "expense" if txn.amount < 0 else "income"
+
+
+def write_ground_truth(
+    filepath: Path,
+    transactions: list[Transaction],
+) -> dict:
+    """Write a .expected.csv ground truth file alongside the generated file.
+
+    Returns a summary dict with totals for the manifest.
+    """
+    expected_path = filepath.parent / (filepath.stem + ".expected.csv")
+
+    total_income = 0.0
+    total_expense = 0.0
+    n_internal = 0
+    n_income = 0
+    n_expense = 0
+
+    with open(expected_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow([
+            "row_num", "date", "amount", "description_raw",
+            "tx_type", "is_internal_transfer",
+        ])
+        for row_num, txn in enumerate(transactions, start=1):
+            tx_type = _classify_tx(txn)
+            canonical_amount = round(txn.amount, 2)
+            is_internal = "true" if txn.is_giroconto else "false"
+
+            writer.writerow([
+                row_num,
+                txn.date.strftime("%Y-%m-%d"),
+                f"{canonical_amount:.2f}",
+                txn.description,
+                tx_type,
+                is_internal,
+            ])
+
+            if canonical_amount > 0:
+                total_income += canonical_amount
+                n_income += 1
+            elif canonical_amount < 0:
+                total_expense += abs(canonical_amount)
+                n_expense += 1
+
+            if txn.is_giroconto:
+                n_internal += 1
+
+    return {
+        "total_income": round(total_income, 2),
+        "total_expense": round(total_expense, 2),
+        "n_internal_transfers": n_internal,
+        "n_income_rows": n_income,
+        "n_expense_rows": n_expense,
+    }
 
 
 # ── Main generation ───────────────────────────────────────────────────────
@@ -1244,6 +1316,9 @@ def main() -> None:
             write_xlsx(filepath, schema, preheader, txns, footer)
             n_xlsx += 1
 
+        # Write per-file ground truth and collect summary stats
+        gt_summary = write_ground_truth(filepath, txns)
+
         total_data_rows += plan.n_data_rows
 
         # +1 for the column header row
@@ -1263,11 +1338,19 @@ def main() -> None:
             amount_format=schema.amount_format,
             has_debit_credit_split="true" if schema.has_debit_credit_split else "false",
             column_names="|".join(schema.column_names),
+            total_income=gt_summary["total_income"],
+            total_expense=gt_summary["total_expense"],
+            n_internal_transfers=gt_summary["n_internal_transfers"],
+            n_income_rows=gt_summary["n_income_rows"],
+            n_expense_rows=gt_summary["n_expense_rows"],
         ))
 
     # Write manifest
     manifest_path = OUTPUT_DIR / "manifest.csv"
     write_manifest(manifest_rows, manifest_path)
+
+    # Count ground truth files
+    n_gt = sum(1 for _ in OUTPUT_DIR.glob("*.expected.csv"))
 
     # Print summary
     print("=" * 60)
@@ -1277,6 +1360,7 @@ def main() -> None:
     print(f"  Files generated  : {len(plans)}")
     print(f"    CSV files      : {n_csv}")
     print(f"    XLSX files     : {n_xlsx}")
+    print(f"    Ground truth   : {n_gt}")
     print(f"  Total data rows  : {total_data_rows:,}")
     print(f"  Manifest         : {manifest_path}")
     print()
