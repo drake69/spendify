@@ -88,6 +88,7 @@ def create_tables(engine=None):
     _migrate_add_classification_tracking(engine)
     _migrate_add_taxonomy_fallback(engine)
     _migrate_add_account_type(engine)
+    _migrate_consolidate_account_type(engine)
     _migrate_set_onboarding_done_for_existing_users(engine)  # must run last
     return engine
 
@@ -358,8 +359,8 @@ class TaxonomyDefault(Base):
 
 
 VALID_ACCOUNT_TYPES = frozenset({
-    "bank_account", "credit_card", "debit_card",
-    "prepaid_card", "savings_account", "cash",
+    "bank_account", "credit_card", "card",
+    "savings_account", "cash",
 })
 
 
@@ -371,7 +372,7 @@ class Account(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(256), unique=True, nullable=False)   # e.g. "Conto POPSO", "Carta CartaSI"
     bank_name = Column(String(256))                           # optional free-text bank name
-    account_type = Column(String(32), nullable=True)          # bank_account | credit_card | debit_card | prepaid_card | savings_account | cash
+    account_type = Column(String(32), nullable=True)          # bank_account | credit_card | card | savings_account | cash
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
@@ -736,4 +737,15 @@ def _migrate_add_taxonomy_fallback(engine) -> None:
         for name in ("Altro", "Altro entrate", "Other", "Other income"):
             conn.execute(_text('UPDATE taxonomy_category SET is_fallback = 1 WHERE name = :n'), {"n": name})
             conn.execute(_text('UPDATE taxonomy_default SET is_fallback = 1 WHERE category = :n'), {"n": name})
+        conn.commit()
+
+
+def _migrate_consolidate_account_type(engine) -> None:
+    """Merge debit_card and prepaid_card into card (idempotent)."""
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        conn.execute(_text(
+            "UPDATE account SET account_type = 'card' "
+            "WHERE account_type IN ('debit_card', 'prepaid_card')"
+        ))
         conn.commit()

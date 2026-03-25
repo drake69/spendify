@@ -58,12 +58,13 @@ Definisce i conti correnti, carte e depositi che possiedi. Ogni conto ha:
 |---|---|---|
 | `bank_account` | Conto corrente | Flussi misti entrate/uscite |
 | `credit_card` | Carta di credito | Forza `invert_sign=True` (spese positive nel CSV → uscite) |
-| `debit_card` | Carta di debito | Addebito immediato |
-| `prepaid_card` | Carta prepagata | Ricariche come entrate |
+| `card` | Carta/Prepagata | Carta di debito o prepagata (comportamento segno identico) |
 | `savings_account` | Conto risparmio | Prevalenza giroconti |
 | `cash` | Contanti | Movimenti in contanti |
 
-Il tipo conto viene usato come vincolo nella classificazione dello schema file: biasa il rilevamento automatico del `doc_type` e, per le carte di credito, forza automaticamente l'inversione del segno degli importi.
+> **Non serve distinguere tra carta di debito e prepagata** — il comportamento del segno è identico. Solo la carta di credito richiede un trattamento speciale (inversione del segno).
+
+Il tipo conto viene usato come vincolo nella classificazione dello schema file: biasa il rilevamento automatico del `doc_type` e, per le carte di credito, forza automaticamente l'inversione del segno degli importi. Il formato del file (colonna unica con segno, dare/avere, solo positivi) viene rilevato automaticamente dal classifier — l'utente deve solo indicare che tipo di strumento è.
 
 ### Perché definire i conti
 

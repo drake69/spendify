@@ -68,13 +68,13 @@ INSTRUMENTS = [
                "CartaSì/Nexi", "credit_card",
                "", "5412-7890"),
     Instrument("RIC-1", "Carta ricaricabile", "Sofia Rossi",
-               "PostePay Evolution", "debit_card",
+               "PostePay Evolution", "card",
                "IT76 P076 0101 6000 0109 8765 432", "9876543"),
     Instrument("RIC-2", "Carta ricaricabile", "Marco Rossi",
-               "Hype", "debit_card",
+               "Hype", "card",
                "IT86 I069 5005 8000 0005 5123 456", "5123456"),
     Instrument("RIC-3", "Carta ricaricabile", "Laura Bianchi",
-               "Revolut", "debit_card",
+               "Revolut", "card",
                "LT12 3456 7890 1234 5678", "3456789"),
     Instrument("RISP-1", "Conto risparmio", "Marco Rossi + Laura Bianchi",
                "Conto Arancio", "savings_account",
@@ -644,7 +644,7 @@ def generate_transactions(
         # For savings, most transactions are giroconti IN
         remaining = n_transactions - n_incomes - n_giroconti
         n_giroconti += remaining
-    elif inst.doc_type == "debit_card":
+    elif inst.doc_type == "card":
         # Mostly expenses, some incoming giroconti
         n_expenses = int(n_transactions * 0.85)
         n_incomes = 0
@@ -699,8 +699,8 @@ def generate_transactions(
             else:
                 txns.append(tx_in)
 
-    # For debit_card / savings incoming giroconti, generate incoming records
-    if inst.doc_type == "debit_card" and n_giroconti > 0:
+    # For card / savings incoming giroconti, generate incoming records
+    if inst.doc_type == "card" and n_giroconti > 0:
         # Find who sends money to this card
         incoming_pairs = [(f, t) for f, t in GIROCONTO_TEMPLATES.keys()
                           if t == account_id]

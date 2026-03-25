@@ -162,8 +162,7 @@ def classify_document(
         _type_to_doc = {
             "credit_card": "credit_card",
             "bank_account": "bank_account",
-            "debit_card": "debit_card",
-            "prepaid_card": "prepaid_card",
+            "card": "debit_card",
             "savings_account": "savings",
             "cash": "bank_account",
         }
