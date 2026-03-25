@@ -24,6 +24,16 @@ _K_LANG     = "_ob_lang"
 _K_NAMES    = "_ob_owner_names"
 _K_ACCOUNTS = "_ob_accounts"
 
+_ACCOUNT_TYPES = {
+    "Conto corrente": "bank_account",
+    "Carta di credito": "credit_card",
+    "Carta di debito": "debit_card",
+    "Carta prepagata": "prepaid_card",
+    "Conto risparmio": "savings_account",
+    "Contanti": "cash",
+}
+_ACCOUNT_TYPE_LABELS_LIST = list(_ACCOUNT_TYPES.keys())
+
 # ── Locale defaults per language ──────────────────────────────────────────────
 # (date_display_format, amount_decimal_sep, amount_thousands_sep)
 _LOCALE: dict[str, dict] = {
@@ -206,13 +216,16 @@ def _step2_accounts(lang: str) -> None:
 
     # Initialize with one empty row if list is empty
     if not st.session_state.get(_K_ACCOUNTS):
-        st.session_state[_K_ACCOUNTS] = [{"name": "", "bank": ""}]
+        st.session_state[_K_ACCOUNTS] = [{"name": "", "bank": "", "type": "bank_account"}]
 
     accounts: list[dict] = st.session_state[_K_ACCOUNTS]
+    # Backfill 'type' key for accounts created before this field existed
+    for _a in accounts:
+        _a.setdefault("type", "bank_account")
     to_remove = None
 
     for i, acc in enumerate(accounts):
-        c1, c2, c3 = st.columns([3, 3, 1])
+        c1, c2, c2b, c3 = st.columns([3, 2, 2, 1])
         acc["name"] = c1.text_input(
             "Nome conto" if i == 0 else "",
             value=acc["name"],
@@ -227,6 +240,16 @@ def _step2_accounts(lang: str) -> None:
             key=f"_ob_acc_bank_{i}",
             label_visibility="visible" if i == 0 else "collapsed",
         )
+        _type_values = list(_ACCOUNT_TYPES.values())
+        _cur_type_idx = _type_values.index(acc["type"]) if acc["type"] in _type_values else 0
+        _sel_type_label = c2b.selectbox(
+            "Tipo" if i == 0 else "",
+            _ACCOUNT_TYPE_LABELS_LIST,
+            index=_cur_type_idx,
+            key=f"_ob_acc_type_{i}",
+            label_visibility="visible" if i == 0 else "collapsed",
+        )
+        acc["type"] = _ACCOUNT_TYPES[_sel_type_label]
         with c3:
             if i == 0:
                 st.write("")   # align with label height
@@ -241,7 +264,7 @@ def _step2_accounts(lang: str) -> None:
         st.rerun()
 
     if st.button("➕ Aggiungi conto", key="_ob_acc_add"):
-        accounts.append({"name": "", "bank": ""})
+        accounts.append({"name": "", "bank": "", "type": "bank_account"})
         st.session_state[_K_ACCOUNTS] = accounts
         st.rerun()
 
@@ -291,11 +314,13 @@ def _step3_confirm(cfg_svc: SettingsService, lang_options: list[tuple[str, str]]
             st.caption("*(nessun nome inserito)*")
 
     with col2:
+        _type_labels_inv = {v: k for k, v in _ACCOUNT_TYPES.items()}
         st.markdown("**🏦 Conti bancari**")
         if accounts:
             for acc in accounts:
                 bank_note = f" — {acc['bank']}" if acc["bank"].strip() else ""
-                st.markdown(f"- **{acc['name']}**{bank_note}")
+                type_note = f" ({_type_labels_inv.get(acc.get('type', ''), acc.get('type', ''))})"
+                st.markdown(f"- **{acc['name']}**{bank_note}{type_note}")
         else:
             st.caption("*(nessun conto aggiunto)*")
 
@@ -345,7 +370,10 @@ def _apply_onboarding(
         # 3. Accounts
         for acc in accounts:
             if acc["name"].strip():
-                cfg_svc.create_account(acc["name"].strip(), acc["bank"].strip())
+                cfg_svc.create_account(
+                    acc["name"].strip(), acc["bank"].strip(),
+                    account_type=acc.get("type", "bank_account"),
+                )
 
         # 4. Mark done
         cfg_svc.set_onboarding_done()
@@ -381,7 +409,7 @@ def render_onboarding_page(engine) -> None:
         st.session_state[_K_STEP]     = 0
         st.session_state[_K_LANG]     = detected
         st.session_state[_K_NAMES]    = ""
-        st.session_state[_K_ACCOUNTS] = [{"name": "", "bank": ""}]
+        st.session_state[_K_ACCOUNTS] = [{"name": "", "bank": "", "type": "bank_account"}]
 
     step = st.session_state[_K_STEP]
     lang = st.session_state[_K_LANG]

@@ -89,9 +89,9 @@ class SettingsService:
         with self._session() as s:
             return repository.get_accounts(s)
 
-    def create_account(self, name: str, bank_name: str):
+    def create_account(self, name: str, bank_name: str, account_type: str | None = None):
         with self._session() as s:
-            result = repository.create_account(s, name, bank_name)
+            result = repository.create_account(s, name, bank_name, account_type=account_type)
             s.commit()
             return result
 
@@ -102,11 +102,15 @@ class SettingsService:
             return result
 
     def rename_account(
-        self, account_id: int, new_name: str, new_bank_name: str | None = None
+        self, account_id: int, new_name: str, new_bank_name: str | None = None,
+        new_account_type: str | None = None,
     ) -> int:
         """Rename account and cascade to transactions. Returns count updated."""
         with self._session() as s:
-            result = repository.rename_account(s, account_id, new_name, new_bank_name)
+            result = repository.rename_account(
+                s, account_id, new_name, new_bank_name,
+                new_account_type=new_account_type,
+            )
             s.commit()
             return result
 

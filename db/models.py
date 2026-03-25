@@ -87,6 +87,7 @@ def create_tables(engine=None):
     _migrate_add_transaction_updated_at(engine)
     _migrate_add_classification_tracking(engine)
     _migrate_add_taxonomy_fallback(engine)
+    _migrate_add_account_type(engine)
     _migrate_set_onboarding_done_for_existing_users(engine)  # must run last
     return engine
 
@@ -356,6 +357,12 @@ class TaxonomyDefault(Base):
     is_fallback = Column(Boolean, default=False)
 
 
+VALID_ACCOUNT_TYPES = frozenset({
+    "bank_account", "credit_card", "debit_card",
+    "prepaid_card", "savings_account", "cash",
+})
+
+
 class Account(Base):
     """User-defined bank account.  Provides a stable dedup key (name) that is
     independent of the filename used when importing the file."""
@@ -364,6 +371,7 @@ class Account(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(256), unique=True, nullable=False)   # e.g. "Conto POPSO", "Carta CartaSI"
     bank_name = Column(String(256))                           # optional free-text bank name
+    account_type = Column(String(32), nullable=True)          # bank_account | credit_card | debit_card | prepaid_card | savings_account | cash
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
@@ -693,6 +701,22 @@ def _migrate_add_classification_tracking(engine) -> None:
                     pass
                 else:
                     raise
+
+
+def _migrate_add_account_type(engine) -> None:
+    """Add account_type column to account table if not present (idempotent)."""
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        try:
+            conn.execute(_text(
+                'ALTER TABLE account ADD COLUMN account_type VARCHAR(32)'
+            ))
+            conn.commit()
+        except Exception as exc:
+            if "duplicate column name" in str(exc).lower():
+                pass  # column already exists
+            else:
+                raise
 
 
 def _migrate_add_taxonomy_fallback(engine) -> None:

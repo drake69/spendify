@@ -35,6 +35,17 @@ _LANGUAGE_OPTIONS = {
     "Deutsch": "de",
 }
 
+_ACCOUNT_TYPES = {
+    "Conto corrente": "bank_account",
+    "Carta di credito": "credit_card",
+    "Carta di debito": "debit_card",
+    "Carta prepagata": "prepaid_card",
+    "Conto risparmio": "savings_account",
+    "Contanti": "cash",
+}
+
+_ACCOUNT_TYPE_LABELS = {v: k for k, v in _ACCOUNT_TYPES.items()}
+
 _GIROCONTO_OPTIONS = {
     "Mostra (neutral)": "neutral",
     "Escludi dal registro": "exclude",
@@ -350,13 +361,19 @@ def render_settings_page(engine):
     _accounts = cfg_svc.get_accounts()
 
     with st.form("new_account_form", clear_on_submit=True):
-        col_name, col_bank, col_btn = st.columns([2, 2, 1])
+        col_name, col_bank, col_type, col_btn = st.columns([2, 2, 2, 1])
         new_acc_name = col_name.text_input("Nome conto", placeholder="Conto corrente POPSO")
         new_acc_bank = col_bank.text_input("Banca (opzionale)", placeholder="Banca Popolare di Sondrio")
+        new_acc_type_label = col_type.selectbox(
+            "Tipo conto", list(_ACCOUNT_TYPES.keys()), index=0,
+        )
         if col_btn.form_submit_button("➕ Aggiungi", width="stretch"):
             if new_acc_name.strip():
                 try:
-                    cfg_svc.create_account(new_acc_name, new_acc_bank or "")
+                    cfg_svc.create_account(
+                        new_acc_name, new_acc_bank or "",
+                        account_type=_ACCOUNT_TYPES[new_acc_type_label],
+                    )
                     st.success(f"Conto '{new_acc_name}' aggiunto.")
                     st.rerun()
                 except ValueError as e:
@@ -366,24 +383,32 @@ def render_settings_page(engine):
 
     if _accounts:
         for acc in _accounts:
-            c1, c2, c3, c4 = st.columns([3, 3, 1, 1])
+            c1, c2, c3, c4, c5 = st.columns([3, 2, 2, 1, 1])
             c1.markdown(f"**{acc.name}**")
             c2.caption(acc.bank_name or "—")
+            c3.caption(_ACCOUNT_TYPE_LABELS.get(acc.account_type or "", acc.account_type or "—"))
             edit_key = f"edit_acc_{acc.id}"
-            if c3.button("✏️", key=edit_key, help="Modifica conto"):
+            if c4.button("✏️", key=edit_key, help="Modifica conto"):
                 st.session_state[f"_editing_acc"] = acc.id
-            if c4.button("🗑️", key=f"del_acc_{acc.id}", help="Elimina conto"):
+            if c5.button("🗑️", key=f"del_acc_{acc.id}", help="Elimina conto"):
                 cfg_svc.delete_account(acc.id)
                 st.rerun()
 
             if st.session_state.get("_editing_acc") == acc.id:
                 with st.container(border=True):
-                    ec1, ec2 = st.columns(2)
+                    ec1, ec2, ec3 = st.columns(3)
                     edited_name = ec1.text_input(
                         "Nome", value=acc.name, key=f"ren_name_{acc.id}"
                     )
                     edited_bank = ec2.text_input(
                         "Banca", value=acc.bank_name or "", key=f"ren_bank_{acc.id}"
+                    )
+                    _current_type = acc.account_type or "bank_account"
+                    _type_labels = list(_ACCOUNT_TYPES.keys())
+                    _type_values = list(_ACCOUNT_TYPES.values())
+                    _type_idx = _type_values.index(_current_type) if _current_type in _type_values else 0
+                    edited_type_label = ec3.selectbox(
+                        "Tipo conto", _type_labels, index=_type_idx, key=f"ren_type_{acc.id}"
                     )
                     bc1, bc2 = st.columns(2)
                     if bc1.button("Salva", key=f"save_acc_{acc.id}", type="primary"):
@@ -392,7 +417,8 @@ def render_settings_page(engine):
                         else:
                             try:
                                 n = cfg_svc.rename_account(
-                                    acc.id, edited_name, edited_bank or None
+                                    acc.id, edited_name, edited_bank or None,
+                                    new_account_type=_ACCOUNT_TYPES[edited_type_label],
                                 )
                                 st.session_state.pop("_editing_acc", None)
                                 st.success(

@@ -928,10 +928,14 @@ def get_accounts(session: Session) -> list:
     return session.query(Account).order_by(Account.name).all()
 
 
-def create_account(session: Session, name: str, bank_name: str = "") -> object:
+def create_account(session: Session, name: str, bank_name: str = "", account_type: str | None = None) -> object:
     from db.models import Account
     from sqlalchemy.exc import IntegrityError
-    acc = Account(name=name.strip(), bank_name=bank_name.strip() or None)
+    acc = Account(
+        name=name.strip(),
+        bank_name=bank_name.strip() or None,
+        account_type=account_type,
+    )
     session.add(acc)
     try:
         session.flush()
@@ -956,6 +960,7 @@ def rename_account(
     account_id: int,
     new_name: str,
     new_bank_name: str | None = None,
+    new_account_type: str | None = _SENTINEL,
 ) -> int:
     """Rename an account, recalculate all transaction IDs, and cascade to related tables.
 
@@ -976,11 +981,13 @@ def rename_account(
     old_name = acc.name
     stripped_new = new_name.strip()
     name_changed = old_name != stripped_new
-    if not name_changed and new_bank_name is None:
+    if not name_changed and new_bank_name is None and new_account_type is _SENTINEL:
         return 0  # nothing to do
     acc.name = stripped_new
     if new_bank_name is not None:
         acc.bank_name = new_bank_name.strip() or None
+    if new_account_type is not _SENTINEL:
+        acc.account_type = new_account_type
     try:
         session.flush()
     except IntegrityError:

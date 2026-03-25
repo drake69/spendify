@@ -109,6 +109,7 @@ def classify_document(
     fallback_backend: LLMBackend | None = None,
     amount_plausibility_cap: float = _AMOUNT_PLAUSIBILITY_CAP_DEFAULT,
     header_certain: bool = True,
+    account_type: str | None = None,
 ) -> DocumentSchema | None:
     """
     Flow 2: classify a raw DataFrame and return a DocumentSchema.
@@ -121,6 +122,8 @@ def classify_document(
         sanitize_config: PII sanitization configuration.
         fallback_backend: fallback LLM backend (must be local).
         header_certain: whether pre-load header detection was certain.
+        account_type: user-specified account type (e.g. 'credit_card'); used as
+            a constraint for doc_type inference and invert_sign logic.
 
     Returns:
         DocumentSchema or None if classification failed.
@@ -153,6 +156,27 @@ def classify_document(
     if step0.amount_semantics == "neutral" and step0.amount_col:
         step0 = _inspect_neutral_column_sign(step0, df_raw, source_name)
     step0_text = _format_step0_for_prompt(step0)
+
+    # Inject account_type constraint when the user has specified the account type
+    if account_type:
+        _type_to_doc = {
+            "credit_card": "credit_card",
+            "bank_account": "bank_account",
+            "debit_card": "debit_card",
+            "prepaid_card": "prepaid_card",
+            "savings_account": "savings",
+            "cash": "bank_account",
+        }
+        _doc_hint = _type_to_doc.get(account_type, account_type)
+        step0_text += (
+            f"\n\n## Account type constraint (user-specified)\n"
+            f"The user specified this account is a **{account_type}**. "
+            f"Set doc_type = '{_doc_hint}' unless the data clearly contradicts.\n"
+        )
+        logger.info(
+            f"classify_document [{source_name}]: account_type constraint "
+            f"'{account_type}' → doc_type hint '{_doc_hint}'"
+        )
 
     user_prompt = _PROMPTS["user_template"].format(
         source_name=source_name,
@@ -193,7 +217,7 @@ def classify_document(
     result = _merge_step0_into_result(result, step0, source_name)
 
     # Safety net: re-enforce invert_sign after merge (catches any LLM re-override).
-    result = _apply_step0_invert_sign(result, source_name)
+    result = _apply_step0_invert_sign(result, source_name, account_type=account_type)
 
     # Compute deterministic confidence score from merged result
     score = compute_confidence_score(result, header_certain=header_certain)
@@ -850,14 +874,17 @@ def _merge_step0_into_result(result: dict, step0: _Step0Result, source_name: str
 # ── Post-LLM safety net ───────────────────────────────────────────────────────
 
 
-def _apply_step0_invert_sign(result: dict, source_name: str) -> dict:
-    """Post-merge safety net: re-enforce invert_sign from doc_type.
+def _apply_step0_invert_sign(
+    result: dict, source_name: str, account_type: str | None = None,
+) -> dict:
+    """Post-merge safety net: re-enforce invert_sign from doc_type or account_type.
 
     Runs after _merge_step0_into_result so both the LLM's doc_type and Phase 0
     column findings are available.  Only applies when sign_convention == signed_single.
 
     Rule: credit_card doc_type → invert_sign=True always (positive=charge,
-    negative=payment).  All other role assignments come from the LLM (Phase 1)
+    negative=payment).  If account_type == "credit_card", force invert_sign=True
+    regardless of doc_type.  All other role assignments come from the LLM (Phase 1)
     — no language-dependent synonym matching here.
     """
     out = dict(result)
@@ -876,6 +903,14 @@ def _apply_step0_invert_sign(result: dict, source_name: str) -> dict:
                 f"doc_type=credit_card → invert_sign=True"
             )
             out["invert_sign"] = True
+
+    # account_type constraint: credit_card → force invert_sign
+    if account_type == "credit_card" and not out.get("invert_sign"):
+        logger.info(
+            f"classify_document [{source_name}]: account_type=credit_card "
+            f"→ forcing invert_sign=True"
+        )
+        out["invert_sign"] = True
 
     return out
 

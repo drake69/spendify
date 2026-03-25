@@ -18,7 +18,7 @@ from db.models import (
     Transaction,
     get_session,
 )
-from db.repository import rename_account
+from db.repository import create_account, rename_account
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -317,3 +317,46 @@ class TestUpdatedAt:
 
         refreshed_created = tx.created_at.replace(tzinfo=None) if tx.created_at else None
         assert refreshed_created == original_created
+
+
+# ── Account type ─────────────────────────────────────────────────────────────
+
+class TestAccountType:
+    """Verify account_type field on create and rename."""
+
+    def test_create_account_with_account_type(self, session):
+        acc = create_account(session, "Conto Test", "BancaX", account_type="credit_card")
+        session.flush()
+        assert acc.account_type == "credit_card"
+        assert acc.name == "Conto Test"
+        assert acc.bank_name == "BancaX"
+
+    def test_create_account_without_account_type(self, session):
+        acc = create_account(session, "Conto NoType", "BancaY")
+        session.flush()
+        assert acc.account_type is None
+
+    def test_rename_account_updates_account_type(self, session):
+        acc = _insert_account(session, "AccType1")
+        acc.account_type = "bank_account"
+        session.flush()
+
+        count = rename_account(session, acc.id, "AccType1", new_account_type="credit_card")
+        session.flush()
+
+        refreshed = session.get(Account, acc.id)
+        assert refreshed.account_type == "credit_card"
+
+    def test_rename_account_preserves_type_when_not_passed(self, session):
+        acc = _insert_account(session, "AccKeepType")
+        acc.account_type = "savings_account"
+        session.flush()
+        session.commit()
+
+        # Rename name only — account_type should stay unchanged
+        _insert_tx(session, account_label="AccKeepType")
+        rename_account(session, acc.id, "AccKeepType_New")
+        session.flush()
+
+        refreshed = session.get(Account, acc.id)
+        assert refreshed.account_type == "savings_account"

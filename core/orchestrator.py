@@ -610,6 +610,23 @@ def process_file(
             doc_schema.debit_col = _step0.debit_col
             doc_schema.credit_col = _step0.credit_col
 
+    # Resolve account_type from the Account table when user selected an account
+    _account_type: str | None = None
+    if account_label_override and account_label_override.strip():
+        try:
+            from db.models import Account, get_engine, get_session
+            _session = get_session()
+            _acc_obj = (
+                _session.query(Account)
+                .filter(Account.name == account_label_override.strip())
+                .first()
+            )
+            if _acc_obj:
+                _account_type = _acc_obj.account_type
+            _session.close()
+        except Exception:
+            pass  # non-critical — account_type is a hint, not mandatory
+
     # Flow 2: classify document if no known schema
     if doc_schema is None:
         flow_used = "flow2"
@@ -623,6 +640,7 @@ def process_file(
             fallback_backend=fallback,
             amount_plausibility_cap=config.max_transaction_amount,
             header_certain=_preprocess_info.header_certain,
+            account_type=_account_type,
         )
         _progress(0.25)
 
