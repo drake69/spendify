@@ -196,7 +196,7 @@ def render_registry_page(engine):
     )
 
     _SOURCE_BADGE = {
-        "llm": "🤖 LLM",
+        "llm": "🧠 AI",
         "rule": "📏 Regola",
         "manual": "👤 Manuale",
         "history": "📚 Storico",
@@ -206,7 +206,6 @@ def render_registry_page(engine):
         {
             "_id":           tx.id,
             "_sel":          False,
-            "⚠️":            bool(tx.to_review),
             "Data":          format_date_display(tx.date, _date_fmt),
             "Descrizione":   (tx.description or "")[:80],
             **({"Raw": (tx.raw_description or "")[:80]} if show_raw else {}),
@@ -218,7 +217,10 @@ def render_registry_page(engine):
             "Sottocategoria": tx.subcategory or "",
             "Contesto":      tx.context or "",
             "Fonte":         _SOURCE_BADGE.get(tx.category_source, "—"),
-            "Validato":      "✅" if tx.human_validated else "",
+            "⚠️":            "⚠️" if tx.to_review else "·",
+            "✅":            "✅" if tx.human_validated else "·",
+            "🔄":            "🔄" if tx.tx_type in ("internal_out", "internal_in") else "·",
+            "Validato":      bool(tx.human_validated),
             "🔄 Giroconto":  tx.tx_type in ("internal_out", "internal_in"),
         }
         for tx in page_txs
@@ -228,7 +230,6 @@ def render_registry_page(engine):
     _col_cfg: dict = {
         "_id":            None,
         "_sel":           st.column_config.CheckboxColumn("✔", width=40),
-        "⚠️":             st.column_config.CheckboxColumn("⚠️",  disabled=True, width=40),
         "Data":           st.column_config.TextColumn("Data",         disabled=True, width="small"),
         "Descrizione":    st.column_config.TextColumn("Descrizione",  disabled=True),
         "Entrata":        st.column_config.NumberColumn("Entrata",    disabled=True, format="%.2f", width="small"),
@@ -245,7 +246,10 @@ def render_registry_page(engine):
             "Contesto", options=[""] + _contexts, required=False, width="small",
         ),
         "Fonte":          st.column_config.TextColumn("Fonte", disabled=True, width=100),
-        "Validato":       st.column_config.TextColumn("Validato", disabled=True, width=60),
+        "⚠️":             st.column_config.TextColumn("⚠️", disabled=True, width=40),
+        "✅":             st.column_config.TextColumn("✅", disabled=True, width=40),
+        "🔄":             st.column_config.TextColumn("🔄", disabled=True, width=40),
+        "Validato":       st.column_config.CheckboxColumn("Validato", width=60),
         "🔄 Giroconto":   st.column_config.CheckboxColumn("🔄 Giroconto", width="small"),
     }
     if show_raw:
@@ -261,6 +265,23 @@ def render_registry_page(engine):
         column_config=_col_cfg,
         key="ledger_editor",
     )
+
+    # ── Auto-save Validato checkbox changes (realtime) ───────────────────────
+    _n_auto_val = 0
+    for i in range(len(edited_df)):
+        new_val = bool(edited_df.iloc[i].get("Validato", False))
+        old_val = bool(orig_df.iloc[i].get("Validato", False))
+        if new_val != old_val:
+            _tid = orig_df.iloc[i]["_id"]
+            if new_val:
+                tx_svc.validate(_tid)
+            else:
+                tx_svc.unvalidate(_tid)
+            _n_auto_val += 1
+    if _n_auto_val:
+        st.toast(f"✅ {_n_auto_val} validazioni aggiornate")
+        logger.info(f"ledger_page: auto-saved {_n_auto_val} validation changes")
+        st.rerun()
 
     # ── Save & Validate buttons ──────────────────────────────────────────────
     sv_col, val_col, _ = st.columns([1, 1, 4])
@@ -284,9 +305,11 @@ def render_registry_page(engine):
             st.rerun()
 
     if save_clicked:
+        logger.info("ledger_page: save_clicked=True, comparing %d rows", len(orig_df))
         n_cat  = 0
         n_ctx  = 0
         n_giro = 0
+        n_val  = 0
         for idx in range(len(orig_df)):
             orig = orig_df.iloc[idx]
             edit = edited_df.iloc[idx]
@@ -296,6 +319,7 @@ def render_registry_page(engine):
             sub_changed  = str(edit["Sottocategoria"]) != str(orig["Sottocategoria"])
             ctx_changed  = str(edit["Contesto"])       != str(orig["Contesto"])
             giro_changed = bool(edit["🔄 Giroconto"])  != bool(orig["🔄 Giroconto"])
+            val_changed  = bool(edit["Validato"])       != bool(orig["Validato"])
 
             if cat_changed or sub_changed:
                 tx_svc.update_category(
@@ -313,12 +337,21 @@ def render_registry_page(engine):
                 tx_svc.toggle_giroconto(tx_id)
                 n_giro += 1
 
-        total_saved = n_cat + n_ctx + n_giro
+            if val_changed:
+                logger.info("ledger_page: tx %s val_changed: %s -> %s", tx_id, orig["Validato"], edit["Validato"])
+                if bool(edit["Validato"]):
+                    tx_svc.validate(tx_id)
+                else:
+                    tx_svc.unvalidate(tx_id)
+                n_val += 1
+
+        total_saved = n_cat + n_ctx + n_giro + n_val
         if total_saved:
             parts = []
             if n_cat:  parts.append(f"{n_cat} categorie")
             if n_ctx:  parts.append(f"{n_ctx} contesti")
             if n_giro: parts.append(f"{n_giro} giroconti")
+            if n_val:  parts.append(f"{n_val} validate")
             st.success(f"✅ Salvate: {' · '.join(parts)}")
             logger.info(f"ledger_page: saved cat={n_cat} ctx={n_ctx} giro={n_giro}")
             st.rerun()

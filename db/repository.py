@@ -879,13 +879,25 @@ def delete_taxonomy_subcategory(session: Session, sub_id: int) -> bool:
 # ── Classification tracking ──────────────────────────────────────────────────
 
 def validate_transaction(session: Session, tx_id: str) -> bool:
-    """Mark a transaction as human-validated without changing its category."""
+    """Mark a transaction as human-validated and clear to_review flag."""
     from datetime import datetime, timezone
     tx = session.get(Transaction, tx_id)
     if tx is None:
         return False
     tx.human_validated = True
     tx.validated_at = datetime.now(timezone.utc)
+    tx.to_review = False
+    session.flush()
+    return True
+
+
+def unvalidate_transaction(session: Session, tx_id: str) -> bool:
+    """Remove human-validated flag from a transaction."""
+    tx = session.get(Transaction, tx_id)
+    if tx is None:
+        return False
+    tx.human_validated = False
+    tx.validated_at = None
     session.flush()
     return True
 

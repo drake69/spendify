@@ -71,6 +71,13 @@ class TransactionService:
             s.commit()
             return result
 
+    def unvalidate(self, tx_id: str) -> bool:
+        """Remove human-validated flag from a transaction."""
+        with self._session() as s:
+            result = repository.unvalidate_transaction(s, tx_id)
+            s.commit()
+            return result
+
     def get_by_rule_pattern(self, pattern: str, match_type: str) -> list[Transaction]:
         with self._session() as s:
             return repository.get_transactions_by_rule_pattern(s, pattern, match_type)

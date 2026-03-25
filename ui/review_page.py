@@ -89,7 +89,7 @@ def render_review_page(engine):
     show_raw = st.toggle("Mostra valori originali (raw)", value=False, key="review_show_raw")
 
     _SOURCE_BADGE = {
-        "llm": "🤖 LLM",
+        "llm": "🧠 AI",
         "rule": "📏 Regola",
         "manual": "👤 Manuale",
         "history": "📚 Storico",
@@ -108,8 +108,9 @@ def render_review_page(engine):
             "Sottocategoria": tx.subcategory or "",
             "Confidenza": tx.category_confidence or "",
             "Fonte": _SOURCE_BADGE.get(tx.category_source, "—"),
-            "Validato": "✅" if tx.human_validated else "",
-            "⚠️": "⚠️" if tx.to_review else "",
+            "⚠️": "⚠️" if tx.to_review else "·",
+            "✅": "✅" if tx.human_validated else "·",
+            "Validato": bool(tx.human_validated),
             "Desc. originale": (tx.raw_description or "")[:100],
             "Importo originale": format_raw_amount_display(tx.raw_amount),
         }
@@ -131,12 +132,29 @@ def render_review_page(engine):
             "Entrata": st.column_config.NumberColumn("Entrata", format="%.2f"),
             "Uscita": st.column_config.NumberColumn("Uscita", format="%.2f"),
             "Fonte": st.column_config.TextColumn("Fonte", disabled=True, width=100),
-            "Validato": st.column_config.TextColumn("Validato", disabled=True, width=60),
+            "⚠️": st.column_config.TextColumn("⚠️", disabled=True, width=40),
+            "✅": st.column_config.TextColumn("✅", disabled=True, width=40),
+            "Validato": st.column_config.CheckboxColumn("Validato", width=60),
         },
         key="review_grid",
     )
 
-    # ── Valida selezionate ──────────────────────────────────────────────────
+    # ── Detect checkbox clicks on Validato + bulk button ────────────────────
+    n_val_changed = 0
+    for i in range(len(edited_review)):
+        new_val = bool(edited_review.iloc[i].get("Validato", False))
+        old_val = bool(display_df.iloc[i].get("Validato", False))
+        if new_val != old_val:
+            if new_val:
+                tx_svc.validate(df.iloc[i]["id"])
+            else:
+                tx_svc.unvalidate(df.iloc[i]["id"])
+            n_val_changed += 1
+    if n_val_changed:
+        st.success(f"✅ {n_val_changed} transazioni aggiornate.")
+        logger.info(f"review_page: toggled validation on {n_val_changed} via checkbox")
+        st.rerun()
+
     selected_ids = [
         df.iloc[i]["id"]
         for i in range(len(edited_review))
