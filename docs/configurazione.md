@@ -62,6 +62,10 @@ Definisce i conti correnti, carte e depositi che possiedi. Ogni conto ha:
 - Puoi importare senza conti definiti, ma il rilevamento automatico potrebbe assegnare nomi diversi allo stesso conto in importazioni successive.
 - Elimina un conto solo se non ha transazioni associate, altrimenti le transazioni esistenti manterranno il vecchio `account_label`.
 
+### Rinominare un conto
+
+Rinominare un conto e sicuro: Spendify ricalcola atomicamente l'ID (`tx_id`) di tutte le transazioni associate, perche `account_label` fa parte della chiave hash. Se il ricalcolo fallisce, viene eseguito il rollback e nessun dato cambia. Al termine, il campo `updated_at` di ogni transazione aggiornata riflette la data dell'operazione.
+
 ---
 
 ## 3. Titolari del conto

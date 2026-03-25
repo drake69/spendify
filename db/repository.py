@@ -212,6 +212,7 @@ def upsert_transaction(session: Session, tx: dict, batch_id: Optional[int] = Non
         transfer_confidence=tx.get("transfer_confidence"),
         raw_description=tx.get("raw_description"),
         raw_amount=tx.get("raw_amount"),
+        human_validated=bool(tx.get("human_validated", False)),
     )
     session.add(row)
     return row
@@ -231,6 +232,7 @@ def update_transaction_category(
     category: str,
     subcategory: str,
 ) -> bool:
+    from datetime import datetime, timezone
     tx = session.get(Transaction, tx_id)
     if tx is None:
         return False
@@ -239,6 +241,8 @@ def update_transaction_category(
     tx.category_confidence = "high"
     tx.category_source = "manual"
     tx.to_review = False
+    tx.human_validated = True
+    tx.validated_at = datetime.now(timezone.utc)
     return True
 
 
@@ -266,10 +270,13 @@ def toggle_transaction_giroconto(session: Session, tx_id: str) -> tuple[bool, st
 
 def update_transaction_context(session: Session, tx_id: str, context: str | None) -> bool:
     """Set or clear the context of a transaction. Returns True if found."""
+    from datetime import datetime, timezone
     tx = session.get(Transaction, tx_id)
     if tx is None:
         return False
     tx.context = context or None
+    tx.human_validated = True
+    tx.validated_at = datetime.now(timezone.utc)
     session.flush()
     return True
 
@@ -479,6 +486,7 @@ def apply_rules_to_review_transactions(
                 tx.category_source = "rule"
                 tx.category_confidence = "high"
                 tx.to_review = False
+                tx.human_validated = False
                 updated += 1
                 break
     if updated:
@@ -517,6 +525,7 @@ def apply_all_rules_to_all_transactions(
                     tx.context = rule.context
                 tx.category_source     = "rule"
                 tx.category_confidence = "high"
+                tx.human_validated     = False
                 if tx.to_review:
                     tx.to_review = False
                     n_cleared += 1
@@ -867,6 +876,39 @@ def delete_taxonomy_subcategory(session: Session, sub_id: int) -> bool:
     return True
 
 
+# ── Classification tracking ──────────────────────────────────────────────────
+
+def validate_transaction(session: Session, tx_id: str) -> bool:
+    """Mark a transaction as human-validated without changing its category."""
+    from datetime import datetime, timezone
+    tx = session.get(Transaction, tx_id)
+    if tx is None:
+        return False
+    tx.human_validated = True
+    tx.validated_at = datetime.now(timezone.utc)
+    session.flush()
+    return True
+
+
+def get_fallback_categories(session: Session) -> dict[str, tuple[str, str]]:
+    """Return fallback category names for expense and income, read from taxonomy.
+
+    Returns dict like {"expense": ("Altro", "Spese non classificate"), "income": ("Altro entrate", "Entrate non classificate")}
+    """
+    from db.models import TaxonomyCategory, TaxonomySubcategory
+    fallbacks: dict[str, tuple[str, str]] = {}
+    for cat in session.query(TaxonomyCategory).filter(TaxonomyCategory.is_fallback == True).all():  # noqa: E712
+        subs = session.query(TaxonomySubcategory).filter(TaxonomySubcategory.category_id == cat.id).first()
+        sub_name = subs.name if subs else ""
+        fallbacks[cat.type] = (cat.name, sub_name)
+    # Hardcoded fallback if DB has no fallback categories (fresh install before seed)
+    if "expense" not in fallbacks:
+        fallbacks["expense"] = ("Altro", "Spese non classificate")
+    if "income" not in fallbacks:
+        fallbacks["income"] = ("Altro entrate", "Entrate non classificate")
+    return fallbacks
+
+
 # ── Account CRUD ──────────────────────────────────────────────────────────────
 
 def get_accounts(session: Session) -> list:
@@ -903,19 +945,28 @@ def rename_account(
     new_name: str,
     new_bank_name: str | None = None,
 ) -> int:
-    """Rename an account and cascade to all transactions.
+    """Rename an account, recalculate all transaction IDs, and cascade to related tables.
+
+    When the account_label changes, every transaction ID must be recomputed because
+    the ID hash includes the account_label.  All FK references in reconciliation_link
+    and internal_transfer_link are updated atomically.
 
     Returns the number of transactions updated, or -1 if account not found.
     Raises ValueError if the new name collides with an existing account.
     """
-    from db.models import Account, Transaction
+    from db.models import Account, InternalTransferLink, ReconciliationLink, Transaction
     from sqlalchemy.exc import IntegrityError
+    from core.normalizer import compute_transaction_id
 
     acc = session.get(Account, account_id)
     if acc is None:
         return -1
     old_name = acc.name
-    acc.name = new_name.strip()
+    stripped_new = new_name.strip()
+    name_changed = old_name != stripped_new
+    if not name_changed and new_bank_name is None:
+        return 0  # nothing to do
+    acc.name = stripped_new
     if new_bank_name is not None:
         acc.bank_name = new_bank_name.strip() or None
     try:
@@ -923,13 +974,92 @@ def rename_account(
     except IntegrityError:
         session.rollback()
         raise ValueError(f"Conto '{new_name}' già esistente")
-    updated = (
+
+    if not name_changed:
+        # Only bank_name changed — no tx_id recalculation needed
+        session.flush()
+        return 0
+
+    # Fetch all transactions for the old account_label
+    txs = (
         session.query(Transaction)
         .filter(Transaction.account_label == old_name)
-        .update({Transaction.account_label: acc.name})
+        .all()
     )
+    if not txs:
+        # Update document schemas even if no transactions exist
+        _update_schemas_account_label(session, old_name, acc.name)
+        session.flush()
+        return 0
+
+    # Snapshot the fields needed for id recomputation before any mutations
+    tx_data = []
+    for tx in txs:
+        tx_data.append({
+            "old_id": tx.id,
+            "source_file": tx.source_file or "",
+            "date": tx.date.isoformat() if hasattr(tx.date, 'isoformat') else str(tx.date or ""),
+            "amount_key": str(Decimal(str(tx.amount or 0)).normalize()),
+            "desc_key": (tx.raw_description or tx.description or "").strip(),
+        })
+
+    # Build old_id → new_id mapping
+    id_mapping: dict[str, str] = {}
+    for td in tx_data:
+        new_id = compute_transaction_id(
+            td["source_file"], td["date"], td["amount_key"], td["desc_key"],
+            account_label=acc.name,
+        )
+        id_mapping[td["old_id"]] = new_id
+
+    # Evict all affected Transaction objects from the identity map so raw SQL
+    # updates don't conflict with stale ORM state.
+    for tx in txs:
+        session.expunge(tx)
+
+    # Update FK references in related tables BEFORE changing PKs
+    from sqlalchemy import text as _text
+    for old_id, new_id in id_mapping.items():
+        if old_id == new_id:
+            continue
+        session.execute(
+            _text('UPDATE reconciliation_link SET settlement_id = :new WHERE settlement_id = :old'),
+            {"new": new_id, "old": old_id},
+        )
+        session.execute(
+            _text('UPDATE reconciliation_link SET detail_id = :new WHERE detail_id = :old'),
+            {"new": new_id, "old": old_id},
+        )
+        session.execute(
+            _text('UPDATE internal_transfer_link SET out_id = :new WHERE out_id = :old'),
+            {"new": new_id, "old": old_id},
+        )
+        session.execute(
+            _text('UPDATE internal_transfer_link SET in_id = :new WHERE in_id = :old'),
+            {"new": new_id, "old": old_id},
+        )
+
+    # Update transaction PKs and account_label using raw SQL (can't update PK via ORM)
+    for old_id, new_id in id_mapping.items():
+        session.execute(
+            _text('UPDATE "transaction" SET id = :new_id, account_label = :label WHERE id = :old_id'),
+            {"new_id": new_id, "old_id": old_id, "label": acc.name},
+        )
+
+    # Update document schemas that reference the old account_label
+    _update_schemas_account_label(session, old_name, acc.name)
+
     session.flush()
-    return updated
+    return len(tx_data)
+
+
+def _update_schemas_account_label(session: Session, old_label: str, new_label: str) -> int:
+    """Update all DocumentSchemaModel rows that reference the old account_label."""
+    return (
+        session.query(DocumentSchemaModel)
+        .filter(DocumentSchemaModel.account_label == old_label)
+        .update({DocumentSchemaModel.account_label: new_label})
+    )
 
 
 # ── DescriptionRule ───────────────────────────────────────────────────────────

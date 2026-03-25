@@ -873,6 +873,7 @@ def process_file(
             tx["category_confidence"] = result.confidence.value
             tx["category_source"] = result.source.value
             tx["to_review"] = result.to_review
+            tx["human_validated"] = False
 
     # Giroconti are ALWAYS persisted in the ledger regardless of giroconto_mode.
     # The mode only affects downstream views (analytics, reports, registry).

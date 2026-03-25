@@ -64,6 +64,13 @@ class TransactionService:
         with self._session() as s:
             return repository.get_cross_account_duplicates(s)
 
+    def validate(self, tx_id: str) -> bool:
+        """Mark transaction as human-validated without changing category."""
+        with self._session() as s:
+            result = repository.validate_transaction(s, tx_id)
+            s.commit()
+            return result
+
     def get_by_rule_pattern(self, pattern: str, match_type: str) -> list[Transaction]:
         with self._session() as s:
             return repository.get_transactions_by_rule_pattern(s, pattern, match_type)

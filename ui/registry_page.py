@@ -195,9 +195,17 @@ def render_registry_page(engine):
         "direttamente nella tabella, poi clicca **Salva modifiche**."
     )
 
+    _SOURCE_BADGE = {
+        "llm": "🤖 LLM",
+        "rule": "📏 Regola",
+        "manual": "👤 Manuale",
+        "history": "📚 Storico",
+    }
+
     orig_rows = [
         {
             "_id":           tx.id,
+            "_sel":          False,
             "⚠️":            bool(tx.to_review),
             "Data":          format_date_display(tx.date, _date_fmt),
             "Descrizione":   (tx.description or "")[:80],
@@ -209,6 +217,8 @@ def render_registry_page(engine):
             "Categoria":     tx.category or "",
             "Sottocategoria": tx.subcategory or "",
             "Contesto":      tx.context or "",
+            "Fonte":         _SOURCE_BADGE.get(tx.category_source, "—"),
+            "Validato":      "✅" if tx.human_validated else "",
             "🔄 Giroconto":  tx.tx_type in ("internal_out", "internal_in"),
         }
         for tx in page_txs
@@ -217,6 +227,7 @@ def render_registry_page(engine):
 
     _col_cfg: dict = {
         "_id":            None,
+        "_sel":           st.column_config.CheckboxColumn("✔", width=40),
         "⚠️":             st.column_config.CheckboxColumn("⚠️",  disabled=True, width=40),
         "Data":           st.column_config.TextColumn("Data",         disabled=True, width="small"),
         "Descrizione":    st.column_config.TextColumn("Descrizione",  disabled=True),
@@ -233,6 +244,8 @@ def render_registry_page(engine):
         "Contesto":       st.column_config.SelectboxColumn(
             "Contesto", options=[""] + _contexts, required=False, width="small",
         ),
+        "Fonte":          st.column_config.TextColumn("Fonte", disabled=True, width=100),
+        "Validato":       st.column_config.TextColumn("Validato", disabled=True, width=60),
         "🔄 Giroconto":   st.column_config.CheckboxColumn("🔄 Giroconto", width="small"),
     }
     if show_raw:
@@ -249,11 +262,26 @@ def render_registry_page(engine):
         key="ledger_editor",
     )
 
-    # ── Save button ───────────────────────────────────────────────────────────
-    sv_col, _ = st.columns([1, 5])
+    # ── Save & Validate buttons ──────────────────────────────────────────────
+    sv_col, val_col, _ = st.columns([1, 1, 4])
     with sv_col:
         save_clicked = st.button("💾 Salva modifiche", type="primary", key="ledger_save",
                                  use_container_width=True)
+    with val_col:
+        _sel_ids = [
+            orig_df.iloc[i]["_id"]
+            for i in range(len(edited_df))
+            if edited_df.iloc[i].get("_sel", False)
+        ]
+        if st.button("✅ Valida selezionate", disabled=len(_sel_ids) == 0,
+                      key="ledger_validate_bulk", use_container_width=True):
+            n_ok = 0
+            for _tid in _sel_ids:
+                if tx_svc.validate(_tid):
+                    n_ok += 1
+            st.success(f"✅ {n_ok} transazioni validate.")
+            logger.info(f"ledger_page: validated {n_ok} transactions")
+            st.rerun()
 
     if save_clicked:
         n_cat  = 0

@@ -88,9 +88,17 @@ def render_review_page(engine):
 
     show_raw = st.toggle("Mostra valori originali (raw)", value=False, key="review_show_raw")
 
+    _SOURCE_BADGE = {
+        "llm": "🤖 LLM",
+        "rule": "📏 Regola",
+        "manual": "👤 Manuale",
+        "history": "📚 Storico",
+    }
+
     data = [
         {
             "id": tx.id,
+            "sel": False,
             "Data": format_date_display(tx.date, _date_fmt),
             "Descrizione": (tx.description or "")[:100],
             "Entrata": float(tx.amount) if float(tx.amount) > 0 else None,
@@ -99,6 +107,8 @@ def render_review_page(engine):
             "Categoria": tx.category or "",
             "Sottocategoria": tx.subcategory or "",
             "Confidenza": tx.category_confidence or "",
+            "Fonte": _SOURCE_BADGE.get(tx.category_source, "—"),
+            "Validato": "✅" if tx.human_validated else "",
             "⚠️": "⚠️" if tx.to_review else "",
             "Desc. originale": (tx.raw_description or "")[:100],
             "Importo originale": format_raw_amount_display(tx.raw_amount),
@@ -112,14 +122,34 @@ def render_review_page(engine):
         hide_cols += ["Desc. originale", "Importo originale"]
 
     display_df = df.drop(columns=hide_cols)
-    st.dataframe(
+    edited_review = st.data_editor(
         display_df,
-        width="stretch",
+        use_container_width=True,
+        hide_index=True,
         column_config={
+            "sel": st.column_config.CheckboxColumn("✔", width=40),
             "Entrata": st.column_config.NumberColumn("Entrata", format="%.2f"),
             "Uscita": st.column_config.NumberColumn("Uscita", format="%.2f"),
+            "Fonte": st.column_config.TextColumn("Fonte", disabled=True, width=100),
+            "Validato": st.column_config.TextColumn("Validato", disabled=True, width=60),
         },
+        key="review_grid",
     )
+
+    # ── Valida selezionate ──────────────────────────────────────────────────
+    selected_ids = [
+        df.iloc[i]["id"]
+        for i in range(len(edited_review))
+        if edited_review.iloc[i].get("sel", False)
+    ]
+    if st.button("✅ Valida selezionate", disabled=len(selected_ids) == 0, key="review_validate_bulk"):
+        n_ok = 0
+        for _tid in selected_ids:
+            if tx_svc.validate(_tid):
+                n_ok += 1
+        st.success(f"✅ {n_ok} transazioni validate.")
+        logger.info(f"review_page: validated {n_ok} transactions")
+        st.rerun()
 
     st.divider()
     st.subheader("Applica correzione")

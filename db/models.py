@@ -84,6 +84,9 @@ def create_tables(engine=None):
     _migrate_add_rule_context(engine)
     _migrate_add_header_sha256(engine)
     _migrate_add_confidence_score(engine)
+    _migrate_add_transaction_updated_at(engine)
+    _migrate_add_classification_tracking(engine)
+    _migrate_add_taxonomy_fallback(engine)
     _migrate_set_onboarding_done_for_existing_users(engine)  # must run last
     return engine
 
@@ -212,7 +215,7 @@ class Transaction(Base):
     category = Column(String(128))
     subcategory = Column(String(128))
     category_confidence = Column(String(10))
-    category_source = Column(String(10))
+    category_source = Column(String(10))            # "manual" | "rule" | "llm" | future: "history"
     reconciled = Column(Boolean, default=False)
     to_review = Column(Boolean, default=False)
     transfer_pair_id = Column(String(64))
@@ -220,7 +223,10 @@ class Transaction(Base):
     raw_description = Column(Text, nullable=True)   # original text before normalize_description
     raw_amount = Column(String(64), nullable=True)  # original string from source file
     context = Column(String(64), nullable=True)     # user-defined life context (e.g. Vacanza, Lavoro)
+    human_validated = Column(Boolean, default=False)
+    validated_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, onupdate=lambda: datetime.now(timezone.utc))
 
     batch = relationship("ImportBatch", back_populates="transactions")
 
@@ -310,6 +316,7 @@ class TaxonomyCategory(Base):
     name = Column(String(128), nullable=False)
     type = Column(String(8), nullable=False)   # "expense" | "income"
     sort_order = Column(Integer, default=0)
+    is_fallback = Column(Boolean, default=False)
 
     subcategories = relationship(
         "TaxonomySubcategory",
@@ -346,6 +353,7 @@ class TaxonomyDefault(Base):
     subcategory    = Column(String(128), nullable=True)     # NULL for category-level rows
     sort_order_cat = Column(Integer, default=0)
     sort_order_sub = Column(Integer, default=0)
+    is_fallback = Column(Boolean, default=False)
 
 
 class Account(Base):
@@ -653,3 +661,55 @@ def _migrate_add_confidence_score(engine) -> None:
             conn.commit()
         except Exception:
             pass  # column already exists
+
+
+def _migrate_add_transaction_updated_at(engine) -> None:
+    """Add updated_at column to transaction table if not already present (idempotent)."""
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        try:
+            conn.execute(_text('ALTER TABLE "transaction" ADD COLUMN updated_at DATETIME'))
+            conn.commit()
+        except Exception as exc:
+            if "duplicate column name" in str(exc).lower():
+                pass  # column already exists
+            else:
+                raise
+
+
+def _migrate_add_classification_tracking(engine) -> None:
+    """Add human_validated and validated_at to transaction (idempotent)."""
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        for col_sql in [
+            'ALTER TABLE "transaction" ADD COLUMN human_validated BOOLEAN DEFAULT 0',
+            'ALTER TABLE "transaction" ADD COLUMN validated_at DATETIME',
+        ]:
+            try:
+                conn.execute(_text(col_sql))
+                conn.commit()
+            except Exception as exc:
+                if "duplicate column name" in str(exc).lower():
+                    pass
+                else:
+                    raise
+
+
+def _migrate_add_taxonomy_fallback(engine) -> None:
+    """Add is_fallback to taxonomy_category and taxonomy_default, mark Altro as fallback (idempotent)."""
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        for table in ["taxonomy_category", "taxonomy_default"]:
+            try:
+                conn.execute(_text(f'ALTER TABLE {table} ADD COLUMN is_fallback BOOLEAN DEFAULT 0'))
+                conn.commit()
+            except Exception as exc:
+                if "duplicate column name" in str(exc).lower():
+                    pass
+                else:
+                    raise
+        # Mark existing fallback categories
+        for name in ("Altro", "Altro entrate", "Other", "Other income"):
+            conn.execute(_text('UPDATE taxonomy_category SET is_fallback = 1 WHERE name = :n'), {"n": name})
+            conn.execute(_text('UPDATE taxonomy_default SET is_fallback = 1 WHERE category = :n'), {"n": name})
+        conn.commit()

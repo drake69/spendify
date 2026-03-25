@@ -85,6 +85,12 @@ Go to **Ledger**. You'll find the complete list in chronological order, with fil
 - 🔄 = internal transfer (e.g. bank transfer between your own accounts) — excluded from totals
 - ⚠️ = needs review (automatic classification was not confident)
 
+**Classification tracking columns:**
+- **Fonte** (Source) — shows who assigned the current category: 🤖 LLM, 📏 Rule, 👤 Manual, 📚 History
+- **Validato** (Validated) — ✅ if you have explicitly confirmed the categorisation
+
+**Bulk validation:** select one or more transactions and click **Valida selezionate** to confirm that the assigned categories are correct, without having to modify them. Validating a transaction tells Spendify "this category is correct" — the information is used to improve future classifications.
+
 ---
 
 ## 3. Review: transactions to check
@@ -94,6 +100,12 @@ Go to **Ledger**. You'll find the complete list in chronological order, with fil
 Go to **Review**. You'll find the transactions marked with ⚠️. For each one you can:
 - Change the category/subcategory from the dropdown menu
 - Confirm by clicking **Salva**
+
+**Classification tracking columns:**
+- **Fonte** (Source) — badge showing who assigned the category: 🤖 LLM, 📏 Rule, 👤 Manual, 📚 History
+- **Validato** (Validated) — ✅ if the transaction has been confirmed by the user
+
+**Bulk validation:** select the transactions you are sure about and click **Valida selezionate** to confirm them all at once. When you validate a transaction you are telling Spendify: "this classification is correct". Validation does not change the category — it only confirms it is right.
 
 > **Example:** "PAGAMENTO POS 00112 FARMACIA CENTRALE" was classified as *Casa* but you know it's *Salute*. You correct it once, and if you saved a rule that correction will be applied automatically to future imports.
 
@@ -131,7 +143,7 @@ If you have created many rules across different sessions and want to apply them 
 
 Go to **✏️ Modifiche massive**. The page is divided into two main areas.
 
-### 5a — Operations on a reference transaction
+### 6a — Operations on a reference transaction
 
 1. Search and select a transaction from the dropdown menu (you can filter by text or show only those ⚠️ pending review)
 2. Spendify shows how many other transactions have the same or a similar description (Jaccard ≥ 35%)
@@ -140,7 +152,7 @@ Go to **✏️ Modifiche massive**. The page is divided into two main areas.
    - **2b Contesto** — assign a context (e.g. "Vacanza") to the single transaction or to all similar ones
    - **2c Categoria** — corrects category and subcategory, saves a deterministic rule for future files, applies immediately to similar transactions
 
-### 5b — Bulk deletion by filter
+### 6b — Bulk deletion by filter
 
 **Situation:** You want to delete all transactions from a closed account, or all those from a test period.
 
@@ -221,6 +233,14 @@ Go to **⚙️ Impostazioni**:
 > **Privacy note:** If you use a remote backend (OpenAI or Claude), Spendify automatically removes IBANs, card numbers, tax identification numbers, and the account holder's name before sending any data.
 
 For detailed instructions on where to register and how to obtain API keys for each provider, see the **[Configuration Manual](configurazione.en.md)**.
+
+### Renaming an account
+
+You can rename a bank account at any time from **⚙️ Impostazioni → 🏦 Conti bancari**. When you rename an account, Spendify automatically recalculates the unique identifier of every associated transaction, because the account name is part of the hash key.
+
+The operation is **atomic**: if anything goes wrong during recalculation, no data is changed. Your data always remains intact.
+
+> **In practice:** rename the account without worry. Transactions, categories, rules, and associated internal transfers remain untouched. The only thing that changes is the internal technical identifier (invisible to you).
 
 ### Downloading a model (Ollama)
 

@@ -62,6 +62,10 @@ Defines the current accounts, cards, and deposit accounts you own. Each account 
 - You can import without defined accounts, but automatic detection may assign different names to the same account in successive imports.
 - Delete an account only if it has no associated transactions; otherwise existing transactions will retain the old `account_label`.
 
+### Renaming an account
+
+Renaming an account is safe: Spendify atomically recalculates the ID (`tx_id`) of all associated transactions, because `account_label` is part of the hash key. If recalculation fails, a rollback is performed and no data changes. On completion, the `updated_at` field of every updated transaction reflects the operation date.
+
 ---
 
 ## 3. Account holders

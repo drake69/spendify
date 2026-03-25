@@ -100,6 +100,12 @@ Vai su **Ledger**. Trovi la lista completa in ordine cronologico, con filtri per
 - 🔄 = giroconto interno (es. bonifico tra tuoi conti) — escluso dai totali
 - ⚠️ = da rivedere (la classificazione automatica non era sicura)
 
+**Colonne di tracking classificazione:**
+- **Fonte** — mostra chi ha assegnato la categoria corrente: 🤖 LLM, 📏 Regola, 👤 Manuale, 📚 Storico
+- **Validato** — ✅ se hai esplicitamente confermato la categorizzazione
+
+**Validazione in blocco:** seleziona una o più transazioni e clicca **Valida selezionate** per confermare che le categorie assegnate sono corrette, senza doverle modificare. Validare una transazione significa dire a Spendify "questa categoria è giusta" — l'informazione viene usata per migliorare le classificazioni future.
+
 ---
 
 ## 4. Review: le transazioni da controllare
@@ -109,6 +115,12 @@ Vai su **Ledger**. Trovi la lista completa in ordine cronologico, con filtri per
 Vai su **Review**. Trovi le transazioni con il ⚠️. Per ognuna puoi:
 - Cambiare categoria/sottocategoria dal menu a tendina
 - Confermare cliccando **Salva**
+
+**Colonne di tracking classificazione:**
+- **Fonte** — badge che indica chi ha assegnato la categoria: 🤖 LLM, 📏 Regola, 👤 Manuale, 📚 Storico
+- **Validato** — ✅ se la transazione è stata confermata dall'utente
+
+**Validazione in blocco:** seleziona le transazioni di cui sei sicuro e clicca **Valida selezionate** per confermarle tutte in una volta. Quando validi una transazione stai dicendo a Spendify: "questa classificazione è corretta". La validazione non cambia la categoria — conferma solo che è giusta.
 
 > **Esempio:** "PAGAMENTO POS 00112 FARMACIA CENTRALE" è stato classificato come *Casa* ma tu sai che è *Salute*. Lo correggi una volta, e se hai salvato una regola quella correzione si applicherà automaticamente alle prossime importazioni.
 
@@ -146,7 +158,7 @@ Se hai creato molte regole in sessioni diverse e vuoi applicarle tutte in una vo
 
 Vai su **✏️ Modifiche massive**. La pagina è divisa in due aree principali.
 
-### 5a — Operazioni su transazione di riferimento
+### 6a — Operazioni su transazione di riferimento
 
 1. Cerca e seleziona una transazione dal menu a tendina (puoi filtrare per testo o mostrare solo quelle ⚠️ da rivedere)
 2. Spendify mostra quante altre transazioni hanno la stessa descrizione o una simile (Jaccard ≥ 35%)
@@ -155,7 +167,7 @@ Vai su **✏️ Modifiche massive**. La pagina è divisa in due aree principali.
    - **2b Contesto** — assegna un contesto (es. "Vacanza") alla singola tx o a tutte le simili
    - **2c Categoria** — corregge categoria e sottocategoria, salva una regola deterministica per i file futuri, applica subito alle simili
 
-### 5b — Eliminazione massiva da filtro
+### 6b — Eliminazione massiva da filtro
 
 **Situazione:** Vuoi cancellare tutte le transazioni di un conto chiuso, o tutte quelle di un periodo di test.
 
@@ -236,6 +248,14 @@ Vai su **Impostazioni**:
 > **Nota sulla privacy:** Se usi un backend remoto (OpenAI o Claude), Spendify rimuove automaticamente IBAN, numeri carta, codice fiscale e nome del titolare prima di inviare qualsiasi dato.
 
 Per istruzioni dettagliate su dove registrarsi e come ottenere le API key di ogni provider, consulta il **[Manuale di Configurazione](configurazione.md)**.
+
+### Rinominare un conto
+
+Puoi rinominare un conto bancario in qualsiasi momento da **⚙️ Impostazioni → 🏦 Conti bancari**. Quando rinomini un conto, Spendify ricalcola automaticamente l'identificativo univoco di ogni transazione associata, perche il nome del conto fa parte della chiave di calcolo.
+
+L'operazione e **atomica**: se qualcosa va storto durante il ricalcolo, nessun dato viene modificato. I tuoi dati restano sempre integri.
+
+> **In pratica:** rinomina il conto senza preoccupazioni. Le transazioni, le categorie, le regole e i giroconti associati rimangono intatti. L'unica cosa che cambia e l'identificativo tecnico interno (invisibile a te).
 
 ### Scaricare un modello (Ollama)
 

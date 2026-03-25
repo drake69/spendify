@@ -26,8 +26,9 @@ from support.logging import setup_logging
 
 logger = setup_logging()
 
-TAXONOMY_FALLBACK_EXPENSE = ("Altro", "Spese non classificate")
-TAXONOMY_FALLBACK_INCOME = ("Altro entrate", "Entrate non classificate")
+# Hardcoded defaults used as safety net when no DB fallback categories are available
+_DEFAULT_FALLBACK_EXPENSE = ("Altro", "Spese non classificate")
+_DEFAULT_FALLBACK_INCOME = ("Altro entrate", "Entrate non classificate")
 
 _PROMPTS_FILE = Path(__file__).parent.parent / "prompts" / "categorizer.json"
 
@@ -224,8 +225,18 @@ def _try_deterministic(
     return None
 
 
-def _make_fallback(amount: Decimal) -> CategorizationResult:
-    fallback_cat, fallback_sub = TAXONOMY_FALLBACK_EXPENSE if amount < 0 else TAXONOMY_FALLBACK_INCOME
+def _make_fallback(
+    amount: Decimal,
+    fallback_categories: dict[str, tuple[str, str]] | None = None,
+) -> CategorizationResult:
+    if fallback_categories:
+        fallback_cat, fallback_sub = (
+            fallback_categories.get("expense", _DEFAULT_FALLBACK_EXPENSE)
+            if amount < 0
+            else fallback_categories.get("income", _DEFAULT_FALLBACK_INCOME)
+        )
+    else:
+        fallback_cat, fallback_sub = _DEFAULT_FALLBACK_EXPENSE if amount < 0 else _DEFAULT_FALLBACK_INCOME
     return CategorizationResult(
         category=fallback_cat,
         subcategory=fallback_sub,
@@ -250,6 +261,7 @@ def _run_llm_batch_group(
     batch_size: int,
     direction: str,  # "expense" | "income"
     source_name: str,
+    fallback_categories: dict[str, tuple[str, str]] | None = None,
 ) -> None:
     """Run LLM categorization in batches for one direction. Updates results[] in place."""
     cat_keys = list(categories.keys())
@@ -293,7 +305,7 @@ def _run_llm_batch_group(
             )
             for idx in batch_indices:
                 if results[idx] is None:
-                    results[idx] = _make_fallback(_parse_amount(transactions[idx].get("amount")))
+                    results[idx] = _make_fallback(_parse_amount(transactions[idx].get("amount")), fallback_categories)
             continue
 
         llm_results = raw.get("results", [])
@@ -306,7 +318,7 @@ def _run_llm_batch_group(
             )
             for idx in batch_indices:
                 if results[idx] is None:
-                    results[idx] = _make_fallback(_parse_amount(transactions[idx].get("amount")))
+                    results[idx] = _make_fallback(_parse_amount(transactions[idx].get("amount")), fallback_categories)
             continue
 
         logger.debug(
@@ -317,7 +329,7 @@ def _run_llm_batch_group(
         for j, idx in enumerate(batch_indices):
             item = llm_results[j] if j < len(llm_results) else {}
             amount = _parse_amount(transactions[idx].get("amount"))
-            results[idx] = _validate_llm_result(item, categories, taxonomy, amount, direction)
+            results[idx] = _validate_llm_result(item, categories, taxonomy, amount, direction, fallback_categories)
 
 
 def _validate_llm_result(
@@ -326,6 +338,7 @@ def _validate_llm_result(
     taxonomy: TaxonomyConfig,
     amount: Decimal,
     direction: str,
+    fallback_categories: dict[str, tuple[str, str]] | None = None,
 ) -> CategorizationResult:
     """Validate and fix a single LLM result dict. Always returns a valid result."""
     category = item.get("category", "")
@@ -356,14 +369,14 @@ def _validate_llm_result(
                 logger.warning(
                     f"LLM returned unknown pair ({category!r}, {subcategory!r}) — fallback"
                 )
-                return _make_fallback(amount)
+                return _make_fallback(amount, fallback_categories)
 
     # Ensure the resolved category is in the expected direction
     if category not in categories:
         logger.warning(
             f"LLM assigned cross-direction category '{category}' for {direction} — fallback"
         )
-        return _make_fallback(amount)
+        return _make_fallback(amount, fallback_categories)
 
     return CategorizationResult(
         category=category,
@@ -389,6 +402,7 @@ def categorize_batch(
     batch_size: int = 20,
     progress_callback=None,  # Callable[[float], None] — 0.0..1.0 within batch
     source_name: str = "unknown",
+    fallback_categories: dict[str, tuple[str, str]] | None = None,
 ) -> list[CategorizationResult]:
     """Categorize transactions using two directional LLM batches (expense / income).
 
@@ -426,6 +440,7 @@ def categorize_batch(
                 taxonomy.expenses, taxonomy,
                 llm_backend, fallback_backend, sanitize_config,
                 description_language, batch_size, "expense", source_name,
+                fallback_categories=fallback_categories,
             )
         if llm_income:
             _run_llm_batch_group(
@@ -433,12 +448,13 @@ def categorize_batch(
                 taxonomy.income, taxonomy,
                 llm_backend, fallback_backend, sanitize_config,
                 description_language, batch_size, "income", source_name,
+                fallback_categories=fallback_categories,
             )
 
     # Fallback for any still-None (llm_backend=None or batch error)
     for i in range(n):
         if results[i] is None:
-            results[i] = _make_fallback(_parse_amount(transactions[i].get("amount")))
+            results[i] = _make_fallback(_parse_amount(transactions[i].get("amount")), fallback_categories)
 
     if progress_callback:
         progress_callback(1.0)
@@ -470,6 +486,7 @@ def categorize_transaction(
     fallback_backend: LLMBackend | None = None,
     confidence_threshold: float = 0.8,
     description_language: str = "it",
+    fallback_categories: dict[str, tuple[str, str]] | None = None,
 ) -> CategorizationResult:
     """Single-transaction categorization. Used for real-time correction in the UI."""
     result = _try_deterministic(description, amount, doc_type, user_rules, taxonomy)
@@ -486,8 +503,9 @@ def categorize_transaction(
             categories, taxonomy,
             llm_backend, fallback_backend, sanitize_config,
             description_language, 1, direction, "single",
+            fallback_categories=fallback_categories,
         )
         if results[0] is not None:
             return results[0]
 
-    return _make_fallback(amount)
+    return _make_fallback(amount, fallback_categories)
