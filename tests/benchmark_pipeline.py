@@ -182,6 +182,65 @@ def _ensure_generated_files() -> None:
         sys.exit(1)
 
 
+def _collect_llm_metadata(config: ProcessingConfig, backend) -> dict[str, str]:
+    """Collect LLM provider, model, and parameters for benchmark metadata."""
+    meta: dict[str, str] = {
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "provider": "unknown",
+        "model": "unknown",
+        "temperature": "default",
+        "llm_timeout_s": str(getattr(config, "llm_timeout_s", "?")),
+    }
+
+    # Get provider and model from backend
+    backend_class = type(backend).__name__
+    meta["provider"] = backend_class.replace("Backend", "").lower()
+
+    if hasattr(backend, "model"):
+        meta["model"] = str(backend.model)
+    elif hasattr(backend, "_model"):
+        meta["model"] = str(backend._model)
+
+    if hasattr(backend, "temperature"):
+        meta["temperature"] = str(backend.temperature)
+    elif hasattr(backend, "_temperature"):
+        meta["temperature"] = str(backend._temperature)
+
+    # Try to get Ollama model info (version, parameter size, quantization)
+    if "ollama" in meta["provider"].lower():
+        try:
+            import urllib.request
+            import json
+            req = urllib.request.Request(
+                f"http://localhost:11434/api/show",
+                data=json.dumps({"name": meta["model"]}).encode(),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                info = json.loads(resp.read())
+                details = info.get("details", {})
+                meta["parameter_size"] = details.get("parameter_size", "?")
+                meta["quantization"] = details.get("quantization_level", "?")
+                meta["family"] = details.get("family", "?")
+        except Exception:
+            meta["parameter_size"] = "?"
+            meta["quantization"] = "?"
+            meta["family"] = "?"
+
+    return meta
+
+
+def _write_llm_metadata(meta: dict[str, str], n_runs: int, n_files: int) -> None:
+    """Write LLM metadata to a JSON file in the benchmark directory."""
+    import json
+    meta_out = {**meta, "n_runs": n_runs, "n_files": n_files}
+    path = _BENCHMARK_DIR / "benchmark_config.json"
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(meta_out, f, indent=2, ensure_ascii=False)
+    print(f"[output] Config: {path}")
+
+
 def _check_ollama() -> bool:
     """Check if Ollama is reachable."""
     try:
@@ -391,6 +450,7 @@ def _evaluate_file(
 
 _CSV_HEADER = [
     "run_id", "filename",
+    "provider", "model", "temperature", "parameter_size", "quantization",
     "header_detected", "header_expected", "header_match",
     "rows_detected", "rows_expected", "rows_match",
     "doc_type_detected", "doc_type_expected", "doc_type_match",
@@ -403,10 +463,18 @@ _CSV_HEADER = [
     "duration_seconds", "error",
 ]
 
+# Filled at runtime by main()
+_LLM_META: dict[str, str] = {}
+
 
 def _result_to_row(r: RunFileResult) -> list:
     return [
         r.run_id, r.filename,
+        _LLM_META.get("provider", ""),
+        _LLM_META.get("model", ""),
+        _LLM_META.get("temperature", ""),
+        _LLM_META.get("parameter_size", ""),
+        _LLM_META.get("quantization", ""),
         r.header_detected, r.header_expected, r.header_match,
         r.rows_detected, r.rows_expected, r.rows_match,
         r.doc_type_detected, r.doc_type_expected, r.doc_type_match,
@@ -677,6 +745,17 @@ def main() -> None:
     config = ProcessingConfig()
     backend = _build_backend(config)
 
+    # ── Collect LLM metadata ─────────────────────────────────────────────
+    llm_meta = _collect_llm_metadata(config, backend)
+    _LLM_META.update(llm_meta)  # populate module-level dict for CSV rows
+
+    print(f"\n[config] Provider: {llm_meta['provider']}")
+    print(f"[config] Model: {llm_meta['model']}")
+    print(f"[config] Temperature: {llm_meta['temperature']}")
+    if llm_meta.get("parameter_size", "?") != "?":
+        print(f"[config] Parameters: {llm_meta['parameter_size']}, Quant: {llm_meta['quantization']}")
+    print(f"[config] Timeout: {llm_meta['llm_timeout_s']}s")
+
     # Run benchmark
     all_results: list[RunFileResult] = []
     total_start = time.time()
@@ -726,6 +805,7 @@ def main() -> None:
     total_time = time.time() - total_start
 
     # Write all outputs
+    _write_llm_metadata(llm_meta, n_runs, n_files)
     _write_all_runs_csv(all_results)
     per_file_rows, global_rows = _compute_variance(all_results)
     _write_variance_csv(per_file_rows)
