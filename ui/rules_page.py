@@ -12,7 +12,13 @@ from services.transaction_service import TransactionService
 from support.logging import setup_logging
 
 logger = setup_logging()
+_MATCH_LABELS = {
+    "Contiene il testo": "contains",
+    "Uguale esatto": "exact",
+    "Espressione avanzata": "regex",
+}
 _MATCH_TYPES = ["contains", "exact", "regex"]
+_LABEL_FROM_TYPE = {v: k for k, v in _MATCH_LABELS.items()}
 _NO_CONTEXT   = "— nessuno —"
 
 
@@ -59,7 +65,7 @@ def render_rules_page(engine):
             {
                 "ID": r.id,
                 "Pattern": r.pattern,
-                "Tipo match": r.match_type,
+                "Tipo": _LABEL_FROM_TYPE.get(r.match_type, r.match_type),
                 "Categoria": r.category,
                 "Sottocategoria": r.subcategory or "",
                 "Contesto": r.context or "",
@@ -135,9 +141,12 @@ def render_rules_page(engine):
                 rid = sel_rule.id
                 new_pattern = st.text_input("Pattern", value=sel_rule.pattern,
                                             key=f"rule_edit_pattern_{rid}")
-                new_match = st.selectbox("Tipo match", _MATCH_TYPES,
-                                         index=_MATCH_TYPES.index(sel_rule.match_type),
+                _edit_label = _LABEL_FROM_TYPE.get(sel_rule.match_type, "Contiene il testo")
+                _edit_labels = list(_MATCH_LABELS.keys())
+                new_match_label = st.selectbox("Tipo corrispondenza", _edit_labels,
+                                         index=_edit_labels.index(_edit_label),
                                          key=f"rule_edit_match_{rid}")
+                new_match = _MATCH_LABELS[new_match_label]
                 all_idx = all_categories.index(sel_rule.category) if sel_rule.category in all_categories else 0
                 new_cat = st.selectbox("Categoria", all_categories, index=all_idx,
                                        key=f"rule_edit_cat_{rid}")
@@ -217,7 +226,8 @@ def render_rules_page(engine):
     nr_pattern = st.text_input("Pattern (testo da cercare nella descrizione)",
                                placeholder="es. ESSELUNGA, Netflix, stipendio…",
                                key="new_rule_pattern")
-    nr_match = st.selectbox("Tipo match", _MATCH_TYPES, key="new_rule_match")
+    _nr_match_label = st.selectbox("Tipo corrispondenza", list(_MATCH_LABELS.keys()), key="new_rule_match")
+    nr_match = _MATCH_LABELS[_nr_match_label]
     nr_cat = st.selectbox("Categoria", all_categories, key="new_rule_cat")
     nr_subs = taxonomy.valid_subcategories(nr_cat)
     if nr_subs:

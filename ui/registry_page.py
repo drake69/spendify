@@ -231,7 +231,7 @@ def render_registry_page(engine):
 
     _col_cfg: dict = {
         "_id":            None,
-        "_sel":           st.column_config.CheckboxColumn("✔", width=40),
+        "_sel":           st.column_config.CheckboxColumn("📏", width=40),
         "Data":           st.column_config.TextColumn("Data",         disabled=True, width="small"),
         "Descrizione":    st.column_config.TextColumn("Descrizione",  disabled=True),
         "Entrata":        st.column_config.NumberColumn("Entrata",    disabled=True, format="%.2f", width="small"),
@@ -267,6 +267,11 @@ def render_registry_page(engine):
         column_config=_col_cfg,
         key="ledger_editor",
     )
+
+    # ── Enforce single selection for rule creation ──────────────────────────
+    _sel_indices = [i for i in range(len(edited_df)) if edited_df.iloc[i].get("_sel", False)]
+    if len(_sel_indices) > 1:
+        st.error("⚠️ Si può creare ed applicare una regola alla volta — seleziona una sola riga")
 
     # ── Auto-save Validato checkbox changes (realtime) ───────────────────────
     _n_auto_val = 0
@@ -376,10 +381,16 @@ def render_registry_page(engine):
                     "Pattern", value=_rule_tx_desc, key="rule_create_pattern"
                 )
             with rc2:
-                rule_match_type = st.selectbox(
-                    "Tipo match", ["contains", "exact", "regex"],
+                _match_labels = {
+                    "Contiene il testo": "contains",
+                    "Uguale esatto": "exact",
+                    "Espressione avanzata": "regex",
+                }
+                _match_label = st.selectbox(
+                    "Tipo corrispondenza", list(_match_labels.keys()),
                     index=0, key="rule_create_match_type",
                 )
+                rule_match_type = _match_labels[_match_label]
 
             rc3, rc4, rc5, rc6 = st.columns(4)
             with rc3:
@@ -410,16 +421,27 @@ def render_registry_page(engine):
                     key="rule_create_priority",
                 )
 
-            # Preview matching transactions
+            # Check if rule already exists + preview
+            _rule_exists = False
             if rule_pattern.strip():
+                _existing_rules = rule_svc.get_rules()
+                _rule_exists = any(
+                    r.pattern.lower() == rule_pattern.strip().lower()
+                    and r.match_type == rule_match_type
+                    for r in _existing_rules
+                )
                 _rule_matching = tx_svc.get_by_rule_pattern(
                     rule_pattern.strip(), rule_match_type
                 )
-                st.info(f"Questa regola matcherà {len(_rule_matching)} transazioni")
+                if _rule_exists:
+                    st.warning(f"⚠️ Regola già esistente — verrà aggiornata. Matcherà {len(_rule_matching)} transazioni")
+                else:
+                    st.info(f"Questa regola matcherà {len(_rule_matching)} transazioni")
 
-            if st.button("📏 Crea regola e applica", key="rule_create_apply"):
+            _btn_label = "📏 Modifica regola e applica" if _rule_exists else "📏 Crea regola e applica"
+            if st.button(_btn_label, key="rule_create_apply"):
                 _ctx_val = rule_context if rule_context != "— nessuno —" else None
-                rule_svc.create_rule(
+                _, _created = rule_svc.create_rule(
                     pattern=rule_pattern.strip(),
                     match_type=rule_match_type,
                     category=rule_category,
@@ -428,14 +450,15 @@ def render_registry_page(engine):
                     priority=rule_priority,
                 )
                 n_matched, n_cleared = rule_svc.apply_to_all()
-                st.toast(f"📏 Regola creata — {n_matched} transazioni aggiornate")
+                _action = "creata" if _created else "aggiornata"
+                st.toast(f"📏 Regola {_action} — {n_matched} transazioni aggiornate")
                 logger.info(
                     f"ledger_page: rule created pattern={rule_pattern!r} "
                     f"matched={n_matched} cleared={n_cleared}"
                 )
                 st.rerun()
-    elif len(_sel_ids) != 1:
-        st.caption("Seleziona una riga per creare una regola")
+    else:
+        st.caption("Seleziona una riga (📏) per creare una regola")
 
     # ── Page navigation ───────────────────────────────────────────────────────
     nav1, nav2, _ = st.columns([1, 1, 5])

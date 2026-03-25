@@ -35,15 +35,17 @@ Vista completa di tutte le transazioni importate, con filtri per data, conto, ca
 
 **Crea regola da una transazione:**
 
-1. Seleziona **1 riga** nella griglia del ledger
+1. Seleziona **1 riga** nella colonna di selezione (📏) della griglia del ledger. Se ne selezioni piu di una, l'app mostra un errore rosso: *"Si puo creare ed applicare una regola alla volta"*.
 2. Compare il form **"Crea regola"**, pre-compilato con:
    - **Pattern**: estratto dalla controparte della transazione (es. `ESSELUNGA`)
-   - **Tipo match**: `contains` (default)
+   - **Tipo**: *Contiene il testo* (default). Le opzioni disponibili sono: *Contiene il testo*, *Uguale esatto*, *Espressione avanzata*
    - **Categoria/Sottocategoria/Contesto**: copiati dalla transazione selezionata
 3. L'**anteprima** mostra quante transazioni verranno matchate dalla regola
-4. Click su **"Crea regola e applica"**:
+4. Se la regola esiste gia, viene mostrato un avviso giallo e il pulsante diventa **"Modifica regola e applica"**
+5. Click su **"Crea regola e applica"** (o **"Modifica regola e applica"**):
    - La regola viene salvata nel database
    - Viene applicata **retroattivamente** a tutte le transazioni matching non ancora validate
+   - Un toast conferma "Regola creata" o "Regola aggiornata"
 
 ---
 
@@ -52,7 +54,7 @@ Vista completa di tutte le transazioni importate, con filtri per data, conto, ca
 Le regole create (dal Ledger, dalla Review o dalla pagina Regole) si applicano automaticamente ai prossimi import.
 
 - **Priorita**: le regole piu specifiche hanno priorita piu alta. Il primo match vince.
-- **Tipi di match**: esatto, contiene, regex.
+- **Tipi di match**: *Uguale esatto*, *Contiene il testo*, *Espressione avanzata* (colonna "Tipo" nella griglia regole).
 - **Pagina Regole**: gestisci, modifica, elimina le regole esistenti. Usa il pulsante "Esegui tutte le regole" per applicarle in blocco a tutto lo storico.
 
 ---

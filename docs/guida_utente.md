@@ -115,7 +115,11 @@ Vai su **Ledger**. Trovi la lista completa in ordine cronologico, con filtri per
 
 ### Creare regole dal Ledger
 
-Seleziona una riga nella griglia e clicca **Crea regola**: compare un form pre-compilato con il pattern estratto dalla controparte, la categoria e il contesto della transazione. Un'anteprima mostra quante transazioni verranno matchate. Dopo la conferma, la regola si applica retroattivamente a tutte le transazioni corrispondenti. Per il flusso completo, vedi la [Guida alla Classificazione](guida_classificazione.md).
+Seleziona una riga nella colonna di selezione (📏) e clicca **Crea regola e applica**: compare un form pre-compilato con il pattern estratto dalla controparte, la categoria e il contesto della transazione. Un'anteprima mostra quante transazioni verranno matchate. Se la regola esiste gia, viene mostrato un avviso giallo e il pulsante diventa **Modifica regola e applica**. Dopo la conferma, la regola si applica retroattivamente a tutte le transazioni corrispondenti. Un toast conferma "Regola creata" o "Regola aggiornata".
+
+> **Attenzione:** puoi selezionare solo **una riga alla volta** per creare una regola. Se ne selezioni piu di una, l'app mostra un errore.
+
+Per il flusso completo, vedi la [Guida alla Classificazione](guida_classificazione.md).
 
 ---
 
@@ -163,9 +167,9 @@ Da quel momento in poi, ogni transazione che contiene quelle parole viene classi
 Se hai creato molte regole in sessioni diverse e vuoi applicarle tutte in una volta a tutto il tuo storico, usa il pulsante **▶️ Esegui tutte le regole** in fondo alla sezione. Spunta la casella di conferma e clicca il pulsante: tutte le regole vengono applicate a ogni transazione del ledger, non solo a quelle in attesa di revisione. Al termine ti dirà quante transazioni sono state aggiornate.
 
 > **Esempio pratico con tre tipi di regola:**
-> - *Esatta:* `NETFLIX.COM` → Abbonamenti → Streaming (corrisponde solo se la descrizione è esattamente quella)
-> - *Contiene:* `ESSELUNGA` → Alimentari → Supermercato (corrisponde se la parola appare ovunque nella descrizione)
-> - *Regex:* `RATA \d+/\d+` → Casa → Mutuo (corrisponde a "RATA 3/12", "RATA 10/12" ecc.)
+> - *Uguale esatto:* `NETFLIX.COM` → Abbonamenti → Streaming (corrisponde solo se la descrizione è esattamente quella)
+> - *Contiene il testo:* `ESSELUNGA` → Alimentari → Supermercato (corrisponde se la parola appare ovunque nella descrizione)
+> - *Espressione avanzata:* `RATA \d+/\d+` → Casa → Mutuo (corrisponde a "RATA 3/12", "RATA 10/12" ecc.)
 
 ---
 

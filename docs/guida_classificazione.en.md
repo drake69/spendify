@@ -35,15 +35,17 @@ Full view of all imported transactions, with filters for date, account, category
 
 **Create a rule from a transaction:**
 
-1. Select **1 row** in the ledger grid
+1. Select **1 row** using the selection column (📏) in the ledger grid. If you select more than one row, the app shows a red error: *"You can only create and apply one rule at a time"*.
 2. A **"Create rule"** form appears, pre-filled with:
    - **Pattern**: extracted from the transaction's counterpart (e.g. `ESSELUNGA`)
-   - **Match type**: `contains` (default)
+   - **Type**: *Contains text* (default). Available options: *Contains text*, *Exact match*, *Advanced expression*
    - **Category/Subcategory/Context**: copied from the selected transaction
 3. A **preview** shows how many transactions will be matched by the rule
-4. Click **"Create rule and apply"**:
+4. If the rule already exists, a yellow warning appears and the button changes to **"Edit rule and apply"**
+5. Click **"Create rule and apply"** (or **"Edit rule and apply"**):
    - The rule is saved to the database
    - It is applied **retroactively** to all matching transactions that have not been validated yet
+   - A toast confirms "Rule created" or "Rule updated"
 
 ---
 
@@ -52,7 +54,7 @@ Full view of all imported transactions, with filters for date, account, category
 Rules created (from the Ledger, Review or Rules page) are automatically applied to future imports.
 
 - **Priority**: more specific rules have higher priority. First match wins.
-- **Match types**: exact, contains, regex.
+- **Match types**: *Exact match*, *Contains text*, *Advanced expression* (shown in the "Type" column of the rules grid).
 - **Rules page**: manage, edit, delete existing rules. Use the "Run all rules" button to apply them in bulk to your entire history.
 
 ---

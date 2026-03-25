@@ -45,6 +45,18 @@ st.set_page_config(
     page_icon="🏦",
 )
 
+# ── Compact layout: reduce top margin and padding ────────────────────────
+st.markdown("""
+<style>
+    .block-container { padding-top: 1rem !important; padding-bottom: 0.5rem !important; }
+    header[data-testid="stHeader"] { height: 2rem !important; }
+    .stMainBlockContainer { padding-top: 0.5rem !important; }
+    h1, h2, h3 { margin-top: 0.3rem !important; margin-bottom: 0.3rem !important; }
+    .stDataFrame, .stDataEditor { margin-top: 0.2rem !important; }
+    div[data-testid="stExpander"] { margin-top: 0.3rem !important; }
+</style>
+""", unsafe_allow_html=True)
+
 # ── Onboarding gate ───────────────────────────────────────────────────────────
 # Show the onboarding wizard on first run (when onboarding_done != 'true').
 # This also re-shows if taxonomy_category was somehow wiped.

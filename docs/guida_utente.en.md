@@ -100,7 +100,11 @@ Go to **Ledger**. You'll find the complete list in chronological order, with fil
 
 ### Creating rules from the Ledger
 
-Select a row in the grid and click **Create rule**: a pre-filled form appears with the pattern extracted from the counterpart, plus the category and context from the transaction. A preview shows how many transactions will be matched. After confirmation, the rule is applied retroactively to all matching transactions. For the full workflow, see the [Classification Guide](guida_classificazione.en.md).
+Select a row using the selection column (📏) and click **Create rule and apply**: a pre-filled form appears with the pattern extracted from the counterpart, plus the category and context from the transaction. A preview shows how many transactions will be matched. If the rule already exists, a yellow warning appears and the button changes to **Edit rule and apply**. After confirmation, the rule is applied retroactively to all matching transactions. A toast confirms "Rule created" or "Rule updated".
+
+> **Note:** you can only select **one row at a time** to create a rule. If you select more than one, the app shows an error.
+
+For the full workflow, see the [Classification Guide](guida_classificazione.en.md).
 
 ---
 
@@ -148,9 +152,9 @@ From that point on, every transaction containing those words is classified autom
 If you have created many rules across different sessions and want to apply them all at once to your entire history, use the **▶️ Esegui tutte le regole** button at the bottom of the section. Check the confirmation checkbox and click the button: all rules are applied to every transaction in the ledger, not just those pending review. When finished, it will tell you how many transactions were updated.
 
 > **Practical example with three rule types:**
-> - *Exact:* `NETFLIX.COM` → Abbonamenti → Streaming (matches only if the description is exactly that)
-> - *Contains:* `ESSELUNGA` → Alimentari → Supermercato (matches if the word appears anywhere in the description)
-> - *Regex:* `RATA \d+/\d+` → Casa → Mutuo (matches "RATA 3/12", "RATA 10/12", etc.)
+> - *Exact match:* `NETFLIX.COM` → Abbonamenti → Streaming (matches only if the description is exactly that)
+> - *Contains text:* `ESSELUNGA` → Alimentari → Supermercato (matches if the word appears anywhere in the description)
+> - *Advanced expression:* `RATA \d+/\d+` → Casa → Mutuo (matches "RATA 3/12", "RATA 10/12", etc.)
 
 ---
 
