@@ -6,8 +6,18 @@ class DocumentType(str, Enum):
     credit_card = "credit_card"
     debit_card = "debit_card"
     prepaid_card = "prepaid_card"
-    savings = "savings"
+    savings_account = "savings_account"
+    cash             = "cash"
     unknown = "unknown"
+
+
+# Derived sets — single source of truth
+INVERT_SIGN_TYPES = frozenset({DocumentType.credit_card})
+NO_INVERT_TYPES   = frozenset({DocumentType.bank_account, DocumentType.savings_account,
+                                DocumentType.debit_card, DocumentType.prepaid_card,
+                                DocumentType.cash})
+CARD_TYPES        = frozenset({DocumentType.credit_card, DocumentType.debit_card,
+                                DocumentType.prepaid_card})
 
 
 class TransactionType(str, Enum):

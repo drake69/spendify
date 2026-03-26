@@ -58,11 +58,12 @@ Defines the current accounts, cards, and deposit accounts you own. Each account 
 |---|---|---|---|
 | `bank_account` | Conto corrente | Bank account | Mixed income/expense flows |
 | `credit_card` | Carta di credito | Credit card | Forces `invert_sign=True` (positive expenses in CSV become outflows) |
-| `card` | Carta/Prepagata | Card/Prepaid | Debit card or prepaid card (identical sign behaviour) |
+| `debit_card` | Carta di debito | Debit card | Sign behaviour identical to bank account |
+| `prepaid_card` | Carta prepagata | Prepaid card | Sign behaviour identical to debit card |
 | `savings_account` | Conto risparmio | Savings account | Mostly internal transfers |
 | `cash` | Contanti | Cash | Cash movements |
 
-> **There is no need to distinguish between debit and prepaid cards** — the sign behaviour is identical. Only credit cards require special treatment (sign inversion).
+> Only **credit cards** require special treatment (sign inversion). Debit and prepaid cards have identical sign behaviour but are separate values because the labels are clear and unambiguous for the user.
 
 The account type is used as a constraint during file schema classification: it biases automatic `doc_type` detection and, for credit cards, automatically forces amount sign inversion. The file format (single column with sign, debit/credit split, positive-only) is detected automatically by the classifier — the user only needs to indicate what type of instrument it is.
 

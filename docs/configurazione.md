@@ -58,11 +58,12 @@ Definisce i conti correnti, carte e depositi che possiedi. Ogni conto ha:
 |---|---|---|
 | `bank_account` | Conto corrente | Flussi misti entrate/uscite |
 | `credit_card` | Carta di credito | Forza `invert_sign=True` (spese positive nel CSV → uscite) |
-| `card` | Carta/Prepagata | Carta di debito o prepagata (comportamento segno identico) |
+| `debit_card` | Carta di debito | Comportamento segno identico a conto corrente |
+| `prepaid_card` | Carta prepagata | Comportamento segno identico a carta di debito |
 | `savings_account` | Conto risparmio | Prevalenza giroconti |
 | `cash` | Contanti | Movimenti in contanti |
 
-> **Non serve distinguere tra carta di debito e prepagata** — il comportamento del segno è identico. Solo la carta di credito richiede un trattamento speciale (inversione del segno).
+> Solo la **carta di credito** richiede un trattamento speciale (inversione del segno). Carta di debito e prepagata hanno comportamento del segno identico ma sono valori separati perché l'etichetta è chiara per l'utente.
 
 Il tipo conto viene usato come vincolo nella classificazione dello schema file: biasa il rilevamento automatico del `doc_type` e, per le carte di credito, forza automaticamente l'inversione del segno degli importi. Il formato del file (colonna unica con segno, dare/avere, solo positivi) viene rilevato automaticamente dal classifier — l'utente deve solo indicare che tipo di strumento è.
 

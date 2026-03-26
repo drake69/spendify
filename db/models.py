@@ -89,6 +89,7 @@ def create_tables(engine=None):
     _migrate_add_taxonomy_fallback(engine)
     _migrate_add_account_type(engine)
     _migrate_consolidate_account_type(engine)
+    _migrate_savings_to_savings_account(engine)
     _migrate_set_onboarding_done_for_existing_users(engine)  # must run last
     return engine
 
@@ -359,7 +360,7 @@ class TaxonomyDefault(Base):
 
 
 VALID_ACCOUNT_TYPES = frozenset({
-    "bank_account", "credit_card", "card",
+    "bank_account", "credit_card", "debit_card", "prepaid_card",
     "savings_account", "cash",
 })
 
@@ -372,7 +373,7 @@ class Account(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(256), unique=True, nullable=False)   # e.g. "Conto POPSO", "Carta CartaSI"
     bank_name = Column(String(256))                           # optional free-text bank name
-    account_type = Column(String(32), nullable=True)          # bank_account | credit_card | card | savings_account | cash
+    account_type = Column(String(32), nullable=True)          # bank_account | credit_card | debit_card | prepaid_card | savings_account | cash
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
@@ -741,11 +742,26 @@ def _migrate_add_taxonomy_fallback(engine) -> None:
 
 
 def _migrate_consolidate_account_type(engine) -> None:
-    """Merge debit_card and prepaid_card into card (idempotent)."""
+    """Revert 'card' back to 'debit_card' (undo previous merge, idempotent)."""
     from sqlalchemy import text as _text
     with engine.connect() as conn:
         conn.execute(_text(
-            "UPDATE account SET account_type = 'card' "
-            "WHERE account_type IN ('debit_card', 'prepaid_card')"
+            "UPDATE account SET account_type = 'debit_card' "
+            "WHERE account_type = 'card'"
+        ))
+        conn.commit()
+
+
+def _migrate_savings_to_savings_account(engine) -> None:
+    """Rename doc_type 'savings' to 'savings_account' everywhere (idempotent)."""
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        conn.execute(_text(
+            "UPDATE document_schema SET doc_type = 'savings_account' "
+            "WHERE doc_type = 'savings'"
+        ))
+        conn.execute(_text(
+            'UPDATE "transaction" SET doc_type = \'savings_account\' '
+            "WHERE doc_type = 'savings'"
         ))
         conn.commit()

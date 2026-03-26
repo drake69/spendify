@@ -25,7 +25,7 @@ from pathlib import Path
 import pandas as pd
 
 from core.llm_backends import LLMBackend, SanitizationRequiredError, call_with_fallback
-from core.models import Confidence
+from core.models import Confidence, INVERT_SIGN_TYPES, NO_INVERT_TYPES
 from core.normalizer import compute_columns_key
 from core.sanitizer import SanitizationConfig, sanitize_dataframe_descriptions
 from core.schemas import DocumentSchema
@@ -162,9 +162,10 @@ def classify_document(
         _type_to_doc = {
             "credit_card": "credit_card",
             "bank_account": "bank_account",
-            "card": "debit_card",
-            "savings_account": "savings",
-            "cash": "bank_account",
+            "debit_card": "debit_card",
+            "prepaid_card": "prepaid_card",
+            "savings_account": "savings_account",
+            "cash": "cash",
         }
         _doc_hint = _type_to_doc.get(account_type, account_type)
         step0_text += (
@@ -333,8 +334,9 @@ _AMOUNT_NEUTRAL_SYNONYMS: frozenset[str] = frozenset({
     "importe", "monto", "valor",
 })
 
-_BANK_DOC_TYPES: frozenset[str] = frozenset({"bank_account", "savings"})
-_CREDIT_CARD_DOC_TYPES: frozenset[str] = frozenset({"credit_card"})
+# Use centralized sets from core.models (INVERT_SIGN_TYPES, NO_INVERT_TYPES)
+_NO_INVERT_DOC_TYPES: frozenset[str] = frozenset(t.value for t in NO_INVERT_TYPES)
+_INVERT_DOC_TYPES: frozenset[str] = frozenset(t.value for t in INVERT_SIGN_TYPES)
 
 # ── Content-type detection regexes (Phase 0 data-driven) ─────────────────────
 # Date: three digit-groups separated by / - . with optional time component
@@ -895,7 +897,7 @@ def _apply_step0_invert_sign(
     doc_type = str(out.get("doc_type", "")).lower()
 
     # credit card → charges are positive → must invert
-    if doc_type in _CREDIT_CARD_DOC_TYPES:
+    if doc_type in _INVERT_DOC_TYPES:
         if not out.get("invert_sign"):
             logger.info(
                 f"classify_document [{source_name}]: safety-net — "

@@ -33,6 +33,7 @@ from core.description_cleaner import clean_descriptions_batch
 from core.classifier import classify_document
 from core.llm_backends import LLMBackend, BackendFactory, OllamaBackend
 from core.models import (
+    CARD_TYPES,
     Confidence,
     DocumentType,
     GirocontoMode,
@@ -484,8 +485,7 @@ def _infer_tx_type(
             return TransactionType.internal_out if amount < 0 else TransactionType.internal_in
 
     doc_str = doc_type.value if isinstance(doc_type, DocumentType) else doc_type
-    _card_types = {DocumentType.credit_card.value, DocumentType.debit_card.value, DocumentType.prepaid_card.value}
-    if doc_str in _card_types:
+    if doc_str in {t.value for t in CARD_TYPES}:
         return TransactionType.card_tx
     if amount > 0:
         return TransactionType.income
@@ -688,9 +688,8 @@ def process_file(
     _progress(0.35)
 
     # Case 5: remove within-file card balance/totale summary row (double-counting guard)
-    _card_doc_types = {DocumentType.credit_card.value, DocumentType.debit_card.value, DocumentType.prepaid_card.value}
     _doc_str = doc_schema.doc_type.value if hasattr(doc_schema.doc_type, 'value') else str(doc_schema.doc_type)
-    if _doc_str in _card_doc_types and transactions:
+    if _doc_str in {t.value for t in CARD_TYPES} and transactions:
         _owner_label: str | None = None
         if config.use_owner_names_for_giroconto and config.sanitize_config.owner_names:
             _owner_label = ", ".join(config.sanitize_config.owner_names)

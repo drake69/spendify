@@ -38,7 +38,8 @@ _LANGUAGE_OPTIONS = {
 _ACCOUNT_TYPES = {
     "Conto corrente": "bank_account",
     "Carta di credito": "credit_card",
-    "Carta/Prepagata": "card",
+    "Carta di debito": "debit_card",
+    "Carta prepagata": "prepaid_card",
     "Conto risparmio": "savings_account",
     "Contanti": "cash",
 }

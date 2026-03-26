@@ -18,7 +18,7 @@ The app automatically shows the **onboarding wizard** (4 steps). No need to look
 
 1. **Step 1 — Language:** choose the taxonomy language. The wizard suggests your browser language. This also sets date format and number separators (e.g. `31/12/2025` with `,` separator for Italian).
 2. **Step 2 — Holders:** enter your name (and the variants used by the bank — e.g. `Mario Rossi, ROSSI MARIO`). These names are used to protect your privacy in LLM prompts and to detect internal transfers.
-3. **Step 3 — Accounts:** add your bank accounts (name + bank + account type). The account type is mandatory and indicates the financial instrument: *Bank account*, *Credit card*, *Card/Prepaid*, *Savings account* or *Cash*. There is no need to distinguish between debit and prepaid cards — the behaviour is identical. You can skip this step and add them later from Settings.
+3. **Step 3 — Accounts:** add your bank accounts (name + bank + account type). The account type is mandatory and indicates the financial instrument: *Bank account*, *Credit card*, *Debit card*, *Prepaid card*, *Savings account* or *Cash*. You can skip this step and add them later from Settings.
 4. **Step 4 — Confirm:** review the summary and click **Inizia!** — data is saved only at this point.
 
 > **Updating from a previous version?** The wizard does not appear if the database already has data — the app opens normally.
@@ -282,11 +282,12 @@ Every account has a mandatory **type** indicating the financial instrument:
 |------|------------|------------|
 | `bank_account` | Conto corrente | Bank account |
 | `credit_card` | Carta di credito | Credit card |
-| `card` | Carta/Prepagata | Card/Prepaid |
+| `debit_card` | Carta di debito | Debit card |
+| `prepaid_card` | Carta prepagata | Prepaid card |
 | `savings_account` | Conto risparmio | Savings account |
 | `cash` | Contanti | Cash |
 
-> **There is no need to distinguish between debit and prepaid cards** — the sign behaviour is identical. Only credit cards require special treatment (sign inversion: expenses in the CSV are positive but must be recorded as outflows). The file format (single column, debit/credit split, etc.) is detected automatically by Spendify — you only need to indicate *what type of instrument it is*.
+> Only **credit cards** require special treatment (sign inversion: expenses in the CSV are positive but must be recorded as outflows). Debit and prepaid cards have identical sign behaviour but are separate values because the labels are clear and unambiguous for the user. The file format (single column, debit/credit split, etc.) is detected automatically by Spendify — you only need to indicate *what type of instrument it is*.
 
 ### Renaming an account
 

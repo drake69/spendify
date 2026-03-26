@@ -391,11 +391,8 @@ def _evaluate_file(
         convention_detected = schema.sign_convention.value if hasattr(schema.sign_convention, "value") else str(schema.sign_convention)
         confidence_score = getattr(schema, "confidence_score", 0.0)
 
-        # doc_type matching: handle "card" <-> "debit_card"/"prepaid_card" mapping
+        # doc_type matching
         doc_type_match = 1 if doc_type_detected == entry.doc_type else 0
-        # If manifest says "card" and pipeline returns debit_card or prepaid_card, also match
-        if entry.doc_type == "card" and doc_type_detected in ("debit_card", "prepaid_card", "card"):
-            doc_type_match = 1
 
         # Convention matching
         if entry.amount_format == "positive_only":
