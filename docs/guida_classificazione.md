@@ -29,7 +29,7 @@ Le transazioni su cui l'AI non era sicura vengono marcate con il flag di warning
 
 Vista completa di tutte le transazioni importate, con filtri per data, conto, categoria e tipo.
 
-**Modifica diretta:** cambia categoria, sottocategoria e contesto direttamente nella griglia. Ogni modifica aggiorna il campo `classification_source` a "manual".
+**Modifica diretta:** cambia categoria, sottocategoria e contesto direttamente nella griglia. Ogni modifica aggiorna il campo `category_source` a "manual".
 
 **Validazione:** spunta la checkbox Validato per confermare che la categoria e corretta. Il salvataggio e immediato, il flag di warning viene rimosso automaticamente.
 

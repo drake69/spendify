@@ -16,6 +16,7 @@
 7. [Contesti di vita](#7-contesti-di-vita)
 8. [Modalità test importazione](#8-modalità-test-importazione)
 9. [Backend LLM](#9-backend-llm)
+   - [llama.cpp (locale, default)](#90-llamacpp-locale-default)
    - [Ollama (locale)](#91-ollama-locale)
    - [OpenAI](#92-openai)
    - [Claude (Anthropic)](#93-claude-anthropic)
@@ -214,12 +215,45 @@ Il backend LLM viene usato per:
 
 | Backend | Privacy | Costo | Velocità | Qualità |
 |---|---|---|---|---|
+| **llama.cpp (locale, default)** | ✅ Totale | ✅ Gratuito | ⚡ Dipende dall'hardware | Buona (con modelli GGUF) |
 | **Ollama (locale)** | ✅ Totale | ✅ Gratuito | ⚡ Dipende dall'hardware | Buona (con gemma3:12b) |
 | **OpenAI** | ⚠️ PII redatte | 💰 Pay-per-use | ⚡⚡ Alta | Alta |
 | **Claude (Anthropic)** | ⚠️ PII redatte | 💰 Pay-per-use | ⚡⚡ Alta | Alta |
 | **OpenAI-compatible** | ⚠️ PII redatte | Varia | Varia | Varia |
 
 **Circuit breaker:** Se il backend configurato non risponde, Spendify fa fallback automatico su Ollama locale. Se anche Ollama è offline, la transazione viene importata con `to_review=True` e descrizione grezza.
+
+---
+
+### 9.0 llama.cpp (locale, default)
+
+La scelta predefinita per le **nuove installazioni**: nessun servizio esterno necessario. Spendify carica il modello GGUF direttamente in memoria tramite `llama-cpp-python`, senza bisogno di Ollama o altri server.
+
+**Modelli GGUF suggeriti:**
+
+| Modello | Dimensione | Descrizione |
+|---|---|---|
+| `gemma-2-2b-it-Q4_K_M` | ~1.6 GB | Google Gemma 2B — leggero, buono per categorizzazione |
+| `phi-3-mini-4k-instruct-Q4_K_M` | ~2.3 GB | Microsoft Phi-3 Mini — bilanciato qualità/velocità |
+
+**Scaricare un modello dall'app:**
+
+1. Vai su **⚙️ Impostazioni → 🤖 Configurazione LLM**
+2. Seleziona il backend **llama.cpp (locale)**
+3. Nella sezione **Scarica modello**, scegli un modello suggerito o incolla un URL diretto a un file `.gguf` su HuggingFace
+4. Clicca **⬇️ Scarica** — una barra di progresso mostra i MB scaricati
+
+I modelli vengono salvati in `~/.spendify/models/`. Se nella cartella sono presenti più file `.gguf`, viene usato il primo in ordine alfabetico.
+
+**Gestione modelli locali:**
+
+La sezione **Modelli locali** mostra i file `.gguf` presenti nella cartella modelli, con il percorso e la dimensione. Puoi selezionare quale usare dal campo **Percorso modello**.
+
+| Campo | Default | Descrizione |
+|---|---|---|
+| **Percorso modello** | *(primo .gguf in `~/.spendify/models/`)* | Percorso al file `.gguf` da usare |
+
+> **Nota:** llama.cpp supporta automaticamente l'accelerazione GPU su Apple Silicon (Metal) e CUDA. Se il modello non supporta il ruolo `system`, Spendify fonde automaticamente il system prompt nel prompt utente.
 
 ---
 
@@ -465,7 +499,7 @@ Alla prima installazione il database viene inizializzato con questi valori:
 | `amount_thousands_sep` | `.` | Separatore migliaia italiano |
 | `description_language` | `it` | Italiano |
 | `giroconto_mode` | `neutral` | Giroconti visibili ma neutri |
-| `llm_backend` | `local_ollama` | Ollama locale |
+| `llm_backend` | `local_llama_cpp` | llama.cpp locale |
 | `ollama_base_url` | `http://localhost:11434` | Porta default Ollama |
 | `ollama_model` | `gemma3:12b` | Modello raccomandato |
 | `openai_model` | `gpt-4o-mini` | Modello OpenAI economico |

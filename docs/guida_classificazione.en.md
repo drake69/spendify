@@ -29,7 +29,7 @@ Transactions where the AI was not confident are flagged for review.
 
 Full view of all imported transactions, with filters for date, account, category and type.
 
-**Direct editing:** change category, subcategory and context directly in the grid. Each change updates `classification_source` to "manual".
+**Direct editing:** change category, subcategory and context directly in the grid. Each change updates `category_source` to "manual".
 
 **Validation:** tick the Validated checkbox to confirm the category is correct. Saving is immediate and the warning flag is automatically cleared.
 

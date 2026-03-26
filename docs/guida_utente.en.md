@@ -282,8 +282,8 @@ You can download the table as CSV with the **⬇️ Scarica CSV** button.
 **Situation:** You want to use a different model for classification (e.g. Claude instead of local Ollama).
 
 Go to **⚙️ Impostazioni**:
-- **Backend LLM:** choose between Ollama (local, free, private), OpenAI, Claude, or any OpenAI-compatible provider (Groq, Google AI Studio, etc.)
-- **Model:** specify the model name (e.g. `gpt-4o-mini`, `claude-3-5-haiku-20241022`, `gemma2-9b-it`)
+- **Backend LLM:** choose between llama.cpp (local, free, default for new installations), Ollama (local, free), OpenAI, Claude, or any OpenAI-compatible provider (Groq, Google AI Studio, etc.)
+- **Model:** specify the model name (e.g. `gpt-4o-mini`, `claude-3-5-haiku-20241022`, `gemma2-9b-it`) or select a `.gguf` file for llama.cpp
 - **API Key:** enter the key if you use a remote service
 
 > **Privacy note:** If you use a remote backend (OpenAI or Claude), Spendify automatically removes IBANs, card numbers, tax identification numbers, and the account holder's name before sending any data.
@@ -313,6 +313,17 @@ The operation is **atomic**: if anything goes wrong during recalculation, no dat
 
 > **In practice:** rename the account without worry. Transactions, categories, rules, and associated internal transfers remain untouched. The only thing that changes is the internal technical identifier (invisible to you).
 
+### Downloading a model (llama.cpp)
+
+If you use llama.cpp as your backend (default for new installations), you can download a GGUF model directly from the app:
+
+1. Go to **⚙️ Impostazioni → 🤖 Configurazione LLM**
+2. Select the **llama.cpp (local)** backend
+3. Choose a suggested model (e.g. `gemma-2-2b-it-Q4_K_M`, ~1.6 GB) or paste a direct URL
+4. Click **⬇️ Scarica**
+
+Models are saved in `~/.spendify/models/`. The **Local models** section shows the available `.gguf` files, with path and size.
+
 ### Downloading a model (Ollama)
 
 If you use Ollama as your backend, you can download or update the model directly from the app without opening a terminal:
@@ -325,7 +336,7 @@ A progress bar shows the downloaded MB. The download may take a few minutes (`ge
 
 ### Checking that the model works
 
-For any backend (Ollama, OpenAI, Claude, Compatible):
+For any backend (llama.cpp, Ollama, OpenAI, Claude, Compatible):
 
 1. Configure backend, URL/API key, and model
 2. Click **🧪 Test LLM**

@@ -282,8 +282,8 @@ Puoi scaricare la tabella come CSV con il pulsante **⬇️ Scarica CSV**.
 **Situazione:** Vuoi usare un modello diverso per la classificazione (es. Claude invece di Ollama locale).
 
 Vai su **Impostazioni**:
-- **Backend LLM:** scegli tra Ollama (locale, gratuito, privato), OpenAI, Claude, o qualsiasi provider OpenAI-compatible (Groq, Google AI Studio, ecc.)
-- **Modello:** specifica il nome del modello (es. `gpt-4o-mini`, `claude-3-5-haiku-20241022`, `gemma2-9b-it`)
+- **Backend LLM:** scegli tra llama.cpp (locale, gratuito, default per nuove installazioni), Ollama (locale, gratuito), OpenAI, Claude, o qualsiasi provider OpenAI-compatible (Groq, Google AI Studio, ecc.)
+- **Modello:** specifica il nome del modello (es. `gpt-4o-mini`, `claude-3-5-haiku-20241022`, `gemma2-9b-it`) oppure seleziona un file `.gguf` per llama.cpp
 - **API Key:** inserisci la chiave se usi un servizio remoto
 
 > **Nota sulla privacy:** Se usi un backend remoto (OpenAI o Claude), Spendify rimuove automaticamente IBAN, numeri carta, codice fiscale e nome del titolare prima di inviare qualsiasi dato.
@@ -313,6 +313,17 @@ L'operazione e **atomica**: se qualcosa va storto durante il ricalcolo, nessun d
 
 > **In pratica:** rinomina il conto senza preoccupazioni. Le transazioni, le categorie, le regole e i giroconti associati rimangono intatti. L'unica cosa che cambia e l'identificativo tecnico interno (invisibile a te).
 
+### Scaricare un modello (llama.cpp)
+
+Se usi llama.cpp come backend (default per nuove installazioni), puoi scaricare un modello GGUF direttamente dall'app:
+
+1. Vai su **⚙️ Impostazioni → 🤖 Configurazione LLM**
+2. Seleziona il backend **llama.cpp (locale)**
+3. Scegli un modello suggerito (es. `gemma-2-2b-it-Q4_K_M`, ~1.6 GB) oppure incolla un URL diretto
+4. Clicca **⬇️ Scarica**
+
+I modelli vengono salvati in `~/.spendify/models/`. La sezione **Modelli locali** mostra i file `.gguf` disponibili, con percorso e dimensione.
+
 ### Scaricare un modello (Ollama)
 
 Se usi Ollama come backend, puoi scaricare o aggiornare il modello direttamente dall'app senza aprire il terminale:
@@ -325,7 +336,7 @@ Una barra di progresso mostra i MB scaricati. Il download può richiedere qualch
 
 ### Verificare che il modello funzioni
 
-Per qualsiasi backend (Ollama, OpenAI, Claude, Compatible):
+Per qualsiasi backend (llama.cpp, Ollama, OpenAI, Claude, Compatible):
 
 1. Configura backend, URL/API key e modello
 2. Clicca **🧪 Test LLM**
