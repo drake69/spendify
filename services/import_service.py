@@ -105,6 +105,8 @@ class ImportService:
             compat_base_url=settings.get("compat_base_url", ""),
             compat_api_key=settings.get("compat_api_key", ""),
             compat_model=settings.get("compat_model", ""),
+            llama_cpp_model_path=settings.get("llama_cpp_model_path", ""),
+            llama_cpp_n_gpu_layers=int(settings.get("llama_cpp_n_gpu_layers", "-1")),
             description_language=settings.get("description_language", "it"),
             test_mode=test_mode,
             max_transaction_amount=float(settings.get("max_transaction_amount", "1000000")),

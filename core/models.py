@@ -64,6 +64,7 @@ class GirocontoMode(str, Enum):
 
 
 class LLMBackendName(str, Enum):
+    local_llama_cpp = "local_llama_cpp"
     local_ollama = "local_ollama"
     openai = "openai"
     claude = "claude"

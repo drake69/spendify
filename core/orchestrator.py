@@ -110,6 +110,9 @@ class ProcessingConfig:
     compat_base_url: str = ""
     compat_api_key: str = ""
     compat_model: str = ""
+    # llama.cpp (local GGUF model)
+    llama_cpp_model_path: str = ""
+    llama_cpp_n_gpu_layers: int = -1
 
 
 @dataclass
@@ -156,6 +159,11 @@ def _build_backend(config: ProcessingConfig) -> LLMBackend:
         kwargs["base_url"] = config.compat_base_url
         kwargs["api_key"]  = config.compat_api_key
         kwargs["model"]    = config.compat_model
+    elif config.llm_backend == "local_llama_cpp":
+        kwargs.pop("timeout", None)  # LlamaCppBackend doesn't use timeout kwarg for Llama()
+        if config.llama_cpp_model_path:
+            kwargs["model_path"] = config.llama_cpp_model_path
+        kwargs["n_gpu_layers"] = config.llama_cpp_n_gpu_layers
     return BackendFactory.create(config.llm_backend, **kwargs)
 
 

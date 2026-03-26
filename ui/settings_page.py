@@ -52,6 +52,7 @@ _GIROCONTO_OPTIONS = {
 }
 
 _BACKEND_OPTIONS = {
+    "llama.cpp (locale, zero-config)": "local_llama_cpp",
     "Ollama (locale, privacy-first)": "local_ollama",
     "OpenAI": "openai",
     "Claude (Anthropic)": "claude",
@@ -118,13 +119,17 @@ def _do_llm_test(
     base_url: str = "",
     api_key: str = "",
     model: str = "",
+    **extra_kwargs,
 ) -> None:
     """Send a minimal test prompt to the configured LLM backend."""
     from core.llm_backends import BackendFactory, LLMValidationError
 
     try:
         kwargs: dict = {"timeout": 15}
-        if backend == "local_ollama":
+        if backend == "local_llama_cpp":
+            kwargs.pop("timeout", None)
+            kwargs.update(extra_kwargs)
+        elif backend == "local_ollama":
             kwargs["base_url"] = base_url
             kwargs["model"] = model
         elif backend == "openai":
@@ -456,12 +461,101 @@ def render_settings_page(engine):
         "Backend LLM",
         list(_BACKEND_OPTIONS.keys()),
         index=list(_BACKEND_OPTIONS.keys()).index(
-            _key_for(_BACKEND_OPTIONS, settings.get("llm_backend", "local_ollama"))
+            _key_for(_BACKEND_OPTIONS, settings.get("llm_backend", "local_llama_cpp"))
         ),
     )
     backend = _BACKEND_OPTIONS[backend_label]
 
-    if backend == "local_ollama":
+    # Initialise llama_cpp settings variables (used in save)
+    llama_cpp_model_path = settings.get("llama_cpp_model_path", "")
+    llama_cpp_n_gpu_layers = settings.get("llama_cpp_n_gpu_layers", "-1")
+
+    if backend == "local_llama_cpp":
+        st.caption(
+            "Backend locale basato su llama.cpp — nessun server esterno richiesto. "
+            "Scarica un modello GGUF e Spendify lo usa direttamente."
+        )
+        from core.llm_backends import LlamaCppBackend, DEFAULT_GGUF_MODELS
+
+        llama_cpp_model_path = st.text_input(
+            "Percorso modello GGUF",
+            value=settings.get("llama_cpp_model_path", ""),
+            placeholder="Vuoto = auto-detect da ~/.spendify/models/",
+            help="Lascia vuoto per usare automaticamente il primo file .gguf trovato in ~/.spendify/models/",
+        )
+        llama_cpp_n_gpu_layers = st.text_input(
+            "GPU layers (-1 = auto, 0 = solo CPU)",
+            value=settings.get("llama_cpp_n_gpu_layers", "-1"),
+            help="-1 offload automatico su GPU, 0 usa solo CPU",
+        )
+
+        # Show locally available models
+        local_models = LlamaCppBackend.list_local_models()
+        if local_models:
+            st.markdown("**Modelli disponibili localmente:**")
+            for m in local_models:
+                st.caption(f"  {m['name']}  ({m['size_gb']} GB) — `{m['path']}`")
+        else:
+            st.info("Nessun modello GGUF trovato in ~/.spendify/models/. Scaricane uno qui sotto.")
+
+        # Download model
+        st.markdown("**Scarica modello GGUF:**")
+        model_options = {
+            f"{v['description']}  ({v['size_gb']} GB)": k
+            for k, v in DEFAULT_GGUF_MODELS.items()
+        }
+        selected_model_label = st.selectbox(
+            "Modello da scaricare",
+            list(model_options.keys()),
+            key="llama_cpp_download_select",
+            label_visibility="collapsed",
+        )
+        selected_model_key = model_options[selected_model_label]
+        selected_model_info = DEFAULT_GGUF_MODELS[selected_model_key]
+
+        btn_col1, btn_col2, btn_col3 = st.columns([1, 1, 2])
+        with btn_col1:
+            if st.button("⬇️ Scarica modello", key="llama_cpp_download"):
+                try:
+                    progress_bar = st.progress(0.0)
+                    status_text = st.empty()
+                    def _progress(downloaded, total):
+                        if total > 0:
+                            pct = downloaded / total
+                            progress_bar.progress(min(pct, 1.0))
+                            status_text.caption(
+                                f"Scaricamento… {downloaded / (1024**2):.0f}/{total / (1024**2):.0f} MB"
+                            )
+                    with st.spinner(f"Download {selected_model_key}…"):
+                        dest = LlamaCppBackend.download_model(
+                            selected_model_info["url"],
+                            progress_callback=_progress,
+                        )
+                    progress_bar.progress(1.0)
+                    st.success(f"Modello scaricato in `{dest}`")
+                except Exception as exc:
+                    st.error(f"Errore durante il download: {exc}")
+        with btn_col2:
+            if st.button("🧪 Test LLM", key="test_llama_cpp"):
+                test_kwargs = {}
+                if llama_cpp_model_path:
+                    test_kwargs["model_path"] = llama_cpp_model_path
+                try:
+                    n_gpu = int(llama_cpp_n_gpu_layers)
+                except ValueError:
+                    n_gpu = -1
+                test_kwargs["n_gpu_layers"] = n_gpu
+                _do_llm_test(backend, **test_kwargs)
+
+        # Preserve other backends' settings
+        ollama_url      = settings.get("ollama_base_url", "http://localhost:11434")
+        ollama_model    = settings.get("ollama_model", "gemma3:12b")
+        openai_key      = settings.get("openai_api_key", "")
+        openai_model    = settings.get("openai_model", "gpt-4o-mini")
+        anthropic_key   = settings.get("anthropic_api_key", "")
+        anthropic_model = settings.get("anthropic_model", "claude-3-5-haiku-20241022")
+
+    elif backend == "local_ollama":
         col_url, col_model = st.columns([2, 1])
         with col_url:
             ollama_url = st.text_input(
@@ -590,6 +684,8 @@ def render_settings_page(engine):
             "compat_base_url":        compat_base_url,
             "compat_api_key":         compat_api_key,
             "compat_model":           compat_model,
+            "llama_cpp_model_path":   llama_cpp_model_path,
+            "llama_cpp_n_gpu_layers": str(llama_cpp_n_gpu_layers),
             "owner_names":            owner_names_raw.strip(),
             "use_owner_names_giroconto": "true" if use_owner_giroconto else "false",
             "import_test_mode":       "true" if import_test_mode else "false",

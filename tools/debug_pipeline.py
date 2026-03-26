@@ -198,6 +198,11 @@ def _backend_kwargs(config: ProcessingConfig) -> dict:
         kwargs["model"] = config.openai_model
     elif config.llm_backend == "claude":
         kwargs["model"] = config.claude_model
+    elif config.llm_backend == "local_llama_cpp":
+        kwargs.pop("timeout", None)
+        if config.llama_cpp_model_path:
+            kwargs["model_path"] = config.llama_cpp_model_path
+        kwargs["n_gpu_layers"] = config.llama_cpp_n_gpu_layers
     return kwargs
 
 
