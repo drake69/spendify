@@ -247,8 +247,23 @@ def _category_fuzzy_match(result: CategorizationResult, expected: str) -> bool:
 
 def _collect_llm_metadata(config: ProcessingConfig, backend) -> dict[str, str]:
     """Collect LLM provider, model, and parameters for benchmark metadata."""
+    # Git commit info
+    _git_sha = "unknown"
+    _git_branch = "unknown"
+    try:
+        _git_sha = subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"], cwd=PROJECT_ROOT, text=True
+        ).strip()
+        _git_branch = subprocess.check_output(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=PROJECT_ROOT, text=True
+        ).strip()
+    except Exception:
+        pass
+
     meta: dict[str, str] = {
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "git_commit": _git_sha,
+        "git_branch": _git_branch,
         "provider": "unknown",
         "model": "unknown",
         "temperature": "default",
@@ -506,6 +521,7 @@ def _evaluate_file(
 
 _CSV_HEADER = [
     "run_id", "filename",
+    "git_commit", "git_branch",
     "provider", "model", "temperature", "parameter_size", "quantization",
     "n_transactions", "n_categorized",
     "n_correct_category", "n_correct_fuzzy",
@@ -515,7 +531,7 @@ _CSV_HEADER = [
 ]
 
 _DETAIL_CSV_HEADER = [
-    "run_id", "filename", "tx_index",
+    "run_id", "filename", "git_commit", "git_branch", "tx_index",
     "description", "amount",
     "expected_category", "actual_category", "actual_subcategory", "actual_full",
     "exact_match", "fuzzy_match", "is_fallback",
@@ -529,6 +545,8 @@ _LLM_META: dict[str, str] = {}
 def _result_to_row(r: CatRunResult) -> list:
     return [
         r.run_id, r.filename,
+        _LLM_META.get("git_commit", ""),
+        _LLM_META.get("git_branch", ""),
         _LLM_META.get("provider", ""),
         _LLM_META.get("model", ""),
         _LLM_META.get("temperature", ""),
@@ -544,7 +562,10 @@ def _result_to_row(r: CatRunResult) -> list:
 
 def _detail_to_row(d: CatDetailRow) -> list:
     return [
-        d.run_id, d.filename, d.tx_index,
+        d.run_id, d.filename,
+        _LLM_META.get("git_commit", ""),
+        _LLM_META.get("git_branch", ""),
+        d.tx_index,
         d.description, d.amount,
         d.expected_category, d.actual_category, d.actual_subcategory, d.actual_full,
         d.exact_match, d.fuzzy_match, d.is_fallback,
