@@ -228,6 +228,48 @@ def _collect_llm_metadata(config: ProcessingConfig, backend) -> dict[str, str]:
             meta["quantization"] = "?"
             meta["family"] = "?"
 
+    # ── Hardware & OS info ─────────────────────────────────────────────
+    import platform
+    meta["os"] = f"{platform.system()} {platform.release()} {platform.machine()}"
+    try:
+        import subprocess as _sp
+        # macOS
+        ver = _sp.check_output(["sw_vers", "-productVersion"], text=True).strip()
+        meta["os_version"] = f"macOS {ver}"
+    except Exception:
+        meta["os_version"] = platform.platform()
+    try:
+        import subprocess as _sp
+        cpu = _sp.check_output(
+            ["sysctl", "-n", "machdep.cpu.brand_string"], text=True
+        ).strip()
+        meta["cpu"] = cpu
+    except Exception:
+        meta["cpu"] = platform.processor() or "unknown"
+    try:
+        import subprocess as _sp
+        ram_bytes = int(_sp.check_output(["sysctl", "-n", "hw.memsize"], text=True).strip())
+        meta["ram_gb"] = str(round(ram_bytes / (1024**3)))
+    except Exception:
+        meta["ram_gb"] = "?"
+    try:
+        import subprocess as _sp
+        gpu_info = _sp.check_output(
+            ["system_profiler", "SPDisplaysDataType"], text=True
+        )
+        for line in gpu_info.splitlines():
+            if "Chipset Model" in line:
+                meta["gpu"] = line.split(":")[-1].strip()
+                break
+        # GPU cores
+        for line in gpu_info.splitlines():
+            if "Total Number of Cores" in line:
+                meta["gpu_cores"] = line.split(":")[-1].strip()
+                break
+    except Exception:
+        meta["gpu"] = "?"
+        meta["gpu_cores"] = "?"
+
     return meta
 
 
@@ -755,6 +797,10 @@ def main() -> None:
     if llm_meta.get("parameter_size", "?") != "?":
         print(f"[config] Parameters: {llm_meta['parameter_size']}, Quant: {llm_meta['quantization']}")
     print(f"[config] Timeout: {llm_meta['llm_timeout_s']}s")
+    print(f"[hardware] OS: {llm_meta.get('os_version', llm_meta.get('os', '?'))}")
+    print(f"[hardware] CPU: {llm_meta.get('cpu', '?')}")
+    print(f"[hardware] RAM: {llm_meta.get('ram_gb', '?')} GB")
+    print(f"[hardware] GPU: {llm_meta.get('gpu', '?')} ({llm_meta.get('gpu_cores', '?')} cores)")
 
     # Run benchmark
     all_results: list[RunFileResult] = []
