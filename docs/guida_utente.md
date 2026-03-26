@@ -359,6 +359,17 @@ Spendify memorizza la struttura di ogni file importato (colonne, formato date, c
 
 ---
 
+## Strumenti di benchmark (per utenti avanzati)
+
+Spendify include due script di benchmark nella cartella `tests/`:
+
+- **`benchmark_pipeline.py`** — misura la qualita del riconoscimento schema (header, colonne, formato date, convenzione segno).
+- **`benchmark_categorizer.py`** — misura la qualita della categorizzazione LLM in isolamento (senza database, regole o storico). Metriche: accuratezza esatta, accuratezza fuzzy (primo livello), tasso di fallback.
+
+Entrambi supportano gli stessi argomenti CLI: `--runs`, `--files`, `--backend`, `--model`, `--model-path`. Utili per confrontare modelli diversi prima di scegliere quale usare in produzione.
+
+---
+
 ## Domande frequenti
 
 **Posso importare file di banche diverse insieme?**
