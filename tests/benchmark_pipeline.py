@@ -739,6 +739,8 @@ def main() -> None:
                         help="LLM backend override (e.g. 'local_llama_cpp', 'local_ollama')")
     parser.add_argument("--model-path", type=str, default=None,
                         help="Model path for llama-cpp backend (e.g. path to .gguf file)")
+    parser.add_argument("--model", type=str, default=None,
+                        help="Model name override for Ollama (e.g. 'phi3:3.8b', 'gemma3:12b')")
     args = parser.parse_args()
 
     n_runs = args.runs
@@ -754,6 +756,7 @@ def main() -> None:
 
     backend_override = args.backend
     model_path_override = getattr(args, 'model_path', None)
+    model_override = args.model
 
     if not backend_override or backend_override == "local_ollama":
         print("\n[check] Verifying Ollama is reachable...")
@@ -796,6 +799,8 @@ def main() -> None:
         config.llm_backend = backend_override
     if model_path_override and backend_override == "local_llama_cpp":
         config.llama_cpp_model_path = model_path_override
+    if model_override:
+        config.ollama_model = model_override  # works for Ollama backend
     backend = _build_backend(config)
 
     # ── Collect LLM metadata ─────────────────────────────────────────────
