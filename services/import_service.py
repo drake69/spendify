@@ -20,6 +20,7 @@ from core.normalizer import (
     detect_skip_rows as _detect_skip_rows,
     load_raw_head as _load_raw_head,
 )
+from core.history_engine import HistoryCache
 from core.orchestrator import (
     ImportResult,
     ProcessingConfig,
@@ -194,6 +195,7 @@ class ImportService:
         with self._session() as s:
             taxonomy = repository.get_taxonomy_config(s)
             user_rules = repository.get_category_rules(s)
+            history_cache = HistoryCache(s)
 
         def _existing_checker(tx_ids: list[str]) -> set[str]:
             with self._session() as s:
@@ -210,6 +212,7 @@ class ImportService:
             existing_tx_ids_checker=_existing_checker,
             account_label_override=account_label_override,
             skip_rows_override=skip_rows_override,
+            history_cache=history_cache,
         )
 
     # ── Full-batch import (legacy) ─────────────────────────────────────────────

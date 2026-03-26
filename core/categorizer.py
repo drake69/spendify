@@ -18,6 +18,11 @@ from typing import Any, Optional
 
 import yaml
 
+from core.history_engine import (
+    HISTORY_AUTO_THRESHOLD,
+    HISTORY_SUGGEST_THRESHOLD,
+    HistoryCache,
+)
 from core.llm_backends import LLMBackend, call_with_fallback
 from core.models import CategorySource, Confidence
 from core.sanitizer import SanitizationConfig, redact_pii
@@ -403,20 +408,23 @@ def categorize_batch(
     progress_callback=None,  # Callable[[float], None] — 0.0..1.0 within batch
     source_name: str = "unknown",
     fallback_categories: dict[str, tuple[str, str]] | None = None,
+    history_cache: HistoryCache | None = None,
 ) -> list[CategorizationResult]:
     """Categorize transactions using two directional LLM batches (expense / income).
 
     Pipeline per transaction:
       1. User rules (deterministic)
       2. Static keyword rules (direction-aware)
-      3. LLM — expense batch sees only expense categories, income batch only income categories
-      4. Fallback → to_review=True
+      3. History lookup (validated transactions)
+      4. LLM — expense batch sees only expense categories, income batch only income categories
+      5. Fallback → to_review=True
     """
     n = len(transactions)
     results: list[Optional[CategorizationResult]] = [None] * n
 
     llm_expense: list[int] = []
     llm_income: list[int] = []
+    n_history = 0
 
     # Step 0 + 1: deterministic rules per transaction
     for i, tx in enumerate(transactions):
@@ -427,7 +435,33 @@ def categorize_batch(
         result = _try_deterministic(description, amount, doc_type, user_rules, taxonomy)
         if result is not None:
             results[i] = result
-        elif amount < 0:
+            continue
+
+        # Step 2: history lookup (before LLM)
+        if history_cache is not None:
+            cat, subcat, confidence = history_cache.lookup(description)
+            if cat and confidence >= HISTORY_AUTO_THRESHOLD:
+                results[i] = CategorizationResult(
+                    category=cat,
+                    subcategory=subcat or "",
+                    confidence=Confidence.high,
+                    source=CategorySource.history,
+                    to_review=False,
+                )
+                n_history += 1
+                continue
+            if cat and confidence >= HISTORY_SUGGEST_THRESHOLD:
+                results[i] = CategorizationResult(
+                    category=cat,
+                    subcategory=subcat or "",
+                    confidence=Confidence.medium,
+                    source=CategorySource.history,
+                    to_review=True,
+                )
+                n_history += 1
+                continue
+
+        if amount < 0:
             llm_expense.append(i)
         else:
             llm_income.append(i)
@@ -462,6 +496,7 @@ def categorize_batch(
     logger.info(
         f"categorize_batch [{source_name}]: {n} transactions — "
         f"{sum(1 for r in results if r and r.source == CategorySource.rule)} by rules, "
+        f"{n_history} by history, "
         f"{sum(1 for r in results if r and r.source == CategorySource.llm)} by LLM"
     )
 
@@ -487,11 +522,33 @@ def categorize_transaction(
     confidence_threshold: float = 0.8,
     description_language: str = "it",
     fallback_categories: dict[str, tuple[str, str]] | None = None,
+    session=None,
 ) -> CategorizationResult:
     """Single-transaction categorization. Used for real-time correction in the UI."""
     result = _try_deterministic(description, amount, doc_type, user_rules, taxonomy)
     if result is not None:
         return result
+
+    # Step 2: history lookup (before LLM)
+    if session is not None:
+        from core.history_engine import lookup_history
+        cat, subcat, confidence = lookup_history(session, description)
+        if cat and confidence >= HISTORY_AUTO_THRESHOLD:
+            return CategorizationResult(
+                category=cat,
+                subcategory=subcat or "",
+                confidence=Confidence.high,
+                source=CategorySource.history,
+                to_review=False,
+            )
+        if cat and confidence >= HISTORY_SUGGEST_THRESHOLD:
+            return CategorizationResult(
+                category=cat,
+                subcategory=subcat or "",
+                confidence=Confidence.medium,
+                source=CategorySource.history,
+                to_review=True,
+            )
 
     if llm_backend is not None:
         tx = [{"description": description, "amount": amount, "doc_type": doc_type}]

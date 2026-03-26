@@ -10,6 +10,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
+from core.history_engine import get_description_profiles
+from db.models import get_session
 from services.settings_service import SettingsService
 from services.transaction_service import TransactionService
 from support.formatting import format_amount_display
@@ -495,6 +497,72 @@ def render_analysis_page(engine):
         fig5 = px.bar(acc_monthly, x="month", y="abs_amount", color="account_label",
                       barmode="stack", labels={"abs_amount": "€", "month": "Mese"})
         st.plotly_chart(fig5, width="stretch")
+
+    # ── 10. Associazioni descrizione → categoria ───────────────────────────────
+    st.subheader("🔗 Associazioni descrizione → categoria")
+    st.caption(
+        "Associazioni apprese dalle transazioni validate manualmente. "
+        "L'omogeneità misura quanto una descrizione è associata in modo coerente "
+        "a una singola categoria (1.0 = sempre la stessa, 0.0 = dispersa)."
+    )
+
+    with get_session(engine) as _hist_session:
+        _profiles = get_description_profiles(_hist_session)
+
+    # Filter: only descriptions with at least 3 validated transactions
+    _profiles = [p for p in _profiles if p.total_validated >= 3]
+
+    if _profiles:
+        # Sort by count descending
+        _profiles.sort(key=lambda p: p.total_validated, reverse=True)
+
+        _assoc_rows = []
+        for p in _profiles:
+            if p.homogeneity >= 0.90:
+                badge = "🟢 Auto"
+            elif p.homogeneity >= 0.50:
+                badge = "🟡 Mista"
+            else:
+                badge = "🔴 Eterogenea"
+
+            _assoc_rows.append({
+                "Descrizione": p.description or "",
+                "Categoria principale": p.top_category,
+                "Sottocategoria": p.top_subcategory or "",
+                "Validazioni": p.total_validated,
+                "Omogeneità": round(p.homogeneity, 2),
+                "Confidenza": round(p.confidence, 2),
+                "Stato": badge,
+            })
+
+        df_assoc = pd.DataFrame(_assoc_rows)
+        st.dataframe(
+            df_assoc,
+            width="stretch",
+            column_config={
+                "Omogeneità": st.column_config.ProgressColumn(
+                    min_value=0.0, max_value=1.0, format="%.2f",
+                ),
+                "Confidenza": st.column_config.ProgressColumn(
+                    min_value=0.0, max_value=1.0, format="%.2f",
+                ),
+            },
+            hide_index=True,
+        )
+
+        _n_auto = sum(1 for p in _profiles if p.homogeneity >= 0.90)
+        _n_mixed = sum(1 for p in _profiles if 0.50 <= p.homogeneity < 0.90)
+        _n_hetero = sum(1 for p in _profiles if p.homogeneity < 0.50)
+        st.caption(
+            f"**Riepilogo**: {_n_auto} auto-categorizzabili (🟢), "
+            f"{_n_mixed} miste (🟡), {_n_hetero} eterogenee (🔴) — "
+            f"su {len(_profiles)} descrizioni con almeno 3 validazioni."
+        )
+    else:
+        st.info(
+            "Nessuna associazione disponibile. "
+            "Valida manualmente alcune transazioni per attivare l'auto-apprendimento."
+        )
 
     # ── HTML report download ───────────────────────────────────────────────────
     st.divider()

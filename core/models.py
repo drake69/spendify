@@ -75,3 +75,4 @@ class CategorySource(str, Enum):
     rule = "rule"
     llm = "llm"
     manual = "manual"
+    history = "history"
