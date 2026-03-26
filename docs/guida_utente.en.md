@@ -68,7 +68,7 @@ After processing, a detailed summary is shown for each imported file:
 
 | Metric | Meaning |
 |--------|---------|
-| **Righe E/C** (Statement rows) | Total number of data rows in the transactions file (excluding headers) |
+| **Righe E/C** (Movements file rows) | Total number of data rows in the transactions file (excluding headers) |
 | **Imported** | New transactions saved to the database |
 | **Already present** | Previously imported transactions (duplicates, skipped) |
 | **Giroconti** (Internal transfers) | Internal transfers detected (tooltip with details). Internal transfers are **always saved** to the database, even in "Exclude" mode — the setting only controls visibility in views |

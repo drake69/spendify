@@ -995,7 +995,7 @@ def remove_card_balance_row(
     """Handle the single balance/totale summary row from a card file if present.
 
     Some card exports include a row whose |amount| equals the sum of |all other
-    amounts| (the statement total). Including it would double-count every expense.
+    amounts| (the file total). Including it would double-count every expense.
 
     Detection rule (requires ≥ 3 transactions):
         For each candidate row i:

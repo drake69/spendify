@@ -149,7 +149,7 @@ The page shows a **real-time preview** (e.g. `1.234,56 €`) before saving.
 | Français | `fr` |
 | Deutsch | `de` |
 
-This is passed to the LLM categoriser prompt to help it correctly interpret transaction descriptions. If your statements are in Italian, leave `it` (default).
+This is passed to the LLM categoriser prompt to help it correctly interpret transaction descriptions. If your movements files are in Italian, leave `it` (default).
 
 > **Example:** A description like `"PAGAMENTO POS CONAD"` is interpreted differently by a model prompted in Italian compared to one prompted in English.
 

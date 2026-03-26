@@ -67,6 +67,7 @@ class LLMBackendName(str, Enum):
     local_ollama = "local_ollama"
     openai = "openai"
     claude = "claude"
+    openai_compatible = "openai_compatible"
 
 
 class CategorySource(str, Enum):

@@ -5,7 +5,7 @@ from core.models import DocumentType, SignConvention, Confidence
 
 
 class DocumentSchema(BaseModel):
-    """Canonical parsing schema for a bank statement source."""
+    """Canonical parsing schema for a movements file source."""
     # required
     doc_type: DocumentType
     date_col: str

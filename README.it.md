@@ -13,7 +13,7 @@
 
 Registro finanziario personale unificato con pipeline ibrida deterministica + LLM.
 
-Aggrega estratti conto eterogenei (conti correnti, carte di credito, carte di debito, conti deposito, prepagate) in un unico ledger cronologico, eliminando il double-counting da addebiti carta periodici e da giroconti interni. Il processing avviene in modalità **offline-first**; i backend LLM remoti sono supportati come opt-in con sanitizzazione PII obbligatoria.
+Aggrega movimenti eterogenei (conti correnti, carte di credito, carte di debito, conti deposito, prepagate) in un unico ledger cronologico, eliminando il double-counting da addebiti carta periodici e da giroconti interni. Il processing avviene in modalità **offline-first**; i backend LLM remoti sono supportati come opt-in con sanitizzazione PII obbligatoria.
 
 ---
 
@@ -473,7 +473,7 @@ Ogni transazione ha un `id` di 24 caratteri (SHA-256 troncato) calcolato determi
 
 ### Correzione segno carta (`invert_sign`)
 
-Gli estratti conto italiani per carte di credito/debito esportano spesso gli acquisti come valori positivi. Il flag `DocumentSchema.invert_sign`, impostato dall'LLM durante la classificazione Flow 2, istruisce il normalizzatore a negare tutti gli importi — le spese diventano negative e i rimborsi positivi con un'unica operazione simmetrica.
+I file movimenti italiani per carte di credito/debito esportano spesso gli acquisti come valori positivi. Il flag `DocumentSchema.invert_sign`, impostato dall'LLM durante la classificazione Flow 2, istruisce il normalizzatore a negare tutti gli importi — le spese diventano negative e i rimborsi positivi con un'unica operazione simmetrica.
 
 #### Algoritmo di rilevamento in due passi
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate synthetic Italian bank statement files for Spendify import testing.
+"""Generate synthetic Italian movements files for Spendify import testing.
 
 Produces ~50 CSV/XLSX files simulating 9 Italian financial instruments
 across 3 sizes (S/M/L) plus format variants. Each file has realistic
@@ -881,7 +881,7 @@ def _generate_preheader(inst: Instrument, n_rows: int) -> list[list[str]]:
         pool.insert(2, [f"Numero carta: **** **** **** {inst.cc_number[-4:]}"])
 
     pool += [
-        [f"Estratto conto al 28/02/2026"],
+        [f"Movimenti al 28/02/2026"],
         [f"Filiale: SEDE CENTRALE"],
         [],
         [f"Saldo iniziale: {_format_amount_italian(random.uniform(1000, 25000))} EUR"],
@@ -1400,7 +1400,7 @@ def main() -> None:
 
     # Print summary
     print("=" * 60)
-    print("  Spendify — Synthetic Bank Statement Generator")
+    print("  Spendify — Synthetic Movements File Generator")
     print("=" * 60)
     print(f"  Output directory : {OUTPUT_DIR}")
     print(f"  Files generated  : {len(plans)}")
