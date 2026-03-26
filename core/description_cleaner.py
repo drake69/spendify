@@ -20,6 +20,7 @@ from __future__ import annotations
 import json
 import unicodedata
 from decimal import Decimal
+from pathlib import Path
 
 from core.llm_backends import LLMBackend, call_with_fallback
 from core.sanitizer import SanitizationConfig, redact_pii, restore_owner_placeholders
@@ -46,178 +47,22 @@ def _strip_non_text(text: str) -> str:
     return " ".join("".join(kept).split())
 
 
-# ── Prompts ───────────────────────────────────────────────────────────────────
+# ── Prompts (loaded from prompts/description_cleaner.json) ────────────────────
 
-_SYSTEM_EXPENSE = """\
-You are a financial transaction description parser. Descriptions may come from banks
-in any country and language.
+_PROMPTS_FILE = Path(__file__).parent.parent / "prompts" / "description_cleaner.json"
 
-These are EXPENSE transactions (money going OUT).
-Task: extract ONLY the RECIPIENT — the merchant, business, or person that received the payment.
-The counterpart name can appear anywhere in the string; scan the full description.
 
-WHAT TO STRIP (language-independent noise):
-  • Payment-type labels (e.g. "POS", "Bonifico", "Virement", "Lastschrift", "wire transfer")
-  • Beneficiary markers (strip the label, keep what follows):
-    "Fv.", "F.V.", "Beg.", "Begünstigter", "Pour", "For the benefit of"
-  • Amounts: "352,00 EUR", "9.798,76 EUR"
-  • Dates: "23.12.2025", "2025-12-29", "29/10.41"
-  • Card numbers (13–19 consecutive digits) and masked card refs ("CARTA ****0178")
-  • Auth/transaction codes: "CAU 98105", "NDS 824402523"
-  • Reference codes and SEPA fields: "RIF:", "CRO:", "/INV/", "/SEPASCT/", "/SEPADD/", BIC
-  • "ORD." and any identifier tokens that follow it (unless the counterpart name follows)
-  • Country codes: "(ITA)", "(IRL)", "(FRA)"
-  • City names that appear after the business name
-  • Repeated phrases — some banks duplicate text within a single field; keep only one
-    occurrence (e.g. "Rimborso spese rimborso spese" → "Rimborso spese",
-    "Luigi Rossi luigi rossi" → "Luigi Rossi")
-  • The literal string "nan"
+def _load_prompts() -> dict:
+    with open(_PROMPTS_FILE, encoding="utf-8") as f:
+        return json.load(f)
 
-BANK-ORIGINATED EXPENSES (no external recipient — the bank itself charges):
-  If the description is a bank interest charge, account fee, commission, or credit-card
-  balance settlement with no identifiable external payee, return a short descriptive label
-  in the same language as the description (e.g. "Interessi bancari", "Frais bancaires",
-  "Bankgebühren", "Bank fees", "Saldo carta").
 
-FALLBACK: if no name can be identified, return a short label describing the payment type
-in the same language as the description. Never return "null", "none", "n/a", or empty string.
+_PROMPTS = _load_prompts()
 
-Examples (description → result):
-  "pagam. pos - pagamento pos 352,00 eur del 23.12.2025 a (ita) NOTORIOUS CINEMAS carta..."
-      → "Notorious Cinemas"
-  "vietgnam srl pagamento con carta 5179090003789315 vietgnam srl milan"
-      → "Vietgnam SRL"
-  "Bonifico eseguito Carlo Brambilla Marta Pellegrino carlo brambilla marta pellegrino"
-      → "Carlo Brambilla Marta Pellegrino"
-  "Bonifico eseguito Rimborso spese rimborso spese"
-      → "Bonifico"
-  "VOSTRA DISPOSIZIONE Disposizione bonifico SCT Fv. ARCA FONDI SGR SPA [CF] 00000000031914"
-      → "Arca Fondi SGR SPA"
-  "Disposizione bonifico SCT Fv. MARIO ROSSI [CF] RIF:0012345"
-      → "Mario Rossi"
-  "Disposizione bonifico SCT Rapporto 06 77 Codice cliente 12345"
-      → "Bonifico"
-  "Virement AMAZON EU SARL 14,95 EUR 2025-11-03"
-      → "Amazon EU SARL"
-  "Lastschrift Netflix International 15,99 EUR 2025-10-15"
-      → "Netflix International"
-  "Liquidazione interessi debitori trim. 1,75% a fronte del saldo"
-      → "Interessi bancari"
-  "Saldo carta INARCASSACARD RIF:8834729"
-      → "Saldo carta"
-  "SOTTOSCRIZIONI FONDI E SICAV SOTTOSCRIZIONE ETICA AZIONARIO R DEP.TITOLI 081/663905/000"
-      → "Etica Azionario R"
-  "Subscription funds SICAV SUBSCRIPTION GLOBAL EQUITY FUND DEP.TITOLI 002/123456/000"
-      → "Global Equity Fund"
-  "RID ENEL ENERGIA SPA 00001234567 UTENZA GAS 987654"
-      → "Enel Energia SPA"
-  "Addebito diretto SDD TELECOM ITALIA SPA CID IT12345 RIF:20251201"
-      → "Telecom Italia SPA"
-  "SDD SEPA Direct Debit SPOTIFY AB mandate 0987654321"
-      → "Spotify AB"
-  "ADDEBITO DIRETTO SDD 00001234 /SEPADD/"
-      → "Addebito diretto"
-  "PRELIEVO CONTANTI SPORTELLO 23/12/2025 BANCA XYZ VIA ROMA MILANO"
-      → "Prelievo contanti"
-  "ATM WITHDRAWAL 29/10/2025 BANK OF IRELAND O CONNELL ST DUBLIN"
-      → "Prelievo contanti"
-  "PAGAMENTO F24 IRPEF ACCONTO II RATA 2025 [CF]"
-      → "F24 IRPEF"
-  "F24 IMU COMUNE DI MILANO CODICE TRIBUTO 3912"
-      → "F24 IMU"
-  "PAGAMENTO BOLLETTINO POSTALE 123456789 COMUNE DI MILANO TASSA RIFIUTI"
-      → "Comune di Milano"
-  "BOLLETTINO POSTALE 123456789 REF 20251201"
-      → "Bollettino postale"
-
-Output: a JSON object {"results": ["recipient1", "recipient2", ...]} — same order as input.
-"""
-
-_SYSTEM_INCOME = """\
-You are a financial transaction description parser. Descriptions may come from banks
-in any country and language.
-
-These are INCOME transactions (money coming IN).
-Task: extract ONLY the SENDER — the person, business, or institution that sent the payment.
-The counterpart name can appear anywhere in the string; scan the full description.
-It often follows labels like "ORD.", "FROM:", "DA:", "DE:" but not always.
-
-WHAT TO STRIP (language-independent noise):
-  • Payment-type labels (e.g. "Bonifico", "Accredito", "Virement", "Gutschrift", "wire transfer")
-  • Amounts: "300,00 EUR", "9.798,76 EUR"
-  • Interest rates: "1,75%", "0,50% annuo"
-  • Period/condition qualifiers: "trim.", "semestre", "annuo", "a fronte del saldo"
-  • Dates: "23.12.2025", "2025-12-29"
-  • Card numbers (13–19 consecutive digits)
-  • Reference codes and SEPA fields: "RIF:", "CRO:", "/INV/", "/SEPASCT/", BIC
-  • "ORD." and any reference identifier tokens before the name
-  • City names that appear after the sender name
-  • Repeated phrases — some banks duplicate text within a single field; keep only one
-    occurrence (e.g. "Mario Rossi mario rossi" → "Mario Rossi")
-  • The literal string "nan"
-
-BANK-ORIGINATED INCOME (no external sender — the bank itself is the source):
-  If the description is an interest credit, fee reversal, or capitalisation with no
-  identifiable external sender, return a short descriptive label in the same language
-  as the description (e.g. "Interessi bancari", "Intérêts bancaires", "Bankzinsen",
-  "Bank interest", "Liquidazione bancaria"). Strip all rate and period information.
-
-FALLBACK: if no name can be identified, return a short label describing the transaction
-type in the same language as the description. Never return "null", "none", "n/a", or empty string.
-
-Examples (description → result):
-  "bonif. v/fav. - rif:209403494ord. CENTRO DIAGNOSTICO ITALIANO SPA /inv/24-2025-FE"
-      → "Centro Diagnostico Italiano SPA"
-  "Bonifico ricevuto Corsaro luigi gerotti elena CORSARO LUIGI GEROTTI ELENA"
-      → "Corsaro Luigi Gerotti Elena"
-  "Virement reçu MARTIN DUPONT 500,00 EUR 2025-11-15"
-      → "Martin Dupont"
-  "Gutschrift MUSTER GMBH Überweisung 1.250,00 EUR"
-      → "Muster GmbH"
-  "Liquidazione interessi attivi a fronte del saldo trim. 0,50% annuo"
-      → "Interessi bancari"
-  "Liquidazione interessi-commissioni-spese semestre"
-      → "Liquidazione bancaria"
-  "ACCREDITO STIPENDIO ORD. ACME SRL [CF] CRO:12345678"
-      → "Acme SRL"
-  "Salary payment JOHNSON & JOHNSON LTD ref 2025-DEC"
-      → "Johnson & Johnson Ltd"
-  "RIMBORSO RID ENEL ENERGIA SPA 00001234567"
-      → "Enel Energia SPA"
-  "Rimborso spese trasferta ORD. MARIO ROSSI"
-      → "Mario Rossi"
-  "ACCREDITO PENSIONE INPS CRO:987654321 [CF]"
-      → "INPS"
-  "Pension payment SOCIAL SECURITY ADMINISTRATION ref 2025-12"
-      → "Social Security Administration"
-  "Rimborso fiscale Agenzia delle Entrate CRO:123456789"
-      → "Agenzia delle Entrate"
-  "Bonifico ricevuto <CARD_ID>   20250923"
-      → "Bonifico da carta"
-  "Bonifico ricevuto <CARD_ID>   <CARD_ID> 017   20241216"
-      → "Bonifico da carta"
-
-Output: a JSON object {"results": ["sender1", "sender2", ...]} — same order as input.
-"""
-
-_USER_TEMPLATE = """\
-Extract the counterpart from each of these {n} transaction descriptions.
-Return exactly {n} results in the same order.
-
-{descriptions_json}
-"""
-
-_RESPONSE_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "results": {
-            "type": "array",
-            "items": {"type": "string"},
-            "description": "Extracted counterpart names, one per input description",
-        }
-    },
-    "required": ["results"],
-}
+_SYSTEM_EXPENSE = _PROMPTS["system_expense"]
+_SYSTEM_INCOME = _PROMPTS["system_income"]
+_USER_TEMPLATE = _PROMPTS["user_template"]
+_RESPONSE_SCHEMA = _PROMPTS["response_schema"]
 
 
 # ── Public API ────────────────────────────────────────────────────────────────

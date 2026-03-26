@@ -63,6 +63,7 @@ DEFAULT_USER_SETTINGS = {
     "contexts": '["Quotidianità", "Lavoro", "Vacanza"]',
     "giroconto_mode": "neutral",
     "max_transaction_amount": "1000000",
+    "onboarding_done": "false",
 }
 
 
