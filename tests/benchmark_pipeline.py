@@ -735,6 +735,10 @@ def main() -> None:
                         help=f"Number of runs (default: {N_RUNS_DEFAULT})")
     parser.add_argument("--files", type=str, default=None,
                         help="Glob pattern to filter files (e.g. 'CC-1*')")
+    parser.add_argument("--backend", type=str, default=None,
+                        help="LLM backend override (e.g. 'local_llama_cpp', 'local_ollama')")
+    parser.add_argument("--model-path", type=str, default=None,
+                        help="Model path for llama-cpp backend (e.g. path to .gguf file)")
     args = parser.parse_args()
 
     n_runs = args.runs
@@ -748,12 +752,18 @@ def main() -> None:
     print(f"  {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"{'=' * 60}")
 
-    print("\n[check] Verifying Ollama is reachable...")
-    if not _check_ollama():
-        print("ERROR: Ollama is not reachable at http://localhost:11434")
-        print("       Start Ollama before running this benchmark.")
-        sys.exit(1)
-    print("[check] Ollama OK")
+    backend_override = args.backend
+    model_path_override = getattr(args, 'model_path', None)
+
+    if not backend_override or backend_override == "local_ollama":
+        print("\n[check] Verifying Ollama is reachable...")
+        if not _check_ollama():
+            print("ERROR: Ollama is not reachable at http://localhost:11434")
+            print("       Start Ollama before running this benchmark.")
+            sys.exit(1)
+        print("[check] Ollama OK")
+    else:
+        print(f"\n[check] Backend: {backend_override} (skipping Ollama check)")
 
     print("[check] Verifying synthetic files...")
     _ensure_generated_files()
@@ -782,6 +792,10 @@ def main() -> None:
 
     # Build LLM backend once (reused across runs)
     config = ProcessingConfig()
+    if backend_override:
+        config.llm_backend = backend_override
+    if model_path_override and backend_override == "local_llama_cpp":
+        config.llama_cpp_model_path = model_path_override
     backend = _build_backend(config)
 
     # ── Collect LLM metadata ─────────────────────────────────────────────

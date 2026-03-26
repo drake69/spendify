@@ -393,14 +393,28 @@ class LlamaCppBackend(LLMBackend):
     ) -> dict[str, Any]:
         system_with_json = system_prompt + "\n\nRespond ONLY with valid JSON."
         try:
-            response = self._llm.create_chat_completion(
-                messages=[
-                    {"role": "system", "content": system_with_json},
-                    {"role": "user", "content": user_prompt},
-                ],
-                response_format={"type": "json_object"},
-                temperature=temperature,
-            )
+            # Try with system role first; fall back to merged prompt if unsupported
+            messages = [
+                {"role": "system", "content": system_with_json},
+                {"role": "user", "content": user_prompt},
+            ]
+            try:
+                response = self._llm.create_chat_completion(
+                    messages=messages,
+                    response_format={"type": "json_object"},
+                    temperature=temperature,
+                )
+            except Exception as e:
+                if "System role not supported" in str(e) or "system" in str(e).lower():
+                    # Model doesn't support system role — merge into user prompt
+                    merged = f"{system_with_json}\n\n---\n\n{user_prompt}"
+                    response = self._llm.create_chat_completion(
+                        messages=[{"role": "user", "content": merged}],
+                        response_format={"type": "json_object"},
+                        temperature=temperature,
+                    )
+                else:
+                    raise
             raw = response["choices"][0]["message"]["content"]
             result = json.loads(raw)
             _validate_required(result, json_schema)
