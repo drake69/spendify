@@ -176,7 +176,7 @@ class ReviewService:
                     tx.category_confidence = result.confidence.value
                     tx.category_source = result.source.value
                     tx.to_review = result.to_review
-                    tx.human_validated = False
+                    # human_validated NOT reset: means "user saw this tx", not "user approves category"
                     n_categorized += 1
             s.commit()
 
@@ -349,7 +349,7 @@ class ReviewService:
                         tx.category_confidence = result.confidence.value
                         tx.category_source = result.source.value
                         tx.to_review = result.to_review
-                        tx.human_validated = False
+                        # human_validated NOT reset: means "user saw this tx", not "user approves category"
                         n_categorized += 1
                 s.commit()
 
@@ -455,7 +455,7 @@ class ReviewService:
                         r.source.value if hasattr(r.source, "value") else str(r.source)
                     )
                     tx.to_review = r.to_review
-                    tx.human_validated = False
+                    # human_validated NOT reset: means "user saw this tx", not "user approves category"
                     n_cat_updated += 1
                     if r.to_review:
                         n_review += 1

@@ -115,7 +115,9 @@ Go to **Ledger**. You'll find the complete list in chronological order, with fil
 **Fonte column (classification tracking):**
 - Shows who assigned the current category: 🧠 AI, 📏 Rule, 👤 Manual, 📚 History
 
-**Bulk validation:** select one or more transactions and click **Valida selezionate** to confirm that the assigned categories are correct, without having to modify them. Validating a transaction tells Spendify "this category is correct" — the information is used to improve future classifications.
+**Bulk validation:** select one or more transactions and click **Valida selezionate** to confirm them all at once.
+
+> **What does "Validated" mean?** Validating a transaction tells Spendify: "I have seen this expense and confirm it is correct (not anomalous)". Validation concerns the **expense itself**, not the category. If a rule or the AI reclassifies the transaction later, the validation stays active: the source badge (AI, Rule, Manual, History) changes, but the "Validated" flag is not touched. Only an explicit click on the "Validato" checkbox (unchecking it) can remove the validation.
 
 ### Creating rules from the Ledger
 
@@ -145,7 +147,7 @@ Go to **Review**. You'll find the transactions marked with ⚠️. For each one 
 **Fonte column (classification tracking):**
 - Badge showing who assigned the category: 🧠 AI, 📏 Rule, 👤 Manual, 📚 History
 
-**Bulk validation:** select the transactions you are sure about and click **Valida selezionate** to confirm them all at once. When you validate a transaction you are telling Spendify: "this classification is correct". Validation does not change the category — it only confirms it is right.
+**Bulk validation:** select the transactions you are sure about and click **Valida selezionate** to confirm them all at once. When you validate a transaction you are telling Spendify: "I have seen this expense and confirm it is correct". Validation does not change the category, and it is not removed if the category changes later (by rule or AI). Only an explicit click on the checkbox removes it.
 
 > **Example:** "PAGAMENTO POS 00112 FARMACIA CENTRALE" was classified as *Casa* but you know it's *Salute*. You correct it once, and if you saved a rule that correction will be applied automatically to future imports.
 

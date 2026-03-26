@@ -79,6 +79,24 @@ Piu usi Spendify, meno lavoro manuale. Ogni regola creata riduce il numero di tr
 
 ---
 
+## Validazione vs. fonte classificazione
+
+Spendify gestisce due informazioni **distinte** per ogni transazione:
+
+| Concetto | Campo | Significato |
+|----------|-------|-------------|
+| **Validazione** | `human_validated` | "Ho visto questa spesa e confermo che e corretta (non anomala)." E l'approvazione della **spesa**, non della categoria. |
+| **Fonte classificazione** | `category_source` | "Chi ha assegnato l'ultima categoria." Valori: AI, Regola, Manuale, Storico. |
+
+**Regola chiave:** i due campi sono indipendenti. Quando una regola o l'AI riclassificano una transazione, la fonte cambia ma la validazione **non viene toccata**. Solo un click esplicito sulla checkbox "Validato" (deselezionandola) puo rimuovere la validazione.
+
+**In pratica:**
+- Validi una transazione classificata dall'AI come "Alimentari" -> `validated=True`, `fonte=AI`
+- Poi crei una regola che la riclassifica come "Supermercato" -> `validated=True` (invariato), `fonte=Regola`
+- La validazione resta perche tu avevi gia confermato che la spesa era corretta
+
+---
+
 ## Badge fonte classificazione
 
 | Badge | Significato |

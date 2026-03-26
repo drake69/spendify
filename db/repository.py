@@ -486,7 +486,7 @@ def apply_rules_to_review_transactions(
                 tx.category_source = "rule"
                 tx.category_confidence = "high"
                 tx.to_review = False
-                tx.human_validated = False
+                # human_validated NOT reset: means "user saw this tx", not "user approves category"
                 updated += 1
                 break
     if updated:
@@ -525,7 +525,7 @@ def apply_all_rules_to_all_transactions(
                     tx.context = rule.context
                 tx.category_source     = "rule"
                 tx.category_confidence = "high"
-                tx.human_validated     = False
+                # human_validated NOT reset: means "user saw this tx", not "user approves category"
                 if tx.to_review:
                     tx.to_review = False
                     n_cleared += 1

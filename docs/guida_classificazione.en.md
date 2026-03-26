@@ -79,6 +79,24 @@ The more you use Spendify, the less manual work. Every rule you create reduces t
 
 ---
 
+## Validation vs. classification source
+
+Spendify tracks two **distinct** pieces of information for each transaction:
+
+| Concept | Field | Meaning |
+|---------|-------|---------|
+| **Validation** | `human_validated` | "I have seen this expense and confirm it is correct (not anomalous)." It is the approval of the **expense**, not the category. |
+| **Classification source** | `category_source` | "Who assigned the latest category." Values: AI, Rule, Manual, History. |
+
+**Key rule:** the two fields are independent. When a rule or the AI reclassifies a transaction, the source changes but the validation **is not touched**. Only an explicit click on the "Validated" checkbox (unchecking it) can remove the validation.
+
+**In practice:**
+- You validate a transaction classified by AI as "Food" -> `validated=True`, `source=AI`
+- Then you create a rule that reclassifies it as "Supermarket" -> `validated=True` (unchanged), `source=Rule`
+- The validation stays because you had already confirmed the expense was correct
+
+---
+
 ## Classification source badges
 
 | Badge | Meaning |

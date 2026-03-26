@@ -115,7 +115,9 @@ Vai su **Ledger**. Trovi la lista completa in ordine cronologico, con filtri per
 **Colonna Fonte (tracking classificazione):**
 - Mostra chi ha assegnato la categoria corrente: 🧠 AI, 📏 Regola, 👤 Manuale, 📚 Storico
 
-**Validazione in blocco:** seleziona una o più transazioni e clicca **Valida selezionate** per confermare che le categorie assegnate sono corrette, senza doverle modificare. Validare una transazione significa dire a Spendify "questa categoria è giusta" — l'informazione viene usata per migliorare le classificazioni future.
+**Validazione in blocco:** seleziona una o più transazioni e clicca **Valida selezionate** per confermarle tutte in una volta.
+
+> **Cosa significa "Validato"?** Validare una transazione significa dire a Spendify: "ho visto questa spesa e confermo che è corretta (non è anomala)". La validazione riguarda la **spesa**, non la categoria. Se una regola o l'AI riclassificano la transazione in un secondo momento, la validazione rimane attiva: la fonte (AI, Regola, Manuale, Storico) cambia, ma il flag "Validato" non viene toccato. Solo un click esplicito sulla checkbox "Validato" (deselezionandola) può rimuovere la validazione.
 
 ### Creare regole dal Ledger
 
@@ -145,7 +147,7 @@ Vai su **Review**. Trovi le transazioni con il ⚠️. Per ognuna puoi:
 **Colonna Fonte (tracking classificazione):**
 - Badge che indica chi ha assegnato la categoria: 🧠 AI, 📏 Regola, 👤 Manuale, 📚 Storico
 
-**Validazione in blocco:** seleziona le transazioni di cui sei sicuro e clicca **Valida selezionate** per confermarle tutte in una volta. Quando validi una transazione stai dicendo a Spendify: "questa classificazione è corretta". La validazione non cambia la categoria — conferma solo che è giusta.
+**Validazione in blocco:** seleziona le transazioni di cui sei sicuro e clicca **Valida selezionate** per confermarle tutte in una volta. Quando validi una transazione stai dicendo a Spendify: "ho visto questa spesa e confermo che va bene". La validazione non cambia la categoria e non viene rimossa se la categoria cambia in seguito (per regola o AI). Solo un click esplicito sulla checkbox la rimuove.
 
 > **Esempio:** "PAGAMENTO POS 00112 FARMACIA CENTRALE" è stato classificato come *Casa* ma tu sai che è *Salute*. Lo correggi una volta, e se hai salvato una regola quella correzione si applicherà automaticamente alle prossime importazioni.
 

@@ -133,8 +133,13 @@ class TestHumanValidation:
         assert tx.human_validated is True
         assert tx.category_source == original_source
 
-    def test_rule_resets_validated(self, session):
-        """After manual validation, applying a rule resets human_validated=False."""
+    def test_rule_preserves_validated(self, session):
+        """After manual validation, applying a rule does NOT reset human_validated.
+
+        human_validated means "user saw this transaction" (approval of the spend),
+        NOT "user approves the category". Rules change category_source but leave
+        the user's approval intact.
+        """
         tx = _insert_tx(
             session,
             category="Alimentari",
@@ -142,13 +147,11 @@ class TestHumanValidation:
             category_source="manual",
             human_validated=True,
         )
-        # Simulate: force human_validated=True and to_review=True
         tx.human_validated = True
         tx.validated_at = datetime.now(timezone.utc)
         tx.to_review = True
         session.flush()
 
-        # Create a rule that matches this transaction
         from core.categorizer import CategoryRule
         rule = CategoryRule(
             id=1,
@@ -162,10 +165,10 @@ class TestHumanValidation:
         session.flush()
         session.refresh(tx)
 
-        # If the rule matched and reclassified, human_validated should be False
-        # If it didn't match (no to_review), skip this assertion
+        # Rule reclassifies category but human_validated stays True
         if tx.category == "Trasporti":
-            assert tx.human_validated is False
+            assert tx.human_validated is True  # NOT reset!
+            assert tx.category_source == "rule"
 
     def test_validated_at_timestamp(self, session):
         """validated_at is a datetime after validation."""
