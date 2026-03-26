@@ -462,6 +462,7 @@ def render_upload_page(engine):
         _file_account_map[uf.name] = sel if sel != "— rilevamento automatico —" else None
 
     if st.button("▶️ Elabora file", type="primary"):
+        st.session_state["llm_in_progress"] = True
         giroconto_mode = st.session_state.get("giroconto_mode", "neutral")
         config = import_svc.build_config(giroconto_mode=giroconto_mode)
 
@@ -588,6 +589,7 @@ def render_upload_page(engine):
             completed_at=datetime.now(timezone.utc),
         )
 
+        st.session_state["llm_in_progress"] = False
         st.session_state["last_import_results"] = [r for r in results if not r.needs_schema_review]
 
     # Schema review gate

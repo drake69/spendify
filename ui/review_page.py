@@ -1,6 +1,8 @@
 """Review page (RF-08): manual review of low/medium confidence transactions."""
 from __future__ import annotations
 
+import json
+
 import streamlit as st
 import pandas as pd
 
@@ -37,8 +39,10 @@ def render_review_page(engine):
         else "🔄 Rielabora con LLM (nessuna transazione in coda di revisione)"
     )
     if st.button(_rerun_label, key="review_rerun_llm", disabled=(_n_to_review == 0)):
+        st.session_state["llm_in_progress"] = True
         with st.spinner("Rielaborazione in corso…"):
             n_cleaned, n_cat = review_svc.rerun_llm_on_review()
+        st.session_state["llm_in_progress"] = False
         st.success(
             f"Completato: {n_cleaned} descrizioni pulite · {n_cat} ri-categorizzate."
         )
@@ -71,6 +75,13 @@ def render_review_page(engine):
     _date_fmt = settings.get("date_display_format", "%d/%m/%Y")
     _dec = settings.get("amount_decimal_sep", ",")
     _thou = settings.get("amount_thousands_sep", ".")
+
+    try:
+        _contexts: list[str] = json.loads(
+            settings.get("contexts", '["Quotidianità", "Lavoro", "Vacanza"]')
+        )
+    except Exception:
+        _contexts = ["Quotidianità", "Lavoro", "Vacanza"]
 
     only_review = st.toggle("Solo transazioni da rivedere", value=True, key="review_only_toggle")
     filters = {"to_review": True} if only_review else {}
@@ -106,6 +117,7 @@ def render_review_page(engine):
             "Tipo": tx.tx_type,
             "Categoria": tx.category or "",
             "Sottocategoria": tx.subcategory or "",
+            "Contesto": tx.context or "",
             "Confidenza": tx.category_confidence or "",
             "Fonte": _SOURCE_BADGE.get(tx.category_source, "—"),
             "⚠️": "⚠️" if tx.to_review else "·",
@@ -131,6 +143,9 @@ def render_review_page(engine):
             "sel": st.column_config.CheckboxColumn("✔", width=40),
             "Entrata": st.column_config.NumberColumn("Entrata", format="%.2f"),
             "Uscita": st.column_config.NumberColumn("Uscita", format="%.2f"),
+            "Contesto": st.column_config.SelectboxColumn(
+                "Contesto", options=[""] + _contexts, required=False, width="small",
+            ),
             "Fonte": st.column_config.TextColumn("Fonte", disabled=True, width=100),
             "⚠️": st.column_config.TextColumn("⚠️", disabled=True, width=40),
             "✅": st.column_config.TextColumn("✅", disabled=True, width=40),
@@ -139,20 +154,37 @@ def render_review_page(engine):
         key="review_grid",
     )
 
-    # ── Detect checkbox clicks on Validato + bulk button ────────────────────
+    # ── Detect inline edits (Validato, Contesto) ───────────────────────────
     n_val_changed = 0
+    n_ctx_changed = 0
     for i in range(len(edited_review)):
+        tx_id = df.iloc[i]["id"]
+
         new_val = bool(edited_review.iloc[i].get("Validato", False))
         old_val = bool(display_df.iloc[i].get("Validato", False))
         if new_val != old_val:
             if new_val:
-                tx_svc.validate(df.iloc[i]["id"])
+                tx_svc.validate(tx_id)
             else:
-                tx_svc.unvalidate(df.iloc[i]["id"])
+                tx_svc.unvalidate(tx_id)
             n_val_changed += 1
+
+        new_ctx = str(edited_review.iloc[i].get("Contesto", ""))
+        old_ctx = str(display_df.iloc[i].get("Contesto", ""))
+        if new_ctx != old_ctx:
+            tx_svc.update_context(tx_id, new_ctx or None)
+            n_ctx_changed += 1
+
+    _need_rerun = False
     if n_val_changed:
         st.success(f"✅ {n_val_changed} transazioni aggiornate.")
         logger.info(f"review_page: toggled validation on {n_val_changed} via checkbox")
+        _need_rerun = True
+    if n_ctx_changed:
+        st.success(f"✅ {n_ctx_changed} contesti aggiornati.")
+        logger.info(f"review_page: updated context on {n_ctx_changed} transactions")
+        _need_rerun = True
+    if _need_rerun:
         st.rerun()
 
     selected_ids = [
@@ -345,10 +377,12 @@ def render_review_page(engine):
                 if bulk_save_rule:
                     rule_svc.create_description_rule(bulk_pattern, bulk_match_type, bulk_new_desc)
 
+                st.session_state["llm_in_progress"] = True
                 with st.spinner("Aggiornamento descrizioni e ri-categorizzazione in corso…"):
                     n_upd, n_cat = review_svc.apply_description_rule_bulk(
                         bulk_pattern, bulk_match_type, bulk_new_desc
                     )
+                st.session_state["llm_in_progress"] = False
 
                 if n_upd == 0:
                     st.warning("Nessuna transazione corrisponde al pattern.")
@@ -381,10 +415,12 @@ def render_review_page(engine):
                     _btn_col1, _btn_col2 = st.columns(2)
                     with _btn_col1:
                         if st.button("▶", key=f"desc_rule_apply_{_rule.id}", help="Riapplica regola"):
+                            st.session_state["llm_in_progress"] = True
                             with st.spinner("Riapplicazione in corso…"):
                                 n_upd, n_cat = review_svc.apply_description_rule_bulk(
                                     _rule.raw_pattern, _rule.match_type, _rule.cleaned_description
                                 )
+                            st.session_state["llm_in_progress"] = False
                             st.success(f"{n_upd} aggiornate · {n_cat} ri-categorizzate.")
                             st.rerun()
                     with _btn_col2:
