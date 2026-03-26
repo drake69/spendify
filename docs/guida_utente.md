@@ -234,6 +234,20 @@ Vai su **Analytics**. Trovi:
 
 Usa i filtri in alto per restringere a un periodo o a un conto specifico.
 
+### Associazioni controparte (auto-apprendimento)
+
+Nella sezione Analytics trovi anche la vista **Associazioni controparte → categoria**, che mostra come Spendify ha imparato ad associare ogni controparte (es. ESSELUNGA, AMAZON) alle categorie nel tempo.
+
+Per ogni controparte vengono mostrati:
+- **Categoria/Sottocategoria** più frequente tra le transazioni validate
+- **Conteggio** delle ricorrenze validate
+- **Omogenità** — un indicatore da 0 a 1 che misura quanto la controparte è "stabile" nella classificazione:
+  - 🟢 **≥ 0.90** — auto-categorizzabile (es. ESSELUNGA: sempre Alimentari)
+  - 🟡 **0.50–0.89** — mista (es. ROSSOPOMODORO: quasi sempre Ristorazione, a volte Vacanze)
+  - 🔴 **< 0.50** — eterogenea (es. AMAZON: Tecnologia, Alimentari, Abbigliamento...)
+
+> **Come funziona:** Spendify conta solo le transazioni che hai **validato** (checkbox ✅ nel Ledger o nella Review). Più transazioni validi, più il sistema impara. Quando importi nuovi file, le controparti con alta omogenità vengono classificate automaticamente dallo storico — senza chiamare l'AI.
+
 ---
 
 ## 9. Check List: tutto in ordine?

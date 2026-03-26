@@ -69,6 +69,36 @@ Piu usi Spendify, meno lavoro manuale. Ogni regola creata riduce il numero di tr
 
 ---
 
+## 5b. Auto-apprendimento dallo storico
+
+Oltre alle regole, Spendify impara automaticamente dalle tue validazioni. Ogni volta che validi una transazione (checkbox ✅), il sistema registra l'associazione tra la controparte e la categoria.
+
+### Come funziona
+
+1. **Tabella associazioni** — Spendify raggruppa tutte le transazioni validate per descrizione + categoria + sottocategoria e conta le ricorrenze.
+2. **Omogenità** — Per ogni controparte, calcola quanto è "stabile" nella classificazione (da 0 a 1). Se ESSELUNGA è *sempre* Alimentari → omogenità = 1.00. Se AMAZON è sparpagliata tra Tecnologia, Alimentari, Abbigliamento → omogenità bassa.
+3. **Decisione automatica** — Al prossimo import, prima di chiamare l'AI, Spendify consulta lo storico:
+   - **Confidenza ≥ 0.90** → assegna direttamente (fonte: 📚 Storico), nessuna review necessaria
+   - **Confidenza 0.50–0.89** → suggerisce la categoria (fonte: 📚 Storico), ma la mette in review
+   - **Confidenza < 0.50** → chiama l'AI come al solito
+
+### In pratica
+
+```
+Validi 12 transazioni ESSELUNGA come Alimentari
+  → Prossimo import con ESSELUNGA: classificata automaticamente, zero interventi
+
+Validi 8 ROSSOPOMODORO come Ristorazione + 2 come Vacanze
+  → Prossimo import: suggerisce Ristorazione, ma te la mette in review
+
+AMAZON con 5 categorie diverse
+  → Prossimo import: chiama l'AI (troppo eterogenea per lo storico)
+```
+
+> **Importante:** solo le transazioni **validate** contano per lo storico. Le transazioni non validate hanno classificazioni incerte e non vengono usate per l'apprendimento automatico.
+
+---
+
 ## Colonne indicatore
 
 | Indicatore | Significato |
@@ -104,7 +134,7 @@ Spendify gestisce due informazioni **distinte** per ogni transazione:
 | AI | Categorizzata dall'intelligenza artificiale |
 | Regola | Categorizzata da regola deterministica |
 | Manuale | Modificata manualmente dall'utente |
-| Storico | Categorizzata dallo storico (futuro) |
+| Storico | Categorizzata dallo storico validato (auto-apprendimento) |
 
 ---
 

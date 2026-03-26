@@ -234,6 +234,20 @@ Go to **Analytics**. You'll find:
 
 Use the filters at the top to narrow down to a specific period or account.
 
+### Counterpart associations (auto-learning)
+
+In the Analytics section you will also find the **Counterpart associations** view, which shows how Spendify has learned to associate each counterpart (e.g. ESSELUNGA, AMAZON) with categories over time.
+
+For each counterpart it shows:
+- **Category/Subcategory** most frequent among validated transactions
+- **Count** of validated occurrences
+- **Homogeneity** — a 0-to-1 indicator measuring how "stable" the counterpart's classification is:
+  - 🟢 **>= 0.90** — auto-categorisable (e.g. ESSELUNGA: always Food)
+  - 🟡 **0.50–0.89** — mixed (e.g. ROSSOPOMODORO: almost always Dining, sometimes Holidays)
+  - 🔴 **< 0.50** — heterogeneous (e.g. AMAZON: Technology, Food, Clothing...)
+
+> **How it works:** Spendify only counts transactions you have **validated** (the checkbox in Ledger or Review). The more transactions you validate, the more the system learns. When you import new files, counterparts with high homogeneity are classified automatically from history — without calling the AI.
+
 ---
 
 ## 9. Check List: is everything in order?
