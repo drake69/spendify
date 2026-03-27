@@ -403,13 +403,14 @@ def _evaluate_file(
         rows_detected = len(df)
         rows_match = 1 if abs(rows_detected - entry.n_data_rows) <= 2 else 0
 
-        # 3. Classify via LLM
+        # 3. Classify via LLM (pass account_type from manifest, like the app does)
         schema = classify_document(
             df_raw=df,
             llm_backend=backend,
             source_name=entry.filename,
             sanitize=True,
             header_certain=preprocess_info.header_certain,
+            account_type=entry.doc_type,
         )
 
         if schema is None:
