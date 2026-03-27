@@ -304,29 +304,29 @@ def _collect_llm_metadata(config: ProcessingConfig, backend) -> dict[str, str]:
             meta["quantization"] = "?"
             meta["family"] = "?"
 
-    # ── Hardware & OS info ─────────────────────────────────────────────
+    # ── Runtime HW (where Spendify runs) ────────────────────────────────
     import platform
-    meta["os"] = f"{platform.system()} {platform.release()} {platform.machine()}"
+    meta["runtime_os"] = f"{platform.system()} {platform.release()} {platform.machine()}"
     try:
         import subprocess as _sp
         ver = _sp.check_output(["sw_vers", "-productVersion"], text=True).strip()
-        meta["os_version"] = f"macOS {ver}"
+        meta["runtime_os"] = f"macOS {ver}"
     except Exception:
-        meta["os_version"] = platform.platform()
+        meta["runtime_os"] = platform.platform()
     try:
         import subprocess as _sp
         cpu = _sp.check_output(
             ["sysctl", "-n", "machdep.cpu.brand_string"], text=True
         ).strip()
-        meta["cpu"] = cpu
+        meta["runtime_cpu"] = cpu
     except Exception:
-        meta["cpu"] = platform.processor() or "unknown"
+        meta["runtime_cpu"] = platform.processor() or "unknown"
     try:
         import subprocess as _sp
         ram_bytes = int(_sp.check_output(["sysctl", "-n", "hw.memsize"], text=True).strip())
-        meta["ram_gb"] = str(round(ram_bytes / (1024**3)))
+        meta["runtime_ram_gb"] = str(round(ram_bytes / (1024**3)))
     except Exception:
-        meta["ram_gb"] = "?"
+        meta["runtime_ram_gb"] = "?"
     try:
         import subprocess as _sp
         gpu_info = _sp.check_output(
@@ -334,15 +334,31 @@ def _collect_llm_metadata(config: ProcessingConfig, backend) -> dict[str, str]:
         )
         for line in gpu_info.splitlines():
             if "Chipset Model" in line:
-                meta["gpu"] = line.split(":")[-1].strip()
+                meta["runtime_gpu"] = line.split(":")[-1].strip()
                 break
         for line in gpu_info.splitlines():
             if "Total Number of Cores" in line:
-                meta["gpu_cores"] = line.split(":")[-1].strip()
+                meta["runtime_gpu_cores"] = line.split(":")[-1].strip()
                 break
     except Exception:
-        meta["gpu"] = "?"
-        meta["gpu_cores"] = "?"
+        meta["runtime_gpu"] = "?"
+        meta["runtime_gpu_cores"] = "?"
+
+    # ── LLM HW (where the model runs) ────────────────────────────────
+    if "ollama" in meta["provider"].lower():
+        ollama_url = getattr(config, "ollama_base_url", None) or "http://localhost:11434"
+        is_local = "localhost" in ollama_url or "127.0.0.1" in ollama_url
+        meta["llm_host"] = ollama_url
+        meta["llm_hw"] = "same as runtime" if is_local else f"remote ({ollama_url})"
+    elif "llamacpp" in meta["provider"].lower() or "llama" in meta["provider"].lower():
+        meta["llm_host"] = "localhost (in-process)"
+        meta["llm_hw"] = "same as runtime"
+    elif "openai" in meta["provider"].lower() or "claude" in meta["provider"].lower():
+        meta["llm_host"] = "cloud API"
+        meta["llm_hw"] = "cloud"
+    else:
+        meta["llm_host"] = "unknown"
+        meta["llm_hw"] = "unknown"
 
     return meta
 

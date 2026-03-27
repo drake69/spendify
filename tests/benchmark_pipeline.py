@@ -243,30 +243,29 @@ def _collect_llm_metadata(config: ProcessingConfig, backend) -> dict[str, str]:
             meta["quantization"] = "?"
             meta["family"] = "?"
 
-    # ── Hardware & OS info ─────────────────────────────────────────────
+    # ── Runtime HW (where Spendify runs) ────────────────────────────────
     import platform
-    meta["os"] = f"{platform.system()} {platform.release()} {platform.machine()}"
+    meta["runtime_os"] = f"{platform.system()} {platform.release()} {platform.machine()}"
     try:
         import subprocess as _sp
-        # macOS
         ver = _sp.check_output(["sw_vers", "-productVersion"], text=True).strip()
-        meta["os_version"] = f"macOS {ver}"
+        meta["runtime_os"] = f"macOS {ver}"
     except Exception:
-        meta["os_version"] = platform.platform()
+        meta["runtime_os"] = platform.platform()
     try:
         import subprocess as _sp
         cpu = _sp.check_output(
             ["sysctl", "-n", "machdep.cpu.brand_string"], text=True
         ).strip()
-        meta["cpu"] = cpu
+        meta["runtime_cpu"] = cpu
     except Exception:
-        meta["cpu"] = platform.processor() or "unknown"
+        meta["runtime_cpu"] = platform.processor() or "unknown"
     try:
         import subprocess as _sp
         ram_bytes = int(_sp.check_output(["sysctl", "-n", "hw.memsize"], text=True).strip())
-        meta["ram_gb"] = str(round(ram_bytes / (1024**3)))
+        meta["runtime_ram_gb"] = str(round(ram_bytes / (1024**3)))
     except Exception:
-        meta["ram_gb"] = "?"
+        meta["runtime_ram_gb"] = "?"
     try:
         import subprocess as _sp
         gpu_info = _sp.check_output(
@@ -274,16 +273,39 @@ def _collect_llm_metadata(config: ProcessingConfig, backend) -> dict[str, str]:
         )
         for line in gpu_info.splitlines():
             if "Chipset Model" in line:
-                meta["gpu"] = line.split(":")[-1].strip()
+                meta["runtime_gpu"] = line.split(":")[-1].strip()
                 break
-        # GPU cores
         for line in gpu_info.splitlines():
             if "Total Number of Cores" in line:
-                meta["gpu_cores"] = line.split(":")[-1].strip()
+                meta["runtime_gpu_cores"] = line.split(":")[-1].strip()
                 break
     except Exception:
         meta["gpu"] = "?"
-        meta["gpu_cores"] = "?"
+        meta["runtime_gpu"] = "?"
+        meta["runtime_gpu_cores"] = "?"
+
+    # ── LLM HW (where the model runs) ────────────────────────────────
+    # For local backends (Ollama, llama-cpp) → same as runtime
+    # For remote Ollama → query the remote host
+    # For cloud APIs → "cloud"
+    if "ollama" in meta["provider"].lower():
+        # Check if Ollama is local or remote
+        ollama_url = getattr(config, "ollama_base_url", None) or "http://localhost:11434"
+        is_local = "localhost" in ollama_url or "127.0.0.1" in ollama_url
+        meta["llm_host"] = ollama_url
+        if is_local:
+            meta["llm_hw"] = "same as runtime"
+        else:
+            meta["llm_hw"] = f"remote ({ollama_url})"
+    elif "llamacpp" in meta["provider"].lower() or "llama" in meta["provider"].lower():
+        meta["llm_host"] = "localhost (in-process)"
+        meta["llm_hw"] = "same as runtime"
+    elif "openai" in meta["provider"].lower() or "claude" in meta["provider"].lower():
+        meta["llm_host"] = "cloud API"
+        meta["llm_hw"] = "cloud"
+    else:
+        meta["llm_host"] = "unknown"
+        meta["llm_hw"] = "unknown"
 
     return meta
 
@@ -833,10 +855,12 @@ def main() -> None:
     if llm_meta.get("parameter_size", "?") != "?":
         print(f"[config] Parameters: {llm_meta['parameter_size']}, Quant: {llm_meta['quantization']}")
     print(f"[config] Timeout: {llm_meta['llm_timeout_s']}s")
-    print(f"[hardware] OS: {llm_meta.get('os_version', llm_meta.get('os', '?'))}")
-    print(f"[hardware] CPU: {llm_meta.get('cpu', '?')}")
-    print(f"[hardware] RAM: {llm_meta.get('ram_gb', '?')} GB")
-    print(f"[hardware] GPU: {llm_meta.get('gpu', '?')} ({llm_meta.get('gpu_cores', '?')} cores)")
+    print(f"[runtime] OS: {llm_meta.get('runtime_os', '?')}")
+    print(f"[runtime] CPU: {llm_meta.get('runtime_cpu', '?')}")
+    print(f"[runtime] RAM: {llm_meta.get('runtime_ram_gb', '?')} GB")
+    print(f"[runtime] GPU: {llm_meta.get('runtime_gpu', '?')} ({llm_meta.get('runtime_gpu_cores', '?')} cores)")
+    print(f"[llm] Host: {llm_meta.get('llm_host', '?')}")
+    print(f"[llm] HW: {llm_meta.get('llm_hw', '?')}")
 
     # Resume: load already-completed (run_id, filename, git_commit, git_branch) tuples
     _completed: set[tuple] = set()
