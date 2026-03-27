@@ -5,6 +5,7 @@ Pages:
   📋 Ledger             – filterable transaction table + export
   ✏️ Modifiche massive  – bulk edits: category, context, deletion
   📊 Analytics          – interactive charts (Plotly)
+  📋 Report             – spending by context/category with pivot, trends, Excel export
   🔍 Review             – manual review of low-confidence items
   📏 Regole             – manage category rules (edit / delete / create)
   🗂️ Tassonomia         – manage categories and subcategories
@@ -88,6 +89,10 @@ elif page == "bulk_edit":
 elif page == "analytics":
     from ui.analysis_page import render_analysis_page
     render_analysis_page(engine)
+
+elif page == "report":
+    from ui.report_page import render_report_page
+    render_report_page(engine)
 
 elif page == "review":
     from ui.review_page import render_review_page

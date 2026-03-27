@@ -369,11 +369,17 @@ def get_transactions(
             )
         if "subcategory" in filters:
             q = q.filter(Transaction.subcategory == filters["subcategory"])
+        if "categories" in filters:
+            q = q.filter(Transaction.category.in_(filters["categories"]))
+        if "subcategories" in filters:
+            q = q.filter(Transaction.subcategory.in_(filters["subcategories"]))
         if "context" in filters:
             if filters["context"] is None:
                 q = q.filter(Transaction.context.is_(None))
             else:
                 q = q.filter(Transaction.context == filters["context"])
+        if "contexts" in filters:
+            q = q.filter(Transaction.context.in_(filters["contexts"]))
         if "exclude_tx_types" in filters:
             q = q.filter(Transaction.tx_type.notin_(filters["exclude_tx_types"]))
     q = q.order_by(Transaction.date.desc())
@@ -1316,3 +1322,113 @@ def seed_user_taxonomy_from_default(session: Session, language: str) -> int:
 
     session.commit()
     return len(cat_map)
+
+
+# ── Spending aggregation (A-01) ──────────────────────────────────────────────
+
+def get_spending_aggregation(
+    session: Session,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    account_ids: Optional[list[str]] = None,
+    exclude_internal: bool = True,
+) -> list[dict]:
+    """GROUP BY context, category with SUM(amount).
+
+    Returns a list of dicts with keys:
+        context, category, subcategory, total_amount, tx_count
+    Excludes card_settlement and aggregate_debit always.
+    When *exclude_internal* is True, also excludes internal_in/internal_out.
+    """
+    from sqlalchemy import func
+
+    q = session.query(
+        func.coalesce(Transaction.context, "—").label("context"),
+        func.coalesce(Transaction.category, "Altro").label("category"),
+        func.coalesce(Transaction.subcategory, "").label("subcategory"),
+        func.sum(Transaction.amount).label("total_amount"),
+        func.count(Transaction.id).label("tx_count"),
+    )
+
+    # Always exclude non-real tx types
+    excluded = ["card_settlement", "aggregate_debit"]
+    if exclude_internal:
+        excluded += ["internal_in", "internal_out"]
+    q = q.filter(Transaction.tx_type.notin_(excluded))
+
+    if date_from:
+        q = q.filter(Transaction.date >= date_from)
+    if date_to:
+        q = q.filter(Transaction.date <= date_to)
+    if account_ids:
+        q = q.filter(Transaction.account_label.in_(account_ids))
+
+    q = q.group_by(
+        func.coalesce(Transaction.context, "—"),
+        func.coalesce(Transaction.category, "Altro"),
+        func.coalesce(Transaction.subcategory, ""),
+    ).order_by(
+        func.coalesce(Transaction.context, "—"),
+        func.coalesce(Transaction.category, "Altro"),
+    )
+
+    rows = q.all()
+    return [
+        {
+            "context": r.context,
+            "category": r.category,
+            "subcategory": r.subcategory,
+            "total_amount": float(r.total_amount),
+            "tx_count": r.tx_count,
+        }
+        for r in rows
+    ]
+
+
+def get_monthly_spending(
+    session: Session,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    account_ids: Optional[list[str]] = None,
+    exclude_internal: bool = True,
+) -> list[dict]:
+    """Monthly totals by category for trend charts.
+
+    Returns list of dicts: month, category, total_amount
+    """
+    from sqlalchemy import func
+
+    q = session.query(
+        func.strftime("%Y-%m", Transaction.date).label("month"),
+        func.coalesce(Transaction.category, "Altro").label("category"),
+        func.sum(Transaction.amount).label("total_amount"),
+    )
+
+    excluded = ["card_settlement", "aggregate_debit"]
+    if exclude_internal:
+        excluded += ["internal_in", "internal_out"]
+    q = q.filter(Transaction.tx_type.notin_(excluded))
+
+    if date_from:
+        q = q.filter(Transaction.date >= date_from)
+    if date_to:
+        q = q.filter(Transaction.date <= date_to)
+    if account_ids:
+        q = q.filter(Transaction.account_label.in_(account_ids))
+
+    q = q.group_by(
+        func.strftime("%Y-%m", Transaction.date),
+        func.coalesce(Transaction.category, "Altro"),
+    ).order_by(
+        func.strftime("%Y-%m", Transaction.date),
+    )
+
+    rows = q.all()
+    return [
+        {
+            "month": r.month,
+            "category": r.category,
+            "total_amount": float(r.total_amount),
+        }
+        for r in rows
+    ]

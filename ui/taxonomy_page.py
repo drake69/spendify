@@ -5,6 +5,7 @@ import streamlit as st
 
 from services.settings_service import SettingsService
 from support.logging import setup_logging
+from ui.widgets.tree_filter import render_tree_filter, build_tree_data
 
 logger = setup_logging()
 
@@ -200,10 +201,27 @@ def render_taxonomy_page(engine):
     tab_exp, tab_inc = st.tabs(["💸 Spese", "💰 Entrate"])
 
     with tab_exp:
+        with st.expander("🗂️ Panoramica ad albero — Spese", expanded=False):
+            _tree_exp = build_tree_data(cfg_svc, "expense")
+            _sel_exp = render_tree_filter(
+                categories=_tree_exp,
+                contexts=[],
+                key_prefix="tax_tree_exp",
+                show_contexts=False,
+            )
+            _filter_cats_exp = set(_sel_exp["selected_categories"])
         if _render_section(cfg_svc, "expense", "Categorie di Spesa", search):
             changed = True
 
     with tab_inc:
+        with st.expander("🗂️ Panoramica ad albero — Entrate", expanded=False):
+            _tree_inc = build_tree_data(cfg_svc, "income")
+            _sel_inc = render_tree_filter(
+                categories=_tree_inc,
+                contexts=[],
+                key_prefix="tax_tree_inc",
+                show_contexts=False,
+            )
         if _render_section(cfg_svc, "income", "Categorie di Entrata", search):
             changed = True
 

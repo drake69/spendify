@@ -6,6 +6,7 @@ _NAV = [
     ("📋 Ledger", "ledger", "Consulta e filtra tutte le transazioni importate"),
     ("✏️ Modifiche massive", "bulk_edit", "Modifica categoria, contesto o giroconto su gruppi di transazioni"),
     ("📊 Analytics", "analytics", "Grafici interattivi su entrate, uscite e andamento"),
+    ("📋 Report", "report", "Report spesa per contesto e categoria con export Excel"),
     ("🔍 Review", "review", "Rivedi le transazioni segnalate per verifica"),
     ("📏 Regole", "rules", "Gestisci le regole automatiche di categorizzazione"),
     ("🗂️ Tassonomia", "taxonomy", "Configura categorie e sottocategorie di spesa/entrata"),

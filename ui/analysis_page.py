@@ -16,6 +16,7 @@ from services.settings_service import SettingsService
 from services.transaction_service import TransactionService
 from support.formatting import format_amount_display
 from support.logging import setup_logging
+from ui.widgets.tree_filter import render_tree_filter, build_full_tree_data
 
 logger = setup_logging()
 
@@ -30,15 +31,10 @@ def render_analysis_page(engine):
     tx_svc  = TransactionService(engine)
 
     settings = cfg_svc.get_all()
-    taxonomy = cfg_svc.get_taxonomy()
 
     _dec          = settings.get("amount_decimal_sep", ",")
     _thou         = settings.get("amount_thousands_sep", ".")
     giroconto_mode = settings.get("giroconto_mode", "neutral")
-
-    _expense_cats = sorted(taxonomy.all_expense_categories)
-    _income_cats  = sorted(taxonomy.all_income_categories)
-    _all_cats     = _expense_cats + _income_cats
 
     _accounts = tx_svc.get_distinct_account_labels()
     _contexts = tx_svc.get_distinct_context_values()
@@ -90,24 +86,15 @@ def render_analysis_page(engine):
             "Conto", ["tutti i conti"] + _accounts, key="an_account"
         )
 
-    fc4, fc5, fc6 = st.columns([2, 2, 2])
-    with fc4:
-        cat_filter = st.selectbox(
-            "Categoria", ["tutte"] + _all_cats, key="an_cat"
+    # ── Tree filter for categories / subcategories / contexts ────────────
+    _tree_cats = build_full_tree_data(cfg_svc)
+    with st.expander("🗂️ Filtro categorie e contesti", expanded=False):
+        tree_sel = render_tree_filter(
+            categories=_tree_cats,
+            contexts=_contexts,
+            key_prefix="an_tree",
+            show_contexts=True,
         )
-    with fc5:
-        if cat_filter != "tutte":
-            _subs = sorted(taxonomy.valid_subcategories(cat_filter))
-            sub_filter = st.selectbox(
-                "Sottocategoria", ["tutte"] + _subs, key=f"an_sub_{cat_filter}"
-            )
-        else:
-            sub_filter = st.selectbox(
-                "Sottocategoria", ["tutte"], key="an_sub_all", disabled=True
-            )
-    with fc6:
-        ctx_options = ["tutti i contesti"] + _contexts
-        ctx_filter  = st.selectbox("Contesto", ctx_options, key="an_ctx")
 
     filters: dict = {}
     if date_from:
@@ -116,12 +103,21 @@ def render_analysis_page(engine):
         filters["date_to"] = date_to.isoformat()
     if account_filter != "tutti i conti":
         filters["account_label"] = account_filter
-    if cat_filter != "tutte":
-        filters["category"] = cat_filter
-    if sub_filter != "tutte":
-        filters["subcategory"] = sub_filter
-    if ctx_filter != "tutti i contesti":
-        filters["context"] = ctx_filter
+
+    # Apply tree filter selections — only restrict when user deselected something
+    _sel_cats = set(tree_sel["selected_categories"])
+    _sel_subs = set(tree_sel["selected_subcategories"])
+    _sel_ctxs = set(tree_sel["selected_contexts"])
+    _all_cat_names = {c["name"] for c in _tree_cats}
+    _all_sub_names = {
+        s["name"] if isinstance(s, dict) else s
+        for c in _tree_cats for s in c.get("subcategories", [])
+    }
+
+    if _sel_cats and _sel_cats != _all_cat_names:
+        filters["categories"] = sorted(_sel_cats)
+    if _sel_ctxs and _sel_ctxs != set(_contexts):
+        filters["contexts"] = sorted(_sel_ctxs)
 
     txs = tx_svc.get_transactions(filters=filters)
 

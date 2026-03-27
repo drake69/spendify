@@ -159,6 +159,62 @@ class TransactionService:
                 Transaction.raw_description == raw_description
             ).all()
 
+    # ── Spending report (A-01) ────────────────────────────────────────────────
+
+    def get_spending_aggregation(
+        self,
+        date_from: str | None = None,
+        date_to: str | None = None,
+        account_ids: list[str] | None = None,
+        exclude_internal: bool = True,
+    ) -> list[dict]:
+        """Aggregated spending by context/category/subcategory."""
+        with self._session() as s:
+            return repository.get_spending_aggregation(
+                s, date_from=date_from, date_to=date_to,
+                account_ids=account_ids, exclude_internal=exclude_internal,
+            )
+
+    def get_monthly_spending(
+        self,
+        date_from: str | None = None,
+        date_to: str | None = None,
+        account_ids: list[str] | None = None,
+        exclude_internal: bool = True,
+    ) -> list[dict]:
+        """Monthly totals by category for trend charts."""
+        with self._session() as s:
+            return repository.get_monthly_spending(
+                s, date_from=date_from, date_to=date_to,
+                account_ids=account_ids, exclude_internal=exclude_internal,
+            )
+
+    def get_transactions_for_export(
+        self,
+        date_from: str | None = None,
+        date_to: str | None = None,
+        account_ids: list[str] | None = None,
+        exclude_internal: bool = True,
+    ) -> list[Transaction]:
+        """Get transactions for detailed Excel export sheets."""
+        filters: dict = {}
+        if date_from:
+            filters["date_from"] = date_from
+        if date_to:
+            filters["date_to"] = date_to
+        if account_ids and len(account_ids) == 1:
+            filters["account_label"] = account_ids[0]
+        excluded = ["card_settlement", "aggregate_debit"]
+        if exclude_internal:
+            excluded += ["internal_in", "internal_out"]
+        filters["exclude_tx_types"] = excluded
+        with self._session() as s:
+            txs = repository.get_transactions(s, filters, limit=50000)
+            # Filter by multiple accounts if needed
+            if account_ids and len(account_ids) > 1:
+                txs = [t for t in txs if t.account_label in account_ids]
+            return txs
+
     def get_to_review_batch(self, limit: int = 500) -> list[Transaction]:
         with self._session() as s:
             return s.query(Transaction).filter(Transaction.to_review.is_(True)).limit(limit).all()
