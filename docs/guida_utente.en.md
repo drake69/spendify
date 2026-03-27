@@ -39,7 +39,7 @@ The app automatically shows the **onboarding wizard** (4 steps). No need to look
 
 **What happens behind the scenes:** Spendify assigns each transaction a unique code based on its content. If you import the same file twice nothing bad happens — duplicates are silently discarded.
 
-> **Coming soon:** an **Import History** page is planned that will show the full history of all imports (date, file, account, number of transactions). You will be able to undo an import by deleting all transactions from that batch at once.
+> **Import History:** the **Import History** page in the sidebar shows the full history of all imports (date, file, account, number of transactions). You can undo an import by deleting all transactions from that batch at once using the "Cancel import" button. See the dedicated section below.
 
 ### Automatic import and schema review
 
@@ -121,6 +121,15 @@ Go to **Ledger**. You'll find the complete list in chronological order, with fil
 
 > **What does "Validated" mean?** Validating a transaction tells Spendify: "I have seen this expense and confirm it is correct (not anomalous)". Validation concerns the **expense itself**, not the category. If a rule or the AI reclassifies the transaction later, the validation stays active: the source badge (AI, Rule, Manual, History) changes, but the "Validated" flag is not touched. Only an explicit click on the "Validato" checkbox (unchecking it) can remove the validation.
 
+### Behavioural fan-out (category propagation)
+
+When you validate a transaction in the Ledger (or in Review), Spendify automatically looks for other transactions with the same description that have not yet been categorised. If it finds any, a suggestion appears: **"Apply to N similar transactions?"**
+
+- Click **Apply to all** to copy the same category/subcategory to all matching transactions (with source "History").
+- Click **No thanks** to dismiss the suggestion.
+
+The suggestion is non-intrusive: it only appears when there are actually similar uncategorised transactions. The more you use the system and validate transactions, the less manual work you will need to do in the future.
+
 ### Creating rules from the Ledger
 
 Select a row using the selection column (📏) and click **Create rule and apply**: a pre-filled form appears with the pattern extracted from the counterpart, plus the category and context from the transaction. A preview shows how many transactions will be matched. If the rule already exists, a yellow warning appears and the button changes to **Edit rule and apply**. After confirmation, the rule is applied retroactively to all matching transactions. A toast confirms "Rule created" or "Rule updated".
@@ -150,6 +159,8 @@ Go to **Review**. You'll find the transactions marked with ⚠️. For each one 
 - Badge showing who assigned the category: 🧠 AI, 📏 Rule, 👤 Manual, 📚 History
 
 **Bulk validation:** select the transactions you are sure about and click **Valida selezionate** to confirm them all at once. When you validate a transaction you are telling Spendify: "I have seen this expense and confirm it is correct". Validation does not change the category, and it is not removed if the category changes later (by rule or AI). Only an explicit click on the checkbox removes it.
+
+**Behavioural fan-out:** in Review as well, after validating a transaction, Spendify offers to apply the same category to similar uncategorised transactions. See the "Behavioural fan-out" section in the Ledger chapter for details.
 
 > **Example:** "PAGAMENTO POS 00112 FARMACIA CENTRALE" was classified as *Casa* but you know it's *Salute*. You correct it once, and if you saved a rule that correction will be applied automatically to future imports.
 
@@ -300,7 +311,81 @@ A button to download an `.xlsx` file with three types of sheets:
 
 ---
 
-## 10. Check List: is everything in order?
+## 10. Import History: undoing an import
+
+**Situation:** You uploaded the wrong file and want to remove all transactions from that import.
+
+Go to **Import History** in the sidebar. You will find the complete history of all imports, showing:
+
+- **Date** of the import
+- **File** uploaded
+- **Account** associated
+- **Number of transactions** imported
+
+To undo an import, click the **Cancel import** button on the corresponding row. The operation deletes all transactions from that batch in one go (hard delete). The deletion is irreversible.
+
+> **Practical example:** You accidentally imported the December transactions file instead of January. Go to Import History, find the wrong import, click "Cancel import" and all transactions from that batch are removed. Then import the correct file.
+
+> **How it works:** Each import is recorded as a batch with a unique identifier (`batch_id`). All transactions imported in that session are linked to the batch, making it possible to surgically undo just that import without affecting other imports.
+
+---
+
+## 11. Budget: setting spending targets
+
+**Situation:** You want to set a spending target for each category (e.g. max 30% on Housing, max 15% on Food).
+
+Go to **Budget** in the sidebar. You will find a table with all spending categories and a percentage field for each.
+
+- Enter the **target percentage** for each category (e.g. 30% for Housing).
+- At the bottom of the table, a **summary** shows the total allocated and the remaining liquidity.
+- If the total exceeds 100%, a **yellow warning** appears.
+
+Categories without a percentage have no target and are not monitored in the Budget vs Actual page.
+
+> **Practical example:** You want a maximum of 30% on Housing, 15% on Food, 10% on Transport. You set the three percentages and immediately see you have allocated 55%, with 45% remaining liquidity.
+
+---
+
+## 12. Budget vs Actual: are you meeting your targets?
+
+**Situation:** You want to compare your actual spending against the targets you defined in the Budget page.
+
+Go to **Budget vs Actual** in the sidebar. The page shows:
+
+### Period selector
+
+At the top you will find the period selector with four modes: **Month**, **Quarter**, **Year**, **Custom**. Use the **left arrow** and **right arrow** to navigate in time (e.g. previous month, next month).
+
+### Metrics row
+
+A row of aggregate indicators shows:
+- **Income** in the period
+- **Expenses** in the period
+- **Liquidity** (income - expenses)
+- **Liquidity %** relative to income
+
+### Comparison table with traffic lights
+
+For each category with a defined target:
+- The **Target** column shows the target percentage
+- The **Actual** column shows the actual percentage
+- A traffic light indicates the deviation:
+  - 🟢 **Green** — within 5% of target (all good)
+  - 🟡 **Yellow** — between 5% and 10% over target (attention)
+  - 🔴 **Red** — more than 10% over target (over budget)
+
+### Charts
+
+- **Bar chart**: side-by-side bars for target vs actual per category — you can immediately see where you are on track and where you are overspending.
+- **Donut chart**: distribution of actual expenses across categories.
+
+> **Note:** Internal transfers between your own accounts are excluded from calculations to avoid double-counting.
+
+> **Practical example:** You set a target of max 30% on Housing, but last month you reached 38%. The traffic light is red, the bar chart shows the actual bar taller than the target. You know you need to cut back.
+
+---
+
+## 13. Check List: is everything in order?
 
 **Situation:** You want to check at a glance whether you are regularly importing all your transaction files, without gaps of months.
 
@@ -327,7 +412,7 @@ You can download the table as CSV with the **⬇️ Scarica CSV** button.
 
 ---
 
-## 11. Settings: changing the AI model
+## 14. Settings: changing the AI model
 
 **Situation:** You want to use a different model for classification (e.g. Claude instead of local Ollama).
 

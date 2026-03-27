@@ -39,7 +39,7 @@ L'app ti mostra automaticamente il **wizard di configurazione iniziale** (4 step
 
 **Cosa succede dietro le quinte:** Spendify assegna a ogni transazione un codice univoco basato sul contenuto. Se importi lo stesso file due volte non succede nulla di male — i duplicati vengono scartati silenziosamente.
 
-> **In arrivo:** e prevista una pagina **Storico import** che mostrera la cronologia di tutte le importazioni eseguite (data, file, conto, numero transazioni). Sara possibile annullare un'importazione eliminando in blocco tutte le transazioni di quel batch.
+> **Storico import:** la pagina **📜 Storico import** nella sidebar mostra la cronologia di tutte le importazioni eseguite (data, file, conto, numero transazioni). Puoi annullare un'importazione eliminando in blocco tutte le transazioni di quel batch con il pulsante "Annulla import". Vedi la sezione dedicata più avanti.
 
 ### Importazione automatica e revisione schema
 
@@ -121,6 +121,15 @@ Vai su **Ledger**. Trovi la lista completa in ordine cronologico, con filtri per
 
 > **Cosa significa "Validato"?** Validare una transazione significa dire a Spendify: "ho visto questa spesa e confermo che è corretta (non è anomala)". La validazione riguarda la **spesa**, non la categoria. Se una regola o l'AI riclassificano la transazione in un secondo momento, la validazione rimane attiva: la fonte (AI, Regola, Manuale, Storico) cambia, ma il flag "Validato" non viene toccato. Solo un click esplicito sulla checkbox "Validato" (deselezionandola) può rimuovere la validazione.
 
+### Fan-out comportamentale (propagazione categoria)
+
+Quando validi una transazione nel Ledger (o nella Review), Spendify cerca automaticamente altre transazioni con la stessa descrizione che non sono ancora state categorizzate. Se ne trova, compare un suggerimento: **"Applica a N transazioni simili?"**
+
+- Clicca **Applica a tutte** per copiare la stessa categoria/sottocategoria a tutte le transazioni corrispondenti (con fonte "Storico").
+- Clicca **No grazie** per ignorare il suggerimento.
+
+Il suggerimento non è intrusivo: appare solo quando ci sono effettivamente transazioni simili non categorizzate. Piu usi il sistema e validi le transazioni, meno lavoro manuale dovrai fare in futuro.
+
 ### Creare regole dal Ledger
 
 Seleziona una riga nella colonna di selezione (📏) e clicca **Crea regola e applica**: compare un form pre-compilato con il pattern estratto dalla controparte, la categoria e il contesto della transazione. Un'anteprima mostra quante transazioni verranno matchate. Se la regola esiste gia, viene mostrato un avviso giallo e il pulsante diventa **Modifica regola e applica**. Dopo la conferma, la regola si applica retroattivamente a tutte le transazioni corrispondenti. Un toast conferma "Regola creata" o "Regola aggiornata".
@@ -150,6 +159,8 @@ Vai su **Review**. Trovi le transazioni con il ⚠️. Per ognuna puoi:
 - Badge che indica chi ha assegnato la categoria: 🧠 AI, 📏 Regola, 👤 Manuale, 📚 Storico
 
 **Validazione in blocco:** seleziona le transazioni di cui sei sicuro e clicca **Valida selezionate** per confermarle tutte in una volta. Quando validi una transazione stai dicendo a Spendify: "ho visto questa spesa e confermo che va bene". La validazione non cambia la categoria e non viene rimossa se la categoria cambia in seguito (per regola o AI). Solo un click esplicito sulla checkbox la rimuove.
+
+**Fan-out comportamentale:** anche nella Review, dopo la validazione di una transazione, Spendify propone di applicare la stessa categoria alle transazioni simili non ancora categorizzate. Vedi la sezione "Fan-out comportamentale" nel capitolo Ledger per i dettagli.
 
 > **Esempio:** "PAGAMENTO POS 00112 FARMACIA CENTRALE" è stato classificato come *Casa* ma tu sai che è *Salute*. Lo correggi una volta, e se hai salvato una regola quella correzione si applicherà automaticamente alle prossime importazioni.
 
@@ -300,7 +311,81 @@ Pulsante per scaricare un file `.xlsx` con tre tipi di foglio:
 
 ---
 
-## 10. Check List: tutto in ordine?
+## 10. Storico import: annullare un'importazione
+
+**Situazione:** Hai caricato il file sbagliato e vuoi eliminare tutte le transazioni di quell'importazione.
+
+Vai su **📜 Storico import** nella sidebar. Trovi la cronologia completa di tutte le importazioni eseguite, con:
+
+- **Data** dell'importazione
+- **File** caricato
+- **Conto** associato
+- **Numero transazioni** importate
+
+Per annullare un'importazione, clicca il pulsante **Annulla import** sulla riga corrispondente. L'operazione elimina in blocco (hard delete) tutte le transazioni di quel batch. L'eliminazione è irreversibile.
+
+> **Esempio pratico:** Hai importato per errore il file movimenti di dicembre invece di quello di gennaio. Vai su Storico import, trovi l'importazione sbagliata, clicchi "Annulla import" e tutte le transazioni di quel batch vengono rimosse. Poi importi il file corretto.
+
+> **Come funziona:** Ogni importazione viene registrata come un batch con un identificativo univoco (`batch_id`). Tutte le transazioni importate in quella sessione sono collegate al batch, rendendo possibile l'annullamento chirurgico senza toccare le altre importazioni.
+
+---
+
+## 11. Budget: definire gli obiettivi di spesa
+
+**Situazione:** Vuoi impostare un obiettivo di spesa per ogni categoria (es. max 30% in Abitazione, max 15% in Alimentari).
+
+Vai su **Budget** nella sidebar. Trovi una tabella con tutte le categorie di spesa e un campo percentuale per ciascuna.
+
+- Inserisci la **percentuale obiettivo** per ogni categoria (es. 30% per Abitazione).
+- In fondo alla tabella, il **riepilogo** mostra il totale assegnato e la liquidità residua.
+- Se la somma delle percentuali supera il 100%, compare un **warning** giallo.
+
+Le categorie senza percentuale non hanno obiettivo e non vengono monitorate nella pagina Budget vs Actual.
+
+> **Esempio pratico:** Vuoi che massimo il 30% vada in Abitazione, il 15% in Alimentari, il 10% in Trasporti. Imposti le tre percentuali e vedi subito che hai assegnato il 55%, con il 45% di liquidità residua.
+
+---
+
+## 12. Budget vs Actual: stai rispettando gli obiettivi?
+
+**Situazione:** Vuoi confrontare la spesa effettiva con gli obiettivi che hai definito nella pagina Budget.
+
+Vai su **Budget vs Actual** nella sidebar. La pagina mostra:
+
+### Selettore periodo
+
+In alto trovi il selettore di periodo con quattro modalità: **Mese**, **Trimestre**, **Anno**, **Custom**. Usa le frecce **←** e **→** per navigare nel tempo (es. mese precedente, mese successivo).
+
+### Riga metriche
+
+Una riga di indicatori aggregati mostra:
+- **Entrate** nel periodo
+- **Uscite** nel periodo
+- **Liquidità** (entrate - uscite)
+- **% liquidità** rispetto alle entrate
+
+### Tabella confronto con semafori
+
+Per ogni categoria con obiettivo definito:
+- La colonna **Target** mostra la percentuale obiettivo
+- La colonna **Actual** mostra la percentuale effettiva
+- Un semaforo indica lo scostamento:
+  - 🟢 **Verde** — entro il 5% dell'obiettivo (tutto ok)
+  - 🟡 **Giallo** — tra 5% e 10% sopra l'obiettivo (attenzione)
+  - 🔴 **Rosso** — più del 10% sopra l'obiettivo (fuori budget)
+
+### Grafici
+
+- **Bar chart**: barre affiancate target vs actual per ogni categoria — visualizzi subito dove sei in linea e dove sforzi.
+- **Donut chart**: distribuzione delle spese effettive tra le categorie.
+
+> **Nota:** I giroconti (trasferimenti interni tra i tuoi conti) sono esclusi dai calcoli per evitare il double-counting.
+
+> **Esempio pratico:** Hai messo come obiettivo max 30% in Abitazione, ma il mese scorso sei arrivato al 38%. Il semaforo è rosso, il bar chart mostra la barra actual più alta del target. Sai che devi tagliare.
+
+---
+
+## 13. Check List: tutto in ordine?
 
 **Situazione:** Vuoi controllare a colpo d'occhio se stai importando regolarmente tutti i tuoi file movimenti, senza buchi di mesi.
 
@@ -327,7 +412,7 @@ Puoi scaricare la tabella come CSV con il pulsante **⬇️ Scarica CSV**.
 
 ---
 
-## 11. Impostazioni: cambiare il modello AI
+## 14. Impostazioni: cambiare il modello AI
 
 **Situazione:** Vuoi usare un modello diverso per la classificazione (es. Claude invece di Ollama locale).
 
