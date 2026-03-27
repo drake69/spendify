@@ -832,16 +832,28 @@ def main() -> None:
     all_results: list[CatRunResult] = []
     all_details: list[CatDetailRow] = []
     total_start = time.time()
+    total_steps = n_runs * n_files
+    completed_steps = 0
 
     for run_id in range(1, n_runs + 1):
         run_results: list[CatRunResult] = []
         run_start = time.time()
 
         for file_idx, entry in enumerate(manifest, 1):
+            completed_steps += 1
+            pct = completed_steps / total_steps
+            elapsed = time.time() - total_start
+            eta = (elapsed / completed_steps) * (total_steps - completed_steps) if completed_steps > 0 else 0
+            eta_min, eta_sec = divmod(int(eta), 60)
+            bar_len = 30
+            filled = int(bar_len * pct)
+            bar = "█" * filled + "░" * (bar_len - filled)
+
             print(
-                f"  [Run {run_id:>{len(str(n_runs))}}/{n_runs}] "
-                f"[File {file_idx:>{len(str(n_files))}}/{n_files}] "
-                f"{entry.filename}...",
+                f"\r  {bar} {pct:5.1%} | "
+                f"Run {run_id}/{n_runs} File {file_idx}/{n_files} "
+                f"| ETA {eta_min:02d}:{eta_sec:02d} | "
+                f"{entry.filename}",
                 end="", flush=True,
             )
 
@@ -852,12 +864,15 @@ def main() -> None:
 
             status = "OK" if not result.error else f"ERR: {result.error[:40]}"
             print(
-                f" {result.duration_seconds:.1f}s "
+                f"\r  [Run {run_id}/{n_runs}] [File {file_idx}/{n_files}] "
+                f"{entry.filename} "
+                f"{result.duration_seconds:.1f}s "
                 f"exact={result.category_accuracy:.0%} "
                 f"fuzzy={result.fuzzy_accuracy:.0%} "
                 f"fb={result.fallback_rate:.0%} "
                 f"r/h/l={result.n_rule}/{result.n_history}/{result.n_llm} "
                 f"[{status}]"
+                + " " * 20
             )
 
         run_duration = time.time() - run_start

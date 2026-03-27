@@ -839,16 +839,28 @@ def main() -> None:
     # Run benchmark
     all_results: list[RunFileResult] = []
     total_start = time.time()
+    total_steps = n_runs * n_files
+    completed_steps = 0
 
     for run_id in range(1, n_runs + 1):
         run_results: list[RunFileResult] = []
         run_start = time.time()
 
         for file_idx, entry in enumerate(manifest, 1):
+            completed_steps += 1
+            pct = completed_steps / total_steps
+            elapsed = time.time() - total_start
+            eta = (elapsed / completed_steps) * (total_steps - completed_steps) if completed_steps > 0 else 0
+            eta_min, eta_sec = divmod(int(eta), 60)
+            bar_len = 30
+            filled = int(bar_len * pct)
+            bar = "█" * filled + "░" * (bar_len - filled)
+
             print(
-                f"  [Run {run_id:>{len(str(n_runs))}}/{n_runs}] "
-                f"[File {file_idx:>{len(str(n_files))}}/{n_files}] "
-                f"{entry.filename}...",
+                f"\r  {bar} {pct:5.1%} | "
+                f"Run {run_id}/{n_runs} File {file_idx}/{n_files} "
+                f"| ETA {eta_min:02d}:{eta_sec:02d} | "
+                f"{entry.filename}",
                 end="", flush=True,
             )
 
@@ -858,12 +870,15 @@ def main() -> None:
 
             status = "OK" if not result.error else f"ERR: {result.error[:40]}"
             print(
-                f" {result.duration_seconds:.1f}s "
+                f"\r  [Run {run_id}/{n_runs}] [File {file_idx}/{n_files}] "
+                f"{entry.filename} "
+                f"{result.duration_seconds:.1f}s "
                 f"dt={'Y' if result.doc_type_match else 'N'} "
                 f"cv={'Y' if result.convention_match else 'N'} "
                 f"conf={result.confidence_score:.2f} "
                 f"rows={result.n_parsed}/{result.n_expected} "
                 f"[{status}]"
+                + " " * 20
             )
 
         run_duration = time.time() - run_start
