@@ -255,6 +255,18 @@ class ImportService:
         with self._session() as s:
             return repository.reset_stale_jobs(s)
 
+    # ── Import history & undo ──────────────────────────────────────────────────
+
+    def get_import_history(self, limit: int = 100) -> list[dict]:
+        """Return import batches with transaction counts, most recent first."""
+        with self._session() as s:
+            return repository.get_import_history(s, limit=limit)
+
+    def cancel_import(self, batch_id: int) -> int:
+        """Hard-delete all transactions for the given batch. Returns deleted count."""
+        with self._session() as s:
+            return repository.cancel_import_batch(s, batch_id)
+
     # ── Internal helpers ──────────────────────────────────────────────────────
 
     @staticmethod
