@@ -236,6 +236,16 @@ Vai su **Analytics**. Trovi:
 
 Usa i filtri in alto per restringere a un periodo o a un conto specifico.
 
+### Filtro ad albero tassonomico
+
+Nella pagina Analytics (e nella pagina Tassonomia) è disponibile un **filtro ad albero** che mostra la gerarchia completa contesto / categoria / sottocategoria con checkbox collassabili. Puoi:
+- Espandere e collassare i nodi dell'albero
+- Selezionare un nodo padre per selezionare automaticamente tutti i figli
+- Usare i pulsanti **Seleziona tutto** / **Deseleziona tutto** per operazioni rapide
+- Gli indicatori tri-state mostrano se un nodo è completamente selezionato, parzialmente selezionato o deselezionato
+
+> **Nota:** Il filtro ad albero è disponibile solo nelle pagine di analisi (Analytics, Tassonomia). Non è presente nel Ledger e nella Review, dove i filtri piatti sono più rapidi per il lavoro quotidiano sulle singole transazioni.
+
 ### Associazioni controparte (auto-apprendimento)
 
 Nella sezione Analytics trovi anche la vista **Associazioni controparte → categoria**, che mostra come Spendify ha imparato ad associare ogni controparte (es. ESSELUNGA, AMAZON) alle categorie nel tempo.
@@ -252,7 +262,45 @@ Per ogni controparte vengono mostrati:
 
 ---
 
-## 9. Check List: tutto in ordine?
+## 9. Report: dove vanno i soldi
+
+**Situazione:** Vuoi un riepilogo strutturato delle tue spese per contesto e categoria, con percentuali e trend nel tempo.
+
+Vai su **Report** nella sidebar. La pagina offre tre viste.
+
+### Vista 1 — Tabella pivot
+
+Tabella pivot **contesto × categoria × sottocategoria** con:
+- Importo totale per ogni combinazione
+- Percentuale sul totale speso
+- Subtotali per contesto
+
+I giroconti (trasferimenti interni tra i tuoi conti) sono esclusi automaticamente dai totali.
+
+### Vista 2 — Trend temporale
+
+Grafici interattivi (Plotly) che mostrano:
+- **Line chart** con l'andamento mensile delle top 10 categorie di spesa
+- **Stacked bar** per visualizzare la composizione mensile
+- Tab separati per **spese** e **entrate**
+
+### Vista 3 — Export Excel
+
+Pulsante per scaricare un file `.xlsx` con tre tipi di foglio:
+- **Riepilogo** — la tabella pivot completa
+- **Trend** — dati mensili per categoria
+- **Un foglio per ogni contesto** — dettaglio transazioni
+
+### Filtri disponibili
+
+- **Periodo:** date range picker con pulsanti rapidi — *Mese*, *3 mesi*, *Anno*, *Tutto*
+- **Conti:** multiselect per filtrare uno o più conti
+
+> **Esempio pratico:** Vuoi sapere quanto hai speso in "Alimentari" negli ultimi 3 mesi. Apri Report, clicca "3 mesi", guarda la riga Alimentari nella tabella pivot. Poi passa alla Vista 2 per vedere se la spesa è in crescita o in calo.
+
+---
+
+## 10. Check List: tutto in ordine?
 
 **Situazione:** Vuoi controllare a colpo d'occhio se stai importando regolarmente tutti i tuoi file movimenti, senza buchi di mesi.
 
@@ -279,7 +327,7 @@ Puoi scaricare la tabella come CSV con il pulsante **⬇️ Scarica CSV**.
 
 ---
 
-## 10. Impostazioni: cambiare il modello AI
+## 11. Impostazioni: cambiare il modello AI
 
 **Situazione:** Vuoi usare un modello diverso per la classificazione (es. Claude invece di Ollama locale).
 

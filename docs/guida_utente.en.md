@@ -236,6 +236,16 @@ Go to **Analytics**. You'll find:
 
 Use the filters at the top to narrow down to a specific period or account.
 
+### Taxonomy tree filter
+
+In the Analytics page (and the Taxonomy page) a **tree filter** is available that shows the full context / category / subcategory hierarchy with collapsible checkboxes. You can:
+- Expand and collapse tree nodes
+- Select a parent node to automatically select all children
+- Use the **Select all** / **Deselect all** buttons for quick operations
+- Tri-state indicators show whether a node is fully selected, partially selected, or deselected
+
+> **Note:** The tree filter is only available in analysis pages (Analytics, Taxonomy). It is not present in Ledger and Review, where flat filters are faster for daily transaction work.
+
 ### Counterpart associations (auto-learning)
 
 In the Analytics section you will also find the **Counterpart associations** view, which shows how Spendify has learned to associate each counterpart (e.g. ESSELUNGA, AMAZON) with categories over time.
@@ -252,7 +262,45 @@ For each counterpart it shows:
 
 ---
 
-## 9. Check List: is everything in order?
+## 9. Report: where does your money go
+
+**Situation:** You want a structured summary of your spending by context and category, with percentages and trends over time.
+
+Go to **Report** in the sidebar. The page offers three views.
+
+### View 1 — Pivot table
+
+A **context x category x subcategory** pivot table showing:
+- Total amount for each combination
+- Percentage of total spending
+- Subtotals per context
+
+Internal transfers between your own accounts are automatically excluded from totals.
+
+### View 2 — Time trend
+
+Interactive charts (Plotly) showing:
+- **Line chart** with monthly trends for the top 10 spending categories
+- **Stacked bar** to visualise monthly composition
+- Separate tabs for **expenses** and **income**
+
+### View 3 — Excel export
+
+A button to download an `.xlsx` file with three types of sheets:
+- **Riepilogo** (Summary) — the complete pivot table
+- **Trend** — monthly data by category
+- **One sheet per context** — transaction details
+
+### Available filters
+
+- **Period:** date range picker with quick buttons — *Month*, *3 months*, *Year*, *All*
+- **Accounts:** multiselect to filter one or more accounts
+
+> **Practical example:** You want to know how much you spent on "Alimentari" (Food) in the last 3 months. Open Report, click "3 months", look at the Alimentari row in the pivot table. Then switch to View 2 to see if spending is trending up or down.
+
+---
+
+## 10. Check List: is everything in order?
 
 **Situation:** You want to check at a glance whether you are regularly importing all your transaction files, without gaps of months.
 
@@ -279,7 +327,7 @@ You can download the table as CSV with the **⬇️ Scarica CSV** button.
 
 ---
 
-## 10. Settings: changing the AI model
+## 11. Settings: changing the AI model
 
 **Situation:** You want to use a different model for classification (e.g. Claude instead of local Ollama).
 
