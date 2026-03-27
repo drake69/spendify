@@ -2,10 +2,13 @@
 
 Pages:
   📥 Import             – upload + pipeline processing
+  📜 Storico import     – import history with undo
   📋 Ledger             – filterable transaction table + export
   ✏️ Modifiche massive  – bulk edits: category, context, deletion
   📊 Analytics          – interactive charts (Plotly)
   📋 Report             – spending by context/category with pivot, trends, Excel export
+  💰 Budget             – define % budget targets per category (A-02)
+  📊 Budget vs Actual   – compare actual spending vs budget targets (A-02)
   🔍 Review             – manual review of low-confidence items
   📏 Regole             – manage category rules (edit / delete / create)
   🗂️ Tassonomia         – manage categories and subcategories
@@ -78,6 +81,10 @@ if page == "import":
     from ui.upload_page import render_upload_page
     render_upload_page(engine)
 
+elif page == "history":
+    from ui.history_page import render_history_page
+    render_history_page(engine)
+
 elif page == "ledger":
     from ui.registry_page import render_registry_page
     render_registry_page(engine)
@@ -93,6 +100,14 @@ elif page == "analytics":
 elif page == "report":
     from ui.report_page import render_report_page
     render_report_page(engine)
+
+elif page == "budget":
+    from ui.budget_page import render_budget_page
+    render_budget_page(engine)
+
+elif page == "budget_vs_actual":
+    from ui.budget_vs_actual_page import render_budget_vs_actual_page
+    render_budget_vs_actual_page(engine)
 
 elif page == "review":
     from ui.review_page import render_review_page

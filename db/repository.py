@@ -42,6 +42,55 @@ def get_all_batch_hashes(session: Session) -> set[str]:
     return {row.sha256 for row in session.query(ImportBatch.sha256).all()}
 
 
+def get_import_history(session: Session, limit: int = 100) -> list[dict]:
+    """Return import batches ordered by most recent first, with live transaction counts."""
+    from sqlalchemy import func
+    rows = (
+        session.query(
+            ImportBatch.id,
+            ImportBatch.filename,
+            ImportBatch.account_label,
+            ImportBatch.imported_at,
+            ImportBatch.status,
+            func.count(Transaction.id).label("n_transactions"),
+        )
+        .outerjoin(Transaction, Transaction.batch_id == ImportBatch.id)
+        .group_by(ImportBatch.id)
+        .order_by(ImportBatch.imported_at.desc())
+        .limit(limit)
+        .all()
+    )
+    return [
+        {
+            "id": r.id,
+            "filename": r.filename,
+            "account_label": r.account_label or "",
+            "imported_at": r.imported_at,
+            "status": r.status or "completed",
+            "n_transactions": r.n_transactions,
+        }
+        for r in rows
+    ]
+
+
+def cancel_import_batch(session: Session, batch_id: int) -> int:
+    """Hard-delete all transactions belonging to this batch, mark batch as cancelled.
+
+    Returns the number of transactions deleted.
+    """
+    count = session.query(Transaction).filter(Transaction.batch_id == batch_id).count()
+    if count > 0:
+        session.query(Transaction).filter(Transaction.batch_id == batch_id).delete(
+            synchronize_session="fetch"
+        )
+    batch = session.get(ImportBatch, batch_id)
+    if batch:
+        batch.status = "cancelled"
+        batch.n_transactions = 0
+    session.commit()
+    return count
+
+
 def create_import_batch(
     session: Session,
     sha256: str,
@@ -49,6 +98,7 @@ def create_import_batch(
     flow_used: str = "unknown",
     n_transactions: int = 0,
     errors: Optional[str] = None,
+    account_label: Optional[str] = None,
 ) -> ImportBatch:
     existing = session.query(ImportBatch).filter_by(sha256=sha256).first()
     if existing:
@@ -59,6 +109,8 @@ def create_import_batch(
         flow_used=flow_used,
         n_transactions=n_transactions,
         errors=errors,
+        account_label=account_label,
+        status="completed",
     )
     session.add(batch)
     session.flush()
@@ -661,6 +713,11 @@ def persist_import_result(session: Session, result) -> None:
         logger.info(f"persist_import_result: skipping duplicate {result.source_name}")
         return
 
+    # Derive account_label from the first transaction (if any)
+    _account_label = None
+    if result.transactions:
+        _account_label = result.transactions[0].get("account_label")
+
     batch = create_import_batch(
         session=session,
         sha256=result.batch_sha256,
@@ -668,6 +725,7 @@ def persist_import_result(session: Session, result) -> None:
         flow_used=result.flow_used,
         n_transactions=len(result.transactions),
         errors="; ".join(result.errors) if result.errors else None,
+        account_label=_account_label,
     )
 
     if result.doc_schema:
@@ -1432,3 +1490,111 @@ def get_monthly_spending(
         }
         for r in rows
     ]
+
+
+# ── BudgetTarget (A-02) ─────────────────────────────────────────────────────
+
+def get_budget_targets(session: Session) -> list["BudgetTarget"]:
+    """Return all budget targets ordered by category name."""
+    from db.models import BudgetTarget
+    return session.query(BudgetTarget).order_by(BudgetTarget.category).all()
+
+
+def upsert_budget_target(session: Session, category: str, target_pct: Decimal) -> "BudgetTarget":
+    """Insert or update a budget target for a category (unique on category)."""
+    from db.models import BudgetTarget
+    existing = session.query(BudgetTarget).filter_by(category=category).first()
+    if existing:
+        existing.target_pct = target_pct
+        session.flush()
+        return existing
+    bt = BudgetTarget(category=category, target_pct=target_pct)
+    session.add(bt)
+    session.flush()
+    return bt
+
+
+def delete_budget_target(session: Session, target_id: int) -> bool:
+    """Delete a budget target by id. Returns True if deleted."""
+    from db.models import BudgetTarget
+    bt = session.get(BudgetTarget, target_id)
+    if bt is None:
+        return False
+    session.delete(bt)
+    session.flush()
+    return True
+
+
+def delete_budget_target_by_category(session: Session, category: str) -> bool:
+    """Delete a budget target by category name. Returns True if deleted."""
+    from db.models import BudgetTarget
+    bt = session.query(BudgetTarget).filter_by(category=category).first()
+    if bt is None:
+        return False
+    session.delete(bt)
+    session.flush()
+    return True
+
+
+def get_period_totals(
+    session: Session,
+    date_from: str,
+    date_to: str,
+    exclude_internal: bool = True,
+) -> dict:
+    """Get total income and expenses for a date range, plus per-category expense breakdown.
+
+    Returns dict with keys:
+        total_income, total_expenses, by_category (list of {category, amount})
+    Excludes card_settlement, aggregate_debit, and optionally internal transfers.
+    """
+    from sqlalchemy import func, case
+
+    excluded = ["card_settlement", "aggregate_debit"]
+    if exclude_internal:
+        excluded += ["internal_in", "internal_out"]
+
+    # Total income (amount > 0) and total expenses (amount < 0)
+    totals = session.query(
+        func.coalesce(
+            func.sum(case((Transaction.amount > 0, Transaction.amount))),
+            0
+        ).label("total_income"),
+        func.coalesce(
+            func.sum(case((Transaction.amount < 0, Transaction.amount))),
+            0
+        ).label("total_expenses"),
+    ).filter(
+        Transaction.tx_type.notin_(excluded),
+        Transaction.date >= date_from,
+        Transaction.date <= date_to,
+    ).first()
+
+    total_income = float(totals.total_income) if totals else 0.0
+    total_expenses = abs(float(totals.total_expenses)) if totals else 0.0
+
+    # Per-category expense breakdown (only expenses, amount < 0)
+    cat_rows = session.query(
+        func.coalesce(Transaction.category, "Altro").label("category"),
+        func.sum(Transaction.amount).label("amount"),
+    ).filter(
+        Transaction.tx_type.notin_(excluded),
+        Transaction.date >= date_from,
+        Transaction.date <= date_to,
+        Transaction.amount < 0,
+    ).group_by(
+        func.coalesce(Transaction.category, "Altro"),
+    ).order_by(
+        func.sum(Transaction.amount),
+    ).all()
+
+    by_category = [
+        {"category": r.category, "amount": abs(float(r.amount))}
+        for r in cat_rows
+    ]
+
+    return {
+        "total_income": total_income,
+        "total_expenses": total_expenses,
+        "by_category": by_category,
+    }

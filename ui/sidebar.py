@@ -3,10 +3,13 @@ import streamlit as st
 
 _NAV = [
     ("📥 Import", "import", "Importa file CSV/XLSX dai tuoi conti bancari"),
+    ("📜 Storico import", "history", "Cronologia importazioni con possibilità di annullamento"),
     ("📋 Ledger", "ledger", "Consulta e filtra tutte le transazioni importate"),
     ("✏️ Modifiche massive", "bulk_edit", "Modifica categoria, contesto o giroconto su gruppi di transazioni"),
     ("📊 Analytics", "analytics", "Grafici interattivi su entrate, uscite e andamento"),
     ("📋 Report", "report", "Report spesa per contesto e categoria con export Excel"),
+    ("💰 Budget", "budget", "Definisci obiettivi % di spesa per categoria"),
+    ("📊 Budget vs Actual", "budget_vs_actual", "Confronta spesa effettiva con obiettivi di budget"),
     ("🔍 Review", "review", "Rivedi le transazioni segnalate per verifica"),
     ("📏 Regole", "rules", "Gestisci le regole automatiche di categorizzazione"),
     ("🗂️ Tassonomia", "taxonomy", "Configura categorie e sottocategorie di spesa/entrata"),

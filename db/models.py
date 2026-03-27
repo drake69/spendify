@@ -1,6 +1,6 @@
 """SQLAlchemy ORM models (RF-07).
 
-Eleven tables:
+Twelve tables:
   import_batch            – one record per imported file
   document_schema         – parsing template (Flow 2 → Flow 1 promotion)
   transaction             – canonical transaction with all fields
@@ -12,6 +12,7 @@ Eleven tables:
   taxonomy_subcategory    – subcategory definitions (FK → taxonomy_category)
   account                 – user-defined bank accounts (stable dedup key)
   description_rule        – bulk description replacement rules (raw_description → cleaned)
+  budget_target           – per-category % budget targets (A-02)
 """
 from __future__ import annotations
 
@@ -96,6 +97,8 @@ def create_tables(engine=None):
     _migrate_add_account_type(engine)
     _migrate_consolidate_account_type(engine)
     _migrate_savings_to_savings_account(engine)
+    _migrate_add_import_batch_tracking(engine)
+    _migrate_add_budget_target(engine)
     _migrate_set_onboarding_done_for_existing_users(engine)  # must run last
     return engine
 
@@ -167,9 +170,11 @@ class ImportBatch(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     sha256 = Column(String(64), unique=True, nullable=False, index=True)
     filename = Column(String(512), nullable=False)
+    account_label = Column(String(256), nullable=True)
     imported_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     flow_used = Column(String(10))  # "flow1" | "flow2"
     n_transactions = Column(Integer, default=0)
+    status = Column(String(16), default="completed")  # completed | cancelled
     errors = Column(Text)
 
     transactions = relationship("Transaction", back_populates="batch")
@@ -381,6 +386,18 @@ class Account(Base):
     bank_name = Column(String(256))                           # optional free-text bank name
     account_type = Column(String(32), nullable=True)          # bank_account | credit_card | debit_card | prepaid_card | savings_account | cash
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class BudgetTarget(Base):
+    """Monthly budget target as % of total expenses for a category (A-02)."""
+    __tablename__ = "budget_target"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    category = Column(String(128), nullable=False, unique=True)
+    target_pct = Column(Numeric(5, 2), nullable=False)
+    period_type = Column(String(16), default="monthly")       # monthly (future: quarterly, yearly)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, onupdate=lambda: datetime.now(timezone.utc))
 
 
 def _migrate_add_import_job(engine) -> None:
@@ -632,6 +649,29 @@ def _migrate_add_rule_context(engine) -> None:
                 raise
 
 
+def _migrate_add_import_batch_tracking(engine) -> None:
+    """Add account_label and status columns to import_batch if not present (idempotent)."""
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        for col_sql in [
+            'ALTER TABLE import_batch ADD COLUMN account_label VARCHAR(256)',
+            'ALTER TABLE import_batch ADD COLUMN status VARCHAR(16) DEFAULT "completed"',
+        ]:
+            try:
+                conn.execute(_text(col_sql))
+                conn.commit()
+            except Exception as exc:
+                if "duplicate column name" in str(exc).lower():
+                    pass
+                else:
+                    raise
+        # Backfill status for existing rows that have NULL
+        conn.execute(_text(
+            "UPDATE import_batch SET status = 'completed' WHERE status IS NULL"
+        ))
+        conn.commit()
+
+
 def _migrate_set_onboarding_done_for_existing_users(engine) -> None:
     """Mark onboarding as complete for DBs that already have taxonomy data.
 
@@ -769,5 +809,21 @@ def _migrate_savings_to_savings_account(engine) -> None:
         conn.execute(_text(
             'UPDATE "transaction" SET doc_type = \'savings_account\' '
             "WHERE doc_type = 'savings'"
+        ))
+        conn.commit()
+
+
+def _migrate_add_budget_target(engine) -> None:
+    """Create budget_target table if not present (idempotent, A-02)."""
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        conn.execute(_text(
+            'CREATE TABLE IF NOT EXISTS budget_target ('
+            'id INTEGER PRIMARY KEY AUTOINCREMENT, '
+            'category VARCHAR(128) NOT NULL UNIQUE, '
+            'target_pct NUMERIC(5,2) NOT NULL, '
+            'period_type VARCHAR(16) DEFAULT "monthly", '
+            'created_at DATETIME, '
+            'updated_at DATETIME)'
         ))
         conn.commit()
