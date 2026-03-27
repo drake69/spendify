@@ -107,7 +107,7 @@ spendify/
 │   └── review_service.py
 ├── core/                   # logica di dominio pura (no UI, no DB)
 │   ├── orchestrator.py     # entry point pipeline
-│   ├── normalizer.py
+│   ├── normalizer.py       # parsing, 3-phase footer strip, transfer detection
 │   ├── classifier.py
 │   ├── categorizer.py
 │   ├── description_cleaner.py

@@ -48,6 +48,10 @@ class PreprocessInfo:
     """
     skipped_rows: int = 0
     footer_rows_stripped: int = 0
+    footer_strip_method: str = ""
+    """How footer rows were stripped: 'phase1', 'phase1+phase2', 'phase1+phase3', 'iqr_fallback', etc."""
+    footer_patterns_learned: int = 0
+    """Number of new footer patterns learned from Phase 2 LLM extraction."""
     dropped_columns: list[str] = field(default_factory=list)
     columns_before_drop: list[str] = field(default_factory=list)
     """Column names captured AFTER preheader-strip but BEFORE drop_low_variability_columns.
@@ -1043,3 +1047,266 @@ def remove_card_balance_row(
                 return transactions[:i] + transactions[i + 1:], True
 
     return transactions, False
+
+
+# ── 3-Phase Footer Stripping ─────────────────────────────────────────────────
+#
+# Phase 1: Structural filter (column density, schema-aware)
+# Phase 2: Semantic extraction with LLM (last 10 rows)
+# Phase 3: Reuse stored textual patterns
+# ---------------------------------------------------------------------------
+
+# Regex for stripping dates and numbers from description text to build patterns
+_DATE_PATTERN = re.compile(r"\d{1,4}[/\-\.]\d{1,2}[/\-\.]\d{1,4}")
+_NUMBER_PATTERN = re.compile(r"[\d.,]+")
+_MULTI_SPACE = re.compile(r"\s+")
+
+# Multilingual keywords that signal a suspicious (possible footer) row
+_FOOTER_SUSPECT_KEYWORDS = frozenset({
+    "totale", "totali", "total", "totaux",
+    "saldo", "saldi", "balance", "solde",
+    "firma", "firme", "signature", "unterschrift",
+    "timbro", "stamp", "cachet",
+    "pagina", "page", "seite",
+    "estratto", "extract", "extrait",
+    "riepilogo", "summary", "résumé", "zusammenfassung",
+})
+
+_FOOTER_MIN_PATTERN_LEN = 3  # patterns shorter than this are discarded
+
+
+def _resolve_description_col(schema) -> Optional[str]:
+    """Return the primary description column name from a DocumentSchema."""
+    desc_cols = getattr(schema, "description_cols", None)
+    if desc_cols:
+        return desc_cols[0]
+    return getattr(schema, "description_col", None)
+
+
+def _normalize_description_to_pattern(text: str) -> str:
+    """Strip dates, numbers, and extra whitespace from description text → residual pattern."""
+    t = _DATE_PATTERN.sub("", text)
+    t = _NUMBER_PATTERN.sub("", t)
+    t = _MULTI_SPACE.sub(" ", t).strip().lower()
+    return t
+
+
+def strip_footer_phase1(
+    df: pd.DataFrame,
+    schema,
+    source_name: str = "",
+) -> tuple[pd.DataFrame, int]:
+    """Phase 1: Structural filter — remove bottom rows with NA in mandatory columns.
+
+    For 3-column schemas (amount_col set): date, description, amount all required.
+    For 4-column schemas (debit_col + credit_col): date and description required.
+
+    Scans from the bottom upward collecting contiguous rows that violate the
+    constraint. Applies the same safety caps as the old IQR method.
+    """
+    if len(df) < 3:
+        return df, 0
+
+    desc_col = _resolve_description_col(schema)
+
+    # Determine mandatory columns based on schema shape
+    if getattr(schema, "amount_col", None):
+        # 3-column schema: date + description + amount all mandatory
+        mandatory = [schema.date_col]
+        if desc_col and desc_col in df.columns:
+            mandatory.append(desc_col)
+        if schema.amount_col in df.columns:
+            mandatory.append(schema.amount_col)
+    elif getattr(schema, "debit_col", None) and getattr(schema, "credit_col", None):
+        # 4-column schema: date + description mandatory
+        mandatory = [schema.date_col]
+        if desc_col and desc_col in df.columns:
+            mandatory.append(desc_col)
+    else:
+        # Unknown shape — fall back to date-only check
+        mandatory = [schema.date_col]
+
+    # Filter to columns that actually exist in the DataFrame
+    mandatory = [c for c in mandatory if c in df.columns]
+    if not mandatory:
+        return df, 0
+
+    # Scan from bottom: count contiguous rows where any mandatory column is NA
+    n_footer = 0
+    for i in range(len(df) - 1, -1, -1):
+        row = df.iloc[i]
+        has_na = any(pd.isna(row.get(c)) for c in mandatory)
+        if has_na:
+            n_footer += 1
+        else:
+            break
+
+    if n_footer == 0:
+        return df, 0
+
+    # Safety caps
+    max_allowed = min(_FOOTER_MAX_ROWS, int(len(df) * _FOOTER_MAX_RATIO))
+    n_footer = min(n_footer, max(max_allowed, 1))
+
+    result = df.iloc[:-n_footer].copy().reset_index(drop=True)
+    logger.info(
+        "[%s] Phase 1 footer strip: removed %d row(s) with NA in mandatory columns %s",
+        source_name, n_footer, mandatory,
+    )
+    return result, n_footer
+
+
+def strip_footer_phase2_llm(
+    df: pd.DataFrame,
+    schema,
+    llm_backend,
+    sanitize_config=None,
+    source_name: str = "",
+) -> tuple[pd.DataFrame, list[str], int]:
+    """Phase 2: Semantic extraction — ask LLM to identify footer rows among the last 10.
+
+    Returns:
+        (trimmed_df, new_patterns, n_stripped)
+        new_patterns: list of normalised text patterns extracted from identified footers.
+    """
+    import json as _json
+    from pathlib import Path
+
+    if len(df) < 1:
+        return df, [], 0
+
+    tail_size = min(10, len(df))
+    tail_start = len(df) - tail_size
+    tail_df = df.iloc[tail_start:]
+
+    desc_col = _resolve_description_col(schema)
+
+    # Build row representations for the LLM
+    rows_for_llm = []
+    for local_idx, (_, row) in enumerate(tail_df.iterrows()):
+        row_dict = {}
+        for col in df.columns:
+            val = row.get(col)
+            row_dict[col] = "" if pd.isna(val) else str(val)[:200]
+        # Sanitize descriptions for remote backends
+        if sanitize_config and desc_col and desc_col in row_dict:
+            from core.sanitizer import redact_pii
+            row_dict[desc_col] = redact_pii(row_dict[desc_col], sanitize_config)
+        rows_for_llm.append({"index": local_idx, **row_dict})
+
+    # Load prompt
+    _prompts_file = Path(__file__).parent.parent / "prompts" / "footer_detector.json"
+    with open(_prompts_file, encoding="utf-8") as f:
+        prompts = _json.load(f)
+
+    system_prompt = prompts["system"]
+
+    # Build amount info string
+    if getattr(schema, "amount_col", None):
+        amount_info = f"single column: {schema.amount_col}"
+    elif getattr(schema, "debit_col", None):
+        amount_info = f"debit: {schema.debit_col}, credit: {getattr(schema, 'credit_col', '?')}"
+    else:
+        amount_info = "unknown"
+
+    user_prompt = prompts["user_template"].format(
+        date_col=schema.date_col,
+        description_col=desc_col or "N/A",
+        amount_info=amount_info,
+        rows_json=_json.dumps(rows_for_llm, ensure_ascii=False, indent=2),
+    )
+
+    response_schema = prompts["response_schema"]
+
+    try:
+        result = llm_backend.complete_structured(system_prompt, user_prompt, response_schema)
+    except Exception as exc:
+        logger.warning("[%s] Phase 2 LLM footer detection failed: %s", source_name, exc)
+        raise
+
+    footer_indices_local = []
+    for item in result.get("footer_rows", []):
+        idx = item.get("index")
+        if isinstance(idx, int) and 0 <= idx < tail_size:
+            footer_indices_local.append(idx)
+
+    if not footer_indices_local:
+        return df, [], 0
+
+    # Extract patterns from footer rows
+    new_patterns = []
+    for local_idx in footer_indices_local:
+        row = tail_df.iloc[local_idx]
+        desc = str(row.get(desc_col, "") or "") if desc_col else ""
+        pattern = _normalize_description_to_pattern(desc)
+        if len(pattern) >= _FOOTER_MIN_PATTERN_LEN:
+            new_patterns.append(pattern)
+
+    # Remove footer rows from the full DataFrame
+    global_indices = [tail_start + i for i in footer_indices_local]
+    result_df = df.drop(df.index[global_indices]).reset_index(drop=True)
+
+    n_stripped = len(footer_indices_local)
+    logger.info(
+        "[%s] Phase 2 LLM footer strip: removed %d row(s), learned %d pattern(s)",
+        source_name, n_stripped, len(new_patterns),
+    )
+    return result_df, new_patterns, n_stripped
+
+
+def strip_footer_phase3_patterns(
+    df: pd.DataFrame,
+    schema,
+    stored_patterns: list[str],
+    source_name: str = "",
+) -> tuple[pd.DataFrame, list[int], int]:
+    """Phase 3: Reuse stored patterns — match against the last 10 rows.
+
+    Returns:
+        (trimmed_df, unmatched_suspect_indices, n_stripped)
+        unmatched_suspect_indices: global DF indices of rows in the tail that
+        look suspicious (contain footer keywords) but were NOT matched by any
+        stored pattern — used to decide whether to trigger Phase 2.
+    """
+    if len(df) < 1 or not stored_patterns:
+        return df, [], 0
+
+    tail_size = min(10, len(df))
+    tail_start = len(df) - tail_size
+
+    desc_col = _resolve_description_col(schema)
+
+    matched_global = []
+    unmatched_suspect = []
+
+    for i in range(tail_size):
+        global_idx = tail_start + i
+        row = df.iloc[global_idx]
+        desc = str(row.get(desc_col, "") or "") if desc_col else ""
+        normalised = _normalize_description_to_pattern(desc)
+
+        # Check if any stored pattern matches
+        pattern_hit = False
+        for pat in stored_patterns:
+            if pat and pat in normalised:
+                pattern_hit = True
+                break
+
+        if pattern_hit:
+            matched_global.append(global_idx)
+        else:
+            # Check if this row looks suspicious based on keywords
+            desc_lower = desc.lower()
+            if any(kw in desc_lower for kw in _FOOTER_SUSPECT_KEYWORDS):
+                unmatched_suspect.append(global_idx)
+
+    if not matched_global:
+        return df, unmatched_suspect, 0
+
+    result_df = df.drop(df.index[matched_global]).reset_index(drop=True)
+    n_stripped = len(matched_global)
+    logger.info(
+        "[%s] Phase 3 pattern footer strip: removed %d row(s), %d unmatched suspect(s)",
+        source_name, n_stripped, len(unmatched_suspect),
+    )
+    return result_df, unmatched_suspect, n_stripped

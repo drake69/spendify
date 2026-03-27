@@ -99,6 +99,7 @@ def create_tables(engine=None):
     _migrate_savings_to_savings_account(engine)
     _migrate_add_import_batch_tracking(engine)
     _migrate_add_budget_target(engine)
+    _migrate_add_footer_patterns(engine)
     _migrate_set_onboarding_done_for_existing_users(engine)  # must run last
     return engine
 
@@ -200,6 +201,7 @@ class DocumentSchemaModel(Base):
     is_zero_sum = Column(Boolean, default=False)
     invert_sign = Column(Boolean, default=False)
     internal_transfer_patterns = Column(Text)  # JSON array
+    footer_patterns = Column(Text)  # JSON array of learned footer text patterns
     account_label = Column(String(256))
     encoding = Column(String(32), default="utf-8")
     sheet_name = Column(String(256))
@@ -811,6 +813,17 @@ def _migrate_savings_to_savings_account(engine) -> None:
             "WHERE doc_type = 'savings'"
         ))
         conn.commit()
+
+
+def _migrate_add_footer_patterns(engine) -> None:
+    """Add footer_patterns column to document_schema if not already present."""
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        try:
+            conn.execute(_text("ALTER TABLE document_schema ADD COLUMN footer_patterns TEXT"))
+            conn.commit()
+        except Exception:
+            pass  # column already exists
 
 
 def _migrate_add_budget_target(engine) -> None:

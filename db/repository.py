@@ -184,6 +184,7 @@ def upsert_document_schema(session: Session, schema: DocumentSchema) -> Document
     row.is_zero_sum = schema.is_zero_sum
     row.invert_sign = schema.invert_sign
     row.internal_transfer_patterns = json.dumps(schema.internal_transfer_patterns)
+    row.footer_patterns = json.dumps(getattr(schema, 'footer_patterns', []) or [])
     row.account_label = schema.account_label
     row.encoding = schema.encoding
     row.sheet_name = schema.sheet_name
@@ -216,6 +217,7 @@ def _row_to_schema(row: DocumentSchemaModel) -> DocumentSchema:
         is_zero_sum=bool(row.is_zero_sum),
         invert_sign=bool(row.invert_sign) if row.invert_sign is not None else False,
         internal_transfer_patterns=json.loads(row.internal_transfer_patterns or "[]"),
+        footer_patterns=json.loads(getattr(row, 'footer_patterns', None) or "[]"),
         account_label=row.account_label or "",
         encoding=row.encoding or "utf-8",
         sheet_name=row.sheet_name,
@@ -226,6 +228,17 @@ def _row_to_schema(row: DocumentSchemaModel) -> DocumentSchema:
         source_identifier=row.source_identifier,
         header_sha256=getattr(row, 'header_sha256', None),
     )
+
+
+def update_footer_patterns(session: Session, source_identifier: str, new_patterns: list[str]) -> None:
+    """Merge new footer patterns into the existing set for a schema (dedup, order-preserving)."""
+    row = session.query(DocumentSchemaModel).filter_by(source_identifier=source_identifier).first()
+    if row is None:
+        return
+    existing = json.loads(getattr(row, 'footer_patterns', None) or "[]")
+    merged = list(dict.fromkeys(existing + new_patterns))  # dedup preserving order
+    row.footer_patterns = json.dumps(merged)
+    session.flush()
 
 
 # ── Transaction ───────────────────────────────────────────────────────────────

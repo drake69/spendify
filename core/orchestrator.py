@@ -61,6 +61,9 @@ from core.normalizer import (
     parse_amount,
     parse_date_safe,
     remove_card_balance_row,
+    strip_footer_phase1,
+    strip_footer_phase2_llm,
+    strip_footer_phase3_patterns,
 )
 from core.sanitizer import SanitizationConfig, redact_pii
 from core.schemas import DocumentSchema
@@ -266,8 +269,9 @@ def load_raw_dataframe(
             logger.warning(f"load_raw_dataframe: preheader detection exceeded safety caps: {exc}")
             skipped_rows = 0
 
-    # Footer detection: remove summary/totale rows at the bottom using IQR
-    df, footer_stripped = detect_and_strip_footer_rows(df, source_name=filename)
+    # NOTE: Footer stripping moved to process_file() — runs AFTER schema
+    # detection so it can use column-aware structural filter (Phase 1) and
+    # LLM semantic detection (Phase 2/3).
 
     # Capture column names BEFORE drop_low_variability_columns — used for stable
     # cols_key lookup: drop ratio depends on file size so it varies across monthly
@@ -277,7 +281,7 @@ def load_raw_dataframe(
 
     info = PreprocessInfo(
         skipped_rows=skipped_rows,
-        footer_rows_stripped=footer_stripped,
+        footer_rows_stripped=0,  # updated later in process_file() after 3-phase strip
         dropped_columns=dropped_cols,
         columns_before_drop=cols_before_drop,
         header_certain=skip_certain,
@@ -689,6 +693,93 @@ def process_file(
         doc_schema.account_label = account_label_override.strip()
         logger.info(
             f"process_file: account_label overridden to '{doc_schema.account_label}' for {filename}"
+        )
+
+    # ── 3-Phase Footer Stripping (post-schema) ─────────────────────────────
+    _total_footer_stripped = 0
+
+    # Phase 1: Structural filter (always runs — zero cost, no LLM)
+    df_raw, _p1 = strip_footer_phase1(df_raw, doc_schema, source_name=filename)
+    _total_footer_stripped += _p1
+    _footer_method = "phase1" if _p1 else ""
+
+    # Phase 2/3: Semantic footer stripping
+    _stored_patterns = getattr(doc_schema, "footer_patterns", []) or []
+
+    if _stored_patterns:
+        # Phase 3 first: try stored patterns (no LLM cost)
+        df_raw, _unmatched, _p3 = strip_footer_phase3_patterns(
+            df_raw, doc_schema, _stored_patterns, source_name=filename,
+        )
+        _total_footer_stripped += _p3
+        if _p3:
+            _footer_method += "+phase3" if _footer_method else "phase3"
+
+        # If unmatched suspicious rows remain → Phase 2 to learn new patterns
+        if _unmatched and backend is not None:
+            try:
+                df_raw, _new_pats, _p2 = strip_footer_phase2_llm(
+                    df_raw, doc_schema, backend,
+                    sanitize_config=config.sanitize_config,
+                    source_name=filename,
+                )
+                _total_footer_stripped += _p2
+                if _p2:
+                    _footer_method += "+phase2" if _footer_method else "phase2"
+                if _new_pats and doc_schema.source_identifier:
+                    from db.repository import update_footer_patterns
+                    from db.models import get_session as _get_session
+                    _s = _get_session()
+                    try:
+                        update_footer_patterns(_s, doc_schema.source_identifier, _new_pats)
+                        _s.commit()
+                    finally:
+                        _s.close()
+                    doc_schema.footer_patterns = list(dict.fromkeys(
+                        doc_schema.footer_patterns + _new_pats
+                    ))
+            except Exception as _exc:
+                logger.warning("Phase 2 footer LLM failed, falling back to IQR: %s", _exc)
+                df_raw, _iqr = detect_and_strip_footer_rows(df_raw, source_name=filename)
+                _total_footer_stripped += _iqr
+                _footer_method = "iqr_fallback"
+    else:
+        # No stored patterns yet: run Phase 2 (LLM) if backend available
+        if backend is not None:
+            try:
+                df_raw, _new_pats, _p2 = strip_footer_phase2_llm(
+                    df_raw, doc_schema, backend,
+                    sanitize_config=config.sanitize_config,
+                    source_name=filename,
+                )
+                _total_footer_stripped += _p2
+                if _p2:
+                    _footer_method += "+phase2" if _footer_method else "phase2"
+                if _new_pats and doc_schema.source_identifier:
+                    from db.repository import update_footer_patterns
+                    from db.models import get_session as _get_session
+                    _s = _get_session()
+                    try:
+                        update_footer_patterns(_s, doc_schema.source_identifier, _new_pats)
+                        _s.commit()
+                    finally:
+                        _s.close()
+                    doc_schema.footer_patterns = _new_pats[:]
+            except Exception as _exc:
+                logger.warning("Phase 2 footer LLM failed, falling back to IQR: %s", _exc)
+                df_raw, _iqr = detect_and_strip_footer_rows(df_raw, source_name=filename)
+                _total_footer_stripped += _iqr
+                _footer_method = "iqr_fallback"
+        else:
+            # No LLM available — fall back to old IQR method
+            df_raw, _iqr = detect_and_strip_footer_rows(df_raw, source_name=filename)
+            _total_footer_stripped += _iqr
+            _footer_method = "iqr_fallback"
+
+    if _total_footer_stripped:
+        logger.info(
+            "[%s] Total footer rows stripped: %d (method: %s)",
+            filename, _total_footer_stripped, _footer_method,
         )
 
     # Apply schema → canonical transactions
