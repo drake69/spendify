@@ -574,22 +574,26 @@ def _detail_to_row(d: CatDetailRow) -> list:
 
 
 def _write_all_runs_csv(all_results: list[CatRunResult]) -> None:
-    """Write all runs concatenated."""
+    """Append new results to all-runs CSV (creates with header if missing)."""
     path = _BENCHMARK_DIR / "cat_results_all_runs.csv"
-    with open(path, "w", newline="", encoding="utf-8") as f:
+    write_header = not path.exists() or path.stat().st_size == 0
+    with open(path, "a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        writer.writerow(_CSV_HEADER)
+        if write_header:
+            writer.writerow(_CSV_HEADER)
         for r in all_results:
             writer.writerow(_result_to_row(r))
     print(f"[output] All runs: {path}")
 
 
 def _write_detail_csv(all_details: list[CatDetailRow]) -> None:
-    """Write per-transaction detail CSV."""
+    """Append new detail rows to detail CSV (creates with header if missing)."""
     path = _BENCHMARK_DIR / "cat_results_detail.csv"
-    with open(path, "w", newline="", encoding="utf-8") as f:
+    write_header = not path.exists() or path.stat().st_size == 0
+    with open(path, "a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        writer.writerow(_DETAIL_CSV_HEADER)
+        if write_header:
+            writer.writerow(_DETAIL_CSV_HEADER)
         for d in all_details:
             writer.writerow(_detail_to_row(d))
     print(f"[output] Detail: {path}")
@@ -828,11 +832,29 @@ def main() -> None:
     print(f"[hardware] RAM: {llm_meta.get('ram_gb', '?')} GB")
     print(f"[hardware] GPU: {llm_meta.get('gpu', '?')} ({llm_meta.get('gpu_cores', '?')} cores)")
 
+    # Resume: load already-completed (run_id, filename, git_commit, git_branch) tuples
+    _completed: set[tuple] = set()
+    _all_runs_path = _BENCHMARK_DIR / "cat_results_all_runs.csv"
+    if _all_runs_path.exists():
+        with open(_all_runs_path, encoding="utf-8") as _f:
+            _reader = csv.DictReader(_f)
+            for _row in _reader:
+                _key = (
+                    int(_row.get("run_id", 0)),
+                    _row.get("filename", ""),
+                    _row.get("git_commit", ""),
+                    _row.get("git_branch", ""),
+                )
+                _completed.add(_key)
+        if _completed:
+            print(f"[resume] Found {len(_completed)} completed steps — skipping them")
+
     # Run benchmark
     all_results: list[CatRunResult] = []
     all_details: list[CatDetailRow] = []
     total_start = time.time()
     total_steps = n_runs * n_files
+    skipped_steps = 0
     completed_steps = 0
 
     for run_id in range(1, n_runs + 1):
@@ -840,6 +862,17 @@ def main() -> None:
         run_start = time.time()
 
         for file_idx, entry in enumerate(manifest, 1):
+            # Check resume key: (run_id, filename, git_commit, git_branch)
+            _resume_key = (
+                run_id, entry.filename,
+                _LLM_META.get("git_commit", ""),
+                _LLM_META.get("git_branch", ""),
+            )
+            if _resume_key in _completed:
+                skipped_steps += 1
+                completed_steps += 1
+                continue
+
             completed_steps += 1
             pct = completed_steps / total_steps
             elapsed = time.time() - total_start
