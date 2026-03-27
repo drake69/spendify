@@ -75,7 +75,7 @@ def render_registry_page(engine):
     _rel_first_prev = _rel_last_prev.replace(day=1)
 
     st.caption("**Periodo rapido**")
-    pc1, pc2, pc3, pc4, pc5 = st.columns(5)
+    pc1, pc2, pc3, pc4, pc5, pc6 = st.columns(6)
     if pc1.button("📅 Mese corrente",  key="preset_cur",  use_container_width=True):
         st.session_state["ledger_from"] = _first_cur
         st.session_state["ledger_to"]   = today
@@ -88,9 +88,14 @@ def render_registry_page(engine):
     if pc4.button("🗓 Anno corrente",   key="preset_year", use_container_width=True):
         st.session_state["ledger_from"] = _first_year
         st.session_state["ledger_to"]   = today
-    if pc5.button("♾ Tutto",            key="preset_all",  use_container_width=True):
+    if pc5.button("♾ Tutte le date",    key="preset_all",  use_container_width=True):
+        for _k in ("ledger_from", "ledger_to"):
+            if _k in st.session_state:
+                del st.session_state[_k]
+        st.rerun()
+    if pc6.button("🔄 Reset filtri",    key="preset_reset", use_container_width=True, type="secondary"):
         for _k in ("ledger_from", "ledger_to", "ledger_account", "ledger_type",
-                   "ledger_cat", "ledger_desc", "ledger_review"):
+                   "ledger_cat", "ledger_desc", "ledger_review", "ledger_hide_giro"):
             if _k in st.session_state:
                 del st.session_state[_k]
         st.rerun()
@@ -330,11 +335,17 @@ def render_registry_page(engine):
             val_changed  = bool(edit["Validato"])       != bool(orig["Validato"])
 
             if cat_changed or sub_changed:
-                tx_svc.update_category(
-                    tx_id,
-                    edit["Categoria"]      or orig["Categoria"],
-                    edit["Sottocategoria"] or orig["Sottocategoria"],
-                )
+                _new_cat = edit["Categoria"] or orig["Categoria"]
+                _new_sub = edit["Sottocategoria"] or orig["Sottocategoria"]
+                # Validate subcategory belongs to category
+                _valid_subs = taxonomy.valid_subcategories(_new_cat)
+                if _new_sub and _valid_subs and _new_sub not in _valid_subs:
+                    st.error(
+                        f"⚠️ Riga {idx+1}: sottocategoria «{_new_sub}» non appartiene "
+                        f"a «{_new_cat}». Sottocategorie valide: {', '.join(_valid_subs)}"
+                    )
+                    continue
+                tx_svc.update_category(tx_id, _new_cat, _new_sub)
                 n_cat += 1
                 _desc = str(orig["Descrizione"]).strip()
                 if _desc:
@@ -453,10 +464,12 @@ def render_registry_page(engine):
                     index=_rc_cat_idx, key="rule_create_category",
                 )
             with rc4:
-                _rc_sub_idx = (_all_sub.index(_rule_tx_sub)
-                               if _rule_tx_sub in _all_sub else 0)
+                # Cascade: filter subcategories by selected category
+                _rc_valid_subs = taxonomy.valid_subcategories(rule_category)
+                _rc_sub_idx = (_rc_valid_subs.index(_rule_tx_sub)
+                               if _rule_tx_sub in _rc_valid_subs else 0)
                 rule_subcategory = st.selectbox(
-                    "Sottocategoria", options=_all_sub,
+                    "Sottocategoria", options=_rc_valid_subs,
                     index=_rc_sub_idx, key="rule_create_subcategory",
                 )
             with rc5:
