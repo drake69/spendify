@@ -317,6 +317,7 @@ def render_registry_page(engine):
         n_ctx  = 0
         n_giro = 0
         n_val  = 0
+        _fan_out_candidates: list[tuple[str, str]] = []  # (tx_id, description) for fan-out check
         for idx in range(len(orig_df)):
             orig = orig_df.iloc[idx]
             edit = edited_df.iloc[idx]
@@ -335,6 +336,9 @@ def render_registry_page(engine):
                     edit["Sottocategoria"] or orig["Sottocategoria"],
                 )
                 n_cat += 1
+                _desc = str(orig["Descrizione"]).strip()
+                if _desc:
+                    _fan_out_candidates.append((tx_id, _desc))
 
             if ctx_changed:
                 tx_svc.update_context(tx_id, edit["Contesto"] or None)
@@ -361,9 +365,57 @@ def render_registry_page(engine):
             if n_val:  parts.append(f"{n_val} validate")
             st.success(f"✅ Salvate: {' · '.join(parts)}")
             logger.info(f"ledger_page: saved cat={n_cat} ctx={n_ctx} giro={n_giro}")
-            st.rerun()
+
+            # ── C-06: Fan-out — check for similar uncategorized transactions ──
+            if _fan_out_candidates:
+                _fan_out_all: dict[str, list] = {}  # tx_id -> similar txs
+                for _fo_tx_id, _fo_desc in _fan_out_candidates:
+                    _similar = tx_svc.find_similar_uncategorized(_fo_desc, _fo_tx_id)
+                    if _similar:
+                        _fan_out_all[_fo_tx_id] = _similar
+                if _fan_out_all:
+                    _total_similar = sum(len(v) for v in _fan_out_all.values())
+                    st.session_state["_fan_out_pending"] = _fan_out_all
+                    st.info(
+                        f"Trovate **{_total_similar}** transazioni simili non ancora categorizzate. "
+                        f"Vuoi applicare la stessa categoria?"
+                    )
+                else:
+                    st.rerun()
+            else:
+                st.rerun()
         else:
             st.info("Nessuna modifica rilevata.")
+
+    # ── C-06: Fan-out action buttons ─────────────────────────────────────────
+    if st.session_state.get("_fan_out_pending"):
+        _fan_out_data = st.session_state["_fan_out_pending"]
+        _total_fan = sum(len(v) for v in _fan_out_data.values())
+        fo_col1, fo_col2, _ = st.columns([1, 1, 4])
+        with fo_col1:
+            if st.button(
+                f"Applica a tutte ({_total_fan})",
+                key="ledger_fan_out_apply",
+                type="primary",
+                use_container_width=True,
+            ):
+                _n_applied = 0
+                for _src_id, _targets in _fan_out_data.items():
+                    _n_applied += tx_svc.apply_fan_out(
+                        _src_id, [t.id for t in _targets]
+                    )
+                del st.session_state["_fan_out_pending"]
+                st.toast(f"Fan-out: {_n_applied} transazioni aggiornate")
+                logger.info(f"ledger_page: fan-out applied to {_n_applied} transactions")
+                st.rerun()
+        with fo_col2:
+            if st.button(
+                "No grazie",
+                key="ledger_fan_out_skip",
+                use_container_width=True,
+            ):
+                del st.session_state["_fan_out_pending"]
+                st.rerun()
 
     # ── Crea regola dalla selezione ──────────────────────────────────────────
     if len(_sel_ids) == 1:

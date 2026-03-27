@@ -324,9 +324,56 @@ def render_review_page(engine):
                         if n_similar:
                             rule_msg += f" · {n_similar} transazioni simili aggiornate."
                 st.success(f"Categoria aggiornata: {new_cat} / {new_sub}{rule_msg}")
-                st.rerun()
+
+                # ── C-06: Fan-out — propose applying to similar uncategorized ──
+                if not save_rule and selected_tx.description:
+                    _fan_similar = tx_svc.find_similar_uncategorized(
+                        selected_tx.description, selected_tx.id
+                    )
+                    if _fan_similar:
+                        st.session_state["_review_fan_out"] = {
+                            "source_id": selected_tx.id,
+                            "targets": _fan_similar,
+                        }
+                        st.info(
+                            f"Trovate **{len(_fan_similar)}** transazioni simili "
+                            f"non ancora categorizzate. Vuoi applicare la stessa categoria?"
+                        )
+                    else:
+                        st.rerun()
+                else:
+                    st.rerun()
             else:
                 st.error("Transazione non trovata.")
+
+        # ── C-06: Fan-out action buttons (review page) ───────────────────────
+        if st.session_state.get("_review_fan_out"):
+            _fo_data = st.session_state["_review_fan_out"]
+            _fo_targets = _fo_data["targets"]
+            fo_c1, fo_c2, _ = st.columns([1, 1, 4])
+            with fo_c1:
+                if st.button(
+                    f"Applica a tutte ({len(_fo_targets)})",
+                    key="review_fan_out_apply",
+                    type="primary",
+                    use_container_width=True,
+                ):
+                    _n_fo = tx_svc.apply_fan_out(
+                        _fo_data["source_id"],
+                        [t.id for t in _fo_targets],
+                    )
+                    del st.session_state["_review_fan_out"]
+                    st.toast(f"Fan-out: {_n_fo} transazioni aggiornate")
+                    logger.info(f"review_page: fan-out applied to {_n_fo} transactions")
+                    st.rerun()
+            with fo_c2:
+                if st.button(
+                    "No grazie",
+                    key="review_fan_out_skip",
+                    use_container_width=True,
+                ):
+                    del st.session_state["_review_fan_out"]
+                    st.rerun()
 
     # ── Correggi descrizione in blocco ─────────────────────────────────────────
     st.divider()

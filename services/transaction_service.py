@@ -231,6 +231,23 @@ class TransactionService:
         with self._session() as s:
             return s.query(Transaction).filter(Transaction.id.in_(ids)).all()
 
+    # ── C-06: Fan-out comportamentale ──────────────────────────────────────────
+
+    def find_similar_uncategorized(self, description: str, exclude_tx_id: str | None = None) -> list:
+        """Find transactions with same description that are not yet validated/rule-based."""
+        from core.history_engine import find_similar_uncategorized
+        with self._session() as s:
+            return find_similar_uncategorized(s, description, exclude_tx_id)
+
+    def apply_fan_out(self, source_tx_id: str, target_tx_ids: list[str]) -> int:
+        """Apply category/subcategory/context from source tx to all targets.
+        Sets category_source='history'. Returns count of updated transactions."""
+        from core.history_engine import apply_fan_out
+        with self._session() as s:
+            result = apply_fan_out(s, source_tx_id, target_tx_ids)
+            s.commit()
+            return result
+
     # ── Bulk mutation helpers ─────────────────────────────────────────────────
 
     def update_context_bulk(self, ids: list[str], context: str | None) -> int:

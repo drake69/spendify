@@ -190,3 +190,85 @@ class HistoryCache:
         if profile is None:
             return None, None, 0.0
         return profile.top_category, profile.top_subcategory, profile.confidence
+
+
+# ── C-06: Fan-out comportamentale ─────────────────────────────────────────────
+
+def find_similar_uncategorized(
+    session: Session, description: str, exclude_tx_id: str | None = None,
+) -> list[Transaction]:
+    """Find transactions with same description that could benefit from the same category.
+
+    Returns transactions where:
+    - description matches (exact, after normalization)
+    - category_source is 'llm' or None (not manually set or rule-based)
+    - human_validated is False
+    """
+    from sqlalchemy import or_
+
+    query = (
+        session.query(Transaction)
+        .filter(
+            Transaction.description == description,
+            Transaction.human_validated.isnot(True),
+            or_(
+                Transaction.category_source.is_(None),
+                Transaction.category_source == "llm",
+            ),
+        )
+    )
+    if exclude_tx_id:
+        query = query.filter(Transaction.id != exclude_tx_id)
+
+    results = query.order_by(Transaction.date.desc()).all()
+    logger.debug(
+        f"find_similar_uncategorized: description={description!r} "
+        f"found={len(results)} (excluded={exclude_tx_id})"
+    )
+    return results
+
+
+def apply_fan_out(
+    session: Session,
+    source_tx_id: str,
+    target_tx_ids: list[str],
+) -> int:
+    """Apply the same category/subcategory/context from source to all targets.
+
+    Sets category_source='history' on targets. Does NOT overwrite
+    transactions that are already human_validated.
+    Returns count of updated transactions.
+    """
+    from datetime import datetime, timezone
+
+    source = session.get(Transaction, source_tx_id)
+    if source is None:
+        logger.warning(f"apply_fan_out: source tx {source_tx_id} not found")
+        return 0
+
+    updated = 0
+    for tid in target_tx_ids:
+        tx = session.get(Transaction, tid)
+        if tx is None:
+            continue
+        # Safety: never overwrite already-validated transactions
+        if tx.human_validated:
+            continue
+
+        tx.category = source.category
+        tx.subcategory = source.subcategory
+        if source.context:
+            tx.context = source.context
+        tx.category_source = "history"
+        tx.category_confidence = "high"
+        tx.to_review = False
+        tx.updated_at = datetime.now(timezone.utc)
+        updated += 1
+
+    if updated:
+        session.flush()
+    logger.info(
+        f"apply_fan_out: source={source_tx_id} targets={len(target_tx_ids)} "
+        f"updated={updated}"
+    )
+    return updated
