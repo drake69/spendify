@@ -39,6 +39,8 @@ The app automatically shows the **onboarding wizard** (4 steps). No need to look
 
 **What happens behind the scenes:** Spendify assigns each transaction a unique code based on its content. If you import the same file twice nothing bad happens — duplicates are silently discarded.
 
+> **Coming soon:** an **Import History** page is planned that will show the full history of all imports (date, file, account, number of transactions). You will be able to undo an import by deleting all transactions from that batch at once.
+
 ### Automatic import and schema review
 
 Spendify analyses the structure of each file and computes a **confidence score** (from 0 to 100%) on how well it understood the format.

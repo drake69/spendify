@@ -39,6 +39,8 @@ L'app ti mostra automaticamente il **wizard di configurazione iniziale** (4 step
 
 **Cosa succede dietro le quinte:** Spendify assegna a ogni transazione un codice univoco basato sul contenuto. Se importi lo stesso file due volte non succede nulla di male — i duplicati vengono scartati silenziosamente.
 
+> **In arrivo:** e prevista una pagina **Storico import** che mostrera la cronologia di tutte le importazioni eseguite (data, file, conto, numero transazioni). Sara possibile annullare un'importazione eliminando in blocco tutte le transazioni di quel batch.
+
 ### Importazione automatica e revisione schema
 
 Spendify analizza la struttura di ogni file e calcola un **punteggio di confidenza** (da 0 a 100%) su quanto ha capito del formato.
