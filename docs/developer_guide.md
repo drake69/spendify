@@ -457,6 +457,50 @@ python tools/azure_benchmark.py --download
 3. Scalare HW in up/down per definire i requisiti minimi per quel modello
 4. Il `models_registry.yaml` viene aggiornato con i risultati reali
 
+### Workflow collaborativo: push/pull dei risultati
+
+Il CSV `results_all_runs.csv` è **committato nel repo** e cresce in modo append-only. Ogni developer aggiunge le proprie righe (suo HW, suo modello, suo commit) e le condivide via git.
+
+```
+Developer A (Mac M1 Max)        GitHub repo           Developer B (Mac M4)
+─────────────────────────       ───────────           ─────────────────────
+git pull                        results_all_          git pull
+  (prende righe di B)           runs.csv              (prende righe di A)
+                                (cumulativo)
+lancia benchmark                                      lancia benchmark
+  resume: skip righe                                    resume: skip righe
+  già presenti (A+B)                                    già presenti (A+B)
+  aggiunge solo nuove                                   aggiunge solo nuove
+
+git push ──────────────────►  merge CSV  ◄────────────── git push
+```
+
+**Regole:**
+- `git pull` **prima** di lanciare un benchmark → il resume skippa ciò che altri hanno già fatto
+- `git push` **dopo** ogni benchmark → condivide i risultati
+- Il CSV non ha conflitti: ogni riga è unica per `(run_id, filename, commit, branch, provider, model)`
+- Ogni riga include `runtime_os`, `runtime_cpu`, `runtime_ram_gb`, `runtime_gpu` → i risultati sono filtrabili per HW
+
+**Automazione (pre-push hook opzionale):**
+```bash
+# .git/hooks/pre-push — auto-include risultati benchmark nel push
+BENCH_CSV="tests/generated_files/benchmark/results_all_runs.csv"
+if git diff --name-only HEAD | grep -q "$BENCH_CSV"; then
+  echo "Benchmark results included in push"
+fi
+```
+
+**Flusso per un nuovo developer:**
+```bash
+git clone ...
+git pull                        # prende tutti i risultati storici
+bash tests/run_all_benchmarks.sh  # resume skippa tutto ciò che esiste,
+                                  # aggiunge solo il suo HW + commit
+git add tests/generated_files/benchmark/results_all_runs.csv
+git commit -m "bench: add results for M4 16GB"
+git push
+```
+
 ---
 
 ## 10. Decisioni di design chiave
