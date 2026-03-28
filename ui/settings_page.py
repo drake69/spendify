@@ -677,6 +677,28 @@ def render_settings_page(engine):
 
     st.divider()
 
+    # ── Profili rapidi (sezione nascosta per power user) ─────────────────────
+    with st.expander("🤓 Sono un duro! — Profilo power user", expanded=False):
+        st.caption(
+            "Preset per utenti esperti: attiva tutte le opzioni avanzate, "
+            "disabilita conferme, massimizza automazione."
+        )
+        if st.button("⚡ Applica profilo Power User", key="apply_nerd_profile"):
+            # Force schema import — no review popup
+            force_schema_import = True
+            # Test mode off — process all rows
+            import_test_mode = False
+            # Max transaction amount — high ceiling
+            max_tx_amount = 10_000_000
+            st.success(
+                "Profilo Power User applicato! "
+                "• Import forzato senza conferma schema "
+                "• Importo max: 10M€ "
+                "• Premi 💾 Salva per confermare."
+            )
+
+    st.divider()
+
     # ── Salva ──────────────────────────────────────────────────────────────────
     if st.button("💾 Salva impostazioni", type="primary"):
         _ctx_clean = [c for c in st.session_state.get("settings_contexts", _ctx_list) if c]
