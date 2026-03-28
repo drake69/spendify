@@ -350,9 +350,27 @@ def _collect_llm_metadata(config: ProcessingConfig, backend) -> dict[str, str]:
         is_local = "localhost" in ollama_url or "127.0.0.1" in ollama_url
         meta["llm_host"] = ollama_url
         meta["llm_hw"] = "same as runtime" if is_local else f"remote ({ollama_url})"
+        # Ollama inference params (defaults)
+        meta["n_ctx"] = "2048"
+        meta["n_batch"] = "512"
+        meta["n_threads"] = "auto"
+        meta["n_gpu_layers"] = "all"
+        meta["flash_attn"] = "auto"
     elif "llamacpp" in meta["provider"].lower() or "llama" in meta["provider"].lower():
         meta["llm_host"] = "localhost (in-process)"
         meta["llm_hw"] = "same as runtime"
+        # Capture llama-cpp-python inference parameters
+        if hasattr(backend, "_llm"):
+            llm_obj = backend._llm
+            meta["n_ctx"] = str(getattr(llm_obj, "n_ctx", "?")())
+            meta["n_batch"] = str(getattr(llm_obj, "n_batch", "?"))
+            meta["n_threads"] = str(getattr(llm_obj, "_n_threads", "?"))
+            meta["n_gpu_layers"] = str(getattr(llm_obj, "_n_gpu_layers", "?"))
+            model_params = getattr(llm_obj, "model_params", None)
+            if model_params and hasattr(model_params, "flash_attn"):
+                meta["flash_attn"] = str(model_params.flash_attn)
+            else:
+                meta["flash_attn"] = "?"
     elif "openai" in meta["provider"].lower() or "claude" in meta["provider"].lower():
         meta["llm_host"] = "cloud API"
         meta["llm_hw"] = "cloud"
@@ -539,6 +557,11 @@ _CSV_HEADER = [
     "run_id", "filename",
     "git_commit", "git_branch",
     "provider", "model", "temperature", "parameter_size", "quantization",
+    # Inference parameters (for reproducibility & performance analysis)
+    "n_ctx", "n_batch", "n_threads", "n_gpu_layers", "flash_attn",
+    # Runtime HW
+    "runtime_os", "runtime_cpu", "runtime_ram_gb", "runtime_gpu",
+    # Results
     "n_transactions", "n_categorized",
     "n_correct_category", "n_correct_fuzzy",
     "n_fallback", "n_history", "n_rule", "n_llm",
@@ -568,6 +591,17 @@ def _result_to_row(r: CatRunResult) -> list:
         _LLM_META.get("temperature", ""),
         _LLM_META.get("parameter_size", ""),
         _LLM_META.get("quantization", ""),
+        # Inference parameters
+        _LLM_META.get("n_ctx", ""),
+        _LLM_META.get("n_batch", ""),
+        _LLM_META.get("n_threads", ""),
+        _LLM_META.get("n_gpu_layers", ""),
+        _LLM_META.get("flash_attn", ""),
+        # Runtime HW
+        _LLM_META.get("runtime_os", ""),
+        _LLM_META.get("runtime_cpu", ""),
+        _LLM_META.get("runtime_ram_gb", ""),
+        _LLM_META.get("runtime_gpu", ""),
         r.n_transactions, r.n_categorized,
         r.n_correct_category, r.n_correct_fuzzy,
         r.n_fallback, r.n_history, r.n_rule, r.n_llm,
@@ -843,12 +877,15 @@ def main() -> None:
     if llm_meta.get("parameter_size", "?") != "?":
         print(f"[config] Parameters: {llm_meta['parameter_size']}, Quant: {llm_meta['quantization']}")
     print(f"[config] Timeout: {llm_meta['llm_timeout_s']}s")
-    print(f"[hardware] OS: {llm_meta.get('os_version', llm_meta.get('os', '?'))}")
-    print(f"[hardware] CPU: {llm_meta.get('cpu', '?')}")
-    print(f"[hardware] RAM: {llm_meta.get('ram_gb', '?')} GB")
-    print(f"[hardware] GPU: {llm_meta.get('gpu', '?')} ({llm_meta.get('gpu_cores', '?')} cores)")
+    print(f"[runtime] OS: {llm_meta.get('runtime_os', '?')}")
+    print(f"[runtime] CPU: {llm_meta.get('runtime_cpu', '?')}")
+    print(f"[runtime] RAM: {llm_meta.get('runtime_ram_gb', '?')} GB")
+    print(f"[runtime] GPU: {llm_meta.get('runtime_gpu', '?')} ({llm_meta.get('runtime_gpu_cores', '?')} cores)")
+    print(f"[llm] Host: {llm_meta.get('llm_host', '?')}")
+    print(f"[llm] HW: {llm_meta.get('llm_hw', '?')}")
+    print(f"[inference] n_ctx: {llm_meta.get('n_ctx', '?')}, n_batch: {llm_meta.get('n_batch', '?')}, n_threads: {llm_meta.get('n_threads', '?')}, n_gpu_layers: {llm_meta.get('n_gpu_layers', '?')}, flash_attn: {llm_meta.get('flash_attn', '?')}")
 
-    # Resume: load already-completed (run_id, filename, git_commit, git_branch) tuples
+    # Resume: load already-completed (run_id, filename, git_commit, git_branch, provider, model) tuples
     _completed: set[tuple] = set()
     _all_runs_path = _BENCHMARK_DIR / "cat_results_all_runs.csv"
     if _all_runs_path.exists():
@@ -860,6 +897,8 @@ def main() -> None:
                     _row.get("filename", ""),
                     _row.get("git_commit", ""),
                     _row.get("git_branch", ""),
+                    _row.get("provider", ""),
+                    _row.get("model", ""),
                 )
                 _completed.add(_key)
         if _completed:
@@ -878,11 +917,13 @@ def main() -> None:
         run_start = time.time()
 
         for file_idx, entry in enumerate(manifest, 1):
-            # Check resume key: (run_id, filename, git_commit, git_branch)
+            # Check resume key: (run_id, filename, git_commit, git_branch, provider, model)
             _resume_key = (
                 run_id, entry.filename,
                 _LLM_META.get("git_commit", ""),
                 _LLM_META.get("git_branch", ""),
+                _LLM_META.get("provider", ""),
+                _LLM_META.get("model", ""),
             )
             if _resume_key in _completed:
                 skipped_steps += 1
