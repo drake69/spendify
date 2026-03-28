@@ -1,7 +1,8 @@
 # Spendify — Guida all'installazione
 
 > Scenari coperti:
-> - **Mac** — installazione nativa (consigliata, massime prestazioni LLM)
+> - **Mac One-Click** — installazione automatica (consigliata, zero configurazione)
+> - **Mac** — installazione manuale nativa (massime prestazioni LLM)
 > - **Linux nativo** — installazione diretta con Ollama locale
 > - **Linux Docker** — Docker con Ollama come container separato
 > - **Windows** — Docker con llama.cpp server come container separato
@@ -21,13 +22,39 @@ La configurazione viene salvata nel database (`user_settings`) e persiste tra i 
 
 ## ❓ Il modello LLM va scaricato prima di usare l'app?
 
-**Sì, una volta sola.** L'app non scarica i modelli automaticamente — il server LLM deve avere il modello disponibile prima di avviare operazioni che lo richiedono (categorizzazione, pulizia descrizioni).
+**No, con l'installazione one-click il modello viene scaricato automaticamente al primo avvio.** L'app rileva l'hardware (RAM, GPU) e scarica il modello ottimale:
+
+| RAM | Modello | Dimensione |
+|-----|---------|-----------|
+| 4 GB | Qwen2.5-1.5B | 1.1 GB |
+| 8 GB | Qwen2.5-3B | 2.1 GB |
+| 12 GB | Qwen2.5-7B | 4.7 GB |
+| 16+ GB | Gemma-3-12B | 6.8 GB |
 
 > **Nota:** l'app funziona anche senza LLM attivo. Import, ledger, regole, analisi e report sono sempre disponibili. Se il LLM non è raggiungibile, le transazioni ricevono categoria "Altro" e `to_review=True`.
 
 ---
 
-## 🍎 Mac — Installazione nativa
+## 🍎 Mac One-Click — Installazione automatica (consigliata)
+
+**Prerequisiti:** macOS 12+, Python 3.11+, connessione internet
+
+1. Scarica `install_spendify.command` dal [repository](https://github.com/drake69/spendify)
+2. **Double-click** sul file in Finder
+3. Lo script:
+   - Verifica Python e installa `uv` (package manager)
+   - Scarica Spendify in `~/Applications/Spendify/`
+   - Installa tutte le dipendenze
+   - Rileva il tuo hardware e consiglia il modello LLM ottimale
+4. Al primo import, il modello viene scaricato automaticamente
+
+**Per avviare Spendify ogni giorno:** double-click su `Spendify.command` in `~/Applications/Spendify/packaging/macos/`
+
+**HW minimo:** 4 GB RAM, Apple Silicon o Intel con AVX2. GPU Metal accelerata automaticamente.
+
+---
+
+## 🍎 Mac — Installazione manuale
 
 ### Perché nativa su Mac?
 

@@ -332,6 +332,30 @@ def _step3_confirm(cfg_svc: SettingsService, lang_options: list[tuple[str, str]]
             f"{len(preview['income'])} categorie redditi"
         )
 
+    # ── LLM Model status ───────────────────────────────────────────────
+    st.write("")
+    st.markdown("**🤖 Modello LLM**")
+    from core.model_manager import detect_hw, list_local_models
+    from config import get_recommended_model
+
+    _hw = detect_hw()
+    _local = list_local_models()
+    _rec = get_recommended_model(_hw["ram_gb"])
+
+    if _local:
+        st.success(
+            f"Modello disponibile: **{_local[0].name}** "
+            f"({_local[0].stat().st_size / 1e9:.1f} GB)"
+        )
+    elif _rec:
+        st.info(
+            f"HW: {_hw['gpu']} · {_hw['ram_gb']} GB RAM → "
+            f"Consigliato: **{_rec.name}** ({_rec.size_mb} MB). "
+            f"Verrà scaricato al primo import."
+        )
+    else:
+        st.warning("Nessun modello compatibile trovato. Configura manualmente in Impostazioni.")
+
     st.divider()
 
     col_back, _, col_start = st.columns([1, 2, 1])
