@@ -66,6 +66,7 @@ DEFAULT_USER_SETTINGS = {
     "contexts": '["Quotidianità", "Lavoro", "Vacanza"]',
     "giroconto_mode": "neutral",
     "max_transaction_amount": "1000000",
+    "force_schema_import": "false",  # I-04: skip schema review, always auto-import
     "onboarding_done": "false",
 }
 

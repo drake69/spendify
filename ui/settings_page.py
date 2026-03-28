@@ -332,6 +332,18 @@ def render_settings_page(engine):
     # ── Import ─────────────────────────────────────────────────────────────────
     st.subheader("📥 Importazione")
 
+    force_schema_import = st.toggle(
+        "Importa sempre senza conferma schema",
+        value=settings.get("force_schema_import", "false").lower() == "true",
+        help=(
+            "Se attivo, i file vengono importati automaticamente anche quando la classificazione "
+            "dello schema ha confidenza bassa. Utile per utenti esperti che preferiscono "
+            "velocità a revisione manuale. Un warning viene emesso se la confidenza è < 0.50."
+        ),
+    )
+    if force_schema_import:
+        st.caption("⚠️ La revisione schema è disabilitata — tutti i file vengono importati con lo schema rilevato.")
+
     import_test_mode = st.toggle(
         "Modalità test (solo prime 20 righe per file)",
         value=settings.get("import_test_mode", "false").lower() == "true",
@@ -689,6 +701,7 @@ def render_settings_page(engine):
             "owner_names":            owner_names_raw.strip(),
             "use_owner_names_giroconto": "true" if use_owner_giroconto else "false",
             "import_test_mode":       "true" if import_test_mode else "false",
+            "force_schema_import":   "true" if force_schema_import else "false",
             "max_transaction_amount": str(int(max_tx_amount)),
             "contexts":               json.dumps(_ctx_clean, ensure_ascii=False),
         })

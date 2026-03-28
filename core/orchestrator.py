@@ -84,6 +84,7 @@ class ProcessingConfig:
     settlement_days_strict: int = 1
     boundary_pre_post: int = 10
     confidence_threshold: float = 0.80
+    force_schema_import: bool = False  # I-04: bypass schema review, always auto-import
     require_keyword_confirmation: bool = True
     # When True: transactions whose description matches an owner name are marked
     # as internal transfer (giroconto), and the card balance row (if present) is
@@ -673,12 +674,19 @@ def process_file(
         )
         _progress(0.25)
 
-        # Confidence-based auto-import decision
+        # Confidence-based auto-import decision (I-04: force_schema_import bypasses review)
         _score = doc_schema.confidence_score if doc_schema else 0.0
-        if _score >= config.confidence_threshold:
+        _effective_threshold = 0.0 if config.force_schema_import else config.confidence_threshold
+        if _score >= _effective_threshold:
+            if config.force_schema_import and _score < 0.50:
+                logger.warning(
+                    f"process_file: Flow 2 for {filename} — force_schema_import=True but "
+                    f"confidence_score={_score:.2f} is very low. Schema may be incorrect."
+                )
             logger.info(
                 f"process_file: Flow 2 for {filename} — confidence_score={_score} >= "
-                f"{config.confidence_threshold} → auto-importing"
+                f"{_effective_threshold} → auto-importing"
+                f"{' (force_schema_import)' if config.force_schema_import else ''}"
             )
             # Fall through to normalisation below (do NOT return early)
         else:
