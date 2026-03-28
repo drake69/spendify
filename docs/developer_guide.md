@@ -452,6 +452,47 @@ gh pr create --title "bench: Azure T4 results" --body "14 modelli su GPU T4"
 
 Il job Azure non fa push — il developer scarica e apre la PR dalla sua macchina.
 
+**Setup completo (one-time):**
+
+```bash
+# 1. Azure CLI + login
+brew install azure-cli
+az login
+
+# 2. Azure ML SDK
+uv add azure-ai-ml azure-identity
+
+# 3. Creare risorse Azure (una volta sola)
+az group create -n spendify-rg -l westeurope
+az ml workspace create -n spendify-ml -g spendify-rg
+az acr create -n spendifyacr -g spendify-rg --sku Basic
+az ml compute create -n gpu-t4-spot -g spendify-rg -w spendify-ml \
+    --type AmlCompute --size Standard_NC6s_v3 \
+    --min-instances 0 --max-instances 5 --tier low_priority
+
+# 4. Esportare variabili (.env o shell)
+export AZURE_SUBSCRIPTION_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+export AZURE_RESOURCE_GROUP=spendify-rg
+export AZURE_ML_WORKSPACE=spendify-ml
+export AZURE_ACR_NAME=spendifyacr
+```
+
+**Run completo (build + submit + wait + download + PR):**
+
+```bash
+# Tutto automatico — un solo comando
+bash tools/run_cloud_benchmarks.sh
+
+# Oppure step-by-step:
+python tools/azure_benchmark.py --build                     # Docker → ACR
+python tools/azure_benchmark.py --all-models --skip-build   # Submit N jobs
+python tools/azure_benchmark.py --list                      # Vedi status + Studio URL
+python tools/azure_benchmark.py --download --job-name <id>  # Scarica risultati
+# → git checkout -b bench/... → git push → gh pr create
+```
+
+Ogni job stampa il link **Azure ML Studio** per monitorare l'esecuzione in tempo reale.
+
 **Perché Azure ML anziché locale:**
 - **HW fisso** → confronto equo tra modelli (stessa GPU per tutti)
 - **Parallelismo** → 14 modelli in 14 container simultanei → ~30 min totali
