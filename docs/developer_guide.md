@@ -493,13 +493,24 @@ fi
 **Flusso per un nuovo developer:**
 ```bash
 git clone ...
-git pull                        # prende tutti i risultati storici
+git pull                          # prende tutti i risultati storici
+
 bash tests/run_all_benchmarks.sh  # resume skippa tutto ciò che esiste,
                                   # aggiunge solo il suo HW + commit
+
+# Apri PR con i risultati (mai push diretto su main)
+git checkout -b bench/$(date +%Y-%m-%d)-m1max
 git add tests/generated_files/benchmark/results_all_runs.csv
-git commit -m "bench: add results for M4 16GB"
-git push
+git commit -m "bench: add results for M1 Max 64GB"
+gh pr create --title "bench: M1 Max results" --body "Aggiunge risultati benchmark"
 ```
+
+**CI check sulla PR** (`tools/verify_bench_csv.py --pr`):
+- Verifica che il CSV contiene solo righe **aggiunte** (append-only)
+- Nessuna riga esistente modificata o rimossa
+- Header CSV invariato
+- Ogni nuova riga ha `benchmark_type`, `provider`, `model` compilati
+- Se violazione → PR bloccata
 
 ---
 
