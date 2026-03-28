@@ -33,6 +33,10 @@ jobs:
       - name: Verify prompt integrity (S-01)
         run: uv run python tools/compute_prompt_hashes.py --verify
 
+      - name: Verify benchmark CSV append-only (T-09d)
+        if: github.event_name == 'pull_request'
+        run: uv run python tools/verify_bench_csv.py --base origin/${{ github.base_ref }}
+
       - name: Run tests with coverage
         run: uv run pytest tests/ -v --cov=. --cov-report=term-missing --cov-report=xml
         env:
