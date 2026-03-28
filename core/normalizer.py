@@ -67,12 +67,49 @@ class PreprocessInfo:
 # ── Encoding / format detection ───────────────────────────────────────────────
 
 def detect_encoding(raw_bytes: bytes) -> str:
-    """Detect file encoding using chardet. Returns lowercase encoding string."""
+    """Detect file encoding using chardet with fallback heuristics (I-08).
+
+    If chardet confidence is low (< 0.70), tries common European encodings
+    (latin1, cp1252, utf-8) and picks the one with fewest replacement characters.
+    """
     result = chardet.detect(raw_bytes)
     enc = (result.get("encoding") or "utf-8").lower()
+    confidence = result.get("confidence", 0.0)
+
     # Normalize common aliases
     if enc in ("ascii",):
         enc = "utf-8"
+
+    # I-08: fallback when chardet is uncertain
+    if confidence < 0.70:
+        logger.info(
+            f"detect_encoding: chardet returned {enc} with low confidence "
+            f"({confidence:.2f}) — trying European fallbacks"
+        )
+        # Try common European encodings; pick the one with fewest decode errors
+        candidates = ["utf-8", "latin-1", "cp1252", enc]
+        best_enc = enc
+        best_errors = float("inf")
+        sample = raw_bytes[:8192]  # check first 8KB only
+
+        for candidate in candidates:
+            try:
+                decoded = sample.decode(candidate, errors="replace")
+                # Count replacement characters (U+FFFD)
+                n_errors = decoded.count("\ufffd")
+                if n_errors < best_errors:
+                    best_errors = n_errors
+                    best_enc = candidate
+            except (LookupError, UnicodeDecodeError):
+                continue
+
+        if best_enc != enc:
+            logger.info(
+                f"detect_encoding: fallback selected {best_enc} "
+                f"(was {enc}, errors: {best_errors} vs original)"
+            )
+        enc = best_enc
+
     return enc
 
 
