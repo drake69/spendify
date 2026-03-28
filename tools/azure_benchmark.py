@@ -46,11 +46,11 @@ DOCKER_IMAGE = "spendify-bench"
 DOCKERFILE = "docker/Dockerfile.benchmark"
 
 # Azure defaults (overridable via env)
-SUBSCRIPTION = os.environ.get("AZURE_SUBSCRIPTION_ID", "")
+SUBSCRIPTION = os.environ.get("AZURE_SUBSCRIPTION_ID", "487ff261-9fc5-484d-80da-7e2b663f0452")
 RESOURCE_GROUP = os.environ.get("AZURE_RESOURCE_GROUP", "spendify-rg")
 WORKSPACE = os.environ.get("AZURE_ML_WORKSPACE", "spendify-ml")
 ACR_NAME = os.environ.get("AZURE_ACR_NAME", "spendifyacr")
-COMPUTE_TARGET = os.environ.get("AZURE_COMPUTE_TARGET", "gpu-t4-spot")
+COMPUTE_TARGET = os.environ.get("AZURE_COMPUTE_TARGET", "cpu-bench")
 
 
 def _check_azure_cli():
@@ -100,47 +100,107 @@ def build_and_push_docker():
 # ── Azure ML Job ─────────────────────────────────────────────────────────────
 
 
-def submit_job(model_id: str, runs: int = 1, compute: str | None = None) -> str:
-    """Submit an Azure ML Job for one model. Returns job name."""
-    from azure.ai.ml import MLClient, command, Input, Output
+def _create_conda_env_file() -> Path:
+    """Create a conda environment YAML for Azure ML (no local Docker needed)."""
+    conda_path = PROJECT_ROOT / "docker" / "conda_benchmark.yml"
+    conda_path.parent.mkdir(parents=True, exist_ok=True)
+    conda_path.write_text("""\
+name: spendify-bench
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+    - llama-cpp-python
+    - huggingface_hub
+    - pandas
+    - openpyxl
+    - sqlalchemy
+    - pydantic
+    - pyyaml
+    - chardet
+""")
+    return conda_path
+
+
+def submit_job(model_id: str, runs: int = 1, compute: str | None = None,
+               mode: str = "conda") -> str:
+    """Submit an Azure ML Job for one model. Returns job name.
+
+    mode="docker" — uses pre-built Docker image from ACR (requires docker build+push first)
+    mode="conda"  — uses conda env file, Azure ML builds the image server-side (no Docker needed)
+    """
+    from azure.ai.ml import MLClient, command, Output
     from azure.ai.ml.entities import Environment
     from azure.identity import DefaultAzureCredential
 
     credential = DefaultAzureCredential()
     ml_client = MLClient(credential, SUBSCRIPTION, RESOURCE_GROUP, WORKSPACE)
 
-    acr_url = f"{ACR_NAME}.azurecr.io"
-    image = f"{acr_url}/{DOCKER_IMAGE}:latest"
     compute_name = compute or COMPUTE_TARGET
-
-    job_name = f"bench-{model_id.replace('.', '')}-{datetime.now().strftime('%Y%m%d%H%M')}"
+    job_name = f"bench-{model_id.replace('.', '').replace('/', '-')}-{datetime.now().strftime('%Y%m%d%H%M')}"
 
     print(f"→ Submitting job: {job_name}")
     print(f"  Model: {model_id}")
     print(f"  Compute: {compute_name}")
-    print(f"  Image: {image}")
+    print(f"  Mode: {mode}")
 
-    env = Environment(
-        name="spendify-bench-env",
-        image=image,
-    )
-
-    job = command(
-        name=job_name,
-        display_name=f"Spendify Benchmark — {model_id}",
-        description=f"Classifier + categorizer benchmark for {model_id}",
-        environment=env,
-        compute=compute_name,
-        command=f"/entrypoint.sh --model {model_id} --runs {runs}",
-        outputs={
-            "results": Output(type="uri_folder", path=f"azureml://datastores/workspaceblobdefault/paths/benchmarks/{job_name}/"),
-        },
-        environment_variables={
-            "RESULTS_DIR": "${{outputs.results}}",
-            "MODELS_DIR": "/models",
-            "HF_HOME": "/tmp/hf_cache",
-        },
-    )
+    if mode == "docker":
+        acr_url = f"{ACR_NAME}.azurecr.io"
+        image = f"{acr_url}/{DOCKER_IMAGE}:latest"
+        print(f"  Image: {image}")
+        env = Environment(name="spendify-bench-docker", image=image)
+        job = command(
+            name=job_name,
+            display_name=f"Spendify Benchmark — {model_id}",
+            description=f"Classifier + categorizer benchmark for {model_id}",
+            environment=env,
+            compute=compute_name,
+            command=f"/entrypoint.sh --model {model_id} --runs {runs}",
+            outputs={
+                "results": Output(
+                    type="uri_folder",
+                    path=f"azureml://datastores/workspaceblobdefault/paths/benchmarks/{job_name}/",
+                ),
+            },
+            environment_variables={
+                "RESULTS_DIR": "${{outputs.results}}",
+                "MODELS_DIR": "/models",
+                "HF_HOME": "/tmp/hf_cache",
+            },
+        )
+    else:
+        # Conda mode — no Docker needed locally
+        conda_file = _create_conda_env_file()
+        env = Environment(
+            name="spendify-bench-conda",
+            description="Spendify benchmark env (conda, no Docker)",
+            conda_file=str(conda_file),
+            image="mcr.microsoft.com/azureml/curated/acft-hf-nlp-gpu:latest",
+        )
+        job = command(
+            name=job_name,
+            display_name=f"Spendify Benchmark — {model_id}",
+            description=f"Classifier + categorizer benchmark for {model_id}",
+            environment=env,
+            compute=compute_name,
+            code=str(PROJECT_ROOT),
+            command=f"bash docker/benchmark_entrypoint.sh --model {model_id} --runs {runs}",
+            outputs={
+                "results": Output(
+                    type="uri_folder",
+                    path=f"azureml://datastores/workspaceblobdefault/paths/benchmarks/{job_name}/",
+                ),
+            },
+            environment_variables={
+                "RESULTS_DIR": "${{outputs.results}}",
+                "MODELS_DIR": "/tmp/models",
+                "HF_HOME": "/tmp/hf_cache",
+                "PYTHONPATH": ".",
+            },
+        )
 
     returned_job = ml_client.jobs.create_or_update(job)
     print(f"  ✅ Job submitted: {returned_job.name}")
@@ -263,6 +323,8 @@ def main():
     parser.add_argument("--download", action="store_true", help="Download results from a job")
     parser.add_argument("--job-name", type=str, help="Job name for --download")
     parser.add_argument("--list", action="store_true", help="List recent benchmark jobs")
+    parser.add_argument("--mode", choices=["docker", "conda"], default="conda",
+                        help="Job mode: 'docker' (pre-built ACR image) or 'conda' (no Docker needed, default)")
     parser.add_argument("--build", action="store_true", help="Build and push Docker image only")
     parser.add_argument("--skip-build", action="store_true", help="Skip Docker build (use existing image)")
     args = parser.parse_args()
@@ -291,7 +353,7 @@ def main():
     _check_azure_cli()
     _check_azure_ml_sdk()
 
-    if not args.skip_build:
+    if args.mode == "docker" and not args.skip_build:
         build_and_push_docker()
 
     if args.all_models:
@@ -301,14 +363,14 @@ def main():
         print(f"\n→ Submitting {len(models)} jobs...")
         job_names = []
         for m in models:
-            name = submit_job(m.id, runs=args.runs, compute=args.compute)
+            name = submit_job(m.id, runs=args.runs, compute=args.compute, mode=args.mode)
             job_names.append(name)
         print(f"\n✅ {len(job_names)} jobs submitted")
         print("Monitor: python tools/azure_benchmark.py --list")
         print("Download: python tools/azure_benchmark.py --download --job-name <name>")
 
     elif args.model:
-        submit_job(args.model, runs=args.runs, compute=args.compute)
+        submit_job(args.model, runs=args.runs, compute=args.compute, mode=args.mode)
 
     else:
         print("ERROR: Specify --model <id>, --all-models, --build, --download, or --list")

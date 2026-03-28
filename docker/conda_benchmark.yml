@@ -1,0 +1,16 @@
+name: spendify-bench
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+    - llama-cpp-python
+    - huggingface_hub
+    - pandas
+    - openpyxl
+    - sqlalchemy
+    - pydantic
+    - pyyaml
+    - chardet
