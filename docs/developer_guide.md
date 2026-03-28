@@ -16,8 +16,10 @@
 5. [Coupling gate (CI)](#5-coupling-gate-ci)
 6. [REST API](#6-rest-api)
 7. [Test](#7-test)
-8. [Decisioni di design chiave](#8-decisioni-di-design-chiave)
-9. [Documentazione tecnica di riferimento](#9-documentazione-tecnica-di-riferimento)
+8. [Prompt Integrity Guard (S-01)](#8-prompt-integrity-guard-s-01)
+9. [Benchmark (T-09)](#9-benchmark-t-09)
+10. [Decisioni di design chiave](#10-decisioni-di-design-chiave)
+11. [Documentazione tecnica di riferimento](#11-documentazione-tecnica-di-riferimento)
 
 ---
 
@@ -300,7 +302,124 @@ python tools/compute_prompt_hashes.py --verify || {
 
 ---
 
-## 9. Decisioni di design chiave
+## 9. Benchmark (T-09)
+
+### Benchmark classifier (schema detection + parsing)
+
+```bash
+# Singolo modello
+uv run python tests/benchmark_pipeline.py --runs 1 --backend local_ollama --model gemma3:12b
+
+# Singolo modello llama.cpp
+uv run python tests/benchmark_pipeline.py --runs 1 --backend local_llama_cpp \
+  --model-path ~/.spendify/models/gemma-3-12b-it-Q4_K_M.gguf
+
+# Suite completa (tutti i modelli Ollama + llama.cpp)
+bash tests/run_all_benchmarks.sh
+```
+
+### Benchmark categorizer
+
+```bash
+uv run python tests/benchmark_categorizer.py --runs 1 --backend local_ollama --model gemma3:12b
+```
+
+Entrambi scrivono nello stesso `tests/generated_files/benchmark/results_all_runs.csv` con colonna `benchmark_type` (classifier/categorizer). Il resume key include `(run_id, filename, commit, branch, provider, model)` — cambiando modello o commit, i run precedenti vengono skippati.
+
+### Metriche registrate
+
+| Metrica | Classifier | Categorizer |
+|---------|-----------|-------------|
+| header_match | ✅ | — |
+| rows_match | ✅ | — |
+| doc_type_match | ✅ | — |
+| parse_rate | ✅ | — |
+| amount_accuracy | ✅ | — |
+| date_accuracy | ✅ | — |
+| category_accuracy | — | ✅ |
+| cat_fuzzy_accuracy | — | ✅ |
+| cat_fallback_rate | — | ✅ |
+| duration_seconds | ✅ | ✅ |
+| AUTOMATION SCORE | ✅ | ✅ |
+
+### Benchmark cross-platform (Mac remoto)
+
+Per confrontare performance tra macchine diverse (es. M1 Max locale vs M4 remoto):
+
+**Setup server (Mac M4 — host remoto):**
+
+```bash
+# 1. Installa llama.cpp
+brew install llama.cpp
+
+# 2. Scarica modello
+brew install huggingface-cli
+huggingface-cli download google/gemma-3-12b-it-GGUF gemma-3-12b-it-Q4_K_M.gguf \
+  --local-dir ~/.spendify/models/
+
+# 3. Lancia server (aperto sulla rete locale)
+llama-server -m ~/.spendify/models/gemma-3-12b-it-Q4_K_M.gguf \
+  --host 0.0.0.0 --port 8080 -ngl 99 -c 4096
+
+# 4. Verifica
+curl http://localhost:8080/v1/models
+```
+
+**Setup client (Mac M1 Max — esegue i benchmark):**
+
+```bash
+# Punta al server remoto via backend openai_compatible
+uv run python tests/benchmark_pipeline.py --runs 1 \
+  --backend openai_compatible \
+  --base-url http://192.168.x.x:8080/v1 \
+  --model gemma-3-12b-it
+
+# Oppure: configura in Settings → Backend → OpenAI Compatible
+# URL: http://192.168.x.x:8080/v1
+# Model: gemma-3-12b-it
+```
+
+**Confronto risultati:**
+
+I risultati includono `runtime_os`, `runtime_cpu`, `runtime_ram_gb`, `runtime_gpu` — filtrabili nel CSV per confrontare tok/s e `duration_seconds` tra macchine diverse con lo stesso modello e commit.
+
+**Parametri chiave per il confronto:**
+
+| Parametro | Dove | Default |
+|-----------|------|---------|
+| `-ngl 99` | llama-server | Offload tutti i layer su GPU Metal |
+| `-c 4096` | llama-server | Context window |
+| `--threads N` | llama-server | CPU threads (auto-detect) |
+| `--flash-attn` | llama-server | Flash attention (più veloce su M4) |
+
+### Benchmark veloce tok/s (senza Spendify)
+
+Per misurare la velocità pura del modello senza overhead pipeline:
+
+```bash
+# llama-bench (incluso in llama.cpp)
+llama-bench -m ~/.spendify/models/gemma-3-12b-it-Q4_K_M.gguf -ngl 99
+
+# Tutti i modelli
+for m in ~/.spendify/models/*.gguf; do
+  echo "=== $(basename $m) ==="
+  llama-bench -m "$m" -ngl 99
+done
+```
+
+### Modelli disponibili localmente
+
+```bash
+# GGUF (llama.cpp)
+ls -lh ~/.spendify/models/*.gguf
+
+# Ollama
+ollama list
+```
+
+---
+
+## 10. Decisioni di design chiave
 
 | Decisione | Motivazione |
 |-----------|-------------|
@@ -314,7 +433,7 @@ python tools/compute_prompt_hashes.py --verify || {
 
 ---
 
-## 9. Documentazione tecnica di riferimento
+## 11. Documentazione tecnica di riferimento
 
 La documentazione di ingegneria dettagliata è in `documents/` (fuori dal repo):
 
