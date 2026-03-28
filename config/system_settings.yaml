@@ -1,0 +1,38 @@
+# Spendify — System Settings
+# These are internal tuning parameters, NOT exposed in the UI.
+# Edit only if you know what you're doing.
+# Overridable per-installation via ~/.spendify/system_settings.yaml
+
+# ── History engine (C-03/C-04/C-05) ─────────────────────────────────────
+history:
+  min_validated: 5            # min validated txs to trust a description profile
+  auto_threshold: 0.90        # confidence >= this → auto-assign from history
+  suggest_threshold: 0.50     # confidence >= this → suggest with to_review=True
+
+# ── C-07: LLM context injection ─────────────────────────────────────────
+history_context:
+  min_validated: 3            # min validated txs to include in LLM context
+  min_confidence: 0.50        # min confidence to include in LLM context
+  top_n: 50                   # max associations to inject in prompt
+  max_chars: 2000             # truncate context block to this size
+
+# ── Schema classifier ───────────────────────────────────────────────────
+classifier:
+  confidence_threshold: 0.80  # auto-import if score >= this (overridden by force_schema_import)
+  max_transaction_amount: 1000000  # plausibility cap for amounts
+
+# ── Border detection (I-10) ──────────────────────────────────────────────
+border_detection:
+  max_scan_rows: 60           # rows to scan for borders in Excel files
+  min_region_cols: 3          # minimum columns for a valid bordered region
+  min_region_rows: 3          # minimum rows for a valid bordered region
+
+# ── Categorizer ──────────────────────────────────────────────────────────
+categorizer:
+  batch_size: 20              # transactions per LLM batch call
+  llm_timeout_s: 120          # timeout per LLM call
+
+# ── Footer stripping ────────────────────────────────────────────────────
+footer:
+  max_tail_rows: 10           # max rows to check from bottom for footer
+  phase2_enabled: true        # enable LLM-based footer detection

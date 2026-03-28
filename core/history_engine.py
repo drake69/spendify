@@ -14,18 +14,21 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from db.models import Transaction
+from config import system_settings
 from support.logging import setup_logging
 
 logger = setup_logging()
 
-# ── Configuration constants (internal, not user-facing) ───────────────────────
-HISTORY_MIN_VALIDATED = 5        # min validated txs to trust a description
-HISTORY_AUTO_THRESHOLD = 0.90    # C >= 0.90 → source=history, auto-assign
-HISTORY_SUGGEST_THRESHOLD = 0.50 # 0.50 <= C < 0.90 → suggest with to_review=True
+# ── Configuration (loaded from config/system_settings.yaml) ──────────────────
+_hist_cfg = system_settings.get("history", {})
+HISTORY_MIN_VALIDATED = _hist_cfg.get("min_validated", 5)
+HISTORY_AUTO_THRESHOLD = _hist_cfg.get("auto_threshold", 0.90)
+HISTORY_SUGGEST_THRESHOLD = _hist_cfg.get("suggest_threshold", 0.50)
 
 # C-07: LLM context injection thresholds
-HISTORY_CONTEXT_MIN_VALIDATED = 3   # min validated txs to include in LLM context
-HISTORY_CONTEXT_MIN_CONFIDENCE = 0.50  # min confidence to include in LLM context
+_ctx_cfg = system_settings.get("history_context", {})
+HISTORY_CONTEXT_MIN_VALIDATED = _ctx_cfg.get("min_validated", 3)
+HISTORY_CONTEXT_MIN_CONFIDENCE = _ctx_cfg.get("min_confidence", 0.50)
 
 
 # ── Data classes ──────────────────────────────────────────────────────────────
