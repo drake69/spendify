@@ -863,7 +863,7 @@ def main() -> None:
     print(f"[llm] Host: {llm_meta.get('llm_host', '?')}")
     print(f"[llm] HW: {llm_meta.get('llm_hw', '?')}")
 
-    # Resume: load already-completed (run_id, filename, git_commit, git_branch) tuples
+    # Resume: load already-completed (run_id, filename, git_commit, git_branch, provider, model) tuples
     _completed: set[tuple] = set()
     _prev_results: list[RunFileResult] = []
     _all_runs_path = _BENCHMARK_DIR / "results_all_runs.csv"
@@ -876,6 +876,8 @@ def main() -> None:
                     _row.get("filename", ""),
                     _row.get("git_commit", ""),
                     _row.get("git_branch", ""),
+                    _row.get("provider", ""),
+                    _row.get("model", ""),
                 )
                 _completed.add(_key)
         if _completed:
@@ -893,11 +895,13 @@ def main() -> None:
         run_start = time.time()
 
         for file_idx, entry in enumerate(manifest, 1):
-            # Check resume key: (run_id, filename, git_commit, git_branch)
+            # Check resume key: (run_id, filename, git_commit, git_branch, provider, model)
             _resume_key = (
                 run_id, entry.filename,
                 _LLM_META.get("git_commit", ""),
                 _LLM_META.get("git_branch", ""),
+                _LLM_META.get("provider", ""),
+                _LLM_META.get("model", ""),
             )
             if _resume_key in _completed:
                 skipped_steps += 1
