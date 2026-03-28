@@ -548,6 +548,11 @@ _CSV_HEADER = [
     "run_id", "filename",
     "git_commit", "git_branch",
     "provider", "model", "temperature", "parameter_size", "quantization",
+    # Inference parameters (for reproducibility & performance analysis)
+    "n_ctx", "n_batch", "n_threads", "n_gpu_layers", "flash_attn",
+    # Runtime HW
+    "runtime_os", "runtime_cpu", "runtime_ram_gb", "runtime_gpu",
+    # Results
     "header_detected", "header_expected", "header_match",
     "rows_detected", "rows_expected", "rows_match",
     "doc_type_detected", "doc_type_expected", "doc_type_match",
@@ -574,6 +579,17 @@ def _result_to_row(r: RunFileResult) -> list:
         _LLM_META.get("temperature", ""),
         _LLM_META.get("parameter_size", ""),
         _LLM_META.get("quantization", ""),
+        # Inference parameters
+        _LLM_META.get("n_ctx", ""),
+        _LLM_META.get("n_batch", ""),
+        _LLM_META.get("n_threads", ""),
+        _LLM_META.get("n_gpu_layers", ""),
+        _LLM_META.get("flash_attn", ""),
+        # Runtime HW
+        _LLM_META.get("runtime_os", ""),
+        _LLM_META.get("runtime_cpu", ""),
+        _LLM_META.get("runtime_ram_gb", ""),
+        _LLM_META.get("runtime_gpu", ""),
         r.header_detected, r.header_expected, r.header_match,
         r.rows_detected, r.rows_expected, r.rows_match,
         r.doc_type_detected, r.doc_type_expected, r.doc_type_match,
