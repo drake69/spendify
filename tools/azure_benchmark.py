@@ -46,7 +46,19 @@ DOCKER_IMAGE = "spendify-bench"
 DOCKERFILE = "docker/Dockerfile.benchmark"
 
 # Azure defaults (overridable via env)
-SUBSCRIPTION = os.environ.get("AZURE_SUBSCRIPTION_ID", "487ff261-9fc5-484d-80da-7e2b663f0452")
+def _get_subscription_id() -> str:
+    """Get subscription ID from env var or az CLI (lazy, cached)."""
+    sub = os.environ.get("AZURE_SUBSCRIPTION_ID", "")
+    if not sub:
+        try:
+            sub = subprocess.check_output(
+                ["az", "account", "show", "--query", "id", "-o", "tsv"],
+                stderr=subprocess.DEVNULL, text=True,
+            ).strip()
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            pass
+    return sub
+
 RESOURCE_GROUP = os.environ.get("AZURE_RESOURCE_GROUP", "spendify-rg")
 WORKSPACE = os.environ.get("AZURE_ML_WORKSPACE", "spendify-ml")
 ACR_NAME = os.environ.get("AZURE_ACR_NAME", "spendifyacr")
@@ -137,7 +149,7 @@ def submit_job(model_id: str, runs: int = 1, compute: str | None = None,
     from azure.identity import DefaultAzureCredential
 
     credential = DefaultAzureCredential()
-    ml_client = MLClient(credential, SUBSCRIPTION, RESOURCE_GROUP, WORKSPACE)
+    ml_client = MLClient(credential, _get_subscription_id(), RESOURCE_GROUP, WORKSPACE)
 
     compute_name = compute or COMPUTE_TARGET
     job_name = f"bench-{model_id.replace('.', '').replace('/', '-')}-{datetime.now().strftime('%Y%m%d%H%M')}"
@@ -214,7 +226,7 @@ def list_jobs():
     from azure.identity import DefaultAzureCredential
 
     credential = DefaultAzureCredential()
-    ml_client = MLClient(credential, SUBSCRIPTION, RESOURCE_GROUP, WORKSPACE)
+    ml_client = MLClient(credential, _get_subscription_id(), RESOURCE_GROUP, WORKSPACE)
 
     print(f"{'Name':<45} {'Status':<12} {'Created':<20}")
     print("-" * 80)
@@ -231,7 +243,7 @@ def download_results(job_name: str):
     from azure.identity import DefaultAzureCredential
 
     credential = DefaultAzureCredential()
-    ml_client = MLClient(credential, SUBSCRIPTION, RESOURCE_GROUP, WORKSPACE)
+    ml_client = MLClient(credential, _get_subscription_id(), RESOURCE_GROUP, WORKSPACE)
 
     print(f"→ Downloading results from job: {job_name}")
 
