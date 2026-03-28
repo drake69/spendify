@@ -54,6 +54,8 @@ _GENERATED_DIR = _TESTS_DIR / "generated_files"
 _MANIFEST_PATH = _GENERATED_DIR / "manifest.csv"
 _BENCHMARK_DIR = _GENERATED_DIR / "benchmark"
 _GENERATOR_SCRIPT = _TESTS_DIR / "generate_synthetic_files.py"
+# Shared results file in documents repo (cross-HW, pushed/pulled via git)
+_DOCS_BENCHMARK_DIR = PROJECT_ROOT.parent / "documents" / "04_software_engineering" / "benchmark"
 
 N_RUNS_DEFAULT = 10
 _FILES_DEFAULT = "*_S_*"
@@ -124,6 +126,8 @@ class CatRunResult:
     fuzzy_accuracy: float       # n_correct_fuzzy / n_transactions
     fallback_rate: float        # n_fallback / n_transactions
     duration_seconds: float
+    cpu_load_avg: float = 0.0      # avg CPU load during file processing
+    gpu_utilization_pct: float = 0.0  # avg GPU utilization % during file processing
     error: str = ""
 
 
@@ -382,12 +386,14 @@ def _collect_llm_metadata(config: ProcessingConfig, backend) -> dict[str, str]:
 
 
 def _write_config_json(meta: dict[str, str], n_runs: int, n_files: int) -> None:
-    """Write benchmark config metadata to JSON."""
+    """Write benchmark config metadata to JSON in both local and documents repo."""
     meta_out = {**meta, "n_runs": n_runs, "n_files": n_files, "benchmark_type": "categorizer"}
-    path = _BENCHMARK_DIR / "cat_benchmark_config.json"
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(meta_out, f, indent=2, ensure_ascii=False)
-    print(f"[output] Config: {path}")
+    for target_dir in (_BENCHMARK_DIR, _DOCS_BENCHMARK_DIR):
+        target_dir.mkdir(parents=True, exist_ok=True)
+        path = target_dir / "cat_benchmark_config.json"
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(meta_out, f, indent=2, ensure_ascii=False)
+    print(f"[output] Config: {_DOCS_BENCHMARK_DIR / 'cat_benchmark_config.json'}")
 
 
 # ── Main evaluation ──────────────────────────────────────────────────────
@@ -553,7 +559,9 @@ def _evaluate_file(
 
 # ── CSV output ────────────────────────────────────────────────────────────
 
+# Shared CSV header — same file as classifier benchmark (results_all_runs.csv)
 _CSV_HEADER = [
+    "benchmark_type",  # "classifier" or "categorizer"
     "run_id", "filename",
     "git_commit", "git_branch",
     "provider", "model", "temperature", "parameter_size", "quantization",
@@ -561,12 +569,26 @@ _CSV_HEADER = [
     "n_ctx", "n_batch", "n_threads", "n_gpu_layers", "flash_attn",
     # Runtime HW
     "runtime_os", "runtime_cpu", "runtime_ram_gb", "runtime_gpu",
-    # Results
+    # Classifier results (empty for categorizer rows)
+    "header_detected", "header_expected", "header_match",
+    "rows_detected", "rows_expected", "rows_match",
+    "doc_type_detected", "doc_type_expected", "doc_type_match",
+    "convention_detected", "convention_expected", "convention_match",
+    "confidence_score",
+    "n_parsed", "n_expected", "parse_rate",
+    "amount_correct", "amount_total", "amount_accuracy",
+    "date_correct", "date_total", "date_accuracy",
+    "category_correct", "category_total", "category_accuracy",
+    # Categorizer results
     "n_transactions", "n_categorized",
     "n_correct_category", "n_correct_fuzzy",
     "n_fallback", "n_history", "n_rule", "n_llm",
-    "category_accuracy", "fuzzy_accuracy", "fallback_rate",
-    "duration_seconds", "error",
+    "cat_exact_accuracy", "cat_fuzzy_accuracy", "cat_fallback_rate",
+    # Common
+    "duration_seconds",
+    # HW stress (sampled during file processing)
+    "cpu_load_avg", "gpu_utilization_pct",
+    "error",
 ]
 
 _DETAIL_CSV_HEADER = [
@@ -583,6 +605,7 @@ _LLM_META: dict[str, str] = {}
 
 def _result_to_row(r: CatRunResult) -> list:
     return [
+        "categorizer",  # benchmark_type
         r.run_id, r.filename,
         _LLM_META.get("git_commit", ""),
         _LLM_META.get("git_branch", ""),
@@ -602,11 +625,25 @@ def _result_to_row(r: CatRunResult) -> list:
         _LLM_META.get("runtime_cpu", ""),
         _LLM_META.get("runtime_ram_gb", ""),
         _LLM_META.get("runtime_gpu", ""),
+        # Classifier columns (empty for categorizer rows)
+        "", "", "",  # header_detected, header_expected, header_match
+        "", "", "",  # rows_detected, rows_expected, rows_match
+        "", "", "",  # doc_type_detected, doc_type_expected, doc_type_match
+        "", "", "",  # convention_detected, convention_expected, convention_match
+        "",          # confidence_score
+        "", "", "",  # n_parsed, n_expected, parse_rate
+        "", "", "",  # amount_correct, amount_total, amount_accuracy
+        "", "", "",  # date_correct, date_total, date_accuracy
+        "", "", "",  # category_correct, category_total, category_accuracy
+        # Categorizer results
         r.n_transactions, r.n_categorized,
         r.n_correct_category, r.n_correct_fuzzy,
         r.n_fallback, r.n_history, r.n_rule, r.n_llm,
         f"{r.category_accuracy:.4f}", f"{r.fuzzy_accuracy:.4f}", f"{r.fallback_rate:.4f}",
-        f"{r.duration_seconds:.2f}", r.error,
+        # Common
+        f"{r.duration_seconds:.2f}",
+        f"{r.cpu_load_avg:.2f}", f"{r.gpu_utilization_pct:.1f}",
+        r.error,
     ]
 
 
@@ -624,16 +661,18 @@ def _detail_to_row(d: CatDetailRow) -> list:
 
 
 def _write_all_runs_csv(all_results: list[CatRunResult]) -> None:
-    """Append new results to all-runs CSV (creates with header if missing)."""
-    path = _BENCHMARK_DIR / "cat_results_all_runs.csv"
-    write_header = not path.exists() or path.stat().st_size == 0
-    with open(path, "a", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        if write_header:
-            writer.writerow(_CSV_HEADER)
-        for r in all_results:
-            writer.writerow(_result_to_row(r))
-    print(f"[output] All runs: {path}")
+    """Append new results to shared all-runs CSV in both local and documents repo."""
+    for target_dir in (_BENCHMARK_DIR, _DOCS_BENCHMARK_DIR):
+        target_dir.mkdir(parents=True, exist_ok=True)
+        path = target_dir / "results_all_runs.csv"
+        write_header = not path.exists() or path.stat().st_size == 0
+        with open(path, "a", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            if write_header:
+                writer.writerow(_CSV_HEADER)
+            for r in all_results:
+                writer.writerow(_result_to_row(r))
+    print(f"[output] All runs (shared): {_DOCS_BENCHMARK_DIR / 'results_all_runs.csv'}")
 
 
 def _write_detail_csv(all_details: list[CatDetailRow]) -> None:
@@ -886,12 +925,15 @@ def main() -> None:
     print(f"[inference] n_ctx: {llm_meta.get('n_ctx', '?')}, n_batch: {llm_meta.get('n_batch', '?')}, n_threads: {llm_meta.get('n_threads', '?')}, n_gpu_layers: {llm_meta.get('n_gpu_layers', '?')}, flash_attn: {llm_meta.get('flash_attn', '?')}")
 
     # Resume: load already-completed (run_id, filename, git_commit, git_branch, provider, model) tuples
+    # Reads from shared results_all_runs.csv, filtering for benchmark_type=categorizer
     _completed: set[tuple] = set()
-    _all_runs_path = _BENCHMARK_DIR / "cat_results_all_runs.csv"
+    _all_runs_path = _BENCHMARK_DIR / "results_all_runs.csv"
     if _all_runs_path.exists():
         with open(_all_runs_path, encoding="utf-8") as _f:
             _reader = csv.DictReader(_f)
             for _row in _reader:
+                if _row.get("benchmark_type", "") != "categorizer":
+                    continue  # skip classifier rows
                 _key = (
                     int(_row.get("run_id", 0)),
                     _row.get("filename", ""),

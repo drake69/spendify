@@ -17,6 +17,7 @@ import argparse
 import csv
 import fnmatch
 import math
+import os
 import subprocess
 import sys
 import time
@@ -42,6 +43,8 @@ _GENERATED_DIR = _TESTS_DIR / "generated_files"
 _MANIFEST_PATH = _GENERATED_DIR / "manifest.csv"
 _BENCHMARK_DIR = _GENERATED_DIR / "benchmark"
 _GENERATOR_SCRIPT = _TESTS_DIR / "generate_synthetic_files.py"
+# Shared results file in documents repo (cross-HW, pushed/pulled via git)
+_DOCS_BENCHMARK_DIR = PROJECT_ROOT.parent / "documents" / "04_software_engineering" / "benchmark"
 
 N_RUNS_DEFAULT = 10
 
@@ -114,7 +117,101 @@ class RunFileResult:
     category_total: int
     category_accuracy: float
     duration_seconds: float
+    cpu_load_avg: float = 0.0      # avg CPU load during file processing (1-min loadavg)
+    gpu_power_watts: float = 0.0   # avg GPU power draw during file processing (macOS only)
     error: str = ""
+
+
+# ── HW stress sampler ────────────────────────────────────────────────────
+
+def _sample_cpu_load() -> float:
+    """Return 1-minute load average (cross-platform)."""
+    try:
+        return os.getloadavg()[0]
+    except (OSError, AttributeError):
+        return 0.0
+
+
+def _sample_gpu_utilization() -> float:
+    """Return GPU utilization % (0-100). Cross-platform:
+    - macOS: Apple GPU via ioreg (power proxy)
+    - Linux/Windows: NVIDIA via nvidia-smi
+    Returns 0.0 if unavailable."""
+    import platform as _pf
+    import re
+
+    system = _pf.system()
+
+    # macOS — Apple Silicon GPU power via ioreg
+    if system == "Darwin":
+        try:
+            result = subprocess.run(
+                ["ioreg", "-r", "-d", "1", "-c", "AppleARMIODevice", "-n", "gpu"],
+                capture_output=True, text=True, timeout=2,
+            )
+            for line in result.stdout.splitlines():
+                if "gpu-power" in line.lower() or "power" in line.lower():
+                    nums = re.findall(r"(\d+\.?\d*)", line)
+                    if nums:
+                        return float(nums[-1])
+        except Exception:
+            pass
+
+    # Linux/Windows — NVIDIA GPU via nvidia-smi
+    if system in ("Linux", "Windows"):
+        try:
+            result = subprocess.run(
+                ["nvidia-smi", "--query-gpu=utilization.gpu",
+                 "--format=csv,noheader,nounits"],
+                capture_output=True, text=True, timeout=5,
+            )
+            if result.returncode == 0:
+                vals = [float(v.strip()) for v in result.stdout.strip().split("\n") if v.strip()]
+                return sum(vals) / len(vals) if vals else 0.0
+        except FileNotFoundError:
+            pass  # no nvidia-smi → no NVIDIA GPU
+        except Exception:
+            pass
+
+    # Linux — AMD GPU via ROCm (rocm-smi)
+    if system == "Linux":
+        try:
+            result = subprocess.run(
+                ["rocm-smi", "--showuse", "--csv"],
+                capture_output=True, text=True, timeout=5,
+            )
+            if result.returncode == 0:
+                for line in result.stdout.strip().split("\n")[1:]:  # skip header
+                    parts = line.split(",")
+                    for p in parts:
+                        p = p.strip().rstrip("%")
+                        try:
+                            return float(p)
+                        except ValueError:
+                            continue
+        except FileNotFoundError:
+            pass  # no rocm-smi → no AMD GPU
+        except Exception:
+            pass
+
+    # Linux — Intel GPU via intel_gpu_top (optional)
+    if system == "Linux":
+        try:
+            result = subprocess.run(
+                ["intel_gpu_top", "-J", "-s", "100"],
+                capture_output=True, text=True, timeout=2,
+            )
+            if result.returncode == 0:
+                import json as _json
+                data = _json.loads(result.stdout)
+                engines = data.get("engines", {})
+                if engines:
+                    busy_vals = [e.get("busy", 0) for e in engines.values()]
+                    return sum(busy_vals) / len(busy_vals) if busy_vals else 0.0
+        except (FileNotFoundError, Exception):
+            pass
+
+    return 0.0
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────
@@ -330,13 +427,16 @@ def _collect_llm_metadata(config: ProcessingConfig, backend) -> dict[str, str]:
 
 
 def _write_llm_metadata(meta: dict[str, str], n_runs: int, n_files: int) -> None:
-    """Write LLM metadata to a JSON file in the benchmark directory."""
+    """Write LLM metadata to JSON in both local and documents repo."""
     import json
     meta_out = {**meta, "n_runs": n_runs, "n_files": n_files}
-    path = _BENCHMARK_DIR / "benchmark_config.json"
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(meta_out, f, indent=2, ensure_ascii=False)
-    print(f"[output] Config: {path}")
+    for target_dir in (_BENCHMARK_DIR, _DOCS_BENCHMARK_DIR):
+        target_dir.mkdir(parents=True, exist_ok=True)
+        path = target_dir / "benchmark_config.json"
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(meta_out, f, indent=2, ensure_ascii=False)
+    print(f"[output] Config: {_BENCHMARK_DIR / 'benchmark_config.json'}")
+    print(f"[output] Config (docs): {_DOCS_BENCHMARK_DIR / 'benchmark_config.json'}")
 
 
 def _check_ollama() -> bool:
@@ -389,6 +489,8 @@ def _evaluate_file(
     """Run the full pipeline on a single file and compare to ground truth."""
     filepath = _GENERATED_DIR / entry.filename
     t_start = time.time()
+    cpu_samples: list[float] = [_sample_cpu_load()]
+    gpu_samples: list[float] = [_sample_gpu_utilization()]
 
     convention_expected = _AMOUNT_FORMAT_TO_SIGN_CONVENTION.get(
         entry.amount_format, entry.amount_format
@@ -431,6 +533,9 @@ def _evaluate_file(
             header_certain=preprocess_info.header_certain,
             account_type=entry.doc_type,
         )
+        # Sample HW stress after LLM call
+        cpu_samples.append(_sample_cpu_load())
+        gpu_samples.append(_sample_gpu_utilization())
 
         if schema is None:
             error_result.header_detected = detected_skip
@@ -534,6 +639,8 @@ def _evaluate_file(
             category_total=category_total,
             category_accuracy=category_accuracy,
             duration_seconds=duration,
+            cpu_load_avg=sum(cpu_samples) / len(cpu_samples) if cpu_samples else 0.0,
+            gpu_power_watts=sum(gpu_samples) / len(gpu_samples) if gpu_samples else 0.0,
         )
 
     except Exception as e:
@@ -545,6 +652,7 @@ def _evaluate_file(
 # ── CSV output ────────────────────────────────────────────────────────────
 
 _CSV_HEADER = [
+    "benchmark_type",  # "classifier" or "categorizer"
     "run_id", "filename",
     "git_commit", "git_branch",
     "provider", "model", "temperature", "parameter_size", "quantization",
@@ -552,7 +660,7 @@ _CSV_HEADER = [
     "n_ctx", "n_batch", "n_threads", "n_gpu_layers", "flash_attn",
     # Runtime HW
     "runtime_os", "runtime_cpu", "runtime_ram_gb", "runtime_gpu",
-    # Results
+    # Classifier results
     "header_detected", "header_expected", "header_match",
     "rows_detected", "rows_expected", "rows_match",
     "doc_type_detected", "doc_type_expected", "doc_type_match",
@@ -562,7 +670,16 @@ _CSV_HEADER = [
     "amount_correct", "amount_total", "amount_accuracy",
     "date_correct", "date_total", "date_accuracy",
     "category_correct", "category_total", "category_accuracy",
-    "duration_seconds", "error",
+    # Categorizer results (empty for classifier rows)
+    "n_transactions", "n_categorized",
+    "n_correct_category", "n_correct_fuzzy",
+    "n_fallback", "n_history", "n_rule", "n_llm",
+    "cat_exact_accuracy", "cat_fuzzy_accuracy", "cat_fallback_rate",
+    # Common
+    "duration_seconds",
+    # HW stress (sampled during file processing)
+    "cpu_load_avg", "gpu_utilization_pct",
+    "error",
 ]
 
 # Filled at runtime by main()
@@ -571,6 +688,7 @@ _LLM_META: dict[str, str] = {}
 
 def _result_to_row(r: RunFileResult) -> list:
     return [
+        "classifier",  # benchmark_type
         r.run_id, r.filename,
         _LLM_META.get("git_commit", ""),
         _LLM_META.get("git_branch", ""),
@@ -599,7 +717,12 @@ def _result_to_row(r: RunFileResult) -> list:
         r.amount_correct, r.amount_total, f"{r.amount_accuracy:.4f}",
         r.date_correct, r.date_total, f"{r.date_accuracy:.4f}",
         r.category_correct, r.category_total, f"{r.category_accuracy:.4f}",
-        f"{r.duration_seconds:.2f}", r.error,
+        # Categorizer columns (empty for classifier rows)
+        "", "", "", "", "", "", "", "",  # n_transactions..n_llm
+        "", "", "",  # cat_exact_accuracy, cat_fuzzy_accuracy, cat_fallback_rate
+        f"{r.duration_seconds:.2f}",
+        f"{r.cpu_load_avg:.2f}", f"{r.gpu_power_watts:.1f}",
+        r.error,
     ]
 
 
@@ -614,15 +737,17 @@ def _write_run_csv(results: list[RunFileResult], run_id: int) -> None:
 
 
 def _write_all_runs_csv(all_results: list[RunFileResult]) -> None:
-    """Append new results to all-runs CSV (creates with header if missing)."""
-    path = _BENCHMARK_DIR / "results_all_runs.csv"
-    write_header = not path.exists() or path.stat().st_size == 0
-    with open(path, "a", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        if write_header:
-            writer.writerow(_CSV_HEADER)
-        for r in all_results:
-            writer.writerow(_result_to_row(r))
+    """Append new results to all-runs CSV in both local and documents repo."""
+    for target_dir in (_BENCHMARK_DIR, _DOCS_BENCHMARK_DIR):
+        target_dir.mkdir(parents=True, exist_ok=True)
+        path = target_dir / "results_all_runs.csv"
+        write_header = not path.exists() or path.stat().st_size == 0
+        with open(path, "a", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            if write_header:
+                writer.writerow(_CSV_HEADER)
+            for r in all_results:
+                writer.writerow(_result_to_row(r))
 
 
 def _compute_variance(all_results: list[RunFileResult]) -> tuple[list[dict], list[dict]]:
@@ -899,10 +1024,13 @@ def main() -> None:
     print(f"[llm] HW: {llm_meta.get('llm_hw', '?')}")
     print(f"[inference] n_ctx: {llm_meta.get('n_ctx', '?')}, n_batch: {llm_meta.get('n_batch', '?')}, n_threads: {llm_meta.get('n_threads', '?')}, n_gpu_layers: {llm_meta.get('n_gpu_layers', '?')}, flash_attn: {llm_meta.get('flash_attn', '?')}")
 
-    # Resume: load already-completed (run_id, filename, git_commit, git_branch, provider, model) tuples
+    # Resume: load already-completed tuples from documents repo (cross-HW source of truth)
+    # Falls back to local benchmark dir if documents not available
     _completed: set[tuple] = set()
     _prev_results: list[RunFileResult] = []
-    _all_runs_path = _BENCHMARK_DIR / "results_all_runs.csv"
+    _docs_runs_path = _DOCS_BENCHMARK_DIR / "results_all_runs.csv"
+    _local_runs_path = _BENCHMARK_DIR / "results_all_runs.csv"
+    _all_runs_path = _docs_runs_path if _docs_runs_path.exists() else _local_runs_path
     if _all_runs_path.exists():
         with open(_all_runs_path, encoding="utf-8") as _f:
             _reader = csv.DictReader(_f)
