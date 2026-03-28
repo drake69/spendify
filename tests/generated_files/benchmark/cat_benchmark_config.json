@@ -1,0 +1,19 @@
+{
+  "timestamp": "2026-03-27 13:27:56",
+  "git_commit": "unknown",
+  "git_branch": "unknown",
+  "provider": "llamacpp",
+  "model": "unknown",
+  "temperature": "default",
+  "llm_timeout_s": "120",
+  "runtime_os": "macOS 26.3.1",
+  "runtime_cpu": "Apple M1 Max",
+  "runtime_ram_gb": "64",
+  "runtime_gpu": "Apple M1 Max",
+  "runtime_gpu_cores": "32",
+  "llm_host": "localhost (in-process)",
+  "llm_hw": "same as runtime",
+  "n_runs": 10,
+  "n_files": 9,
+  "benchmark_type": "categorizer"
+}
