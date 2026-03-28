@@ -320,6 +320,9 @@ class LlamaCppBackend(LLMBackend):
             model_path=model_path,
             n_ctx=n_ctx,
             n_gpu_layers=n_gpu_layers,
+            n_batch=1024,       # larger batch → better GPU utilization on Metal
+            n_threads=1,        # with full GPU offload, CPU threads not needed for inference
+            flash_attn=True,    # faster attention on Metal (Apple Silicon)
             verbose=False,
         )
 

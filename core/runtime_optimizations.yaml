@@ -1,0 +1,117 @@
+# Runtime Optimizations — Developer Observations
+# ================================================
+# Questo file traccia le ottimizzazioni inferenza LLM osservate empiricamente
+# su diverse combinazioni HW/runtime. Usato come riferimento per:
+# - auto-tuning parametri per HW dell'utente
+# - documentazione benchmark
+# - troubleshooting performance
+#
+# Struttura: per ogni combinazione (hw, runtime) si documentano i parametri
+# ottimali e le osservazioni di performance.
+
+optimizations:
+
+  # ── Apple Silicon — llama-cpp-python ────────────────────────────────
+  - hw: apple_silicon_m1_max
+    runtime: llama-cpp-python
+    gpu_backend: metal
+    observed_gpu_utilization: "~32% → ~70% (dopo ottimizzazione)"
+    parameters:
+      n_gpu_layers: -1          # -1 = all layers on GPU
+      n_batch: 1024             # larger batch → better GPU saturation
+      n_threads: 1              # con full GPU offload, CPU threads non servono
+      flash_attn: true          # Flash Attention su Metal, più efficiente
+      n_ctx: 4096               # context window
+    notes: |
+      Con n_batch=512 (default) e n_threads=auto, GPU utilization era ~32%.
+      Ollama sullo stesso HW raggiunge ~90% perché usa batch più aggressivi
+      e tiene il modello permanentemente in memoria (daemon).
+      Con n_batch=1024, n_threads=1, flash_attn=true → GPU sale a ~70%.
+      Il gap residuo vs Ollama è dovuto al fatto che llama-cpp-python
+      carica il modello on-demand (non daemon).
+
+  - hw: apple_silicon_m4_16gb
+    runtime: llama-cpp-python
+    gpu_backend: metal
+    observed_gpu_utilization: "TBD — da testare"
+    parameters:
+      n_gpu_layers: -1
+      n_batch: 1024
+      n_threads: 1
+      flash_attn: true
+      n_ctx: 4096
+    notes: |
+      M4 ha bandwidth memoria superiore a M1 Max.
+      Atteso: tok/s più alti, GPU utilization simile.
+      Da verificare con benchmark cross-hardware.
+
+  # ── Apple Silicon — Ollama ──────────────────────────────────────────
+  - hw: apple_silicon_m1_max
+    runtime: ollama
+    gpu_backend: metal
+    observed_gpu_utilization: "~90%"
+    parameters:
+      n_gpu_layers: all         # Ollama default: offload completo
+      n_batch: 512              # Ollama default
+      n_threads: auto           # Ollama auto-detect
+      flash_attn: auto          # Ollama gestisce internamente
+      n_ctx: 2048               # Ollama default (aumentabile via API)
+    notes: |
+      Ollama è un daemon che tiene il modello in memoria.
+      GPU utilization alta perché il modello è sempre pronto.
+      Overhead HTTP ~1-2ms per request (irrilevante vs inference time).
+      n_ctx default è 2048, inferiore al nostro 4096 per llama.cpp.
+
+  # ── Apple Silicon — llama-server (remoto via LAN) ───────────────────
+  - hw: apple_silicon_m4_16gb
+    runtime: llama-server
+    gpu_backend: metal
+    observed_gpu_utilization: "TBD"
+    parameters:
+      n_gpu_layers: 99          # -ngl 99 nella CLI
+      n_batch: 1024
+      n_threads: 1
+      flash_attn: true
+      n_ctx: 4096
+      host: "0.0.0.0"
+      port: 8080
+    notes: |
+      llama-server espone API OpenAI-compatibile su HTTP.
+      Utile per benchmark cross-hardware e setup multi-Mac.
+      Latenza LAN ~1ms, irrilevante vs inference.
+      Da testare: confronto tok/s M1 Max locale vs M4 remoto.
+
+  # ── x86-64 CPU-only ─────────────────────────────────────────────────
+  - hw: x86_64_avx2
+    runtime: llama-cpp-python
+    gpu_backend: none
+    observed_gpu_utilization: "N/A"
+    parameters:
+      n_gpu_layers: 0           # no GPU
+      n_batch: 512              # CPU: batch più piccolo è più efficiente
+      n_threads: auto           # usa tutti i core fisici
+      flash_attn: false         # non disponibile senza GPU
+      n_ctx: 4096
+    notes: |
+      CPU-only: performance ~15-30 tok/s su modelli 1-3B.
+      Per modelli >7B: ~5-10 tok/s, accettabile solo per task brevi.
+      n_threads: meglio = numero core fisici (non logici).
+      flash_attn non supportato senza GPU.
+
+# ── Regole auto-tuning ────────────────────────────────────────────────
+# Logica proposta per auto-detect dei parametri ottimali:
+#
+# 1. Detect HW:
+#    - Apple Silicon → gpu_backend=metal, n_gpu_layers=-1, flash_attn=true
+#    - NVIDIA → gpu_backend=cuda, n_gpu_layers=-1, flash_attn=true
+#    - CPU-only → gpu_backend=none, n_gpu_layers=0, flash_attn=false
+#
+# 2. Detect RAM:
+#    - ≥16GB → n_batch=1024, modelli fino a 12B
+#    - 8-16GB → n_batch=512, modelli fino a 7B
+#    - 4-8GB → n_batch=256, modelli fino a 3B
+#    - <4GB → n_batch=128, solo modelli 1.5B
+#
+# 3. GPU offload:
+#    - Se GPU presente → n_threads=1 (inference su GPU)
+#    - Se CPU-only → n_threads=auto (parallelize su CPU)

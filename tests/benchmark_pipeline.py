@@ -297,9 +297,28 @@ def _collect_llm_metadata(config: ProcessingConfig, backend) -> dict[str, str]:
             meta["llm_hw"] = "same as runtime"
         else:
             meta["llm_hw"] = f"remote ({ollama_url})"
+        # Ollama inference params (defaults — user cannot change via API)
+        meta["n_ctx"] = "2048"  # Ollama default
+        meta["n_batch"] = "512"  # Ollama default
+        meta["n_threads"] = "auto"  # Ollama auto-detects
+        meta["n_gpu_layers"] = "all"  # Ollama offloads all by default on Metal
+        meta["flash_attn"] = "auto"  # Ollama manages internally
     elif "llamacpp" in meta["provider"].lower() or "llama" in meta["provider"].lower():
         meta["llm_host"] = "localhost (in-process)"
         meta["llm_hw"] = "same as runtime"
+        # Capture llama-cpp-python inference parameters
+        if hasattr(backend, "_llm"):
+            llm_obj = backend._llm
+            meta["n_ctx"] = str(getattr(llm_obj, "n_ctx", "?")())
+            meta["n_batch"] = str(getattr(llm_obj, "n_batch", "?"))
+            meta["n_threads"] = str(getattr(llm_obj, "_n_threads", "?"))
+            meta["n_gpu_layers"] = str(getattr(llm_obj, "_n_gpu_layers", "?"))
+            # flash_attn from model params
+            model_params = getattr(llm_obj, "model_params", None)
+            if model_params and hasattr(model_params, "flash_attn"):
+                meta["flash_attn"] = str(model_params.flash_attn)
+            else:
+                meta["flash_attn"] = "?"
     elif "openai" in meta["provider"].lower() or "claude" in meta["provider"].lower():
         meta["llm_host"] = "cloud API"
         meta["llm_hw"] = "cloud"
@@ -862,6 +881,7 @@ def main() -> None:
     print(f"[runtime] GPU: {llm_meta.get('runtime_gpu', '?')} ({llm_meta.get('runtime_gpu_cores', '?')} cores)")
     print(f"[llm] Host: {llm_meta.get('llm_host', '?')}")
     print(f"[llm] HW: {llm_meta.get('llm_hw', '?')}")
+    print(f"[inference] n_ctx: {llm_meta.get('n_ctx', '?')}, n_batch: {llm_meta.get('n_batch', '?')}, n_threads: {llm_meta.get('n_threads', '?')}, n_gpu_layers: {llm_meta.get('n_gpu_layers', '?')}, flash_attn: {llm_meta.get('flash_attn', '?')}")
 
     # Resume: load already-completed (run_id, filename, git_commit, git_branch, provider, model) tuples
     _completed: set[tuple] = set()
