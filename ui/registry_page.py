@@ -170,9 +170,29 @@ def render_registry_page(engine):
     m3.metric("Entrate",      format_amount_display(float(income_t),       _dec, _thou))
     m4.metric("Uscite",       format_amount_display(float(abs(expense_t)), _dec, _thou))
 
+    # ── Sort (U-05: sort on full dataset before pagination) ────────────────
+    _sort_col, _sort_pg = st.columns([2, 3])
+    with _sort_col:
+        _sort_options = {
+            "Data (recente → vecchia)": ("date", True),
+            "Data (vecchia → recente)": ("date", False),
+            "Importo (alto → basso)": ("amount", True),
+            "Importo (basso → alto)": ("amount", False),
+            "Descrizione (A → Z)": ("description", False),
+            "Categoria (A → Z)": ("category", False),
+        }
+        _sort_label = st.selectbox(
+            "Ordina per", list(_sort_options.keys()), index=0, key="ledger_sort"
+        )
+        _sort_field, _sort_desc = _sort_options[_sort_label]
+        txs = sorted(
+            txs,
+            key=lambda tx: getattr(tx, _sort_field, "") or "",
+            reverse=_sort_desc,
+        )
+
     # ── Pagination ────────────────────────────────────────────────────────────
-    _pg1, _pg2 = st.columns([1, 4])
-    with _pg1:
+    with _sort_pg:
         rows_per_page = st.selectbox(
             "Righe/pagina", [15, 25, 50, 100, 200], index=0, key="ledger_page_size"
         )
@@ -180,7 +200,7 @@ def render_registry_page(engine):
     total_rows  = len(txs)
     total_pages = max(1, -(-total_rows // rows_per_page))
 
-    _fp = f"{total_rows}_{sorted(filters.items())}"
+    _fp = f"{total_rows}_{sorted(filters.items())}_{_sort_label}"
     if st.session_state.get("_ledger_fp") != _fp:
         st.session_state["_ledger_fp"] = _fp
         st.session_state["ledger_page"] = 0
@@ -213,7 +233,7 @@ def render_registry_page(engine):
         {
             "_id":           tx.id,
             "_sel":          False,
-            "Data":          format_date_display(tx.date, _date_fmt),
+            "Data":          tx.date,  # U-06: keep as date/datetime for correct sorting
             "Descrizione":   (tx.description or "")[:80],
             **({"Raw": (tx.raw_description or "")[:80]} if show_raw else {}),
             "Entrata":       float(tx.amount) if float(tx.amount) > 0 else None,
@@ -237,7 +257,7 @@ def render_registry_page(engine):
     _col_cfg: dict = {
         "_id":            None,
         "_sel":           st.column_config.CheckboxColumn("📏", width=40),
-        "Data":           st.column_config.TextColumn("Data",         disabled=True, width="small"),
+        "Data":           st.column_config.DateColumn("Data",          format=_date_fmt, width="small"),
         "Descrizione":    st.column_config.TextColumn("Descrizione",  disabled=True),
         "Entrata":        st.column_config.NumberColumn("Entrata",    disabled=True, format="%.2f", width="small"),
         "Uscita":         st.column_config.NumberColumn("Uscita",     disabled=True, format="%.2f", width="small"),

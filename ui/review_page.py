@@ -110,7 +110,7 @@ def render_review_page(engine):
         {
             "id": tx.id,
             "sel": False,
-            "Data": format_date_display(tx.date, _date_fmt),
+            "Data": tx.date,  # U-06: keep as date for correct sorting
             "Descrizione": (tx.description or "")[:100],
             "Entrata": float(tx.amount) if float(tx.amount) > 0 else None,
             "Uscita": abs(float(tx.amount)) if float(tx.amount) < 0 else None,
@@ -141,6 +141,7 @@ def render_review_page(engine):
         hide_index=True,
         column_config={
             "sel": st.column_config.CheckboxColumn("✔", width=40),
+            "Data": st.column_config.DateColumn("Data", format=_date_fmt, width="small"),
             "Entrata": st.column_config.NumberColumn("Entrata", format="%.2f"),
             "Uscita": st.column_config.NumberColumn("Uscita", format="%.2f"),
             "Contesto": st.column_config.SelectboxColumn(
