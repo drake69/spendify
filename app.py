@@ -28,6 +28,18 @@ from support.logging import setup_logging
 logger = setup_logging()
 logger.info("Starting Spendify")
 
+# ── S-01: Prompt integrity check ─────────────────────────────────────────────
+from core.prompt_guard import verify_prompt_integrity
+
+_prompt_errors = verify_prompt_integrity()
+if _prompt_errors:
+    st.error(
+        "**Prompt LLM modificati rispetto alla versione certificata.**\n\n"
+        + "\n".join(f"- {e}" for e in _prompt_errors)
+        + "\n\nVerificare prima di procedere. "
+        "Eseguire: `python tools/compute_prompt_hashes.py`"
+    )
+
 # ── DB bootstrap ──────────────────────────────────────────────────────────────
 DB_URL = os.getenv("SPENDIFY_DB", "sqlite:///ledger.db")
 engine = create_tables(get_engine(DB_URL))

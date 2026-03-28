@@ -262,7 +262,45 @@ I test usano SQLite in-memory (`create_engine("sqlite://")`) — nessun mock sul
 
 ---
 
-## 8. Decisioni di design chiave
+## 8. Prompt Integrity Guard (S-01)
+
+I prompt LLM sono protetti da SHA256 pinning per prevenire prompt injection via PR/commit.
+
+**File protetti:** `prompts/classifier.json`, `categorizer.json`, `description_cleaner.json`, `footer_detector.json`
+
+**Come funziona:**
+- `prompts/prompt_hashes.json` contiene gli hash SHA256 di ogni file prompt
+- All'avvio dell'app, `core/prompt_guard.py` verifica che gli hash corrispondano
+- In CI, `tools/compute_prompt_hashes.py --verify` blocca le PR con prompt modificati senza hash aggiornato
+- Nuovi file `.json` in `prompts/` senza hash → segnalati come "non autorizzati"
+
+**Workflow per modificare un prompt:**
+```bash
+# 1. Modifica il prompt
+vim prompts/categorizer.json
+
+# 2. Rigenera gli hash
+python tools/compute_prompt_hashes.py
+
+# 3. Committa entrambi
+git add prompts/categorizer.json prompts/prompt_hashes.json
+git commit -m "feat: update categorizer prompt + hash"
+```
+
+**Pre-commit hook (opzionale):**
+```bash
+# Copia in .git/hooks/pre-commit e rendi eseguibile
+#!/bin/bash
+python tools/compute_prompt_hashes.py --verify || {
+  echo "Prompt modificati senza aggiornamento hash."
+  echo "Esegui: python tools/compute_prompt_hashes.py"
+  exit 1
+}
+```
+
+---
+
+## 9. Decisioni di design chiave
 
 | Decisione | Motivazione |
 |-----------|-------------|
