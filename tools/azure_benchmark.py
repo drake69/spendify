@@ -35,8 +35,12 @@ import csv
 import os
 import subprocess
 import sys
+import warnings
 from datetime import datetime
 from pathlib import Path
+
+warnings.filterwarnings("ignore", message="urllib3.*charset_normalizer")
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # ── Config ───────────────────────────────────────────────────────────────────
 
@@ -217,7 +221,44 @@ def submit_job(model_id: str, runs: int = 1, compute: str | None = None,
     returned_job = ml_client.jobs.create_or_update(job)
     print(f"  ✅ Job submitted: {returned_job.name}")
     print(f"  Studio URL: {returned_job.studio_url}")
-    return returned_job.name
+    return returned_job.name, ml_client
+
+
+def wait_and_download(job_name: str, ml_client=None, poll_interval: int = 30):
+    """Poll job status until complete, then auto-download results."""
+    import time
+
+    if ml_client is None:
+        from azure.ai.ml import MLClient
+        from azure.identity import DefaultAzureCredential
+        credential = DefaultAzureCredential()
+        ml_client = MLClient(credential, _get_subscription_id(), RESOURCE_GROUP, WORKSPACE)
+
+    terminal_states = {"Completed", "Failed", "Canceled", "CancelRequested"}
+    last_status = ""
+
+    while True:
+        job = ml_client.jobs.get(job_name)
+        status = job.status
+
+        if status != last_status:
+            ts = datetime.now().strftime("%H:%M:%S")
+            print(f"  [{ts}] {job_name}: {status}")
+            last_status = status
+
+        if status in terminal_states:
+            break
+
+        time.sleep(poll_interval)
+
+    if status == "Completed":
+        print(f"  ✅ Job completed — downloading results...")
+        download_results(job_name)
+    else:
+        print(f"  ❌ Job ended with status: {status}")
+        # Try to show error details
+        if hasattr(job, 'error') and job.error:
+            print(f"  Error: {job.error}")
 
 
 def list_jobs():
@@ -339,6 +380,8 @@ def main():
                         help="Job mode: 'docker' (pre-built ACR image) or 'conda' (no Docker needed, default)")
     parser.add_argument("--build", action="store_true", help="Build and push Docker image only")
     parser.add_argument("--skip-build", action="store_true", help="Skip Docker build (use existing image)")
+    parser.add_argument("--no-wait", action="store_true", help="Submit and exit without waiting for completion")
+    parser.add_argument("--poll-interval", type=int, default=30, help="Polling interval in seconds (default: 30)")
     args = parser.parse_args()
 
     if args.list:
@@ -373,16 +416,26 @@ def main():
         from config import get_all_models
         models = get_all_models()
         print(f"\n→ Submitting {len(models)} jobs...")
-        job_names = []
+        jobs = []
         for m in models:
-            name = submit_job(m.id, runs=args.runs, compute=args.compute, mode=args.mode)
-            job_names.append(name)
-        print(f"\n✅ {len(job_names)} jobs submitted")
-        print("Monitor: python tools/azure_benchmark.py --list")
-        print("Download: python tools/azure_benchmark.py --download --job-name <name>")
+            name, client = submit_job(m.id, runs=args.runs, compute=args.compute, mode=args.mode)
+            jobs.append((name, client))
+        print(f"\n✅ {len(jobs)} jobs submitted")
+
+        if not args.no_wait:
+            print(f"\n→ Polling all jobs (interval: {args.poll_interval}s)...\n")
+            for name, client in jobs:
+                wait_and_download(name, ml_client=client, poll_interval=args.poll_interval)
+        else:
+            print("Monitor: python tools/azure_benchmark.py --list")
+            print("Download: python tools/azure_benchmark.py --download --job-name <name>")
 
     elif args.model:
-        submit_job(args.model, runs=args.runs, compute=args.compute, mode=args.mode)
+        name, client = submit_job(args.model, runs=args.runs, compute=args.compute, mode=args.mode)
+
+        if not args.no_wait:
+            print(f"\n→ Polling (interval: {args.poll_interval}s)...\n")
+            wait_and_download(name, ml_client=client, poll_interval=args.poll_interval)
 
     else:
         print("ERROR: Specify --model <id>, --all-models, --build, --download, or --list")
