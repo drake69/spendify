@@ -185,6 +185,7 @@ def upsert_document_schema(session: Session, schema: DocumentSchema) -> Document
     row.invert_sign = schema.invert_sign
     row.internal_transfer_patterns = json.dumps(schema.internal_transfer_patterns)
     row.footer_patterns = json.dumps(getattr(schema, 'footer_patterns', []) or [])
+    row.has_borders = getattr(schema, 'has_borders', False)
     row.account_label = schema.account_label
     row.encoding = schema.encoding
     row.sheet_name = schema.sheet_name
@@ -218,6 +219,7 @@ def _row_to_schema(row: DocumentSchemaModel) -> DocumentSchema:
         invert_sign=bool(row.invert_sign) if row.invert_sign is not None else False,
         internal_transfer_patterns=json.loads(row.internal_transfer_patterns or "[]"),
         footer_patterns=json.loads(getattr(row, 'footer_patterns', None) or "[]"),
+        has_borders=bool(getattr(row, 'has_borders', False)),
         account_label=row.account_label or "",
         encoding=row.encoding or "utf-8",
         sheet_name=row.sheet_name,

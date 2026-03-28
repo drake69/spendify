@@ -30,6 +30,7 @@ class DocumentSchema(BaseModel):
     invert_sign: bool = False  # True when card file stores expenses as positive (negate all amounts)
     internal_transfer_patterns: list[str] = Field(default_factory=list)
     footer_patterns: list[str] = Field(default_factory=list)
+    has_borders: bool = False  # True if XLSX source uses bordered table (detected on first load)
     encoding: str = "utf-8"
     sheet_name: Optional[str] = None
     skip_rows: int = 0
