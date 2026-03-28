@@ -58,6 +58,10 @@ class PreprocessInfo:
     Used for stable schema lookup (cols_key) regardless of file size."""
     header_certain: bool = False
     """Whether the pre-load header detection was certain (used for confidence scoring)."""
+    border_detected: bool = False
+    """Whether the table bounds were determined by Excel border detection."""
+    border_region: Optional[tuple[int, int, int, int]] = None
+    """(first_row, last_row, first_col, last_col) 0-based. None if no borders."""
 
 
 # ── Encoding / format detection ───────────────────────────────────────────────
@@ -140,13 +144,205 @@ def detect_header_row(lines: list[str]) -> tuple[int, bool]:
     return best_idx, certain
 
 
-def detect_header_row_excel(raw_bytes: bytes) -> tuple[int, bool]:
-    """Detect header row in an Excel file using density analysis.
+def _cell_has_border(cell) -> bool:
+    """Check if a cell has any non-trivial border on any side."""
+    border = getattr(cell, "border", None)
+    if border is None:
+        return False
+    for side_name in ("left", "right", "top", "bottom"):
+        side = getattr(border, side_name, None)
+        if side is not None and getattr(side, "style", None) not in (None, "none"):
+            return True
+    return False
 
-    Same density-based algorithm as detect_header_row but operates on
-    openpyxl worksheet rows.  Returns (skip_rows, certain).
+
+def detect_bordered_region(
+    raw_bytes: bytes,
+    filename: str = "",
+    max_scan_rows: int = 60,
+) -> Optional[tuple[int, int, int, int]]:
+    """Detect a bordered table rectangle in an Excel file.
+
+    Scans the first *max_scan_rows* rows for a contiguous rectangular region
+    where ALL cells have at least one border (thin/medium/thick on any side).
+
+    Returns ``(first_row, last_row, first_col, last_col)`` as **0-based**
+    indices, or ``None`` if no qualifying bordered region is found.
+
+    Only works on ``.xlsx`` files — ``.xls`` always returns ``None``.
+    """
+    # Only .xlsx — openpyxl doesn't expose borders for .xls
+    if filename and not filename.lower().endswith(".xlsx"):
+        return None
+
+    import io as _io
+    try:
+        import openpyxl
+        wb = openpyxl.load_workbook(
+            _io.BytesIO(raw_bytes), read_only=False, data_only=True,
+        )
+        sheet_name = detect_best_sheet(wb)
+        ws = wb[sheet_name]
+
+        # ── Build border grid ──────────────────────────────────────
+        max_col = ws.max_column or 0
+        max_row = min(ws.max_row or 0, max_scan_rows)
+        if max_row < 3 or max_col < 3:
+            wb.close()
+            return None
+
+        # has_border[r][c] — 0-based
+        grid: list[list[bool]] = []
+        for r_idx in range(1, max_row + 1):
+            row_borders: list[bool] = []
+            for c_idx in range(1, max_col + 1):
+                cell = ws.cell(row=r_idx, column=c_idx)
+                row_borders.append(_cell_has_border(cell))
+            grid.append(row_borders)
+
+        wb.close()
+
+        # ── Find largest bordered rectangle (sweep top-down) ──────
+        # For each row, compute the longest contiguous run of bordered cells.
+        def _bordered_run(row_bools: list[bool]) -> Optional[tuple[int, int]]:
+            """Return (start, end) of the longest contiguous True run, or None."""
+            best_start = best_end = -1
+            best_len = 0
+            start = None
+            for i, v in enumerate(row_bools):
+                if v:
+                    if start is None:
+                        start = i
+                else:
+                    if start is not None:
+                        run_len = i - start
+                        if run_len > best_len:
+                            best_start, best_end, best_len = start, i - 1, run_len
+                        start = None
+            # Trailing run
+            if start is not None:
+                run_len = len(row_bools) - start
+                if run_len > best_len:
+                    best_start, best_end = start, len(row_bools) - 1
+            if best_start < 0:
+                return None
+            return best_start, best_end
+
+        # Find first row with a bordered run >= 3 columns
+        region_r1: Optional[int] = None
+        region_c1: int = 0
+        region_c2: int = 0
+
+        for r, row_bools in enumerate(grid):
+            run = _bordered_run(row_bools)
+            if run and (run[1] - run[0] + 1) >= 3:
+                region_r1 = r
+                region_c1, region_c2 = run
+                break
+
+        if region_r1 is None:
+            return None
+
+        # Extend downward: intersect column range
+        region_r2 = region_r1
+        for r in range(region_r1 + 1, len(grid)):
+            run = _bordered_run(grid[r])
+            if run is None:
+                break
+            # Intersect with current column range
+            new_c1 = max(region_c1, run[0])
+            new_c2 = min(region_c2, run[1])
+            if new_c2 - new_c1 + 1 < 3:
+                break  # intersection too narrow
+            region_c1, region_c2 = new_c1, new_c2
+            region_r2 = r
+
+        # Validate: minimum 3 rows × 3 columns
+        if (region_r2 - region_r1 + 1) < 3:
+            return None
+
+        logger.info(
+            "── detect_bordered_region: found region rows=%d..%d cols=%d..%d (%d×%d) ──",
+            region_r1, region_r2, region_c1, region_c2,
+            region_r2 - region_r1 + 1, region_c2 - region_c1 + 1,
+        )
+        return (region_r1, region_r2, region_c1, region_c2)
+
+    except Exception as exc:
+        logger.warning("detect_bordered_region failed: %s", exc)
+        return None
+
+
+def detect_header_row_excel(raw_bytes: bytes, filename: str = "") -> tuple[int, bool, Optional[tuple[int, int, int, int]]]:
+    """Detect header row in an Excel file.
+
+    Strategy:
+    1. **Border detection first** (deterministic): if a bordered region is found,
+       the first row with max density inside the region = header. certain=True.
+    2. **Density fallback**: scan first 50 rows for highest density row.
+
+    Returns ``(skip_rows, certain, border_region)``.
+    ``border_region`` is ``(r1, r2, c1, c2)`` 0-based, or ``None``.
     """
     import io as _io
+
+    # ── Phase A: Try border detection ──────────────────────────────
+    border_region = detect_bordered_region(raw_bytes, filename)
+    if border_region is not None:
+        r1, r2, c1, c2 = border_region
+        logger.info(
+            "── detect_header_row_excel: bordered region rows=%d..%d cols=%d..%d → scanning for header ──",
+            r1, r2, c1, c2,
+        )
+        try:
+            import openpyxl
+            wb = openpyxl.load_workbook(_io.BytesIO(raw_bytes), read_only=True, data_only=True)
+            sheet_name = detect_best_sheet(wb)
+            ws = wb[sheet_name]
+
+            best_idx = r1
+            best_density = 0.0
+            best_text_count = 0
+
+            for i, row in enumerate(ws.iter_rows(values_only=True, max_row=r2 + 1)):
+                if i < r1:
+                    continue
+                if i > r2:
+                    break
+                # Restrict to bordered columns
+                all_fields = [str(v).strip() if v is not None else "" for v in row]
+                fields = all_fields[c1:c2 + 1]
+                density = _row_density(fields)
+                text_count = _row_non_numeric_count(fields)
+
+                logger.info(
+                    "  [border] row %2d | density=%.2f | text=%d | values=%s",
+                    i, density, text_count, [f[:30] for f in fields if f][:6],
+                )
+
+                # Cross-check: first row with 100% density = header
+                if density >= 1.0 and text_count >= 2:
+                    best_idx = i
+                    best_density = density
+                    best_text_count = text_count
+                    break  # 100% density = certain header, stop
+
+                if (density > best_density) or (density == best_density and text_count > best_text_count):
+                    best_idx = i
+                    best_density = density
+                    best_text_count = text_count
+
+            wb.close()
+            logger.info(
+                "── detect_header_row_excel (border): row=%d density=%.2f text=%d certain=True ──",
+                best_idx, best_density, best_text_count,
+            )
+            return best_idx, True, border_region
+
+        except Exception as exc:
+            logger.warning("detect_header_row_excel border scan failed: %s — falling back to density", exc)
+
+    # ── Phase B: Density-only fallback ─────────────────────────────
     try:
         import openpyxl
         wb = openpyxl.load_workbook(_io.BytesIO(raw_bytes), read_only=True, data_only=True)
@@ -157,7 +353,7 @@ def detect_header_row_excel(raw_bytes: bytes) -> tuple[int, bool]:
         best_density = 0.0
         best_text_count = 0
 
-        logger.info("── detect_header_row_excel: sheet='%s' ──", sheet_name)
+        logger.info("── detect_header_row_excel (density): sheet='%s' ──", sheet_name)
         for i, row in enumerate(ws.iter_rows(values_only=True, max_row=50)):
             fields = [str(v).strip() if v is not None else "" for v in row]
             density = _row_density(fields)
@@ -181,30 +377,35 @@ def detect_header_row_excel(raw_bytes: bytes) -> tuple[int, bool]:
             "── detect_header_row_excel result: row=%d density=%.2f text_count=%d certain=%s ──",
             best_idx, best_density, best_text_count, certain,
         )
-        return best_idx, certain
+        return best_idx, certain, None
     except Exception as exc:
         logger.warning("detect_header_row_excel failed: %s", exc)
-    return 0, False
+    return 0, False, None
 
 
-def detect_skip_rows(raw_bytes: bytes, filename: str) -> tuple[int, bool]:
+def detect_skip_rows(raw_bytes: bytes, filename: str) -> tuple[int, bool, Optional[tuple[int, int, int, int]]]:
     """Unified pre-load header detection for CSV and Excel.
 
-    Returns (skip_rows, certain):
+    Returns ``(skip_rows, certain, border_region)``:
       certain=True  → detection confident, use skip_rows silently.
       certain=False → could not determine; surface a number_input to the user.
+      border_region → (r1, r2, c1, c2) 0-based if Excel borders found, else None.
     """
     logger.info("══ detect_skip_rows [%s] (%d bytes, type=%s) ══",
                 filename, len(raw_bytes),
                 "excel" if filename.lower().endswith((".xlsx", ".xls")) else "csv")
+    border_region: Optional[tuple[int, int, int, int]] = None
     if filename.lower().endswith((".xlsx", ".xls")):
-        skip, certain = detect_header_row_excel(raw_bytes)
+        skip, certain, border_region = detect_header_row_excel(raw_bytes, filename)
     else:
         encoding = detect_encoding(raw_bytes)
         text = raw_bytes.decode(encoding, errors="replace")
         skip, certain = detect_header_row(text.splitlines())
-    logger.info("══ detect_skip_rows result: skip_rows=%d, certain=%s ══", skip, certain)
-    return skip, certain
+    logger.info(
+        "══ detect_skip_rows result: skip_rows=%d, certain=%s, border=%s ══",
+        skip, certain, border_region,
+    )
+    return skip, certain, border_region
 
 
 def detect_best_sheet(workbook) -> str:

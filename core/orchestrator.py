@@ -213,11 +213,12 @@ def load_raw_dataframe(
     # detect_skip_rows combines CSV and Excel detection into a single call.
     # When skip_rows_override is provided the user already told us how many
     # rows to skip, so we trust that unconditionally.
+    border_region = None
     if skip_rows_override is not None:
         skip_rows = skip_rows_override
         skip_certain = True  # treat manual override as certain
     else:
-        skip_rows, skip_certain = detect_skip_rows(raw_bytes, filename)
+        skip_rows, skip_certain, border_region = detect_skip_rows(raw_bytes, filename)
 
     if name_lower.endswith((".xlsx", ".xls")):
         try:
@@ -228,10 +229,23 @@ def load_raw_dataframe(
         except Exception:
             sheet_name = 0  # fallback to first sheet
 
+        # If border detection found a bounded region, limit rows loaded
+        read_kwargs: dict = {
+            "sheet_name": sheet_name,
+            "skiprows": skip_rows if skip_rows > 0 else None,
+        }
+        if border_region is not None:
+            r1, r2, _c1, _c2 = border_region
+            # nrows = data rows count (region height minus the header row itself)
+            read_kwargs["nrows"] = r2 - skip_rows  # skip_rows is the header row index
+            logger.info(
+                "load_raw_dataframe: border region → nrows=%d (rows %d..%d)",
+                read_kwargs["nrows"], skip_rows, r2,
+            )
+
         df = pd.read_excel(
             io.BytesIO(raw_bytes),
-            sheet_name=sheet_name,
-            skiprows=skip_rows if skip_rows > 0 else None,
+            **read_kwargs,
         )
 
     else:
@@ -285,6 +299,8 @@ def load_raw_dataframe(
         dropped_columns=dropped_cols,
         columns_before_drop=cols_before_drop,
         header_certain=skip_certain,
+        border_detected=border_region is not None,
+        border_region=border_region,
     )
     return df, encoding, info
 

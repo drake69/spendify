@@ -122,7 +122,8 @@ class ImportService:
 
     def detect_skip_rows(self, raw_bytes: bytes, filename: str) -> tuple[int, bool]:
         """Return (detected_skip_rows, is_certain) for a raw file."""
-        return _detect_skip_rows(raw_bytes, filename)
+        skip, certain, _border = _detect_skip_rows(raw_bytes, filename)
+        return skip, certain
 
     def get_raw_head(self, raw_bytes: bytes, filename: str, n: int = 10) -> pd.DataFrame:
         """Return the first *n* raw rows of a file without any pre-processing."""

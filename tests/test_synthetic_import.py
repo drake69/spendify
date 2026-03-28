@@ -121,7 +121,7 @@ def _evaluate_file(entry: ManifestEntry) -> FileResult:
     raw_bytes = filepath.read_bytes()
 
     # -- 1. Header detection ---------------------------------------------------
-    detected_skip, _certain = detect_skip_rows(raw_bytes, entry.filename)
+    detected_skip, _certain, _border = detect_skip_rows(raw_bytes, entry.filename)
     header_match = detected_skip == entry.n_header_rows
 
     # -- 2. DataFrame loading --------------------------------------------------

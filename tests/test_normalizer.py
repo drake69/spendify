@@ -379,7 +379,7 @@ class TestDetectSkipRows:
         """Standard CSV → (0, True)."""
         content = "Data,Importo,Descrizione\n01/01/2024,100.00,Pane\n"
         raw = content.encode("utf-8")
-        n, certain = detect_skip_rows(raw, "estratto.csv")
+        n, certain, _ = detect_skip_rows(raw, "estratto.csv")
         assert n == 0
         assert certain is True
 
@@ -392,7 +392,7 @@ class TestDetectSkipRows:
             "01/01/2024,100.00,Pane\n"
         )
         raw = content.encode("utf-8")
-        n, certain = detect_skip_rows(raw, "estratto.csv")
+        n, certain, _ = detect_skip_rows(raw, "estratto.csv")
         assert n == 2
         assert certain is True
 
@@ -400,7 +400,7 @@ class TestDetectSkipRows:
         """CSV with no text header → (0, False)."""
         content = "1,2,3\n4,5,6\n"
         raw = content.encode("utf-8")
-        n, certain = detect_skip_rows(raw, "data.csv")
+        n, certain, _ = detect_skip_rows(raw, "data.csv")
         assert n == 0
         assert certain is False
 
@@ -496,7 +496,7 @@ class TestDetectHeaderRowExcel:
             ["Data", "Importo", "Descrizione"],
             ["01/01/2024", 100.0, "Supermercato"],
         ])
-        n, certain = detect_header_row_excel(raw)
+        n, certain, _ = detect_header_row_excel(raw)
         assert n == 0
         assert certain is True
 
@@ -507,7 +507,7 @@ class TestDetectHeaderRowExcel:
             ["Data", "Importo", "Descrizione"],
             ["01/01/2024", 100.0, "Pagamento"],
         ])
-        n, certain = detect_header_row_excel(raw)
+        n, certain, _ = detect_header_row_excel(raw)
         assert n == 2
         assert certain is True
 
@@ -516,12 +516,12 @@ class TestDetectHeaderRowExcel:
             [1, 2, 3],
             [4, 5, 6],
         ])
-        n, certain = detect_header_row_excel(raw)
+        n, certain, _ = detect_header_row_excel(raw)
         assert n == 0
         assert certain is False
 
     def test_invalid_bytes_fallback(self):
-        n, certain = detect_header_row_excel(b"not an xlsx file")
+        n, certain, _ = detect_header_row_excel(b"not an xlsx file")
         assert n == 0
         assert certain is False
 
@@ -545,7 +545,7 @@ class TestDetectSkipRowsExcel:
             ["Data", "Importo", "Descrizione"],
             ["01/01/2024", 100.0, "Test"],
         ])
-        n, certain = detect_skip_rows(raw, "estratto.xlsx")
+        n, certain, _ = detect_skip_rows(raw, "estratto.xlsx")
         assert n == 0
         assert certain is True
 
@@ -553,7 +553,7 @@ class TestDetectSkipRowsExcel:
         # .xls extension should also use the Excel path (will likely fail parse
         # since we generate .xlsx, but should return (0, False) gracefully)
         raw = self._make_xlsx([["Data", "Importo"], ["01/01/2024", 100.0]])
-        n, certain = detect_skip_rows(raw, "file.xls")
+        n, certain, _ = detect_skip_rows(raw, "file.xls")
         # may or may not parse correctly, but must return a valid tuple
         assert isinstance(n, int)
         assert isinstance(certain, bool)
