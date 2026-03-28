@@ -22,6 +22,7 @@ from typing import Literal
 try:
     import openpyxl
     from openpyxl.utils import get_column_letter
+    from openpyxl.styles import Border, Side, Font, PatternFill
 
     HAS_OPENPYXL = True
 except ImportError:
@@ -1034,8 +1035,15 @@ def write_xlsx(
     preheader: list[list[str]],
     transactions: list[Transaction],
     footer: list[list[str]],
+    has_borders: bool = False,
 ) -> None:
-    """Write an XLSX file with preheader, header, data, and footer."""
+    """Write an XLSX file with preheader, header, data, and footer.
+
+    If has_borders=True, the table region (header + data rows) is enclosed
+    in a bordered rectangle mimicking real Italian bank XLSX exports.
+    Preheader and footer remain outside the border, testing that
+    detect_bordered_region() correctly identifies the table bounds.
+    """
     if not HAS_OPENPYXL:
         return
 
@@ -1043,35 +1051,55 @@ def write_xlsx(
     ws = wb.active
     ws.title = "Movimenti"
 
-    row_num = 1
+    # Border styles for bordered files (thin = most common in Italian bank exports)
+    if has_borders:
+        _thin = Side(style="thin")
+        _border_all = Border(left=_thin, right=_thin, top=_thin, bottom=_thin)
+        _header_fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
+    else:
+        _border_all = None
+        _header_fill = None
 
-    # Preheader
+    row_num = 1
+    n_cols = len(schema.column_names)
+
+    # Preheader (always outside border)
     for row in preheader:
         for col_idx, val in enumerate(row, 1):
             ws.cell(row=row_num, column=col_idx, value=val)
         row_num += 1
 
+    # Track table region for border application
+    table_start_row = row_num
+
     # Column header
     for col_idx, name in enumerate(schema.column_names, 1):
         cell = ws.cell(row=row_num, column=col_idx, value=name)
-        cell.font = openpyxl.styles.Font(bold=True)
+        cell.font = Font(bold=True)
+        if has_borders:
+            cell.border = _border_all
+            cell.fill = _header_fill
     row_num += 1
 
     # Data rows
     for txn in transactions:
         values = _txn_to_row(txn, schema, is_csv=False)
         for col_idx, val in enumerate(values, 1):
-            ws.cell(row=row_num, column=col_idx, value=val)
+            cell = ws.cell(row=row_num, column=col_idx, value=val)
+            if has_borders:
+                cell.border = _border_all
         row_num += 1
 
-    # Footer
+    table_end_row = row_num - 1  # last data row
+
+    # Footer (always outside border)
     for row in footer:
         for col_idx, val in enumerate(row, 1):
             ws.cell(row=row_num, column=col_idx, value=val)
         row_num += 1
 
     # Auto-width columns
-    for col_idx in range(1, len(schema.column_names) + 1):
+    for col_idx in range(1, n_cols + 1):
         letter = get_column_letter(col_idx)
         ws.column_dimensions[letter].width = 25
 
@@ -1091,6 +1119,7 @@ class FilePlan:
     n_footer_rows: int
     schema_index: int  # for unique column combinations
     size_label: str  # S, M, L, V (variant)
+    has_borders: bool = False  # True → add cell borders to XLSX table region
 
 
 def _build_file_plans() -> list[FilePlan]:
@@ -1123,6 +1152,9 @@ def _build_file_plans() -> list[FilePlan]:
             n_header = random.choice([0, 0, 3, 5, 7, 10, 12])
             n_footer = random.choice([0, 0, 0, 2, 3, 4])
 
+            # ~50% of XLSX files get borders (mimics real Italian bank exports)
+            borders = fmt == "xlsx" and schema_idx % 2 == 1
+
             fname = f"{inst.id}_{size_label}_{schema_idx:03d}.{fmt}"
             plans.append(FilePlan(
                 filename=fname,
@@ -1134,67 +1166,69 @@ def _build_file_plans() -> list[FilePlan]:
                 n_footer_rows=n_footer,
                 schema_index=schema_idx,
                 size_label=size_label,
+                has_borders=borders,
             ))
             schema_idx += 1
 
     # Add ~23 variant files for more coverage
+    # "borders" key: True = bordered table (only XLSX), tests border detection
     variant_configs: list[dict] = [
         # Different formats for CC-1
         {"account_id": "CC-1", "fmt": "xlsx", "sep": "", "n_data": 80,
-         "n_header": 15, "n_footer": 5, "label": "V"},
+         "n_header": 15, "n_footer": 5, "label": "V", "borders": True},
         {"account_id": "CC-1", "fmt": "csv", "sep": ",", "n_data": 45,
-         "n_header": 0, "n_footer": 0, "label": "V"},
+         "n_header": 0, "n_footer": 0, "label": "V", "borders": False},
         {"account_id": "CC-1", "fmt": "csv", "sep": ";", "n_data": 100,
-         "n_header": 8, "n_footer": 3, "label": "V"},
+         "n_header": 8, "n_footer": 3, "label": "V", "borders": False},
         # CC-2 variants
         {"account_id": "CC-2", "fmt": "xlsx", "sep": "", "n_data": 60,
-         "n_header": 4, "n_footer": 2, "label": "V"},
+         "n_header": 4, "n_footer": 2, "label": "V", "borders": True},
         {"account_id": "CC-2", "fmt": "csv", "sep": ",", "n_data": 30,
-         "n_header": 0, "n_footer": 0, "label": "V"},
+         "n_header": 0, "n_footer": 0, "label": "V", "borders": False},
         # CC-3 variants
         {"account_id": "CC-3", "fmt": "csv", "sep": ";", "n_data": 50,
-         "n_header": 6, "n_footer": 1, "label": "V"},
+         "n_header": 6, "n_footer": 1, "label": "V", "borders": False},
         {"account_id": "CC-3", "fmt": "xlsx", "sep": "", "n_data": 90,
-         "n_header": 10, "n_footer": 4, "label": "V"},
+         "n_header": 10, "n_footer": 4, "label": "V", "borders": True},
         # CRED-1 variants
         {"account_id": "CRED-1", "fmt": "csv", "sep": ";", "n_data": 70,
-         "n_header": 3, "n_footer": 2, "label": "V"},
+         "n_header": 3, "n_footer": 2, "label": "V", "borders": False},
         {"account_id": "CRED-1", "fmt": "xlsx", "sep": "", "n_data": 40,
-         "n_header": 0, "n_footer": 0, "label": "V"},
+         "n_header": 0, "n_footer": 0, "label": "V", "borders": False},
         # CRED-2 variants
         {"account_id": "CRED-2", "fmt": "xlsx", "sep": "", "n_data": 55,
-         "n_header": 5, "n_footer": 3, "label": "V"},
+         "n_header": 5, "n_footer": 3, "label": "V", "borders": True},
         {"account_id": "CRED-2", "fmt": "csv", "sep": ",", "n_data": 120,
-         "n_header": 12, "n_footer": 4, "label": "V"},
+         "n_header": 12, "n_footer": 4, "label": "V", "borders": False},
         # RIC-1 (Sofia PostePay) variants
         {"account_id": "RIC-1", "fmt": "csv", "sep": ";", "n_data": 35,
-         "n_header": 2, "n_footer": 1, "label": "V"},
+         "n_header": 2, "n_footer": 1, "label": "V", "borders": False},
         {"account_id": "RIC-1", "fmt": "xlsx", "sep": "", "n_data": 85,
-         "n_header": 7, "n_footer": 2, "label": "V"},
+         "n_header": 7, "n_footer": 2, "label": "V", "borders": True},
         # RIC-2 (Marco Hype) variants
         {"account_id": "RIC-2", "fmt": "csv", "sep": ",", "n_data": 45,
-         "n_header": 0, "n_footer": 0, "label": "V"},
+         "n_header": 0, "n_footer": 0, "label": "V", "borders": False},
         {"account_id": "RIC-2", "fmt": "xlsx", "sep": "", "n_data": 65,
-         "n_header": 9, "n_footer": 3, "label": "V"},
+         "n_header": 9, "n_footer": 3, "label": "V", "borders": True},
         # RIC-3 (Laura Revolut) variants
         {"account_id": "RIC-3", "fmt": "xlsx", "sep": "", "n_data": 50,
-         "n_header": 0, "n_footer": 0, "label": "V"},
+         "n_header": 0, "n_footer": 0, "label": "V", "borders": False},
         {"account_id": "RIC-3", "fmt": "csv", "sep": ";", "n_data": 110,
-         "n_header": 11, "n_footer": 4, "label": "V"},
+         "n_header": 11, "n_footer": 4, "label": "V", "borders": False},
         # RISP-1 variants
         {"account_id": "RISP-1", "fmt": "csv", "sep": ",", "n_data": 40,
-         "n_header": 5, "n_footer": 2, "label": "V"},
+         "n_header": 5, "n_footer": 2, "label": "V", "borders": False},
         {"account_id": "RISP-1", "fmt": "xlsx", "sep": "", "n_data": 75,
-         "n_header": 13, "n_footer": 5, "label": "V"},
+         "n_header": 13, "n_footer": 5, "label": "V", "borders": True},
         # Extra edge cases: minimal / maximal headers
         {"account_id": "CC-1", "fmt": "csv", "sep": ";", "n_data": 30,
-         "n_header": 1, "n_footer": 0, "label": "V"},
+         "n_header": 1, "n_footer": 0, "label": "V", "borders": False},
         {"account_id": "CRED-1", "fmt": "csv", "sep": ",", "n_data": 30,
-         "n_header": 14, "n_footer": 5, "label": "V"},
+         "n_header": 14, "n_footer": 5, "label": "V", "borders": False},
         {"account_id": "CC-2", "fmt": "xlsx", "sep": "", "n_data": 30,
-         "n_header": 0, "n_footer": 5, "label": "V"},
+         "n_header": 0, "n_footer": 5, "label": "V", "borders": True},
         {"account_id": "CC-3", "fmt": "csv", "sep": ";", "n_data": 150,
-         "n_header": 0, "n_footer": 0, "label": "V"},
+         "n_header": 0, "n_footer": 0, "label": "V", "borders": False},
     ]
 
     for vc in variant_configs:
@@ -1209,6 +1243,7 @@ def _build_file_plans() -> list[FilePlan]:
             n_footer_rows=vc["n_footer"],
             schema_index=schema_idx,
             size_label=vc["label"],
+            has_borders=vc.get("borders", False),
         ))
         schema_idx += 1
 
@@ -1237,6 +1272,7 @@ class ManifestRow:
     n_internal_transfers: int = 0
     n_income_rows: int = 0
     n_expense_rows: int = 0
+    has_borders: str = "false"  # "true" if XLSX was generated with bordered table
 
 
 def write_manifest(rows: list[ManifestRow], path: Path) -> None:
@@ -1248,6 +1284,7 @@ def write_manifest(rows: list[ManifestRow], path: Path) -> None:
             "n_footer_rows", "amount_format", "has_debit_credit_split",
             "column_names", "total_income", "total_expense",
             "n_internal_transfers", "n_income_rows", "n_expense_rows",
+            "has_borders",
         ])
         for r in rows:
             writer.writerow([
@@ -1256,7 +1293,7 @@ def write_manifest(rows: list[ManifestRow], path: Path) -> None:
                 r.n_footer_rows, r.amount_format, r.has_debit_credit_split,
                 r.column_names, f"{r.total_income:.2f}",
                 f"{r.total_expense:.2f}", r.n_internal_transfers,
-                r.n_income_rows, r.n_expense_rows,
+                r.n_income_rows, r.n_expense_rows, r.has_borders,
             ])
 
 
@@ -1359,7 +1396,8 @@ def main() -> None:
                       separator=plan.separator)
             n_csv += 1
         else:
-            write_xlsx(filepath, schema, preheader, txns, footer)
+            write_xlsx(filepath, schema, preheader, txns, footer,
+                       has_borders=plan.has_borders)
             n_xlsx += 1
 
         # Write per-file ground truth and collect summary stats
@@ -1389,6 +1427,7 @@ def main() -> None:
             n_internal_transfers=gt_summary["n_internal_transfers"],
             n_income_rows=gt_summary["n_income_rows"],
             n_expense_rows=gt_summary["n_expense_rows"],
+            has_borders="true" if plan.has_borders else "false",
         ))
 
     # Write manifest
@@ -1436,8 +1475,10 @@ def main() -> None:
         print(f"    {fmt_name:<25} {cnt:>3} files")
 
     print()
+    n_bordered = sum(1 for p in plans if p.has_borders)
     print(f"  Header rows range : {min(p.n_header_rows for p in plans)}-{max(p.n_header_rows for p in plans)}")
     print(f"  Footer rows range : {min(p.n_footer_rows for p in plans)}-{max(p.n_footer_rows for p in plans)}")
+    print(f"  XLSX with borders : {n_bordered} / {n_xlsx}")
     print("=" * 60)
 
 
