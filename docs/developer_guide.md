@@ -90,6 +90,37 @@ SPENDIFY_DB=sqlite:///ledger.db   # percorso DB SQLite
 
 La configurazione LLM (backend, modello, API key) vive nel database e si gestisce dall'UI → Impostazioni.
 
+### System Settings (tuning per sviluppatori)
+
+Parametri interni di tuning **non esposti nell'UI**. Solo per sviluppatori e power user.
+
+**File:** `config/system_settings.yaml` (default nel repo) + `~/.spendify/system_settings.yaml` (override locale)
+
+```yaml
+# Esempio override locale (~/.spendify/system_settings.yaml):
+history:
+  auto_threshold: 0.85      # abbassa la soglia auto-assign
+history_context:
+  top_n: 100                # più associazioni nel prompt LLM
+```
+
+**Come funziona:**
+- Il loader (`config/__init__.py`) legge i default dal repo, poi fa deep merge con il file locale
+- Le chiavi non specificate nel file locale mantengono il valore di default
+- Variabile d'ambiente `SPENDIFY_SYSTEM_SETTINGS` per path custom
+- **Non serve riavviare** — i valori sono caricati all'import del modulo
+
+**Sezioni disponibili:**
+
+| Sezione | Parametri chiave | Default |
+|---------|-----------------|---------|
+| `history` | `min_validated`, `auto_threshold`, `suggest_threshold` | 5, 0.90, 0.50 |
+| `history_context` | `min_validated`, `min_confidence`, `top_n`, `max_chars` | 3, 0.50, 50, 2000 |
+| `classifier` | `confidence_threshold`, `max_transaction_amount` | 0.80, 1000000 |
+| `border_detection` | `max_scan_rows`, `min_region_cols`, `min_region_rows` | 60, 3, 3 |
+| `categorizer` | `batch_size`, `llm_timeout_s` | 20, 120 |
+| `footer` | `max_tail_rows`, `phase2_enabled` | 10, true |
+
 ---
 
 ## 3. Struttura del progetto
@@ -97,6 +128,9 @@ La configurazione LLM (backend, modello, API key) vive nel database e si gestisc
 ```
 spendify/
 ├── app.py                  # entry point Streamlit
+├── config/                 # system settings (YAML, non UI)
+│   ├── __init__.py         # loader con deep merge
+│   └── system_settings.yaml # default di tuning
 ├── ui/                     # pagine Streamlit (solo import da services.*)
 ├── services/               # service layer — facade tra UI e core/db
 │   ├── import_service.py

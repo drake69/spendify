@@ -90,6 +90,23 @@ SPENDIFY_DB=sqlite:///ledger.db   # SQLite DB path
 
 LLM configuration (backend, model, API key) lives in the database and is managed from the UI → Settings page.
 
+### System Settings (developer tuning)
+
+Internal tuning parameters **not exposed in the UI**. For developers and power users only.
+
+**File:** `config/system_settings.yaml` (repo defaults) + `~/.spendify/system_settings.yaml` (local overrides)
+
+The loader (`config/__init__.py`) reads repo defaults, then deep-merges with the local file. Unspecified keys keep their default. Set `SPENDIFY_SYSTEM_SETTINGS` env var for a custom path.
+
+| Section | Key parameters | Defaults |
+|---------|---------------|----------|
+| `history` | `min_validated`, `auto_threshold`, `suggest_threshold` | 5, 0.90, 0.50 |
+| `history_context` | `min_validated`, `min_confidence`, `top_n`, `max_chars` | 3, 0.50, 50, 2000 |
+| `classifier` | `confidence_threshold`, `max_transaction_amount` | 0.80, 1000000 |
+| `border_detection` | `max_scan_rows`, `min_region_cols`, `min_region_rows` | 60, 3, 3 |
+| `categorizer` | `batch_size`, `llm_timeout_s` | 20, 120 |
+| `footer` | `max_tail_rows`, `phase2_enabled` | 10, true |
+
 ---
 
 ## 3. Project structure
@@ -97,6 +114,9 @@ LLM configuration (backend, model, API key) lives in the database and is managed
 ```
 spendify/
 ├── app.py                  # Streamlit entry point
+├── config/                 # system settings (YAML, not UI-exposed)
+│   ├── __init__.py         # loader with deep merge
+│   └── system_settings.yaml # tuning defaults
 ├── ui/                     # Streamlit pages (imports only from services.*)
 ├── services/               # service layer — facade between UI and core/db
 │   ├── import_service.py
