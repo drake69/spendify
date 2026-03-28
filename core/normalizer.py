@@ -273,7 +273,11 @@ def detect_bordered_region(
         return None
 
 
-def detect_header_row_excel(raw_bytes: bytes, filename: str = "") -> tuple[int, bool, Optional[tuple[int, int, int, int]]]:
+def detect_header_row_excel(
+    raw_bytes: bytes,
+    filename: str = "",
+    skip_border_check: bool = False,
+) -> tuple[int, bool, Optional[tuple[int, int, int, int]]]:
     """Detect header row in an Excel file.
 
     Strategy:
@@ -281,13 +285,21 @@ def detect_header_row_excel(raw_bytes: bytes, filename: str = "") -> tuple[int, 
        the first row with max density inside the region = header. certain=True.
     2. **Density fallback**: scan first 50 rows for highest density row.
 
+    Args:
+        skip_border_check: If True, skip border detection (I-10 optimisation for
+            formats known to have no borders from cached schema ``has_borders=False``).
+
     Returns ``(skip_rows, certain, border_region)``.
     ``border_region`` is ``(r1, r2, c1, c2)`` 0-based, or ``None``.
     """
     import io as _io
 
     # ── Phase A: Try border detection ──────────────────────────────
-    border_region = detect_bordered_region(raw_bytes, filename)
+    if skip_border_check:
+        logger.info("── detect_header_row_excel: skipping border check (has_borders=False from cache) ──")
+        border_region = None
+    else:
+        border_region = detect_bordered_region(raw_bytes, filename)
     if border_region is not None:
         r1, r2, c1, c2 = border_region
         logger.info(
@@ -383,20 +395,31 @@ def detect_header_row_excel(raw_bytes: bytes, filename: str = "") -> tuple[int, 
     return 0, False, None
 
 
-def detect_skip_rows(raw_bytes: bytes, filename: str) -> tuple[int, bool, Optional[tuple[int, int, int, int]]]:
+def detect_skip_rows(
+    raw_bytes: bytes,
+    filename: str,
+    skip_border_check: bool = False,
+) -> tuple[int, bool, Optional[tuple[int, int, int, int]]]:
     """Unified pre-load header detection for CSV and Excel.
 
     Returns ``(skip_rows, certain, border_region)``:
       certain=True  → detection confident, use skip_rows silently.
       certain=False → could not determine; surface a number_input to the user.
       border_region → (r1, r2, c1, c2) 0-based if Excel borders found, else None.
+
+    Args:
+        skip_border_check: If True, skip border detection entirely (I-10 optimisation
+            for formats known to have no borders from cached schema ``has_borders=False``).
     """
-    logger.info("══ detect_skip_rows [%s] (%d bytes, type=%s) ══",
+    logger.info("══ detect_skip_rows [%s] (%d bytes, type=%s, skip_border=%s) ══",
                 filename, len(raw_bytes),
-                "excel" if filename.lower().endswith((".xlsx", ".xls")) else "csv")
+                "excel" if filename.lower().endswith((".xlsx", ".xls")) else "csv",
+                skip_border_check)
     border_region: Optional[tuple[int, int, int, int]] = None
     if filename.lower().endswith((".xlsx", ".xls")):
-        skip, certain, border_region = detect_header_row_excel(raw_bytes, filename)
+        skip, certain, border_region = detect_header_row_excel(
+            raw_bytes, filename, skip_border_check=skip_border_check,
+        )
     else:
         encoding = detect_encoding(raw_bytes)
         text = raw_bytes.decode(encoding, errors="replace")

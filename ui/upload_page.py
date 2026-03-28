@@ -202,14 +202,32 @@ def _render_schema_review(import_svc: ImportService, config: ProcessingConfig) -
             if evidence:
                 st.caption("Ragionamento LLM: " + " · ".join(evidence))
 
-            # Raw file preview — only when no rows to skip (otherwise it shows garbage pre-header data)
-            if not (schema and schema.skip_rows and schema.skip_rows > 0):
-                st.markdown("**Struttura raw del file (prime 10 righe, senza pre-elaborazione):**")
-                try:
-                    df_raw_preview = import_svc.get_raw_head(entry["raw_bytes"], filename, n=10)
-                    st.dataframe(df_raw_preview, use_container_width=True, hide_index=False)
-                except Exception as e:
-                    st.caption(f"Anteprima raw non disponibile: {e}")
+            # Raw file preview — preheader (top) and footer (bottom) in collapsible sections
+            try:
+                _skip = schema.skip_rows if schema else 0
+                _n_preview = max(30, _skip + 15)
+                df_raw_preview = import_svc.get_raw_head(entry["raw_bytes"], filename, n=_n_preview)
+                if _skip > 0 and len(df_raw_preview) > 0:
+                    _preheader_df = df_raw_preview.iloc[:_skip]
+                    if not _preheader_df.empty:
+                        with st.expander(f"⬆️ Preheader ({_skip} righe sopra l'intestazione)", expanded=False):
+                            st.dataframe(_preheader_df, use_container_width=True, hide_index=False)
+                # Show data portion (first 10 rows after header)
+                st.markdown("**Anteprima dati (prime righe):**")
+                _data_start = _skip
+                _data_end = min(_data_start + 10, len(df_raw_preview))
+                st.dataframe(
+                    df_raw_preview.iloc[_data_start:_data_end],
+                    use_container_width=True, hide_index=False,
+                )
+                # Footer preview: show last 5 rows of the raw file
+                _total_raw = import_svc.get_raw_head(entry["raw_bytes"], filename, n=500)
+                if len(_total_raw) > 10:
+                    _footer_df = _total_raw.tail(5)
+                    with st.expander(f"⬇️ Ultime 5 righe del file (possibile footer)", expanded=False):
+                        st.dataframe(_footer_df, use_container_width=True, hide_index=False)
+            except Exception as e:
+                st.caption(f"Anteprima non disponibile: {e}")
 
             c1, c2 = st.columns(2)
             doc_type_val = schema.doc_type.value if schema else doc_type_options[0]

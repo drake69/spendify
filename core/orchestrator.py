@@ -186,6 +186,7 @@ def load_raw_dataframe(
     raw_bytes: bytes,
     filename: str,
     skip_rows_override: Optional[int] = None,
+    has_borders_hint: Optional[bool] = None,
 ) -> tuple[pd.DataFrame, str, PreprocessInfo]:
     """Load a file into a raw DataFrame with Phase-0 pre-processing.
 
@@ -202,6 +203,10 @@ def load_raw_dataframe(
         skip_rows_override: If provided, skip exactly this many rows before the
             header instead of auto-detecting. Also bypasses
             ``detect_and_strip_preheader_rows`` for Excel files.
+        has_borders_hint: If known from cached schema (I-10):
+            True → attempt border detection first (expected to succeed).
+            False → skip border detection (format known to have no borders).
+            None → unknown (new format), try border detection.
 
     Returns:
         ``(df, encoding_used, preprocess_info)``
@@ -219,7 +224,9 @@ def load_raw_dataframe(
         skip_rows = skip_rows_override
         skip_certain = True  # treat manual override as certain
     else:
-        skip_rows, skip_certain, border_region = detect_skip_rows(raw_bytes, filename)
+        skip_rows, skip_certain, border_region = detect_skip_rows(
+            raw_bytes, filename, skip_border_check=(has_borders_hint is False),
+        )
 
     if name_lower.endswith((".xlsx", ".xls")):
         try:
@@ -576,7 +583,12 @@ def process_file(
         if skip_rows_override is not None
         else (known_schema.skip_rows if (known_schema and known_schema.skip_rows) else None)
     )
-    df_raw, encoding, _preprocess_info = load_raw_dataframe(raw_bytes, filename, skip_rows_override=skip_override)
+    _has_borders_hint = getattr(known_schema, 'has_borders', None) if known_schema else None
+    df_raw, encoding, _preprocess_info = load_raw_dataframe(
+        raw_bytes, filename,
+        skip_rows_override=skip_override,
+        has_borders_hint=_has_borders_hint,
+    )
     _header_rows_skipped = _preprocess_info.skipped_rows if isinstance(_preprocess_info.skipped_rows, int) else 0
     logger.info(
         f"process_file: loaded {filename} | rows={len(df_raw)} "
@@ -710,6 +722,11 @@ def process_file(
             )
     else:
         _progress(0.10)
+
+    # I-10: propagate border detection result to schema for persistence
+    if _preprocess_info.border_detected and not getattr(doc_schema, 'has_borders', False):
+        doc_schema.has_borders = True
+        logger.info(f"process_file: setting has_borders=True on schema for {filename}")
 
     # User-selected account overrides the LLM-assigned label — provides a
     # stable, human-readable dedup key independent of the filename.
