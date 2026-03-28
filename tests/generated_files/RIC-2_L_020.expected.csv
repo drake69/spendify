@@ -1,0 +1,301 @@
+row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_category
+1,2026-01-01,-79.33,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
+2,2026-01-01,-166.98,"Pagam. POS - PAGAMENTO POS 166,98 EUR DEL 01.01.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
+3,2026-01-01,269.61,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+4,2026-01-02,-88.28,"Pagam. POS - PAGAMENTO POS 88,28 EUR DEL 02.01.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
+5,2026-01-02,-48.92,"Pagam. POS - PAGAMENTO POS 48,92 EUR DEL 02.01.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
+6,2026-01-02,-8.58,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+7,2026-01-02,-159.87,PAGAMENTO CONTACTLESS CARTA **** 6311 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
+8,2026-01-02,-13.54,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+9,2026-01-02,165.03,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+10,2026-01-03,-12.61,"Pagam. POS - PAGAMENTO POS 12,61 EUR DEL 03.01.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+11,2026-01-03,-29.67,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
+12,2026-01-03,-39.94,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
+13,2026-01-03,165.37,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+14,2026-01-03,229.48,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+15,2026-01-04,-34.52,"Pagam. POS - PAGAMENTO POS 34,52 EUR DEL 04.01.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
+16,2026-01-04,-27.59,Disposizione - RIF:214566768 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
+17,2026-01-04,-35.66,"Pagam. POS - PAGAMENTO POS 35,66 EUR DEL 04.01.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
+18,2026-01-04,277.69,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+19,2026-01-05,-27.45,PAGAMENTO CONTACTLESS CARTA **** 9994 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
+20,2026-01-05,-13.88,"Pagam. POS - PAGAMENTO POS 13,88 EUR DEL 05.01.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+21,2026-01-05,-33.68,Disposizione - RIF:216396535 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
+22,2026-01-05,-11.24,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+23,2026-01-05,-12.47,Addebito SDD - GENERALI ITALIA POLIZZA VITA,expense,false,Altro/Spese non classificate
+24,2026-01-05,-152.22,PAGAMENTO CONTACTLESS CARTA **** 4590 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
+25,2026-01-05,-86.45,PAGAMENTO CONTACTLESS CARTA **** 7067 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
+26,2026-01-05,215.47,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+27,2026-01-06,-111.80,"Pagam. POS - PAGAMENTO POS 111,80 EUR DEL 06.01.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
+28,2026-01-06,-10.20,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+29,2026-01-06,-101.43,"Pagam. POS - PAGAMENTO POS 101,43 EUR DEL 06.01.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
+30,2026-01-06,-11.46,"Pagam. POS - PAGAMENTO POS 11,46 EUR DEL 06.01.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
+31,2026-01-06,-174.30,"Pagam. POS - PAGAMENTO POS 174,30 EUR DEL 06.01.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
+32,2026-01-06,-6.64,Disposizione - RIF:212221550 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
+33,2026-01-06,-77.07,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
+34,2026-01-06,145.50,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+35,2026-01-07,-31.32,PAGAMENTO CONTACTLESS CARTA **** 8808 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
+36,2026-01-07,-89.73,Disposizione - RIF:215530801 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
+37,2026-01-07,-6.95,"Pagam. POS - PAGAMENTO POS 6,95 EUR DEL 07.01.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+38,2026-01-07,-5.16,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+39,2026-01-07,-71.35,"Pagam. POS - PAGAMENTO POS 71,35 EUR DEL 07.01.2026 A (ITA) TRENITALIA S.P.A.",expense,false,Trasporti/Carburante
+40,2026-01-07,247.43,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+41,2026-01-07,86.82,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+42,2026-01-08,-10.10,"Pagam. POS - PAGAMENTO POS 10,10 EUR DEL 08.01.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+43,2026-01-08,-71.14,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
+44,2026-01-09,-68.39,"Pagam. POS - PAGAMENTO POS 68,39 EUR DEL 09.01.2026 A (ITA) COOP LOMBARDIA",expense,false,Altro/Spese non classificate
+45,2026-01-09,-65.41,"Pagam. POS - PAGAMENTO POS 65,41 EUR DEL 09.01.2026 A (ITA) TRENITALIA S.P.A.",expense,false,Trasporti/Carburante
+46,2026-01-09,-22.64,"Pagam. POS - PAGAMENTO POS 22,64 EUR DEL 09.01.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
+47,2026-01-09,-85.12,"Pagam. POS - PAGAMENTO POS 85,12 EUR DEL 09.01.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
+48,2026-01-10,-114.10,PAGAMENTO CONTACTLESS CARTA **** 6544 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
+49,2026-01-10,-89.22,PAGAMENTO CONTACTLESS CARTA **** 5836 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
+50,2026-01-10,-12.25,"Pagam. POS - PAGAMENTO POS 12,25 EUR DEL 10.01.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+51,2026-01-11,-8.87,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+52,2026-01-11,-71.86,"Pagam. POS - PAGAMENTO POS 71,86 EUR DEL 11.01.2026 A (ITA) STAZIONE Q8",expense,false,Trasporti/Carburante
+53,2026-01-12,-17.96,"Pagam. POS - PAGAMENTO POS 17,96 EUR DEL 12.01.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
+54,2026-01-12,-5.05,"Pagam. POS - PAGAMENTO POS 5,05 EUR DEL 12.01.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+55,2026-01-12,-78.10,"Pagam. POS - PAGAMENTO POS 78,10 EUR DEL 12.01.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
+56,2026-01-12,-33.19,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
+57,2026-01-14,-123.14,"Pagam. POS - PAGAMENTO POS 123,14 EUR DEL 14.01.2026 A (ITA) MACELLERIA BONI",expense,false,Alimentari/Spesa supermercato
+58,2026-01-14,-69.60,"Pagam. POS - PAGAMENTO POS 69,60 EUR DEL 14.01.2026 A (ITA) CONAD CITY ROMA",expense,false,Alimentari/Spesa supermercato
+59,2026-01-14,-78.38,PAGAMENTO CONTACTLESS CARTA **** 8085 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
+60,2026-01-14,-8.42,AMAZON.IT MARKETPLACE - ORDINE 402-217784547,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+61,2026-01-14,-7.15,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+62,2026-01-14,-29.10,Addebito SDD - GENERALI ITALIA POLIZZA VITA,expense,false,Altro/Spese non classificate
+63,2026-01-14,-14.41,AMAZON.IT MARKETPLACE - ORDINE 402-215218535,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+64,2026-01-15,-8.51,PAGAMENTO CONTACTLESS CARTA **** 9868 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
+65,2026-01-15,-61.53,"Pagam. POS - PAGAMENTO POS 61,53 EUR DEL 15.01.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
+66,2026-01-15,-51.02,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
+67,2026-01-15,146.78,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+68,2026-01-16,-40.38,PAGAMENTO CONTACTLESS CARTA **** 2564 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
+69,2026-01-16,-12.58,PAGAMENTO CONTACTLESS CARTA **** 4278 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
+70,2026-01-16,-10.88,AMAZON.IT MARKETPLACE - ORDINE 402-217956294,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+71,2026-01-16,269.80,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+72,2026-01-16,252.44,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+73,2026-01-17,-47.86,Disposizione - RIF:215722127 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
+74,2026-01-17,-7.17,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+75,2026-01-17,130.57,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+76,2026-01-17,166.82,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+77,2026-01-18,-18.78,"Pagam. POS - PAGAMENTO POS 18,78 EUR DEL 18.01.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
+78,2026-01-18,-178.93,"Pagam. POS - PAGAMENTO POS 178,93 EUR DEL 18.01.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
+79,2026-01-18,-63.53,Addebito SDD - ACI BOLLO AUTO TARGA GV574DE,expense,false,Trasporti/Carburante
+80,2026-01-18,-68.21,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
+81,2026-01-19,-45.91,"Pagam. POS - PAGAMENTO POS 45,91 EUR DEL 19.01.2026 A (ITA) PIZZERIA NAPOLI",expense,false,Ristorazione/Ristorante
+82,2026-01-19,-25.86,"Pagam. POS - PAGAMENTO POS 25,86 EUR DEL 19.01.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
+83,2026-01-19,-12.21,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+84,2026-01-19,-31.77,"Pagam. POS - PAGAMENTO POS 31,77 EUR DEL 19.01.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
+85,2026-01-20,-54.93,"Pagam. POS - PAGAMENTO POS 54,93 EUR DEL 20.01.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
+86,2026-01-20,-119.46,"Pagam. POS - PAGAMENTO POS 119,46 EUR DEL 20.01.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
+87,2026-01-20,-12.06,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
+88,2026-01-20,-7.96,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+89,2026-01-20,-46.30,"Pagam. POS - PAGAMENTO POS 46,30 EUR DEL 20.01.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
+90,2026-01-20,-6.46,"Pagam. POS - PAGAMENTO POS 6,46 EUR DEL 20.01.2026 A (ITA) PIZZERIA NAPOLI",expense,false,Ristorazione/Ristorante
+91,2026-01-21,-13.17,"Pagam. POS - PAGAMENTO POS 13,17 EUR DEL 21.01.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
+92,2026-01-21,-35.73,"Pagam. POS - PAGAMENTO POS 35,73 EUR DEL 21.01.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
+93,2026-01-21,-12.76,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+94,2026-01-21,-53.08,"Pagam. POS - PAGAMENTO POS 53,08 EUR DEL 21.01.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
+95,2026-01-21,-67.12,"Pagam. POS - PAGAMENTO POS 67,12 EUR DEL 21.01.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
+96,2026-01-21,-10.76,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
+97,2026-01-21,-51.59,"Pagam. POS - PAGAMENTO POS 51,59 EUR DEL 21.01.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
+98,2026-01-21,293.69,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+99,2026-01-22,-13.82,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+100,2026-01-22,-41.10,Addebito SDD - GENERALI ITALIA POLIZZA VITA,expense,false,Altro/Spese non classificate
+101,2026-01-22,-12.48,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+102,2026-01-23,-154.72,"Pagam. POS - PAGAMENTO POS 154,72 EUR DEL 23.01.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
+103,2026-01-23,-26.91,"Pagam. POS - PAGAMENTO POS 26,91 EUR DEL 23.01.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
+104,2026-01-23,-61.01,"Pagam. POS - PAGAMENTO POS 61,01 EUR DEL 23.01.2026 A (ITA) STAZIONE Q8",expense,false,Trasporti/Carburante
+105,2026-01-24,-99.48,"Pagam. POS - PAGAMENTO POS 99,48 EUR DEL 24.01.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
+106,2026-01-24,-52.50,"Pagam. POS - PAGAMENTO POS 52,50 EUR DEL 24.01.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
+107,2026-01-24,120.04,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+108,2026-01-25,-54.78,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
+109,2026-01-25,-28.03,Addebito SDD - GENERALI ITALIA POLIZZA VITA,expense,false,Altro/Spese non classificate
+110,2026-01-25,-5.59,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+111,2026-01-25,-34.75,"Pagam. POS - PAGAMENTO POS 34,75 EUR DEL 25.01.2026 A (ITA) COOP LOMBARDIA",expense,false,Altro/Spese non classificate
+112,2026-01-25,-151.73,"Pagam. POS - PAGAMENTO POS 151,73 EUR DEL 25.01.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
+113,2026-01-25,235.12,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+114,2026-01-26,-10.38,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+115,2026-01-26,-21.19,Addebito SDD - GENERALI ITALIA POLIZZA VITA,expense,false,Altro/Spese non classificate
+116,2026-01-26,-88.51,Disposizione - RIF:217715677 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
+117,2026-01-26,-151.73,"Pagam. POS - PAGAMENTO POS 151,73 EUR DEL 26.01.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
+118,2026-01-26,-71.39,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
+119,2026-01-26,-26.33,"Pagam. POS - PAGAMENTO POS 26,33 EUR DEL 26.01.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
+120,2026-01-26,-5.40,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+121,2026-01-26,138.24,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+122,2026-01-27,-12.10,"Pagam. POS - PAGAMENTO POS 12,10 EUR DEL 27.01.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
+123,2026-01-27,-8.06,AMAZON.IT MARKETPLACE - ORDINE 402-210384329,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+124,2026-01-27,-149.77,"Pagam. POS - PAGAMENTO POS 149,77 EUR DEL 27.01.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
+125,2026-01-27,222.26,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+126,2026-01-28,-36.39,Addebito SDD - SARA ASSICURAZIONI RCA AUTO,expense,false,Trasporti/Carburante
+127,2026-01-28,-52.23,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
+128,2026-01-28,-50.50,Disposizione - RIF:218541064 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
+129,2026-01-28,-6.40,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+130,2026-01-28,-111.19,"Pagam. POS - PAGAMENTO POS 111,19 EUR DEL 28.01.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
+131,2026-01-28,-18.84,PAGAMENTO CONTACTLESS CARTA **** 3226 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
+132,2026-01-28,-78.87,PAGAMENTO CONTACTLESS CARTA **** 9374 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
+133,2026-01-28,-38.05,"Pagam. POS - PAGAMENTO POS 38,05 EUR DEL 28.01.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
+134,2026-01-28,-67.22,"Pagam. POS - PAGAMENTO POS 67,22 EUR DEL 28.01.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
+135,2026-01-29,-46.18,"Pagam. POS - PAGAMENTO POS 46,18 EUR DEL 29.01.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
+136,2026-01-29,-9.45,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+137,2026-01-29,285.03,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+138,2026-01-29,185.43,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+139,2026-01-30,-19.78,"Pagam. POS - PAGAMENTO POS 19,78 EUR DEL 30.01.2026 A (ITA) PIZZERIA NAPOLI",expense,false,Ristorazione/Ristorante
+140,2026-01-30,-69.54,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
+141,2026-01-30,-50.93,Disposizione - RIF:215513362 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
+142,2026-01-30,-32.34,Disposizione - RIF:215034539 BEN. OFFICINA MECCANICA BRAMBILLA,expense,false,Trasporti/Carburante
+143,2026-01-30,-10.82,"Pagam. POS - PAGAMENTO POS 10,82 EUR DEL 30.01.2026 A (ITA) CONAD CITY ROMA",expense,false,Alimentari/Spesa supermercato
+144,2026-02-01,-36.26,"Pagam. POS - PAGAMENTO POS 36,26 EUR DEL 01.02.2026 A (ITA) TRENITALIA S.P.A.",expense,false,Trasporti/Carburante
+145,2026-02-01,-73.43,Disposizione - RIF:214879589 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
+146,2026-02-01,225.18,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+147,2026-02-01,163.61,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+148,2026-02-02,-34.26,Addebito SDD - SARA ASSICURAZIONI RCA AUTO,expense,false,Trasporti/Carburante
+149,2026-02-02,-8.50,AMAZON.IT MARKETPLACE - ORDINE 402-210364663,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+150,2026-02-02,-37.26,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
+151,2026-02-02,-11.18,"Pagam. POS - PAGAMENTO POS 11,18 EUR DEL 02.02.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
+152,2026-02-02,221.79,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+153,2026-02-02,245.08,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+154,2026-02-03,-64.66,"Pagam. POS - PAGAMENTO POS 64,66 EUR DEL 03.02.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
+155,2026-02-03,-35.08,"Pagam. POS - PAGAMENTO POS 35,08 EUR DEL 03.02.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
+156,2026-02-03,174.83,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+157,2026-02-04,-21.59,"Pagam. POS - PAGAMENTO POS 21,59 EUR DEL 04.02.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
+158,2026-02-04,-82.37,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
+159,2026-02-04,-6.13,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+160,2026-02-04,-82.40,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
+161,2026-02-04,-33.90,Disposizione - RIF:213172212 BEN. OFFICINA MECCANICA BRAMBILLA,expense,false,Trasporti/Carburante
+162,2026-02-05,-7.45,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+163,2026-02-05,-28.91,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
+164,2026-02-05,-88.75,"Pagam. POS - PAGAMENTO POS 88,75 EUR DEL 05.02.2026 A (ITA) TRENITALIA S.P.A.",expense,false,Trasporti/Carburante
+165,2026-02-05,-11.09,"Pagam. POS - PAGAMENTO POS 11,09 EUR DEL 05.02.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+166,2026-02-05,222.50,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+167,2026-02-06,-71.92,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
+168,2026-02-06,-43.00,"Pagam. POS - PAGAMENTO POS 43,00 EUR DEL 06.02.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
+169,2026-02-07,-12.21,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
+170,2026-02-07,-60.30,"Pagam. POS - PAGAMENTO POS 60,30 EUR DEL 07.02.2026 A (ITA) ITALO NTV S.P.A.",expense,false,Trasporti/Carburante
+171,2026-02-07,-61.90,"Pagam. POS - PAGAMENTO POS 61,90 EUR DEL 07.02.2026 A (ITA) PIZZERIA NAPOLI",expense,false,Ristorazione/Ristorante
+172,2026-02-07,216.15,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+173,2026-02-08,-47.17,"Pagam. POS - PAGAMENTO POS 47,17 EUR DEL 08.02.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
+174,2026-02-08,-5.60,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+175,2026-02-08,-109.25,"Pagam. POS - PAGAMENTO POS 109,25 EUR DEL 08.02.2026 A (ITA) CONAD CITY ROMA",expense,false,Alimentari/Spesa supermercato
+176,2026-02-08,-38.94,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
+177,2026-02-08,-51.89,"Pagam. POS - PAGAMENTO POS 51,89 EUR DEL 08.02.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
+178,2026-02-08,-79.17,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
+179,2026-02-09,-13.33,"Pagam. POS - PAGAMENTO POS 13,33 EUR DEL 09.02.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+180,2026-02-09,-75.26,"Pagam. POS - PAGAMENTO POS 75,26 EUR DEL 09.02.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
+181,2026-02-09,-10.24,"Pagam. POS - PAGAMENTO POS 10,24 EUR DEL 09.02.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+182,2026-02-10,-68.08,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
+183,2026-02-10,-12.68,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
+184,2026-02-10,293.90,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+185,2026-02-10,144.39,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+186,2026-02-11,-46.18,PAGAMENTO CONTACTLESS CARTA **** 2140 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
+187,2026-02-11,-14.81,"Pagam. POS - PAGAMENTO POS 14,81 EUR DEL 11.02.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+188,2026-02-11,-51.31,PAGAMENTO CONTACTLESS CARTA **** 8055 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
+189,2026-02-11,-27.75,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
+190,2026-02-11,-73.17,"Pagam. POS - PAGAMENTO POS 73,17 EUR DEL 11.02.2026 A (ITA) COOP LOMBARDIA",expense,false,Altro/Spese non classificate
+191,2026-02-11,-73.68,PAGAMENTO CONTACTLESS CARTA **** 9971 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
+192,2026-02-12,-29.47,"Pagam. POS - PAGAMENTO POS 29,47 EUR DEL 12.02.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
+193,2026-02-12,-7.93,Addebito SDD - GENERALI ITALIA POLIZZA VITA,expense,false,Altro/Spese non classificate
+194,2026-02-12,-8.13,"Pagam. POS - PAGAMENTO POS 8,13 EUR DEL 12.02.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+195,2026-02-12,158.87,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+196,2026-02-12,75.74,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+197,2026-02-13,-7.89,"Pagam. POS - PAGAMENTO POS 7,89 EUR DEL 13.02.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+198,2026-02-13,-35.42,"Pagam. POS - PAGAMENTO POS 35,42 EUR DEL 13.02.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
+199,2026-02-13,-22.59,"Pagam. POS - PAGAMENTO POS 22,59 EUR DEL 13.02.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
+200,2026-02-13,-69.31,"Pagam. POS - PAGAMENTO POS 69,31 EUR DEL 13.02.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
+201,2026-02-13,-67.05,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
+202,2026-02-13,-51.76,"Pagam. POS - PAGAMENTO POS 51,76 EUR DEL 13.02.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
+203,2026-02-13,-13.84,"Pagam. POS - PAGAMENTO POS 13,84 EUR DEL 13.02.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
+204,2026-02-13,-81.56,"Pagam. POS - PAGAMENTO POS 81,56 EUR DEL 13.02.2026 A (ITA) TRENITALIA S.P.A.",expense,false,Trasporti/Carburante
+205,2026-02-13,-160.52,"Pagam. POS - PAGAMENTO POS 160,52 EUR DEL 13.02.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
+206,2026-02-13,-77.24,"Pagam. POS - PAGAMENTO POS 77,24 EUR DEL 13.02.2026 A (ITA) TRENITALIA S.P.A.",expense,false,Trasporti/Carburante
+207,2026-02-13,-5.63,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+208,2026-02-13,149.47,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+209,2026-02-14,-13.04,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+210,2026-02-14,-13.74,Addebito SDD - GENERALI ITALIA POLIZZA VITA,expense,false,Altro/Spese non classificate
+211,2026-02-14,-85.08,Disposizione - RIF:219674634 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
+212,2026-02-14,-21.32,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
+213,2026-02-14,-76.56,"Pagam. POS - PAGAMENTO POS 76,56 EUR DEL 14.02.2026 A (ITA) PIZZERIA NAPOLI",expense,false,Ristorazione/Ristorante
+214,2026-02-14,-47.96,"Pagam. POS - PAGAMENTO POS 47,96 EUR DEL 14.02.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
+215,2026-02-15,-97.67,PAGAMENTO CONTACTLESS CARTA **** 3618 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
+216,2026-02-15,-17.00,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
+217,2026-02-15,-53.79,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
+218,2026-02-15,-11.38,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+219,2026-02-15,-11.76,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+220,2026-02-15,-5.99,AMAZON.IT MARKETPLACE - ORDINE 402-210148226,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+221,2026-02-15,-22.85,"Pagam. POS - PAGAMENTO POS 22,85 EUR DEL 15.02.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
+222,2026-02-15,216.05,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+223,2026-02-16,-13.41,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+224,2026-02-16,-8.79,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+225,2026-02-16,-49.96,PAGAMENTO CONTACTLESS CARTA **** 3188 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
+226,2026-02-16,-31.06,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
+227,2026-02-16,-8.93,AMAZON.IT MARKETPLACE - ORDINE 402-218565320,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+228,2026-02-16,-5.63,"Pagam. POS - PAGAMENTO POS 5,63 EUR DEL 16.02.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
+229,2026-02-16,-11.33,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+230,2026-02-17,-69.15,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
+231,2026-02-17,-63.78,Addebito SDD - GENERALI ITALIA POLIZZA VITA,expense,false,Altro/Spese non classificate
+232,2026-02-17,-94.31,Addebito SDD - GENERALI ITALIA POLIZZA VITA,expense,false,Altro/Spese non classificate
+233,2026-02-17,-87.34,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
+234,2026-02-17,-10.77,"Pagam. POS - PAGAMENTO POS 10,77 EUR DEL 17.02.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+235,2026-02-17,-61.61,"Pagam. POS - PAGAMENTO POS 61,61 EUR DEL 17.02.2026 A (ITA) ITALO NTV S.P.A.",expense,false,Trasporti/Carburante
+236,2026-02-17,-73.78,"Pagam. POS - PAGAMENTO POS 73,78 EUR DEL 17.02.2026 A (ITA) ITALO NTV S.P.A.",expense,false,Trasporti/Carburante
+237,2026-02-17,-62.50,"Pagam. POS - PAGAMENTO POS 62,50 EUR DEL 17.02.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
+238,2026-02-17,-125.30,"Pagam. POS - PAGAMENTO POS 125,30 EUR DEL 17.02.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
+239,2026-02-17,-54.44,Disposizione - RIF:215364794 BEN. OFFICINA MECCANICA BRAMBILLA,expense,false,Trasporti/Carburante
+240,2026-02-17,-55.12,"Pagam. POS - PAGAMENTO POS 55,12 EUR DEL 17.02.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
+241,2026-02-18,-36.96,Disposizione - RIF:215352593 BEN. OFFICINA MECCANICA BRAMBILLA,expense,false,Trasporti/Carburante
+242,2026-02-18,-14.12,"Pagam. POS - PAGAMENTO POS 14,12 EUR DEL 18.02.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
+243,2026-02-18,-151.21,PAGAMENTO CONTACTLESS CARTA **** 1210 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
+244,2026-02-18,-51.69,Disposizione - RIF:213155638 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
+245,2026-02-18,-87.60,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
+246,2026-02-18,-138.01,"Pagam. POS - PAGAMENTO POS 138,01 EUR DEL 18.02.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
+247,2026-02-18,-15.61,"Pagam. POS - PAGAMENTO POS 15,61 EUR DEL 18.02.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
+248,2026-02-18,-62.68,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
+249,2026-02-18,-28.23,Disposizione - RIF:219569128 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
+250,2026-02-18,203.02,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+251,2026-02-19,-32.30,PAGAMENTO CONTACTLESS CARTA **** 1295 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
+252,2026-02-19,-13.00,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+253,2026-02-19,291.76,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+254,2026-02-19,287.67,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+255,2026-02-19,260.87,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+256,2026-02-20,-10.14,"Pagam. POS - PAGAMENTO POS 10,14 EUR DEL 20.02.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+257,2026-02-20,-59.03,PAGAMENTO CONTACTLESS CARTA **** 6786 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
+258,2026-02-20,-7.35,AMAZON.IT MARKETPLACE - ORDINE 402-211288445,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+259,2026-02-20,-7.21,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
+260,2026-02-20,-75.79,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
+261,2026-02-20,-13.97,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+262,2026-02-21,-46.39,PAGAMENTO CONTACTLESS CARTA **** 2848 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
+263,2026-02-21,-10.75,AMAZON.IT MARKETPLACE - ORDINE 402-218304601,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+264,2026-02-21,-7.99,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+265,2026-02-21,-35.41,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
+266,2026-02-21,218.05,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+267,2026-02-21,148.58,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+268,2026-02-21,71.33,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+269,2026-02-22,-13.39,"Pagam. POS - PAGAMENTO POS 13,39 EUR DEL 22.02.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+270,2026-02-22,-38.80,"Pagam. POS - PAGAMENTO POS 38,80 EUR DEL 22.02.2026 A (ITA) CONAD CITY ROMA",expense,false,Alimentari/Spesa supermercato
+271,2026-02-22,178.42,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+272,2026-02-23,-77.76,PAGAMENTO CONTACTLESS CARTA **** 1146 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
+273,2026-02-23,-13.62,AMAZON.IT MARKETPLACE - ORDINE 402-215852757,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+274,2026-02-23,-5.08,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+275,2026-02-23,-74.08,Addebito SDD - GENERALI ITALIA POLIZZA VITA,expense,false,Altro/Spese non classificate
+276,2026-02-23,-6.74,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
+277,2026-02-23,-76.08,"Pagam. POS - PAGAMENTO POS 76,08 EUR DEL 23.02.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
+278,2026-02-23,-37.68,Addebito SDD - GENERALI ITALIA POLIZZA VITA,expense,false,Altro/Spese non classificate
+279,2026-02-24,-168.95,PAGAMENTO CONTACTLESS CARTA **** 3494 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
+280,2026-02-24,-59.36,"Pagam. POS - PAGAMENTO POS 59,36 EUR DEL 24.02.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
+281,2026-02-24,-33.59,"Pagam. POS - PAGAMENTO POS 33,59 EUR DEL 24.02.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
+282,2026-02-24,-23.30,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
+283,2026-02-24,128.41,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+284,2026-02-25,-6.49,"Pagam. POS - PAGAMENTO POS 6,49 EUR DEL 25.02.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+285,2026-02-25,-160.38,"Pagam. POS - PAGAMENTO POS 160,38 EUR DEL 25.02.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
+286,2026-02-25,-11.37,"Pagam. POS - PAGAMENTO POS 11,37 EUR DEL 25.02.2026 A (ITA) MACELLERIA BONI",expense,false,Alimentari/Spesa supermercato
+287,2026-02-26,-66.27,Addebito SDD - GENERALI ITALIA POLIZZA VITA,expense,false,Altro/Spese non classificate
+288,2026-02-26,-79.20,Disposizione - RIF:214443133 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
+289,2026-02-26,-19.48,PAGAMENTO CONTACTLESS CARTA **** 9086 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
+290,2026-02-26,-83.45,"Pagam. POS - PAGAMENTO POS 83,45 EUR DEL 26.02.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
+291,2026-02-26,-29.29,"Pagam. POS - PAGAMENTO POS 29,29 EUR DEL 26.02.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
+292,2026-02-26,157.29,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+293,2026-02-27,-6.15,"Pagam. POS - PAGAMENTO POS 6,15 EUR DEL 27.02.2026 A (ITA) PIZZERIA NAPOLI",expense,false,Ristorazione/Ristorante
+294,2026-02-27,-164.43,"Pagam. POS - PAGAMENTO POS 164,43 EUR DEL 27.02.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
+295,2026-02-28,-11.40,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+296,2026-02-28,-60.67,Disposizione - RIF:212569407 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
+297,2026-02-28,-9.79,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+298,2026-02-28,-51.99,Addebito SDD - SARA ASSICURAZIONI RCA AUTO,expense,false,Trasporti/Carburante
+299,2026-02-28,-97.78,"Pagam. POS - PAGAMENTO POS 97,78 EUR DEL 28.02.2026 A (ITA) COOP LOMBARDIA",expense,false,Altro/Spese non classificate
+300,2026-02-28,61.55,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata

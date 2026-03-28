@@ -1,0 +1,31 @@
+row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_category
+1,2026-01-02,-390.36,"Pagam. POS - PAGAMENTO POS 390,36 EUR DEL 02.01.2026 A (ITA) HOTEL BELLAVISTA RIMINI",expense,false,Svago e tempo libero/Viaggi e vacanze
+2,2026-01-05,-397.46,AMAZON.IT MARKETPLACE - ORDINE 402-213148654,expense,false,Svago e tempo libero/Hobby
+3,2026-01-10,-59.13,"Pagam. POS - PAGAMENTO POS 59,13 EUR DEL 10.01.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Hobby
+4,2026-01-13,-26.82,"Pagam. POS - PAGAMENTO POS 26,82 EUR DEL 13.01.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
+5,2026-01-14,-67.02,Addebito SDD - SARA ASSICURAZIONI RCA AUTO,expense,false,Trasporti/Carburante
+6,2026-01-17,-43.10,Disposizione - RIF:211934382 BEN. OFFICINA MECCANICA BRAMBILLA,expense,false,Trasporti/Carburante
+7,2026-01-21,-65.26,PAGAMENTO CONTACTLESS CARTA **** 1554 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
+8,2026-01-22,-102.46,"Pagam. POS - PAGAMENTO POS 102,46 EUR DEL 22.01.2026 A (ITA) ZARA ITALIA SRL",expense,false,Abbigliamento/Abbigliamento adulti
+9,2026-01-23,-393.01,"Pagam. POS - PAGAMENTO POS 393,01 EUR DEL 23.01.2026 A (ITA) RISTORANTE IL FARO CESENATICO",expense,false,Svago e tempo libero/Viaggi e vacanze
+10,2026-01-25,-64.79,"Pagam. POS - PAGAMENTO POS 64,79 EUR DEL 25.01.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
+11,2026-01-26,-15.55,PAGAMENTO CONTACTLESS CARTA **** 5492 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
+12,2026-01-30,-245.89,AMAZON.IT MARKETPLACE - ORDINE 402-219381082,expense,false,Svago e tempo libero/Hobby
+13,2026-01-31,-247.55,"Pagam. POS - PAGAMENTO POS 247,55 EUR DEL 31.01.2026 A (ITA) RYANAIR LTD",expense,false,Svago e tempo libero/Viaggi e vacanze
+14,2026-01-31,-59.16,"Pagam. POS - PAGAMENTO POS 59,16 EUR DEL 31.01.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
+15,2026-01-31,-116.24,"Pagam. POS - PAGAMENTO POS 116,24 EUR DEL 31.01.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
+16,2026-02-03,-30.36,"Pagam. POS - PAGAMENTO POS 30,36 EUR DEL 03.02.2026 A (ITA) PIZZERIA NAPOLI",expense,false,Ristorazione/Ristorante
+17,2026-02-07,-137.95,AMAZON.IT MARKETPLACE - ORDINE 402-214257391,expense,false,Svago e tempo libero/Hobby
+18,2026-02-09,-18.92,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
+19,2026-02-09,-76.62,"Pagam. POS - PAGAMENTO POS 76,62 EUR DEL 09.02.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
+20,2026-02-12,-37.22,"Pagam. POS - PAGAMENTO POS 37,22 EUR DEL 12.02.2026 A (ITA) ARUBA S.P.A. HOSTING",expense,false,Tasse e tributi/Imposte varie
+21,2026-02-14,-121.51,"Pagam. POS - PAGAMENTO POS 121,51 EUR DEL 14.02.2026 A (ITA) ZARA ITALIA SRL",expense,false,Abbigliamento/Abbigliamento adulti
+22,2026-02-14,-267.57,Addebito SDD - BOOKING.COM B.V.,expense,false,Svago e tempo libero/Viaggi e vacanze
+23,2026-02-14,-70.46,Addebito SDD - TELEPASS PEDAGGI A14 AUTOSTRADA,expense,false,Svago e tempo libero/Viaggi e vacanze
+24,2026-02-14,-184.86,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Hobby
+25,2026-02-17,-10.87,PAGAMENTO CONTACTLESS CARTA **** 3772 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
+26,2026-02-17,-37.96,"Pagam. POS - PAGAMENTO POS 37,96 EUR DEL 17.02.2026 A (ITA) DISTRIBUTORE ENI",expense,false,Trasporti/Carburante
+27,2026-02-23,-341.41,AMAZON.IT MARKETPLACE - ORDINE 402-211045647,expense,false,Svago e tempo libero/Hobby
+28,2026-02-25,-227.89,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Hobby
+29,2026-02-26,-34.73,"Pagam. POS - PAGAMENTO POS 34,73 EUR DEL 26.02.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
+30,2026-02-28,-74.45,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante

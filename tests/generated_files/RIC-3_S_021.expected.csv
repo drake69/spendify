@@ -1,0 +1,31 @@
+row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_category
+1,2026-01-06,-50.71,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
+2,2026-01-06,-21.35,"Pagam. POS - PAGAMENTO POS 21,35 EUR DEL 06.01.2026 A (ITA) CENTRO DIAGNOSTICO SAN DONATO",expense,false,Salute/Farmaci
+3,2026-01-11,98.15,Bonif. v/fav. - RIF:214057676 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+4,2026-01-12,-92.61,Addebito SDD - GENERALI ITALIA POLIZZA VITA,expense,false,Altro/Spese non classificate
+5,2026-01-14,113.06,Bonif. v/fav. - RIF:216359994 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+6,2026-01-16,-117.67,"Pagam. POS - PAGAMENTO POS 117,67 EUR DEL 16.01.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
+7,2026-01-17,-51.41,PAGAMENTO CONTACTLESS CARTA **** 8392 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
+8,2026-01-17,-144.15,PAGAMENTO CONTACTLESS CARTA **** 9657 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
+9,2026-01-18,-76.75,"Pagam. POS - PAGAMENTO POS 76,75 EUR DEL 18.01.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
+10,2026-01-20,-30.97,"Pagam. POS - PAGAMENTO POS 30,97 EUR DEL 20.01.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
+11,2026-01-20,-202.26,"Pagam. POS - PAGAMENTO POS 202,26 EUR DEL 20.01.2026 A (ITA) CENTRO DIAGNOSTICO SAN DONATO",expense,false,Salute/Farmaci
+12,2026-01-22,-153.36,"Pagam. POS - PAGAMENTO POS 153,36 EUR DEL 22.01.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
+13,2026-01-24,-85.17,PAGAMENTO CONTACTLESS CARTA **** 2383 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
+14,2026-01-26,-51.58,PAGAMENTO CONTACTLESS CARTA **** 6255 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
+15,2026-01-29,-33.96,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
+16,2026-01-30,-77.58,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
+17,2026-02-02,-41.15,"Pagam. POS - PAGAMENTO POS 41,15 EUR DEL 02.02.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
+18,2026-02-04,-16.38,PAGAMENTO CONTACTLESS CARTA **** 8611 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
+19,2026-02-06,-134.41,"Pagam. POS - PAGAMENTO POS 134,41 EUR DEL 06.02.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
+20,2026-02-08,-117.05,"Pagam. POS - PAGAMENTO POS 117,05 EUR DEL 08.02.2026 A (ITA) FARMACIA DR ROSSI",expense,false,Salute/Farmaci
+21,2026-02-12,151.72,Bonif. v/fav. - RIF:212817316 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+22,2026-02-13,-107.18,PAGAMENTO CONTACTLESS CARTA **** 9305 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
+23,2026-02-13,149.71,Bonif. v/fav. - RIF:215767836 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+24,2026-02-15,-37.79,"Pagam. POS - PAGAMENTO POS 37,79 EUR DEL 15.02.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
+25,2026-02-19,-84.49,"Pagam. POS - PAGAMENTO POS 84,49 EUR DEL 19.02.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
+26,2026-02-19,-156.32,"Pagam. POS - PAGAMENTO POS 156,32 EUR DEL 19.02.2026 A (ITA) MACELLERIA BONI",expense,false,Alimentari/Spesa supermercato
+27,2026-02-22,258.63,Bonif. v/fav. - RIF:216339201 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+28,2026-02-25,-62.28,"Pagam. POS - PAGAMENTO POS 62,28 EUR DEL 25.02.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
+29,2026-02-27,-126.43,"Pagam. POS - PAGAMENTO POS 126,43 EUR DEL 27.02.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
+30,2026-02-28,-25.01,"Pagam. POS - PAGAMENTO POS 25,01 EUR DEL 28.02.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante

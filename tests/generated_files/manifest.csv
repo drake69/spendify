@@ -1,0 +1,51 @@
+filename,doc_type,account_id,bank,format,separator,n_rows_total,n_header_rows,n_data_rows,n_footer_rows,amount_format,has_debit_credit_split,column_names,total_income,total_expense,n_internal_transfers,n_income_rows,n_expense_rows,has_borders
+CC-1_S_000.csv,bank_account,CC-1,Intesa Sanpaolo,csv,;,41,10,30,0,signed_single,false,Data operazione|Descrizione|Importo|Divisa,29389.69,2479.28,3,18,12,false
+CC-1_M_001.xlsx,bank_account,CC-1,Intesa Sanpaolo,xlsx,,64,10,53,0,debit_credit_split,true,Data contabile|Data val.|Causale|Dare|Avere|Valuta,60316.56,4252.57,5,31,22,true
+CC-1_L_002.csv,bank_account,CC-1,Intesa Sanpaolo,csv,",",301,0,300,0,debit_credit_signed,true,Data registrazione|Tipologia|Addebiti|Accrediti,313178.54,23426.64,30,180,120,false
+CC-2_S_003.csv,bank_account,CC-2,Banca Sella,csv,;,35,0,30,4,signed_single,false,Data mov.|Data val.|Descrizione operazione|Importo|Divisa,72837.89,680.47,3,25,5,false
+CC-2_M_004.xlsx,bank_account,CC-2,Banca Sella,xlsx,,78,10,63,4,debit_credit_split,true,Data|Movimento|Dare|Avere|Valuta,163799.30,2254.57,6,53,10,false
+CC-2_L_005.csv,bank_account,CC-2,Banca Sella,csv,",",308,7,300,0,debit_credit_signed,true,Data operazione|Dettaglio|Addebiti|Accrediti,869480.26,14034.31,30,255,45,false
+CC-3_S_006.csv,bank_account,CC-3,Banco BPM,csv,;,40,7,30,2,signed_single,false,Data contabile|Descrizione|Importo|Divisa,22965.12,1956.95,3,23,7,false
+CC-3_M_007.xlsx,bank_account,CC-3,Banco BPM,xlsx,,55,0,54,0,debit_credit_split,true,Data registrazione|Data val.|Causale|Dare|Avere|Valuta,48016.67,3943.38,5,43,11,true
+CC-3_L_008.csv,bank_account,CC-3,Banco BPM,csv,",",301,0,300,0,debit_credit_signed,true,Data mov.|Data valuta|Tipologia|Addebiti|Accrediti,262048.82,23856.66,30,239,61,false
+CRED-1_S_009.csv,credit_card,CRED-1,American Express,csv,;,41,7,30,3,positive_only,false,Data|Descrizione operazione|Importo|Divisa,0.00,3966.58,0,0,30,false
+CRED-1_M_010.xlsx,credit_card,CRED-1,American Express,xlsx,,61,7,53,0,positive_only,false,Data operazione|Data valuta|Movimento|Movimento|Valuta,0.00,6346.14,0,0,53,false
+CRED-1_L_011.csv,credit_card,CRED-1,American Express,csv,",",315,10,300,4,positive_only,false,Data contabile|Dettaglio|Dare/Avere,0.00,38476.25,0,0,300,false
+CRED-2_S_012.csv,credit_card,CRED-2,CartaSì/Nexi,csv,;,44,10,30,3,positive_only,false,Data registrazione|Data valuta|Descrizione|Importo|Divisa,0.00,3449.21,0,0,30,false
+CRED-2_M_013.xlsx,credit_card,CRED-2,CartaSì/Nexi,xlsx,,106,0,103,2,positive_only,false,Data mov.|Data val.|Causale|Movimento|Valuta,0.00,7686.42,0,0,103,true
+CRED-2_L_014.csv,credit_card,CRED-2,CartaSì/Nexi,csv,",",308,7,300,0,positive_only,false,Data|Tipologia|Dare/Avere,0.00,27062.36,0,0,300,false
+RIC-1_S_015.csv,prepaid_card,RIC-1,PostePay Evolution,csv,;,43,12,30,0,signed_single,false,Data operazione|Descrizione operazione|Importo|Divisa,997.35,2293.40,5,5,25,false
+RIC-1_M_016.xlsx,prepaid_card,RIC-1,PostePay Evolution,xlsx,,160,12,147,0,debit_credit_split,true,Data contabile|Data valuta|Movimento|Dare|Avere|Valuta,4336.77,11222.42,23,23,124,false
+RIC-1_L_017.csv,prepaid_card,RIC-1,PostePay Evolution,csv,",",313,10,300,2,debit_credit_signed,true,Data registrazione|Data val.|Dettaglio|Addebiti|Accrediti,7381.46,24978.18,45,45,255,false
+RIC-2_S_018.csv,prepaid_card,RIC-2,Hype,csv,;,34,3,30,0,signed_single,false,Data mov.|Descrizione|Importo|Divisa,841.25,1175.22,5,5,25,false
+RIC-2_M_019.xlsx,prepaid_card,RIC-2,Hype,xlsx,,70,0,69,0,debit_credit_split,true,Data|Data val.|Causale|Dare|Avere|Valuta,1210.59,2379.18,11,11,58,true
+RIC-2_L_020.csv,prepaid_card,RIC-2,Hype,csv,",",301,0,300,0,debit_credit_signed,true,Data operazione|Data valuta|Tipologia|Addebiti|Accrediti,8763.13,12127.65,45,45,255,false
+RIC-3_S_021.csv,prepaid_card,RIC-3,Revolut,csv,;,36,5,30,0,signed_single,false,Data contabile|Data val.|Descrizione operazione|Importo|Divisa,771.27,2098.02,5,5,25,false
+RIC-3_M_022.xlsx,prepaid_card,RIC-3,Revolut,xlsx,,108,12,95,0,debit_credit_split,true,Data registrazione|Movimento|Dare|Avere|Valuta,2543.67,4439.54,15,15,80,false
+RIC-3_L_023.csv,prepaid_card,RIC-3,Revolut,csv,",",308,7,300,0,debit_credit_signed,true,Data mov.|Data val.|Dettaglio|Addebiti|Accrediti,7429.22,18593.26,45,45,255,false
+RISP-1_S_024.csv,savings_account,RISP-1,Conto Arancio,csv,;,43,12,30,0,signed_single,false,Data|Data valuta|Descrizione|Importo|Divisa,193.32,12949.63,26,4,26,false
+RISP-1_M_025.xlsx,savings_account,RISP-1,Conto Arancio,xlsx,,152,5,143,3,debit_credit_split,true,Data operazione|Causale|Dare|Avere|Valuta,122.84,71056.04,139,4,139,true
+RISP-1_L_026.csv,savings_account,RISP-1,Conto Arancio,csv,",",303,0,300,2,debit_credit_signed,true,Data contabile|Data valuta|Tipologia|Addebiti|Accrediti,179.50,148193.41,296,4,296,false
+CC-1_V_027.xlsx,bank_account,CC-1,Intesa Sanpaolo,xlsx,,101,15,80,5,signed_single,false,Data registrazione|Descrizione operazione|Importo|Divisa,89596.36,6082.26,8,48,32,true
+CC-1_V_028.csv,bank_account,CC-1,Intesa Sanpaolo,csv,",",46,0,45,0,debit_credit_split,true,Data mov.|Movimento|Dare|Avere|Valuta,52903.27,4014.30,4,27,18,false
+CC-1_V_029.csv,bank_account,CC-1,Intesa Sanpaolo,csv,;,112,8,100,3,debit_credit_signed,true,Data|Data val.|Dettaglio|Addebiti|Accrediti,105629.97,6645.54,10,60,40,false
+CC-2_V_030.xlsx,bank_account,CC-2,Banca Sella,xlsx,,67,4,60,2,signed_single,false,Data operazione|Descrizione|Importo|Divisa,185078.34,2981.24,6,51,9,true
+CC-2_V_031.csv,bank_account,CC-2,Banca Sella,csv,",",31,0,30,0,debit_credit_split,true,Data contabile|Data val.|Causale|Dare|Avere|Valuta,91418.63,2097.27,3,25,5,false
+CC-3_V_032.csv,bank_account,CC-3,Banco BPM,csv,;,58,6,50,1,debit_credit_signed,true,Data registrazione|Tipologia|Addebiti|Accrediti,46215.65,4425.14,5,40,10,false
+CC-3_V_033.xlsx,bank_account,CC-3,Banco BPM,xlsx,,105,10,90,4,signed_single,false,Data mov.|Data val.|Descrizione operazione|Importo|Divisa,77258.19,7608.35,9,72,18,true
+CRED-1_V_034.csv,credit_card,CRED-1,American Express,csv,;,76,3,70,2,positive_only,false,Data|Data valuta|Movimento|Movimento|Valuta,0.00,9538.75,0,0,70,false
+CRED-1_V_035.xlsx,credit_card,CRED-1,American Express,xlsx,,41,0,40,0,positive_only,false,Data operazione|Data val.|Dettaglio|Dare/Avere,0.00,6831.28,0,0,40,false
+CRED-2_V_036.xlsx,credit_card,CRED-2,CartaSì/Nexi,xlsx,,64,5,55,3,positive_only,false,Data contabile|Data valuta|Descrizione|Importo|Divisa,0.00,6376.74,0,0,55,true
+CRED-2_V_037.csv,credit_card,CRED-2,CartaSì/Nexi,csv,",",137,12,120,4,positive_only,false,Data registrazione|Data val.|Causale|Movimento|Valuta,0.00,9226.02,0,0,120,false
+RIC-1_V_038.csv,prepaid_card,RIC-1,PostePay Evolution,csv,;,39,2,35,1,debit_credit_signed,true,Data mov.|Data valuta|Tipologia|Addebiti|Accrediti,1247.41,2455.90,6,6,29,false
+RIC-1_V_039.xlsx,prepaid_card,RIC-1,PostePay Evolution,xlsx,,95,7,85,2,signed_single,false,Data|Data val.|Descrizione operazione|Importo|Divisa,2778.14,5516.90,13,13,72,true
+RIC-2_V_040.csv,prepaid_card,RIC-2,Hype,csv,",",46,0,45,0,debit_credit_split,true,Data operazione|Movimento|Dare|Avere|Valuta,1018.34,1718.11,7,7,38,false
+RIC-2_V_041.xlsx,prepaid_card,RIC-2,Hype,xlsx,,78,9,65,3,debit_credit_signed,true,Data contabile|Dettaglio|Addebiti|Accrediti,1567.93,2452.79,10,10,55,true
+RIC-3_V_042.xlsx,prepaid_card,RIC-3,Revolut,xlsx,,51,0,50,0,signed_single,false,Data registrazione|Data valuta|Descrizione|Importo|Divisa,1575.22,2922.38,8,8,42,false
+RIC-3_V_043.csv,prepaid_card,RIC-3,Revolut,csv,;,126,11,110,4,debit_credit_split,true,Data mov.|Data val.|Causale|Dare|Avere|Valuta,2726.90,6953.71,17,17,93,false
+RISP-1_V_044.csv,savings_account,RISP-1,Conto Arancio,csv,",",48,5,40,2,debit_credit_signed,true,Data|Tipologia|Addebiti|Accrediti,176.36,18346.06,36,4,36,false
+RISP-1_V_045.xlsx,savings_account,RISP-1,Conto Arancio,xlsx,,94,13,75,5,signed_single,false,Data operazione|Data val.|Descrizione operazione|Importo|Divisa,127.80,36465.73,71,4,71,true
+CC-1_V_046.csv,bank_account,CC-1,Intesa Sanpaolo,csv,;,32,1,30,0,debit_credit_split,true,Data contabile|Movimento|Dare|Avere|Valuta,30567.60,2997.14,3,18,12,false
+CRED-1_V_047.csv,credit_card,CRED-1,American Express,csv,",",50,14,30,5,positive_only,false,Data registrazione|Data val.|Dettaglio|Dare/Avere,0.00,3534.02,0,0,30,false
+CC-2_V_048.xlsx,bank_account,CC-2,Banca Sella,xlsx,,36,0,30,5,signed_single,false,Data mov.|Data valuta|Descrizione|Importo|Divisa,88177.51,1075.61,3,25,5,true
+CC-3_V_049.csv,bank_account,CC-3,Banco BPM,csv,;,151,0,150,0,debit_credit_split,true,Data|Causale|Dare|Avere|Valuta,121774.59,11444.39,15,119,31,false
