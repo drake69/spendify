@@ -23,6 +23,10 @@ HISTORY_MIN_VALIDATED = 5        # min validated txs to trust a description
 HISTORY_AUTO_THRESHOLD = 0.90    # C >= 0.90 → source=history, auto-assign
 HISTORY_SUGGEST_THRESHOLD = 0.50 # 0.50 <= C < 0.90 → suggest with to_review=True
 
+# C-07: LLM context injection thresholds
+HISTORY_CONTEXT_MIN_VALIDATED = 3   # min validated txs to include in LLM context
+HISTORY_CONTEXT_MIN_CONFIDENCE = 0.50  # min confidence to include in LLM context
+
 
 # ── Data classes ──────────────────────────────────────────────────────────────
 
@@ -190,6 +194,62 @@ class HistoryCache:
         if profile is None:
             return None, None, 0.0
         return profile.top_category, profile.top_subcategory, profile.confidence
+
+
+# ── C-07: LLM context injection ───────────────────────────────────────────────
+
+
+def get_top_associations_text(
+    cache: HistoryCache,
+    top_n: int = 50,
+    max_chars: int = 2000,
+) -> str:
+    """Build a text block of top historical associations for LLM prompt injection.
+
+    Returns a formatted string like:
+        Historical associations (user's validated patterns — use as reference, not absolute rule):
+          ESSELUNGA → Alimentari / Spesa supermercato (47x)
+          TELECOM ITALIA → Casa / Telefono fisso (12x)
+          ...
+
+    Returns "" if no qualifying associations (e.g., first run with empty DB).
+    """
+    # Filter profiles by confidence and validation count
+    profiles = [
+        p for p in cache._cache.values()
+        if p.confidence >= HISTORY_CONTEXT_MIN_CONFIDENCE
+        and p.total_validated >= HISTORY_CONTEXT_MIN_VALIDATED
+    ]
+
+    if not profiles:
+        return ""
+
+    # Sort by total_validated descending — most common patterns first
+    profiles.sort(key=lambda p: p.total_validated, reverse=True)
+    profiles = profiles[:top_n]
+
+    # Format lines
+    lines = []
+    for p in profiles:
+        sub = f" / {p.top_subcategory}" if p.top_subcategory else ""
+        lines.append(f"  {p.description} → {p.top_category}{sub} ({p.total_validated}x)")
+
+    # Truncate to max_chars (remove last lines if too long)
+    header = (
+        "Historical associations (user's validated patterns — "
+        "use as reference, not absolute rule):\n"
+    )
+    result = header + "\n".join(lines) + "\n"
+
+    while len(result) > max_chars and lines:
+        lines.pop()
+        result = header + "\n".join(lines) + "\n"
+
+    logger.info(
+        f"get_top_associations_text: {len(profiles)} profiles → "
+        f"{len(lines)} lines, {len(result)} chars"
+    )
+    return result
 
 
 # ── C-06: Fan-out comportamentale ─────────────────────────────────────────────

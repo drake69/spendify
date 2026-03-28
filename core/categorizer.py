@@ -22,6 +22,7 @@ from core.history_engine import (
     HISTORY_AUTO_THRESHOLD,
     HISTORY_SUGGEST_THRESHOLD,
     HistoryCache,
+    get_top_associations_text,
 )
 from core.llm_backends import LLMBackend, call_with_fallback
 from core.models import CategorySource, Confidence
@@ -267,6 +268,7 @@ def _run_llm_batch_group(
     direction: str,  # "expense" | "income"
     source_name: str,
     fallback_categories: dict[str, tuple[str, str]] | None = None,
+    history_context: str = "",  # C-07: historical associations text block
 ) -> None:
     """Run LLM categorization in batches for one direction. Updates results[] in place."""
     cat_keys = list(categories.keys())
@@ -292,6 +294,7 @@ def _run_llm_batch_group(
             direction=direction,
             description_language=description_language,
             transactions_json=items_json,
+            history_context=history_context,
             taxonomy_hint=taxonomy_hint,
         )
 
@@ -426,6 +429,11 @@ def categorize_batch(
     llm_income: list[int] = []
     n_history = 0
 
+    # C-07: build historical context text once for all LLM batches
+    _history_context = ""
+    if history_cache:
+        _history_context = get_top_associations_text(history_cache)
+
     # Step 0 + 1: deterministic rules per transaction
     for i, tx in enumerate(transactions):
         amount = _parse_amount(tx.get("amount"))
@@ -475,6 +483,7 @@ def categorize_batch(
                 llm_backend, fallback_backend, sanitize_config,
                 description_language, batch_size, "expense", source_name,
                 fallback_categories=fallback_categories,
+                history_context=_history_context,
             )
         if llm_income:
             _run_llm_batch_group(
@@ -483,6 +492,7 @@ def categorize_batch(
                 llm_backend, fallback_backend, sanitize_config,
                 description_language, batch_size, "income", source_name,
                 fallback_categories=fallback_categories,
+                history_context=_history_context,
             )
 
     # Fallback for any still-None (llm_backend=None or batch error)
@@ -555,6 +565,7 @@ def categorize_transaction(
         results: list[Optional[CategorizationResult]] = [None]
         direction = "expense" if amount < 0 else "income"
         categories = taxonomy.expenses if amount < 0 else taxonomy.income
+        # C-07: no history context for single-tx calls (review_service reclassification)
         _run_llm_batch_group(
             tx, [0], results,
             categories, taxonomy,
