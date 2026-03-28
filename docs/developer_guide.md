@@ -432,18 +432,25 @@ results_all_    ◄── download ──── results_all_runs.csv
 runs.csv
 ```
 
-**Workflow:**
+**Workflow (flusso locale, zero token):**
 
 ```bash
-# 1. Lancia benchmark per tutti i modelli su Azure (N job paralleli)
-python tools/azure_benchmark.py --all-models
-
-# 2. Lancia per un singolo modello
+# 1. Lancia benchmark su Azure (singolo modello o tutti)
 python tools/azure_benchmark.py --model qwen2.5-3b --compute Standard_NC6s_v3
+python tools/azure_benchmark.py --all-models   # N job paralleli
 
-# 3. Scarica risultati
-python tools/azure_benchmark.py --download
+# 2. Scarica risultati quando i job completano
+python tools/azure_benchmark.py --download --job-id <id>
+#    → merge automatico nel CSV locale (append-only, dedup by resume key)
+
+# 3. Apri PR con i risultati (credenziali git locali, nessun token extra)
+git checkout -b bench/$(date +%Y-%m-%d)-azure-t4
+git add tests/generated_files/benchmark/results_all_runs.csv
+git commit -m "bench: azure T4 results"
+gh pr create --title "bench: Azure T4 results" --body "14 modelli su GPU T4"
 ```
+
+Il job Azure non fa push — il developer scarica e apre la PR dalla sua macchina.
 
 **Perché Azure ML anziché locale:**
 - **HW fisso** → confronto equo tra modelli (stessa GPU per tutti)
