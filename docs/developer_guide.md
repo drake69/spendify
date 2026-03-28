@@ -417,6 +417,46 @@ ls -lh ~/.spendify/models/*.gguf
 ollama list
 ```
 
+### Benchmark cloud su Azure ML (T-09d)
+
+Per benchmark su HW normalizzato (GPU cloud), eliminando la variabilità della macchina locale:
+
+```
+Developer Mac                    Azure ML
+─────────────                    ────────
+files sintetici ──── upload ────► Docker container
+manifest.csv                     ├─ Pull GGUF da HuggingFace
+expected/*.csv                   ├─ Classifier benchmark (50 file)
+                                 ├─ Categorizer benchmark (50 file)
+results_all_    ◄── download ──── results_all_runs.csv
+runs.csv
+```
+
+**Workflow:**
+
+```bash
+# 1. Lancia benchmark per tutti i modelli su Azure (N job paralleli)
+python tools/azure_benchmark.py --all-models
+
+# 2. Lancia per un singolo modello
+python tools/azure_benchmark.py --model qwen2.5-3b --compute Standard_NC6s_v3
+
+# 3. Scarica risultati
+python tools/azure_benchmark.py --download
+```
+
+**Perché Azure ML anziché locale:**
+- **HW fisso** → confronto equo tra modelli (stessa GPU per tutti)
+- **Parallelismo** → 14 modelli in 14 container simultanei → ~30 min totali
+- **Riproducibilità** → stesso Docker + commit + GPU = stessi risultati
+- **Costo** → spot instances T4: ~$2.50 per suite completa
+
+**Strategia di selezione modello:**
+1. Eseguire benchmark cloud con tutti i modelli candidati su HW normalizzato (T4)
+2. Trovare il **modello ideale** = miglior automation_score con tempo accettabile
+3. Scalare HW in up/down per definire i requisiti minimi per quel modello
+4. Il `models_registry.yaml` viene aggiornato con i risultati reali
+
 ---
 
 ## 10. Decisioni di design chiave
