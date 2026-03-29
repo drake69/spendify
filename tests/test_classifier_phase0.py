@@ -189,7 +189,7 @@ class TestRunStep0AnalysisAmount:
         assert result.amount_semantics == "unclear"
 
     def test_debit_and_credit_columns_complementary_density(self):
-        """Two amount columns with complementary density → debit_positive_candidates."""
+        """Two amount columns with complementary density → debit_positive (resolved by role assignment)."""
         import numpy as np
         df = pd.DataFrame({
             "Data": ["01/01/2025", "02/01/2025", "03/01/2025", "04/01/2025",
@@ -199,7 +199,7 @@ class TestRunStep0AnalysisAmount:
             "Accredito": [np.nan, np.nan, np.nan, np.nan, np.nan, "50.00", "100.00", "200.00"],
         })
         result = _run_step0_analysis(list(df.columns), df_raw=df)
-        assert result.amount_semantics == "debit_positive_candidates"
+        assert result.amount_semantics == "debit_positive"
         assert result.debit_col is not None
         assert result.credit_col is not None
 
