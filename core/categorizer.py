@@ -269,6 +269,7 @@ def _run_llm_batch_group(
     source_name: str,
     fallback_categories: dict[str, tuple[str, str]] | None = None,
     history_context: str = "",  # C-07: historical associations text block
+    batch_done_callback=None,  # Callable[[int], None] — called after each batch with batch size
 ) -> None:
     """Run LLM categorization in batches for one direction. Updates results[] in place."""
     cat_keys = list(categories.keys())
@@ -338,6 +339,9 @@ def _run_llm_batch_group(
             item = llm_results[j] if j < len(llm_results) else {}
             amount = _parse_amount(transactions[idx].get("amount"))
             results[idx] = _validate_llm_result(item, categories, taxonomy, amount, direction, fallback_categories)
+
+        if batch_done_callback:
+            batch_done_callback(len(batch_indices))
 
 
 def _validate_llm_result(
@@ -474,7 +478,19 @@ def categorize_batch(
         else:
             llm_income.append(i)
 
-    # Step 3: LLM — two directional batches
+    # Report deterministic progress (rules + history done)
+    if progress_callback and n > 0:
+        progress_callback(0.3)  # 0..30% for deterministic phase
+
+    # Step 3: LLM — two directional batches with progress tracking
+    _llm_total = len(llm_expense) + len(llm_income)
+    _llm_done = [0]  # mutable for closure
+
+    def _batch_done_cb(batch_n: int):
+        _llm_done[0] += batch_n
+        if progress_callback and _llm_total > 0:
+            progress_callback(0.3 + 0.7 * (_llm_done[0] / _llm_total))
+
     if llm_backend is not None:
         if llm_expense:
             _run_llm_batch_group(
@@ -484,6 +500,7 @@ def categorize_batch(
                 description_language, batch_size, "expense", source_name,
                 fallback_categories=fallback_categories,
                 history_context=_history_context,
+                batch_done_callback=_batch_done_cb,
             )
         if llm_income:
             _run_llm_batch_group(
@@ -493,6 +510,7 @@ def categorize_batch(
                 description_language, batch_size, "income", source_name,
                 fallback_categories=fallback_categories,
                 history_context=_history_context,
+                batch_done_callback=_batch_done_cb,
             )
 
     # Fallback for any still-None (llm_backend=None or batch error)

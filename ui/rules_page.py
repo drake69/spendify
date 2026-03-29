@@ -75,6 +75,19 @@ def render_rules_page(engine):
         ]
         df_rules = pd.DataFrame(table_data)
 
+        # ── Ordinamento esplicito ────────────────────────────────────
+        _sort_cols = ["Pattern", "Categoria", "Priorità", "Contesto", "Sottocategoria"]
+        _sc1, _sc2, _ = st.columns([2, 1, 4])
+        with _sc1:
+            _sort_col = st.selectbox("Ordina per", _sort_cols, key="rules_sort_col")
+        with _sc2:
+            _sort_asc = st.toggle("Crescente", value=True, key="rules_sort_asc")
+        df_rules = df_rules.sort_values(
+            _sort_col, ascending=_sort_asc,
+            key=lambda s: s.str.casefold() if s.dtype == object else s,
+        ).reset_index(drop=True)
+
+        # ── Paginazione ──────────────────────────────────────────────
         _PAGE_SIZE = 20
         _n_pages   = max(1, (len(df_rules) + _PAGE_SIZE - 1) // _PAGE_SIZE)
         _pg_col, _ = st.columns([2, 5])

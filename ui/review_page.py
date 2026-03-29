@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 
 import streamlit as st
 import pandas as pd
@@ -110,7 +111,7 @@ def render_review_page(engine):
         {
             "id": tx.id,
             "sel": False,
-            "Data": tx.date,  # U-06: keep as date for correct sorting
+            "Data": datetime.strptime(tx.date, "%Y-%m-%d").date() if tx.date else None,
             "Descrizione": (tx.description or "")[:100],
             "Entrata": float(tx.amount) if float(tx.amount) > 0 else None,
             "Uscita": abs(float(tx.amount)) if float(tx.amount) < 0 else None,
