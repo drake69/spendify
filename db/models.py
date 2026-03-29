@@ -67,7 +67,8 @@ DEFAULT_USER_SETTINGS = {
     "giroconto_mode": "neutral",
     "max_transaction_amount": "1000000",
     "force_schema_import": "false",  # I-04: skip schema review, always auto-import
-    "onboarding_done": "false",
+    # NOTE: onboarding_done is NOT in defaults — it's managed by
+    # _migrate_set_onboarding_done_for_existing_users() and SettingsService.
 }
 
 
