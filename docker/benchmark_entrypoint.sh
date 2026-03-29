@@ -15,7 +15,11 @@ set -euo pipefail
 
 MODELS_DIR="${MODELS_DIR:-/models}"
 RESULTS_DIR="${RESULTS_DIR:-/app/results}"
-PYTHON="uv run python"
+if command -v uv &>/dev/null; then
+    PYTHON="uv run python"
+else
+    PYTHON="python"
+fi
 
 echo "============================================================"
 echo "  Spendify Benchmark (Docker)"
@@ -51,7 +55,7 @@ fi
 # ── Download model if needed ─────────────────────────────────────────────────
 download_model() {
     local model_id="$1"
-    echo "→ Resolving model: $model_id"
+    echo "→ Resolving model: $model_id" >&2
 
     # Use model_manager to get repo + filename from registry
     local info
@@ -66,7 +70,7 @@ else:
 ")
 
     if [ "$info" = "NOT_FOUND" ]; then
-        echo "ERROR: Model '$model_id' not found in registry"
+        echo "ERROR: Model '$model_id' not found in registry" >&2
         exit 1
     fi
 
@@ -75,14 +79,14 @@ else:
     local dest="$MODELS_DIR/$filename"
 
     if [ -f "$dest" ]; then
-        echo "  Model already present: $dest"
+        echo "  Model already present: $dest" >&2
     else
-        echo "  Downloading $filename from $repo..."
+        echo "  Downloading $filename from $repo..." >&2
         $PYTHON -c "
 from huggingface_hub import hf_hub_download
 hf_hub_download('$repo', '$filename', local_dir='$MODELS_DIR', local_dir_use_symlinks=False)
 print('  Download complete')
-"
+" >&2
     fi
     echo "$dest"
 }
@@ -149,7 +153,8 @@ fi
 # ── Copy results to output directory ─────────────────────────────────────────
 echo ""
 echo "→ Copying results to $RESULTS_DIR..."
-cp tests/generated_files/benchmark/results_all_runs.csv "$RESULTS_DIR/" 2>/dev/null || true
+mkdir -p "$RESULTS_DIR"
+cp tests/generated_files/benchmark/*.csv "$RESULTS_DIR/" 2>/dev/null || true
 
 echo ""
 echo "============================================================"

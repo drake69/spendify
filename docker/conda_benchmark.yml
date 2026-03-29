@@ -5,8 +5,8 @@ channels:
 dependencies:
   - python=3.11
   - pip
+  - cmake
   - pip:
-    - llama-cpp-python
     - huggingface_hub
     - pandas
     - openpyxl
