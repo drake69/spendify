@@ -38,10 +38,13 @@ dependencies = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
     "huggingface-hub>=1.8.0",
+    "azure-ai-ml>=1.32.0",
+    "azure-identity>=1.25.3",
 ]
 
 [tool.pytest.ini_options]
 markers = [
     "llm: tests requiring a running LLM backend (Ollama/OpenAI)",
 ]
+addopts = "-m 'not llm'"
 testpaths = ["tests"]
