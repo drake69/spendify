@@ -445,6 +445,7 @@ def _evaluate_file(
             source_name=entry.filename,
             sanitize=True,
             header_certain=preprocess_info.header_certain,
+            classifier_mode="auto",
         )
 
         if schema is None:
@@ -588,6 +589,10 @@ _CSV_HEADER = [
     "duration_seconds",
     # HW stress (sampled during file processing)
     "cpu_load_avg", "gpu_utilization_pct",
+    # Multi-step classifier diagnostics (empty for categorizer rows)
+    "classifier_mode",
+    "step1_time_s", "step2_time_s", "step3_time_s",
+    "step1_doc_type_match", "step2_date_col_match", "step2_amount_col_match",
     "error",
 ]
 
@@ -643,6 +648,8 @@ def _result_to_row(r: CatRunResult) -> list:
         # Common
         f"{r.duration_seconds:.2f}",
         f"{r.cpu_load_avg:.2f}", f"{r.gpu_utilization_pct:.1f}",
+        # Multi-step classifier diagnostics (empty for categorizer rows)
+        "", "", "", "", "", "", "",
         r.error,
     ]
 

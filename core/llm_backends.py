@@ -385,6 +385,11 @@ class LlamaCppBackend(LLMBackend):
         return Path(self._model_path).stem
 
     @property
+    def model_size_bytes(self) -> int:
+        """Return the GGUF file size in bytes."""
+        return Path(self._model_path).stat().st_size
+
+    @property
     def is_remote(self) -> bool:
         return False
 

@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from dataclasses import dataclass, field as dc_field
 from pathlib import Path
 
@@ -113,6 +114,22 @@ def _format_step_context(step_name: str, result: dict) -> str:
     return "\n".join(lines)
 
 
+@dataclass
+class MultiStepDiagnostics:
+    """Per-step timing and intermediate results from multi-step classification."""
+    classifier_mode: str = "single"
+    step1_time_s: float = 0.0
+    step2_time_s: float = 0.0
+    step3_time_s: float = 0.0
+    step1_doc_type: str = ""
+    step2_date_col: str = ""
+    step2_amount_col: str = ""
+    step2_description_col: str = ""
+    step1_skipped: bool = False  # True when account_type used directly
+    step2_fallback: bool = False  # True when Phase 0 fallback used
+    step3_fallback: bool = False  # True when degraded defaults used
+
+
 def _classify_multi_step(
     sample_json: str,
     columns_list: str,
@@ -122,11 +139,16 @@ def _classify_multi_step(
     fallback_backend: LLMBackend | None,
     step0: "_Step0Result",
     account_type: str | None = None,
-) -> dict[str, Any] | None:
-    """Run 3-step sequential LLM classification for small models."""
+) -> tuple[dict[str, Any] | None, MultiStepDiagnostics]:
+    """Run 3-step sequential LLM classification for small models.
+
+    Returns (merged_dict, diagnostics) or (None, diagnostics) on failure.
+    """
+    diag = MultiStepDiagnostics(classifier_mode="multi_step")
 
     # ── Step 1: Document Identity ────────────────────────────────────────
     # If user specified account_type, use it directly (skip LLM for doc_type)
+    t1 = time.time()
     if account_type:
         logger.info(
             f"classify_document [{source_name}]: multi-step Step 1 — "
@@ -139,6 +161,7 @@ def _classify_multi_step(
             "sheet_name": None,
             "skip_rows": 0,
         }
+        diag.step1_skipped = True
     else:
         logger.info(f"classify_document [{source_name}]: multi-step Step 1 — Document Identity")
         step1_user = _PROMPTS["step1_user_template"].format(
@@ -156,10 +179,14 @@ def _classify_multi_step(
         )
         if step1_result is None:
             logger.warning(f"classify_document [{source_name}]: multi-step Step 1 FAILED — aborting")
-            return None
-    logger.info(f"classify_document [{source_name}]: Step 1 OK — doc_type={step1_result.get('doc_type')}")
+            diag.step1_time_s = time.time() - t1
+            return None, diag
+    diag.step1_time_s = time.time() - t1
+    diag.step1_doc_type = step1_result.get("doc_type", "")
+    logger.info(f"classify_document [{source_name}]: Step 1 OK — doc_type={diag.step1_doc_type} ({diag.step1_time_s:.1f}s)")
 
     # ── Step 2: Column Mapping ───────────────────────────────────────────
+    t2 = time.time()
     logger.info(f"classify_document [{source_name}]: multi-step Step 2 — Column Mapping")
     step1_context = _format_step_context("Document Identity", step1_result)
     step2_user = _PROMPTS["step2_user_template"].format(
@@ -192,12 +219,19 @@ def _classify_multi_step(
                 "currency_col": None,
                 "default_currency": "EUR",
             }
+            diag.step2_fallback = True
         else:
             logger.warning(f"classify_document [{source_name}]: Step 2 FAILED, no Phase 0 fallback — aborting")
-            return None
-    logger.info(f"classify_document [{source_name}]: Step 2 OK — date_col={step2_result.get('date_col')}")
+            diag.step2_time_s = time.time() - t2
+            return None, diag
+    diag.step2_time_s = time.time() - t2
+    diag.step2_date_col = step2_result.get("date_col", "")
+    diag.step2_amount_col = step2_result.get("amount_col", "") or ""
+    diag.step2_description_col = step2_result.get("description_col", "") or ""
+    logger.info(f"classify_document [{source_name}]: Step 2 OK — date_col={diag.step2_date_col} ({diag.step2_time_s:.1f}s)")
 
     # ── Step 3: Semantic Analysis ────────────────────────────────────────
+    t3 = time.time()
     logger.info(f"classify_document [{source_name}]: multi-step Step 3 — Semantic Analysis")
     steps_context = step1_context + "\n\n" + _format_step_context("Column Mapping", step2_result)
     step3_user = _PROMPTS["step3_user_template"].format(
@@ -229,11 +263,16 @@ def _classify_multi_step(
             "semantic_evidence": ["Step 3 LLM failed — using degraded defaults"],
             "normalization_case_id": "C5",
         }
+        diag.step3_fallback = True
+    diag.step3_time_s = time.time() - t3
 
     # ── Merge all 3 steps ────────────────────────────────────────────────
     merged = {**step1_result, **step2_result, **step3_result}
-    logger.info(f"classify_document [{source_name}]: multi-step complete — {len(merged)} fields")
-    return merged
+    logger.info(
+        f"classify_document [{source_name}]: multi-step complete — {len(merged)} fields "
+        f"(t1={diag.step1_time_s:.1f}s t2={diag.step2_time_s:.1f}s t3={diag.step3_time_s:.1f}s)"
+    )
+    return merged, diag
 
 
 def classify_document(
@@ -315,10 +354,27 @@ def classify_document(
             f"'{account_type}' → doc_type hint '{_doc_hint}'"
         )
 
+    # ── Auto-detect classifier mode from model size ────────────────────
+    if classifier_mode == "auto":
+        _MULTI_STEP_THRESHOLD = 5 * 1024**3  # 5 GB
+        if hasattr(llm_backend, "model_size_bytes"):
+            _size = llm_backend.model_size_bytes
+            classifier_mode = "multi_step" if _size < _MULTI_STEP_THRESHOLD else "single"
+            logger.info(
+                f"classify_document [{source_name}]: auto-detected classifier_mode="
+                f"'{classifier_mode}' (model={_size / 1024**3:.1f} GB, threshold={_MULTI_STEP_THRESHOLD / 1024**3:.0f} GB)"
+            )
+        else:
+            # Remote backends or backends without size info → single step
+            classifier_mode = "single"
+            logger.info(f"classify_document [{source_name}]: auto → single (remote/unknown backend)")
+
+    _ms_diag: MultiStepDiagnostics | None = None
+
     if classifier_mode == "multi_step":
         # ── Multi-step path (3 sequential LLM calls) ────────────────────
         logger.info(f"classify_document [{source_name}]: using multi-step classifier mode")
-        result = _classify_multi_step(
+        result, _ms_diag = _classify_multi_step(
             sample_json=sample_json,
             columns_list=columns_list,
             step0_text=step0_text,
@@ -388,6 +444,10 @@ def classify_document(
         # Use columns fingerprint as cache key, not the filename, so the same
         # bank layout is recognised across differently-named export files.
         doc_schema.source_identifier = compute_columns_key(df_raw)
+        # Attach multi-step diagnostics (if available) for benchmark tracking
+        if _ms_diag is None:
+            _ms_diag = MultiStepDiagnostics(classifier_mode=classifier_mode)
+        doc_schema._classifier_diagnostics = _ms_diag  # type: ignore[attr-defined]
         return doc_schema
     except Exception as exc:
         logger.error(f"classify_document: schema validation failed: {exc}")

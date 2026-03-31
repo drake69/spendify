@@ -119,6 +119,14 @@ class RunFileResult:
     duration_seconds: float
     cpu_load_avg: float = 0.0      # avg CPU load during file processing (1-min loadavg)
     gpu_power_watts: float = 0.0   # avg GPU power draw during file processing (macOS only)
+    # Multi-step classifier diagnostics
+    classifier_mode: str = ""
+    step1_time_s: float = 0.0
+    step2_time_s: float = 0.0
+    step3_time_s: float = 0.0
+    step1_doc_type_match: str = ""  # "Y"/"N"/""
+    step2_date_col_match: str = ""
+    step2_amount_col_match: str = ""
     error: str = ""
 
 
@@ -532,10 +540,14 @@ def _evaluate_file(
             sanitize=True,
             header_certain=preprocess_info.header_certain,
             account_type=entry.doc_type,
+            classifier_mode="auto",
         )
         # Sample HW stress after LLM call
         cpu_samples.append(_sample_cpu_load())
         gpu_samples.append(_sample_gpu_utilization())
+
+        # Extract multi-step diagnostics (attached by classify_document)
+        _diag = getattr(schema, "_classifier_diagnostics", None) if schema else None
 
         if schema is None:
             error_result.header_detected = detected_skip
@@ -547,6 +559,10 @@ def _evaluate_file(
             error_result.duration_seconds = time.time() - t_start
             error_result.error = "classify_document returned None"
             return error_result
+
+        # Populate multi-step diagnostics into result
+        if _diag:
+            error_result.classifier_mode = _diag.classifier_mode
 
         # Extract detected values
         doc_type_detected = schema.doc_type.value if hasattr(schema.doc_type, "value") else str(schema.doc_type)
@@ -641,6 +657,14 @@ def _evaluate_file(
             duration_seconds=duration,
             cpu_load_avg=sum(cpu_samples) / len(cpu_samples) if cpu_samples else 0.0,
             gpu_power_watts=sum(gpu_samples) / len(gpu_samples) if gpu_samples else 0.0,
+            # Multi-step diagnostics
+            classifier_mode=_diag.classifier_mode if _diag else "",
+            step1_time_s=_diag.step1_time_s if _diag else 0.0,
+            step2_time_s=_diag.step2_time_s if _diag else 0.0,
+            step3_time_s=_diag.step3_time_s if _diag else 0.0,
+            step1_doc_type_match="Y" if _diag and _diag.step1_doc_type == entry.doc_type else ("N" if _diag and _diag.step1_doc_type else ""),
+            step2_date_col_match="Y" if _diag and _diag.step2_date_col else "",
+            step2_amount_col_match="Y" if _diag and _diag.step2_amount_col else "",
         )
 
     except Exception as e:
@@ -679,6 +703,10 @@ _CSV_HEADER = [
     "duration_seconds",
     # HW stress (sampled during file processing)
     "cpu_load_avg", "gpu_utilization_pct",
+    # Multi-step classifier diagnostics
+    "classifier_mode",
+    "step1_time_s", "step2_time_s", "step3_time_s",
+    "step1_doc_type_match", "step2_date_col_match", "step2_amount_col_match",
     "error",
 ]
 
@@ -722,6 +750,12 @@ def _result_to_row(r: RunFileResult) -> list:
         "", "", "",  # cat_exact_accuracy, cat_fuzzy_accuracy, cat_fallback_rate
         f"{r.duration_seconds:.2f}",
         f"{r.cpu_load_avg:.2f}", f"{r.gpu_power_watts:.1f}",
+        # Multi-step diagnostics
+        r.classifier_mode,
+        f"{r.step1_time_s:.2f}" if r.step1_time_s else "",
+        f"{r.step2_time_s:.2f}" if r.step2_time_s else "",
+        f"{r.step3_time_s:.2f}" if r.step3_time_s else "",
+        r.step1_doc_type_match, r.step2_date_col_match, r.step2_amount_col_match,
         r.error,
     ]
 

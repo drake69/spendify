@@ -117,8 +117,8 @@ class ProcessingConfig:
     # llama.cpp (local GGUF model)
     llama_cpp_model_path: str = ""
     llama_cpp_n_gpu_layers: int = -1
-    # Classifier mode: "single" (1 LLM call) or "multi_step" (3 sequential calls for small models)
-    classifier_mode: str = "single"
+    # Classifier mode: "auto" (detect from model size), "single" (1 LLM call), "multi_step" (3 calls)
+    classifier_mode: str = "auto"
 
 
 @dataclass
