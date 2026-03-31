@@ -74,7 +74,7 @@ logger = setup_logging()
 
 @dataclass
 class ProcessingConfig:
-    llm_backend: str = "local_ollama"
+    llm_backend: str = "local_llama_cpp"
     giroconto_mode: GirocontoMode = GirocontoMode.neutral
     window_days: int = 45
     max_gap_days: int = 5

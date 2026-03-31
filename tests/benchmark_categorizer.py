@@ -10,7 +10,7 @@ Usage:
 
     --runs N           Number of runs (default: 10)
     --files PAT        Glob pattern to filter files (default: *_S_*)
-    --backend NAME     LLM backend (default: from user settings or local_ollama)
+    --backend NAME     LLM backend (default: from user settings or local_llama_cpp)
     --model MODEL      Model name for Ollama (default: from user settings)
     --model-path PATH  GGUF path for llama-cpp
 """

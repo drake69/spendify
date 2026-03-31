@@ -228,9 +228,9 @@ def main() -> None:
     )
     parser.add_argument(
         "--backend",
-        choices=["local_ollama", "openai", "claude"],
-        default=os.getenv("LLM_BACKEND", "local_ollama"),
-        help="LLM backend to use (default: $LLM_BACKEND or local_ollama)",
+        choices=["local_llama_cpp", "local_ollama", "openai", "claude"],
+        default=os.getenv("LLM_BACKEND", "local_llama_cpp"),
+        help="LLM backend to use (default: $LLM_BACKEND or local_llama_cpp)",
     )
     parser.add_argument(
         "--giroconto",

@@ -466,7 +466,7 @@ class BackendFactory:
 
     @staticmethod
     def from_env() -> LLMBackend:
-        name = os.getenv("LLM_BACKEND", "local_ollama")
+        name = os.getenv("LLM_BACKEND", "local_llama_cpp")
         return BackendFactory.create(name)
 
 
