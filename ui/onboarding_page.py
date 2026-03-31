@@ -146,6 +146,23 @@ def _step0_language(cfg_svc: SettingsService, lang_options: list[tuple[str, str]
     sel_code = codes[labels.index(sel_label)]
     st.session_state[_K_LANG] = sel_code
 
+    # UI language selector (i18n)
+    from ui.i18n import available_languages, set_language
+    _ui_langs = available_languages()
+    _ui_labels = [lbl for _, lbl in _ui_langs]
+    _ui_codes = [c for c, _ in _ui_langs]
+    _ui_default = sel_code if sel_code in _ui_codes else "it"
+    _ui_idx = _ui_codes.index(st.session_state.get("_ob_ui_lang", _ui_default))
+    ui_lang_sel = st.selectbox(
+        "🌐 Lingua interfaccia / UI Language",
+        _ui_labels,
+        index=_ui_idx,
+        key="_ob_ui_lang_select",
+    )
+    _ui_lang_code = _ui_codes[_ui_labels.index(ui_lang_sel)]
+    st.session_state["_ob_ui_lang"] = _ui_lang_code
+    set_language(_ui_lang_code)
+
     # Format preview
     loc = _locale(sel_code)
     preview = cfg_svc.get_default_taxonomy_preview(sel_code)
@@ -382,13 +399,15 @@ def _apply_onboarding(
         # 1. Taxonomy (also sets description_language)
         n_cats = cfg_svc.apply_default_taxonomy(lang)
 
-        # 2. Locale + owner settings
+        # 2. Locale + owner settings + UI language
+        _ui_lang = st.session_state.get("_ob_ui_lang", lang)
         cfg_svc.set_bulk({
             "date_display_format":     loc["date_display_format"],
             "amount_decimal_sep":      loc["amount_decimal_sep"],
             "amount_thousands_sep":    loc["amount_thousands_sep"],
             "owner_names":             owner_names,
             "use_owner_names_giroconto": "true" if owner_names.strip() else "false",
+            "ui_language":             _ui_lang,
         })
 
         # 3. Accounts
