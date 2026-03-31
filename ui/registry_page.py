@@ -95,7 +95,7 @@ def render_registry_page(engine):
         st.rerun()
     if pc6.button("🔄 Reset filtri",    key="preset_reset", use_container_width=True, type="secondary"):
         for _k in ("ledger_from", "ledger_to", "ledger_account", "ledger_type",
-                   "ledger_cat", "ledger_desc", "ledger_review", "ledger_hide_giro"):
+                   "ledger_cat", "ledger_ctx", "ledger_desc", "ledger_review", "ledger_hide_giro"):
             if _k in st.session_state:
                 del st.session_state[_k]
         st.rerun()
@@ -113,7 +113,7 @@ def render_registry_page(engine):
     with fc4:
         tx_type_filter = st.selectbox("Tipo", _ALL_TX_TYPES, key="ledger_type")
 
-    fc5, fc6, fc7, fc8, fc9 = st.columns([3, 2, 1, 1, 1])
+    fc5, fc6, fc6b, fc7, fc8, fc9 = st.columns([3, 2, 1.5, 1, 1, 1])
     with fc5:
         desc_filter = st.text_input(
             "🔍 Descrizione", placeholder="cerca in descrizione e raw…", key="ledger_desc"
@@ -121,6 +121,10 @@ def render_registry_page(engine):
     with fc6:
         cat_filter = st.selectbox(
             "Categoria", ["tutte"] + _all_cats, key="ledger_cat"
+        )
+    with fc6b:
+        ctx_filter = st.selectbox(
+            "Contesto", ["tutti"] + _contexts, key="ledger_ctx"
         )
     with fc7:
         review_only = st.checkbox("Solo da rivedere ⚠️", key="ledger_review")
@@ -149,6 +153,8 @@ def render_registry_page(engine):
         filters["description"] = desc_filter.strip()
     if cat_filter != "tutte":
         filters["category"] = cat_filter
+    if ctx_filter != "tutti":
+        filters["context"] = ctx_filter
     if review_only:
         filters["to_review"] = True
 
