@@ -379,6 +379,22 @@ class TestMergeStep0IntoResult:
         result = _merge_step0_into_result(base, step0, "test")
         assert result.get("currency_col") is None
 
+    def test_currency_col_none_does_not_crash(self):
+        """Regression: currency_col=None must not raise AttributeError on .lower()."""
+        step0 = _Step0Result(date_accounting_col="Valuta")
+        base = self._base_result()
+        base["currency_col"] = None  # explicitly None, not missing
+        result = _merge_step0_into_result(base, step0, "test")
+        assert result.get("currency_col") is None
+
+    def test_currency_col_missing_key_does_not_crash(self):
+        """currency_col key absent from result dict must not raise."""
+        step0 = _Step0Result(date_accounting_col="Valuta")
+        base = self._base_result()
+        # no currency_col key at all
+        result = _merge_step0_into_result(base, step0, "test")
+        assert result.get("currency_col") is None
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # _apply_step0_invert_sign (post-merge safety net)
