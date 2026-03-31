@@ -30,6 +30,8 @@
 
   "sidebar.title": "🏦 Spendify",
   "sidebar.llm_warning": "⚠️ AI processing in progress. Changing page will interrupt the process.",
+  "sidebar.nav_confirm_msg": "You are about to leave the current page. AI processing will be interrupted.",
+  "sidebar.nav_stay": "Stay",
 
   "ledger.title": "📋 Ledger — Transaction Register",
   "ledger.filter.from": "From",

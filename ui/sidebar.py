@@ -1,26 +1,28 @@
 import streamlit as st
 
+from ui.i18n import t
 
-_NAV = [
-    ("📥 Import", "import", "Importa file CSV/XLSX dai tuoi conti bancari"),
-    ("📜 Storico import", "history", "Cronologia importazioni con possibilità di annullamento"),
-    ("📋 Ledger", "ledger", "Consulta e filtra tutte le transazioni importate"),
-    ("✏️ Modifiche massive", "bulk_edit", "Modifica categoria, contesto o giroconto su gruppi di transazioni"),
-    ("📊 Analytics", "analytics", "Grafici interattivi su entrate, uscite e andamento"),
-    ("📋 Report", "report", "Report spesa per contesto e categoria con export Excel"),
-    ("💰 Budget", "budget", "Definisci obiettivi % di spesa per categoria"),
-    ("📊 Budget vs Actual", "budget_vs_actual", "Confronta spesa effettiva con obiettivi di budget"),
-    ("🔍 Review", "review", "Rivedi le transazioni segnalate per verifica"),
-    ("📏 Regole", "rules", "Gestisci le regole automatiche di categorizzazione"),
-    ("🗂️ Tassonomia", "taxonomy", "Configura categorie e sottocategorie di spesa/entrata"),
-    ("⚙️ Impostazioni", "settings", "Conti bancari, backend LLM e preferenze generali"),
-    ("✅ Check List", "checklist", "Verifica completezza e qualità dei dati importati"),
+# Navigation entries: (i18n_key_suffix, page_key)
+_NAV_KEYS = [
+    ("import",          "import"),
+    ("history",         "history"),
+    ("ledger",          "ledger"),
+    ("bulk_edit",       "bulk_edit"),
+    ("analytics",       "analytics"),
+    ("report",          "report"),
+    ("budget",          "budget"),
+    ("budget_vs_actual","budget_vs_actual"),
+    ("review",          "review"),
+    ("rules",           "rules"),
+    ("taxonomy",        "taxonomy"),
+    ("settings",        "settings"),
+    ("checklist",       "checklist"),
 ]
 
 
 def render_sidebar() -> str:
     """Render the sidebar and return the selected page key."""
-    st.sidebar.title("🏦 Spendify")
+    st.sidebar.title(t("sidebar.title"))
 
     if "page" not in st.session_state:
         st.session_state["page"] = "import"
@@ -29,32 +31,28 @@ def render_sidebar() -> str:
 
     # Navigation guard: warn user when an LLM process is active
     if llm_running:
-        st.sidebar.warning(
-            "⚠️ Elaborazione AI in corso. "
-            "Cambiare pagina interromperà il processo."
-        )
+        st.sidebar.warning(t("sidebar.llm_warning"))
 
     # Confirmation gate: if user clicked a nav button while LLM was running,
     # show confirm/cancel instead of navigating immediately.
     pending_nav = st.session_state.pop("_pending_nav_target", None)
     if pending_nav and llm_running:
-        st.sidebar.error(
-            f"Stai per abbandonare la pagina corrente. "
-            f"L'elaborazione AI verrà interrotta."
-        )
+        st.sidebar.error(t("sidebar.nav_confirm_msg"))
         col1, col2 = st.sidebar.columns(2)
         with col1:
-            if st.button("Conferma", key="nav_confirm_interrupt", type="primary"):
+            if st.button(t("common.confirm"), key="nav_confirm_interrupt", type="primary"):
                 st.session_state["llm_in_progress"] = False
                 st.session_state["page"] = pending_nav
                 st.rerun()
         with col2:
-            if st.button("Resta", key="nav_cancel_interrupt"):
+            if st.button(t("sidebar.nav_stay"), key="nav_cancel_interrupt"):
                 st.rerun()
         # While confirmation is pending, still show nav but don't process clicks
         return st.session_state["page"]
 
-    for label, key, tooltip in _NAV:
+    for nav_suffix, key in _NAV_KEYS:
+        label = t(f"nav.{nav_suffix}")
+        tooltip = t(f"nav.{nav_suffix}.desc")
         is_active = st.session_state["page"] == key
         btn_type = "primary" if is_active else "secondary"
         if st.sidebar.button(
