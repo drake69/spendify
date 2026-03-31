@@ -445,6 +445,7 @@ def _evaluate_file(
             source_name=entry.filename,
             sanitize=True,
             header_certain=preprocess_info.header_certain,
+            account_type=entry.doc_type,
             classifier_mode="auto",
         )
 
