@@ -1,9 +1,10 @@
 # Spendify — Installation Guide
 
 > Scenarios covered:
-> - **Mac** — native installation (recommended, maximum LLM performance)
-> - **Linux native** — direct installation with local Ollama
-> - **Linux Docker** — Docker with Ollama as a separate container
+> - **Mac One-Click** — automatic installation (recommended, zero configuration)
+> - **Mac** — manual native installation (maximum LLM performance with llama.cpp)
+> - **Linux native** — direct installation with local llama.cpp
+> - **Linux Docker** — Docker with Ollama as a separate container (alternative)
 > - **Windows** — Docker with llama.cpp server as a separate container
 > - **One-liner** — guided installation from scratch with Docker (AI option included, recommended for non-technical users)
 
@@ -15,23 +16,49 @@
 >
 > The `.env` file contains only the database path and the taxonomy path.
 
-The configuration is saved in the database (`user_settings`) and persists across restarts. On first launch the app uses Ollama on `localhost:11434` as default.
+The configuration is saved in the database (`user_settings`) and persists across restarts. On first launch the app uses **llama.cpp** as the default backend — no external service needed.
 
 ---
 
 ## ❓ Does the LLM model need to be downloaded before using the app?
 
-**Yes, once.** The app does not download models automatically — the LLM server must have the model available before starting operations that require it (categorisation, description cleaning).
+**No, with the one-click installation the model is downloaded automatically on first launch.** The app detects your hardware (RAM, GPU) and downloads the optimal model:
+
+| RAM | Model | Size |
+|-----|-------|------|
+| 4 GB | Qwen2.5-1.5B | 1.1 GB |
+| 8 GB | Qwen2.5-3B | 2.1 GB |
+| 12 GB | Qwen2.5-7B | 4.7 GB |
+| 16+ GB | Gemma-3-12B | 6.8 GB |
 
 > **Note:** the app works without an active LLM. Import, ledger, rules, analytics and reports are always available. If the LLM is unreachable, transactions receive the category "Other" and `to_review=True`.
 
 ---
 
-## 🍎 Mac — Native installation
+## 🍎 Mac One-Click — Automatic installation (recommended)
+
+**Prerequisites:** macOS 12+, Python 3.11+, internet connection
+
+1. Download `install_spendify.command` from the [repository](https://github.com/drake69/spendify)
+2. **Double-click** the file in Finder
+3. The script:
+   - Checks Python and installs `uv` (package manager)
+   - Downloads Spendify to `~/Applications/Spendify/`
+   - Installs all dependencies
+   - Detects your hardware and recommends the optimal LLM model
+4. On the first import, the model is downloaded automatically
+
+**To launch Spendify every day:** double-click `Spendify.command` in `~/Applications/Spendify/packaging/macos/`
+
+**Minimum HW:** 4 GB RAM, Apple Silicon or Intel with AVX2. Metal GPU acceleration is automatic.
+
+---
+
+## 🍎 Mac — Manual installation
 
 ### Why native on Mac?
 
-Ollama on Mac uses **Metal (Apple Silicon)** or **OpenCL (Intel)** acceleration. Inside Docker this acceleration is not available → inference is 5-10x slower.
+llama.cpp on Mac uses **Metal (Apple Silicon)** acceleration automatically. Inside Docker this acceleration is not available → inference is 5-10x slower.
 
 ### Prerequisites
 
@@ -65,23 +92,28 @@ cp .env.example .env
 # The .env file requires no changes for a standard local installation
 ```
 
-### Step 5 — Install Ollama and download the model
+### Step 5 — Download the LLM model
+
+The model is loaded directly by llama.cpp (built into Spendify) — **no external service to install**.
 
 ```bash
-# Install Ollama (once)
-brew install ollama
-# or download from https://ollama.com
+# Download a GGUF model (once)
+# Choose based on your available RAM:
 
-# Start the Ollama server in the background
-ollama serve &
+# RAM >= 16 GB (recommended):
+uv run huggingface-cli download google/gemma-3-12b-it-GGUF gemma-3-12b-it-Q4_K_M.gguf \
+    --local-dir ~/.spendify/models
 
-# Download the model (once — ~8 GB for gemma3:12b, ~2 GB for gemma3:4b)
-ollama pull gemma3:12b
-# Lighter version for Macs with < 16 GB RAM:
-# ollama pull gemma3:4b
+# RAM 8 GB:
+uv run huggingface-cli download Qwen/Qwen2.5-7B-Instruct-GGUF qwen2.5-7b-instruct-q4_k_m.gguf \
+    --local-dir ~/.spendify/models
+
+# RAM 4 GB:
+uv run huggingface-cli download Qwen/Qwen2.5-3B-Instruct-GGUF qwen2.5-3b-instruct-q4_k_m.gguf \
+    --local-dir ~/.spendify/models
 ```
 
-> **The model is downloaded only once** into `~/.ollama/models/` and reused on every subsequent launch.
+> **The model is downloaded only once** into `~/.spendify/models/` and reused on every subsequent launch. Alternatively, you can download the model directly from the app in ⚙️ Settings → Download model.
 
 ### Step 6 — Start the app
 
@@ -97,25 +129,25 @@ uv run streamlit run app.py
 
 The app is available at **http://localhost:8501**
 
-### Step 7 — Configure the LLM backend in the app
+### Step 7 — Verify the LLM backend in the app
 
 Go to ⚙️ **Settings** → **LLM Backend** section:
-- Backend: `Ollama (local)`
-- URL: `http://localhost:11434`
-- Model: `gemma3:12b` (or the model you downloaded)
+- Backend: `llama.cpp (local, zero-config)` ← already selected by default
+- Model path: the downloaded `.gguf` file is detected automatically
+
+> **Ollama alternative:** if you prefer Ollama, install it (`brew install ollama`), download a model (`ollama pull gemma3:12b`), and select `Ollama (local)` in settings.
 
 ### Quick start for subsequent launches
 
 ```bash
-ollama serve &          # if not already running
-./start.sh              # or: uv run streamlit run app.py
+./start.sh              # no service to start — llama.cpp is built in
 ```
 
 ---
 
 ## 🐧 Linux — Native installation
 
-Same procedure as Mac, but without Metal acceleration. Recommended if you have an NVIDIA GPU with CUDA drivers or want to avoid Docker.
+Same procedure as Mac. llama.cpp automatically supports NVIDIA GPUs (CUDA) if drivers are installed, and CPUs with AVX2. Recommended if you want to avoid Docker.
 
 ### Prerequisites
 
@@ -150,22 +182,25 @@ cp .env.example .env
 # The .env file requires no changes for a standard local installation
 ```
 
-### Step 5 — Install Ollama and download the model
+### Step 5 — Download the LLM model
 
 ```bash
-# Install Ollama (once)
-curl -fsSL https://ollama.com/install.sh | sh
+# Download a GGUF model (once — choose based on your RAM):
 
-# Start the Ollama server
-ollama serve &
+# RAM >= 16 GB (recommended):
+uv run huggingface-cli download google/gemma-3-12b-it-GGUF gemma-3-12b-it-Q4_K_M.gguf \
+    --local-dir ~/.spendify/models
 
-# Download the model (once — ~8 GB for gemma3:12b, ~2 GB for gemma3:4b)
-ollama pull gemma3:12b
-# Lighter version for systems with < 16 GB RAM:
-# ollama pull gemma3:4b
+# RAM 8 GB:
+uv run huggingface-cli download Qwen/Qwen2.5-7B-Instruct-GGUF qwen2.5-7b-instruct-q4_k_m.gguf \
+    --local-dir ~/.spendify/models
+
+# RAM 4 GB:
+uv run huggingface-cli download Qwen/Qwen2.5-3B-Instruct-GGUF qwen2.5-3b-instruct-q4_k_m.gguf \
+    --local-dir ~/.spendify/models
 ```
 
-> If you have an NVIDIA GPU, Ollama uses it automatically with CUDA drivers installed.
+> If you have an NVIDIA GPU with CUDA drivers, llama.cpp uses it automatically to accelerate inference.
 
 ### Step 6 — Start the app
 
@@ -177,18 +212,18 @@ ollama pull gemma3:12b
 
 The app is available at **http://localhost:8501**
 
-### Step 7 — Configure the LLM backend in the app
+### Step 7 — Verify the LLM backend in the app
 
 Go to ⚙️ **Settings** → **LLM Backend** section:
-- Backend: `Ollama (local)`
-- URL: `http://localhost:11434`
-- Model: `gemma3:12b` (or the model you downloaded)
+- Backend: `llama.cpp (local, zero-config)` ← already selected by default
+- Model path: detected automatically from `~/.spendify/models/`
+
+> **Ollama alternative:** install with `curl -fsSL https://ollama.com/install.sh | sh`, download a model (`ollama pull gemma3:12b`), and select `Ollama (local)` in settings.
 
 ### Quick start for subsequent launches
 
 ```bash
-ollama serve &          # if not already running
-./start.sh
+./start.sh              # no service to start
 ```
 
 ---
@@ -373,8 +408,8 @@ For backup, restore, moving to another computer and direct inspection → **[Dat
 
 | Scenario | Command |
 |----------|---------|
-| Native Mac | `./start.sh` |
-| Native Linux | `./start.sh` |
+| Mac native | `./start.sh` |
+| Linux native | `./start.sh` |
 | Linux + Ollama Docker | `docker compose --profile ollama up -d` |
 | Windows + llama.cpp Docker | `docker compose --profile llama-cpp up -d` |
 | Windows + external LM Studio | `docker compose up -d` |
@@ -385,12 +420,13 @@ For backup, restore, moving to another computer and direct inspection → **[Dat
 
 **Does the model need to be re-downloaded on every launch?**
 No. It is saved only once:
+- llama.cpp (native) → `~/.spendify/models/`
 - Native Ollama → `~/.ollama/models/`
 - Ollama Docker → volume `spendify_ollama_models`
-- llama.cpp → `./models/` folder
+- llama.cpp Docker → `./models/` folder
 
 **Can I change the model after the first launch?**
-Yes. Go to ⚙️ Settings, change the model name and save. For Ollama, download the model first: `ollama pull <model>` (native) or `docker compose exec ollama ollama pull <model>` (Docker).
+Yes. Go to ⚙️ Settings and select a different model. For llama.cpp, download the new GGUF into `~/.spendify/models/`. For Ollama: `ollama pull <model>` (native) or `docker compose exec ollama ollama pull <model>` (Docker).
 
 **Can I use OpenAI or Anthropic instead of a local LLM?**
 Yes. In ⚙️ Settings select `OpenAI` or `Anthropic` and enter the API key. No LLM container required.
@@ -414,4 +450,4 @@ curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/uni
 # Windows:
 # irm https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.ps1 | iex
 ```
-The script asks separately whether to remove: database, Ollama models, llama.cpp image + GGUF files, Docker images, installation folder, and shows instructions for uninstalling Docker Desktop.
+The script asks separately whether to remove: database, GGUF models (`~/.spendify/models/`), Ollama models, Docker images, installation folder, and shows instructions for uninstalling Docker Desktop.

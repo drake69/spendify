@@ -13,11 +13,12 @@
 2. [Development environment setup](#2-development-environment-setup)
 3. [Project structure](#3-project-structure)
 4. [Service layer](#4-service-layer)
-5. [Coupling gate (CI)](#5-coupling-gate-ci)
-6. [REST API](#6-rest-api)
-7. [Tests](#7-tests)
-8. [Key design decisions](#8-key-design-decisions)
-9. [Technical reference documentation](#9-technical-reference-documentation)
+5. [Multi-step classifier](#5-multi-step-classifier)
+6. [Coupling gate (CI)](#6-coupling-gate-ci)
+7. [REST API](#7-rest-api)
+8. [Tests](#8-tests)
+9. [Key design decisions](#9-key-design-decisions)
+10. [Technical reference documentation](#10-technical-reference-documentation)
 
 ---
 
@@ -191,7 +192,58 @@ For existing installations (DB with data) onboarding is skipped automatically: `
 
 ---
 
-## 5. Coupling gate (CI)
+## 5. Multi-step classifier
+
+The classifier supports a 3-step sequential LLM pipeline where each step's output feeds as context into the next. This improves accuracy on small models that struggle to produce the full schema in a single call.
+
+### 3-step architecture
+
+| Step | Purpose | Output |
+|------|---------|--------|
+| **Step 1 — Document Identity** | Identify document type and reading parameters | `doc_type`, `encoding`, `delimiter`, `sheet_name`, `skip_rows` |
+| **Step 2 — Column Mapping** | Map file columns to Spendify fields | `date_col`, `amount_col`, `description_col`, `balance_col`, `credit_col`, `debit_col` |
+| **Step 3 — Semantic Analysis** | Analyze value semantics (sign, date format, etc.) | `sign_convention`, `invert_sign`, `date_format`, `decimal_separator`, `account_holder` |
+
+Each step receives the output of previous steps as context, allowing the model to focus on one sub-problem at a time.
+
+### Key files and functions
+
+| Component | Location | Role |
+|-----------|----------|------|
+| `_classify_multi_step()` | `core/classifier.py` | Orchestrates the 3 steps with error handling and fallback |
+| `MultiStepDiagnostics` | `core/classifier.py` | Dataclass with per-step diagnostics (prompt, raw response, parsed JSON, duration) |
+| `step1_json_schema()` | `core/schemas.py` | JSON Schema for Step 1 response |
+| `step2_json_schema()` | `core/schemas.py` | JSON Schema for Step 2 response |
+| `step3_json_schema()` | `core/schemas.py` | JSON Schema for Step 3 response |
+| `fill_llm_defaults()` | `core/schemas.py` | Applies default values to optional fields not returned by the model |
+
+### Classification mode (`classifier_mode` in `ProcessingConfig`)
+
+| Value | Behavior |
+|-------|----------|
+| `"auto"` | **Default.** Auto-selects based on model size (see below) |
+| `"single"` | Single LLM call (everything in one prompt) |
+| `"multi_step"` | Forces the 3-step pipeline |
+
+### Auto-detect logic
+
+The auto mode selects the strategy based on backend and model size:
+
+- **Local GGUF models < 5 GB** → `multi_step` (small models benefit from decomposition)
+- **Local GGUF models >= 5 GB** → `single` (large models handle the full prompt well)
+- **Remote backends** (OpenAI, Anthropic, etc.) → `single`
+
+### Degradation
+
+| Failure | Behavior |
+|---------|----------|
+| Step 1 fails | **Abort** — cannot proceed without document type |
+| Step 2 fails | **Phase 0 fallback** — attempts parsing with deterministic rules |
+| Step 3 fails | **Defaults** — `fill_llm_defaults()` applies defaults; `confidence` set to `low` |
+
+---
+
+## 6. Coupling gate (CI)
 
 `tools/coupling_check.py` statically analyzes all `ui/` files and verifies they do not import from `core.*`, `db.*`, or `support.*`.
 
@@ -209,7 +261,7 @@ The `coupling-check` job in `.github/workflows/ci.yml` runs `--strict --json` an
 
 ---
 
-## 6. REST API
+## 7. REST API
 
 An optional FastAPI server exposes core operations as REST endpoints.
 
@@ -222,7 +274,7 @@ The server uses the same `services.*` as the Streamlit UI — no duplicated logi
 
 ---
 
-## 7. Tests
+## 8. Tests
 
 ```bash
 # All tests
@@ -248,7 +300,7 @@ Tests use SQLite in-memory (`create_engine("sqlite://")`) — no DB mocks.
 
 ---
 
-## 8. Key design decisions
+## 9. Key design decisions
 
 | Decision | Rationale |
 |----------|-----------|
@@ -262,7 +314,7 @@ Tests use SQLite in-memory (`create_engine("sqlite://")`) — no DB mocks.
 
 ---
 
-## 9. Technical reference documentation
+## 10. Technical reference documentation
 
 Detailed engineering documentation is in `documents/` (outside the repo):
 

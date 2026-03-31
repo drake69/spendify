@@ -13,13 +13,14 @@
 2. [Setup ambiente di sviluppo](#2-setup-ambiente-di-sviluppo)
 3. [Struttura del progetto](#3-struttura-del-progetto)
 4. [Service layer](#4-service-layer)
-5. [Coupling gate (CI)](#5-coupling-gate-ci)
-6. [REST API](#6-rest-api)
-7. [Test](#7-test)
-8. [Prompt Integrity Guard (S-01)](#8-prompt-integrity-guard-s-01)
-9. [Benchmark (T-09)](#9-benchmark-t-09)
-10. [Decisioni di design chiave](#10-decisioni-di-design-chiave)
-11. [Documentazione tecnica di riferimento](#11-documentazione-tecnica-di-riferimento)
+5. [Classifier multi-step](#5-classifier-multi-step)
+6. [Coupling gate (CI)](#6-coupling-gate-ci)
+7. [REST API](#7-rest-api)
+8. [Test](#8-test)
+9. [Prompt Integrity Guard (S-01)](#9-prompt-integrity-guard-s-01)
+10. [Benchmark (T-09)](#10-benchmark-t-09)
+11. [Decisioni di design chiave](#11-decisioni-di-design-chiave)
+12. [Documentazione tecnica di riferimento](#12-documentazione-tecnica-di-riferimento)
 
 ---
 
@@ -207,7 +208,58 @@ Per installazioni esistenti (DB con dati) l'onboarding è saltato automaticament
 
 ---
 
-## 5. Coupling gate (CI)
+## 5. Classifier multi-step
+
+Il classifier supporta una pipeline LLM a 3 step sequenziali, dove l'output di ogni step alimenta il contesto dello step successivo. Questo approccio migliora l'accuratezza su modelli piccoli che faticano a produrre l'intero schema in una sola chiamata.
+
+### Architettura a 3 step
+
+| Step | Scopo | Output |
+|------|-------|--------|
+| **Step 1 — Document Identity** | Identifica il tipo di documento e i parametri di lettura | `doc_type`, `encoding`, `delimiter`, `sheet_name`, `skip_rows` |
+| **Step 2 — Column Mapping** | Mappa le colonne del file ai campi Spendify | `date_col`, `amount_col`, `description_col`, `balance_col`, `credit_col`, `debit_col` |
+| **Step 3 — Semantic Analysis** | Analizza la semantica dei valori (segno, formato data, ecc.) | `sign_convention`, `invert_sign`, `date_format`, `decimal_separator`, `account_holder` |
+
+Ogni step riceve come contesto l'output degli step precedenti, consentendo al modello di concentrarsi su un sotto-problema alla volta.
+
+### File e funzioni chiave
+
+| Componente | Posizione | Ruolo |
+|------------|-----------|-------|
+| `_classify_multi_step()` | `core/classifier.py` | Orchestrazione dei 3 step con gestione errori e fallback |
+| `MultiStepDiagnostics` | `core/classifier.py` | Dataclass con diagnostica per-step (prompt, risposta raw, JSON parsato, durata) |
+| `step1_json_schema()` | `core/schemas.py` | JSON Schema per la risposta dello Step 1 |
+| `step2_json_schema()` | `core/schemas.py` | JSON Schema per la risposta dello Step 2 |
+| `step3_json_schema()` | `core/schemas.py` | JSON Schema per la risposta dello Step 3 |
+| `fill_llm_defaults()` | `core/schemas.py` | Applica valori di default ai campi opzionali non restituiti dal modello |
+
+### Modalita di classificazione (`classifier_mode` in `ProcessingConfig`)
+
+| Valore | Comportamento |
+|--------|--------------|
+| `"auto"` | **Default.** Seleziona automaticamente in base alla dimensione del modello (vedi sotto) |
+| `"single"` | Chiamata LLM singola (tutto in un prompt) |
+| `"multi_step"` | Forza la pipeline a 3 step |
+
+### Auto-detect
+
+La logica auto seleziona il modo in base al backend e alla dimensione del modello:
+
+- **Modelli GGUF locali < 5 GB** → `multi_step` (modelli piccoli beneficiano della decomposizione)
+- **Modelli GGUF locali >= 5 GB** → `single` (modelli grandi gestiscono bene il prompt completo)
+- **Backend remoti** (OpenAI, Anthropic, ecc.) → `single`
+
+### Degradazione
+
+| Fallimento | Comportamento |
+|------------|--------------|
+| Step 1 fallisce | **Abort** — impossibile procedere senza il tipo di documento |
+| Step 2 fallisce | **Fallback Phase 0** — si tenta il parsing con regole deterministiche |
+| Step 3 fallisce | **Defaults** — `fill_llm_defaults()` applica i default; `confidence` impostata a `low` |
+
+---
+
+## 6. Coupling gate (CI)
 
 `tools/coupling_check.py` analizza staticamente tutti i file `ui/` e verifica che non importino da `core.*`, `db.*`, `support.*`.
 
@@ -225,7 +277,7 @@ Il job `coupling-check` in `.github/workflows/ci.yml` esegue `--strict --json` e
 
 ---
 
-## 6. REST API
+## 7. REST API
 
 Un server FastAPI opzionale espone le operazioni core come endpoint REST.
 
@@ -238,7 +290,7 @@ Il server usa gli stessi `services.*` dell'UI Streamlit — nessuna logica dupli
 
 ---
 
-## 7. Test
+## 8. Test
 
 ```bash
 # Tutti i test
@@ -264,7 +316,7 @@ I test usano SQLite in-memory (`create_engine("sqlite://")`) — nessun mock sul
 
 ---
 
-## 8. Prompt Integrity Guard (S-01)
+## 9. Prompt Integrity Guard (S-01)
 
 I prompt LLM sono protetti da SHA256 pinning per prevenire prompt injection via PR/commit.
 
@@ -302,7 +354,7 @@ python tools/compute_prompt_hashes.py --verify || {
 
 ---
 
-## 9. Benchmark (T-09)
+## 10. Benchmark (T-09)
 
 ### Benchmark classifier (schema detection + parsing)
 
@@ -562,7 +614,7 @@ gh pr create --title "bench: M1 Max results" --body "Aggiunge risultati benchmar
 
 ---
 
-## 10. Decisioni di design chiave
+## 11. Decisioni di design chiave
 
 | Decisione | Motivazione |
 |-----------|-------------|
@@ -576,7 +628,7 @@ gh pr create --title "bench: M1 Max results" --body "Aggiunge risultati benchmar
 
 ---
 
-## 11. Documentazione tecnica di riferimento
+## 12. Documentazione tecnica di riferimento
 
 La documentazione di ingegneria dettagliata è in `documents/` (fuori dal repo):
 
