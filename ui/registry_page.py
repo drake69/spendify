@@ -13,18 +13,19 @@ from services.settings_service import SettingsService
 from services.transaction_service import TransactionService
 from support.formatting import format_amount_display, format_date_display
 from support.logging import setup_logging
+from ui.i18n import t
 
 logger = setup_logging()
 
 EXCLUDED_FROM_BALANCE = {"internal_out", "internal_in", "card_settlement", "aggregate_debit"}
 _ALL_TX_TYPES = [
-    "tutti", "expense", "income", "card_tx",
+    "expense", "income", "card_tx",
     "internal_out", "internal_in", "card_settlement", "unknown",
 ]
 
 
 def render_registry_page(engine):
-    st.header("📋 Ledger — Registro Transazioni")
+    st.header(t("ledger.title"))
 
     cfg_svc  = SettingsService(engine)
     tx_svc   = TransactionService(engine)
@@ -103,39 +104,39 @@ def render_registry_page(engine):
     # ── Filter row ─────────────────────────────────────────────────────────────
     fc1, fc2, fc3, fc4 = st.columns(4)
     with fc1:
-        date_from = st.date_input("Da", key="ledger_from")
+        date_from = st.date_input(t("ledger.filter.from"), key="ledger_from")
     with fc2:
-        date_to = st.date_input("A", key="ledger_to")
+        date_to = st.date_input(t("ledger.filter.to"), key="ledger_to")
     with fc3:
         account_filter = st.selectbox(
-            "Conto", ["tutti i conti"] + _accounts, key="ledger_account"
+            t("ledger.filter.account"), [t("ledger.filter.account_all")] + _accounts, key="ledger_account"
         )
     with fc4:
-        tx_type_filter = st.selectbox("Tipo", _ALL_TX_TYPES, key="ledger_type")
+        tx_type_filter = st.selectbox(t("ledger.filter.type"), [t("ledger.filter.type_all")] + _ALL_TX_TYPES, key="ledger_type")
 
     fc5, fc6, fc6b, fc7, fc8, fc9 = st.columns([3, 2, 1.5, 1, 1, 1])
     with fc5:
         desc_filter = st.text_input(
-            "🔍 Descrizione", placeholder="cerca in descrizione e raw…", key="ledger_desc"
+            t("ledger.filter.description"), placeholder=t("ledger.filter.description_placeholder"), key="ledger_desc"
         )
     with fc6:
         cat_filter = st.selectbox(
-            "Categoria", ["tutte"] + _all_cats, key="ledger_cat"
+            t("ledger.filter.category"), [t("ledger.filter.category_all")] + _all_cats, key="ledger_cat"
         )
     with fc6b:
         ctx_filter = st.selectbox(
-            "Contesto", ["tutti"] + _contexts, key="ledger_ctx"
+            t("ledger.filter.context"), [t("ledger.filter.context_all")] + _contexts, key="ledger_ctx"
         )
     with fc7:
-        review_only = st.checkbox("Solo da rivedere ⚠️", key="ledger_review")
+        review_only = st.checkbox(t("ledger.filter.review_only"), key="ledger_review")
     with fc8:
         hide_giro = st.checkbox(
-            "Nascondi giroconti",
+            t("ledger.filter.hide_giro"),
             key="ledger_hide_giro",
             value=st.session_state.get("ledger_hide_giro", giroconto_mode == "exclude"),
         )
     with fc9:
-        show_raw = st.checkbox("Mostra raw", key="ledger_show_raw")
+        show_raw = st.checkbox(t("ledger.filter.show_raw"), key="ledger_show_raw")
 
     # ── Build query filters ────────────────────────────────────────────────────
     filters: dict = {}
@@ -143,17 +144,17 @@ def render_registry_page(engine):
         filters["date_from"] = date_from.isoformat()
     if date_to:
         filters["date_to"] = date_to.isoformat()
-    if account_filter != "tutti i conti":
+    if account_filter != t("ledger.filter.account_all"):
         filters["account_label"] = account_filter
-    if tx_type_filter != "tutti":
+    if tx_type_filter != t("ledger.filter.type_all"):
         filters["tx_type"] = tx_type_filter
     elif hide_giro:
         filters["exclude_tx_types"] = ["internal_in", "internal_out"]
     if desc_filter.strip():
         filters["description"] = desc_filter.strip()
-    if cat_filter != "tutte":
+    if cat_filter != t("ledger.filter.category_all"):
         filters["category"] = cat_filter
-    if ctx_filter != "tutti":
+    if ctx_filter != t("ledger.filter.context_all"):
         filters["context"] = ctx_filter
     if review_only:
         filters["to_review"] = True
@@ -171,24 +172,24 @@ def render_registry_page(engine):
     expense_t = sum(Decimal(str(tx.amount)) for tx in _bal_txs if Decimal(str(tx.amount)) < 0)
 
     m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Transazioni", len(txs))
-    m2.metric("Saldo netto",  format_amount_display(float(net),            _dec, _thou))
-    m3.metric("Entrate",      format_amount_display(float(income_t),       _dec, _thou))
-    m4.metric("Uscite",       format_amount_display(float(abs(expense_t)), _dec, _thou))
+    m1.metric(t("ledger.metric.transactions"), len(txs))
+    m2.metric(t("ledger.metric.net_balance"),  format_amount_display(float(net),            _dec, _thou))
+    m3.metric(t("ledger.metric.income"),       format_amount_display(float(income_t),       _dec, _thou))
+    m4.metric(t("ledger.metric.expenses"),     format_amount_display(float(abs(expense_t)), _dec, _thou))
 
     # ── Sort (U-05: sort on full dataset before pagination) ────────────────
     _sort_col, _sort_pg = st.columns([2, 3])
     with _sort_col:
         _sort_options = {
-            "Data (recente → vecchia)": ("date", True),
-            "Data (vecchia → recente)": ("date", False),
-            "Importo (alto → basso)": ("amount", True),
-            "Importo (basso → alto)": ("amount", False),
-            "Descrizione (A → Z)": ("description", False),
-            "Categoria (A → Z)": ("category", False),
+            t("ledger.sort.date_desc"): ("date", True),
+            t("ledger.sort.date_asc"): ("date", False),
+            t("ledger.sort.amount_desc"): ("amount", True),
+            t("ledger.sort.amount_asc"): ("amount", False),
+            t("ledger.sort.desc_asc"): ("description", False),
+            t("ledger.sort.cat_asc"): ("category", False),
         }
         _sort_label = st.selectbox(
-            "Ordina per", list(_sort_options.keys()), index=0, key="ledger_sort"
+            t("ledger.sort.label"), list(_sort_options.keys()), index=0, key="ledger_sort"
         )
         _sort_field, _sort_desc = _sort_options[_sort_label]
         txs = sorted(
@@ -200,7 +201,7 @@ def render_registry_page(engine):
     # ── Pagination ────────────────────────────────────────────────────────────
     with _sort_pg:
         rows_per_page = st.selectbox(
-            "Righe/pagina", [15, 25, 50, 100, 200], index=0, key="ledger_page_size"
+            t("ledger.rows_per_page"), [15, 25, 50, 100, 200], index=0, key="ledger_page_size"
         )
 
     total_rows  = len(txs)
@@ -239,21 +240,21 @@ def render_registry_page(engine):
         {
             "_id":           tx.id,
             "_sel":          False,
-            "Data":          tx.date,  # U-06: keep as date/datetime for correct sorting
-            "Descrizione":   (tx.description or "")[:80],
-            **({"Raw": (tx.raw_description or "")[:80]} if show_raw else {}),
-            "Entrata":       float(tx.amount) if float(tx.amount) > 0 else None,
-            "Uscita":        abs(float(tx.amount)) if float(tx.amount) < 0 else None,
-            "Conto":         tx.account_label or "",
-            "Tipo":          tx.tx_type or "",
-            "Categoria":     tx.category or "",
-            "Sottocategoria": tx.subcategory or "",
-            "Contesto":      tx.context or "",
-            "Fonte":         _SOURCE_BADGE.get(tx.category_source, "—"),
+            t("ledger.col.date"):          tx.date,  # U-06: keep as date/datetime for correct sorting
+            t("ledger.col.description"):   (tx.description or "")[:80],
+            **({t("ledger.col.raw"): (tx.raw_description or "")[:80]} if show_raw else {}),
+            t("ledger.col.income"):        float(tx.amount) if float(tx.amount) > 0 else None,
+            t("ledger.col.expense"):       abs(float(tx.amount)) if float(tx.amount) < 0 else None,
+            t("ledger.col.account"):       tx.account_label or "",
+            t("ledger.col.type"):          tx.tx_type or "",
+            t("ledger.col.category"):      tx.category or "",
+            t("ledger.col.subcategory"):   tx.subcategory or "",
+            t("ledger.col.context"):       tx.context or "",
+            t("ledger.col.source"):        _SOURCE_BADGE.get(tx.category_source, "—"),
             "⚠️":            "⚠️" if tx.to_review else "·",
             "✅":            "✅" if tx.human_validated else "·",
             "🔄":            "🔄" if tx.tx_type in ("internal_out", "internal_in") else "·",
-            "Validato":      bool(tx.human_validated),
+            t("ledger.col.validated"):      bool(tx.human_validated),
             "🔄 Giroconto":  tx.tx_type in ("internal_out", "internal_in"),
         }
         for tx in page_txs
@@ -263,22 +264,22 @@ def render_registry_page(engine):
     _col_cfg: dict = {
         "_id":            None,
         "_sel":           st.column_config.CheckboxColumn("📏", width=40),
-        "Data":           st.column_config.DateColumn("Data",          format=_date_fmt, width="small"),
-        "Descrizione":    st.column_config.TextColumn("Descrizione",  disabled=True),
-        "Entrata":        st.column_config.NumberColumn("Entrata",    disabled=True, format="%.2f", width="small"),
-        "Uscita":         st.column_config.NumberColumn("Uscita",     disabled=True, format="%.2f", width="small"),
-        "Conto":          st.column_config.TextColumn("Conto",        disabled=True, width="small"),
-        "Tipo":           st.column_config.TextColumn("Tipo",         disabled=True, width="small"),
-        "Categoria":      st.column_config.SelectboxColumn(
-            "Categoria", options=[""] + _all_cats, required=False, width="medium",
+        t("ledger.col.date"):           st.column_config.DateColumn(t("ledger.col.date"),          format=_date_fmt, width="small"),
+        t("ledger.col.description"):    st.column_config.TextColumn(t("ledger.col.description"),  disabled=True),
+        t("ledger.col.income"):         st.column_config.NumberColumn(t("ledger.col.income"),     disabled=True, format="%.2f", width="small"),
+        t("ledger.col.expense"):        st.column_config.NumberColumn(t("ledger.col.expense"),    disabled=True, format="%.2f", width="small"),
+        t("ledger.col.account"):        st.column_config.TextColumn(t("ledger.col.account"),      disabled=True, width="small"),
+        t("ledger.col.type"):           st.column_config.TextColumn(t("ledger.col.type"),         disabled=True, width="small"),
+        t("ledger.col.category"):       st.column_config.SelectboxColumn(
+            t("ledger.col.category"), options=[""] + _all_cats, required=False, width="medium",
         ),
-        "Sottocategoria": st.column_config.SelectboxColumn(
-            "Sottocategoria", options=[""] + _all_sub, required=False, width="medium",
+        t("ledger.col.subcategory"):    st.column_config.SelectboxColumn(
+            t("ledger.col.subcategory"), options=[""] + _all_sub, required=False, width="medium",
         ),
-        "Contesto":       st.column_config.SelectboxColumn(
-            "Contesto", options=[""] + _contexts, required=False, width="small",
+        t("ledger.col.context"):        st.column_config.SelectboxColumn(
+            t("ledger.col.context"), options=[""] + _contexts, required=False, width="small",
         ),
-        "Fonte":          st.column_config.TextColumn("Fonte", disabled=True, width=100),
+        t("ledger.col.source"):         st.column_config.TextColumn(t("ledger.col.source"), disabled=True, width=100),
         "⚠️":             st.column_config.TextColumn("⚠️", disabled=True, width=40),
         "✅":             st.column_config.TextColumn("✅", disabled=True, width=40),
         "🔄":             st.column_config.TextColumn("🔄", disabled=True, width=40),

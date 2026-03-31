@@ -241,6 +241,27 @@ def render_settings_page(engine):
 
     st.divider()
 
+    # ── Lingua interfaccia (i18n) ──────────────────────────────────────────────
+    st.subheader("🌐 Lingua interfaccia")
+    st.caption(
+        "La lingua in cui vengono mostrati menu, etichette e filtri nell'app. "
+        "/ The language used for menus, labels and filters in the app."
+    )
+    from ui.i18n import available_languages
+    _ui_langs = available_languages()  # [(code, label), ...]
+    _ui_lang_labels = [label for _, label in _ui_langs]
+    _ui_lang_codes = [code for code, _ in _ui_langs]
+    _current_ui_lang = settings.get("ui_language", "it")
+    _ui_lang_idx = _ui_lang_codes.index(_current_ui_lang) if _current_ui_lang in _ui_lang_codes else 0
+    ui_lang_label = st.selectbox(
+        "UI Language / Lingua UI",
+        _ui_lang_labels,
+        index=_ui_lang_idx,
+    )
+    ui_language = _ui_lang_codes[_ui_lang_labels.index(ui_lang_label)]
+
+    st.divider()
+
     # ── Modalità Giroconti ─────────────────────────────────────────────────────
     st.subheader("🔄 Modalità Giroconti")
     st.caption(
@@ -707,6 +728,7 @@ def render_settings_page(engine):
             "amount_decimal_sep":     _DECIMAL_SEP_OPTIONS[dec_label],
             "amount_thousands_sep":   _THOUSANDS_SEP_OPTIONS[thou_label],
             "description_language":   _LANGUAGE_OPTIONS[lang_label],
+            "ui_language":            ui_language,
             "giroconto_mode":         _GIROCONTO_OPTIONS[giroconto_label],
             "llm_backend":            backend,
             "ollama_base_url":        ollama_url,

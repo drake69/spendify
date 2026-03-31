@@ -83,6 +83,10 @@ if not _cfg_check.is_onboarding_done():
     render_onboarding_page(engine)
     st.stop()
 
+# ── i18n: set UI language from user settings ─────────────────────────────────
+from ui.i18n import set_language as _set_lang
+_set_lang(_cfg_check.get_all().get("ui_language", "it"))
+
 # ── Sidebar navigation ────────────────────────────────────────────────────────
 from ui.sidebar import render_sidebar
 
