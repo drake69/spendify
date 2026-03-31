@@ -14,6 +14,7 @@ import streamlit as st
 from services.settings_service import SettingsService
 from services.transaction_service import TransactionService
 from support.logging import setup_logging
+from ui.i18n import t
 
 logger = setup_logging()
 
@@ -98,12 +99,8 @@ def _build_pivot(
 
 
 def render_checklist_page(engine) -> None:
-    st.header("✅ Check List — Presenza transazioni per mese e conto")
-    st.caption(
-        "Una riga per ogni mese (dal corrente in poi verso il passato), "
-        "una colonna per ogni conto. Il valore è il numero di transazioni; "
-        "**—** indica nessuna transazione per quel mese."
-    )
+    st.header(t("checklist.title"))
+    st.caption(t("checklist.caption"))
 
     cfg_svc = SettingsService(engine)
     tx_svc  = TransactionService(engine)
@@ -123,10 +120,7 @@ def render_checklist_page(engine) -> None:
 
     # ── Stato vuoto ───────────────────────────────────────────────────────────
     if not all_accounts and not count_rows:
-        st.info(
-            "Nessun conto e nessuna transazione trovati. "
-            "Aggiungi conti dalla pagina **Impostazioni** e importa i file movimenti."
-        )
+        st.info(t("checklist.no_data"))
         return
 
     if not all_accounts:
@@ -139,29 +133,29 @@ def render_checklist_page(engine) -> None:
     total_tx = sum(r.tx_count for r in count_rows)
     n_months_with_data = len({r.year_month for r in count_rows if r.year_month})
     col1, col2, col3 = st.columns(3)
-    col1.metric("Transazioni totali", f"{total_tx:,}".replace(",", "."))
-    col2.metric("Conti monitorati", len(all_accounts))
-    col3.metric("Mesi con dati", n_months_with_data)
+    col1.metric(t("checklist.total_tx"), f"{total_tx:,}".replace(",", "."))
+    col2.metric(t("checklist.accounts_monitored"), len(all_accounts))
+    col3.metric(t("checklist.months_with_data"), n_months_with_data)
 
     st.divider()
 
     # ── Filtro opzionale ──────────────────────────────────────────────────────
     with st.expander("🔍 Filtri", expanded=False):
         filter_accounts = st.multiselect(
-            "Mostra solo conti",
+            t("checklist.filter_accounts"),
             options=all_accounts,
             default=[],
-            help="Lascia vuoto per mostrare tutti i conti.",
+            help=t("checklist.filter_accounts_help"),
         )
         col_a, col_b = st.columns(2)
         max_months = col_a.number_input(
-            "Ultimi N mesi (0 = tutti)",
+            t("checklist.last_n_months"),
             min_value=0, max_value=120, value=0, step=1,
         )
         hide_empty_rows = col_b.checkbox(
-            "Nascondi mesi senza transazioni",
+            t("checklist.hide_empty"),
             value=False,
-            help="Non mostra i mesi in cui nessun conto ha transazioni.",
+            help=t("checklist.hide_empty_help"),
         )
 
     display_df = df.copy()
@@ -177,7 +171,7 @@ def render_checklist_page(engine) -> None:
 
     # ── Visualizzazione ───────────────────────────────────────────────────────
     if display_df.empty:
-        st.warning("Nessun dato da mostrare con i filtri selezionati.")
+        st.warning(t("checklist.no_filtered_data"))
         return
 
     styled = (

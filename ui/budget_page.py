@@ -6,16 +6,14 @@ import streamlit as st
 from services.budget_service import BudgetService
 from services.settings_service import SettingsService
 from support.logging import setup_logging
+from ui.i18n import t
 
 logger = setup_logging()
 
 
 def render_budget_page(engine):
-    st.header("💰 Budget — Obiettivi di Spesa")
-    st.caption(
-        "Definisci la percentuale di budget per ogni categoria di spesa. "
-        "Il totale allocato non dovrebbe superare il 100%."
-    )
+    st.header(t("budget.title"))
+    st.caption(t("budget.caption"))
 
     svc = BudgetService(engine)
     settings_svc = SettingsService(engine)
@@ -23,37 +21,33 @@ def render_budget_page(engine):
     # Load expense categories from taxonomy
     expense_cats = settings_svc.get_categories(type_filter="expense")
     cat_names = [c.name for c in expense_cats if not c.is_fallback]
-    # Add fallback categories at the end
     fallback_names = [c.name for c in expense_cats if c.is_fallback]
     cat_names.extend(fallback_names)
 
     if not cat_names:
-        st.warning("Nessuna categoria di spesa configurata. Vai alla pagina Tassonomia per configurarle.")
+        st.warning(t("budget.no_categories"))
         return
 
     # Load existing targets
-    existing_targets = {t["category"]: t["target_pct"] for t in svc.get_targets()}
+    existing_targets = {tgt["category"]: tgt["target_pct"] for tgt in svc.get_targets()}
 
     # ── Table with inputs ─────────────────────────────────────────────────────
-    st.subheader("Obiettivi per Categoria")
+    st.subheader(t("budget.targets_header"))
 
-    # Initialize session state for targets if needed
     if "budget_targets_draft" not in st.session_state:
         st.session_state["budget_targets_draft"] = {
             cat: existing_targets.get(cat, 0.0) for cat in cat_names
         }
 
-    # Sync with DB on first load or after save
     draft = st.session_state["budget_targets_draft"]
 
-    # Header row
     col_cat, col_pct, col_bar = st.columns([3, 2, 5])
     with col_cat:
-        st.markdown("**Categoria**")
+        st.markdown(f"**{t('budget.col.category')}**")
     with col_pct:
-        st.markdown("**Obiettivo %**")
+        st.markdown(f"**{t('budget.col.target_pct')}**")
     with col_bar:
-        st.markdown("**Allocazione**")
+        st.markdown(f"**{t('budget.col.allocation')}**")
 
     st.divider()
 
@@ -78,7 +72,7 @@ def render_budget_page(engine):
             if val > 0:
                 st.progress(min(val / 100.0, 1.0))
             else:
-                st.markdown("&nbsp;\n\n*nessun obiettivo*")
+                st.markdown(f"&nbsp;\n\n*{t('budget.no_target')}*")
 
     # ── Summary bar ───────────────────────────────────────────────────────────
     st.divider()
@@ -88,39 +82,38 @@ def render_budget_page(engine):
 
     col_alloc, col_remain, col_status = st.columns(3)
     with col_alloc:
-        st.metric("Totale allocato", f"{total_allocated:.1f}%")
+        st.metric(t("budget.total_allocated"), f"{total_allocated:.1f}%")
     with col_remain:
-        label = "Liquidità residua" if remaining >= 0 else "Eccedenza"
+        label = t("budget.remaining") if remaining >= 0 else t("budget.excess")
         st.metric(label, f"{abs(remaining):.1f}%", delta=None)
     with col_status:
         if total_allocated > 100:
-            st.error(f"Attenzione: il totale supera il 100% di {total_allocated - 100:.1f}%")
+            st.error(t("budget.over_100", excess=f"{total_allocated - 100:.1f}"))
         elif total_allocated == 100:
-            st.success("Budget completamente allocato (0% liquidità)")
+            st.success(t("budget.fully_allocated"))
         elif total_allocated > 0:
-            st.info(f"{remaining:.1f}% disponibile come liquidità")
+            st.info(t("budget.available", pct=f"{remaining:.1f}"))
         else:
-            st.info("Nessun obiettivo impostato")
+            st.info(t("budget.no_targets_set"))
 
     # ── Save button ───────────────────────────────────────────────────────────
     st.divider()
 
     col_save, col_reset = st.columns([1, 1])
     with col_save:
-        if st.button("💾 Salva obiettivi", type="primary", use_container_width=True):
+        if st.button(t("budget.save"), type="primary", use_container_width=True):
             targets_to_save = [
                 {"category": cat, "target_pct": pct}
                 for cat, pct in new_values.items()
             ]
             svc.save_targets(targets_to_save)
-            # Update draft with saved values
             st.session_state["budget_targets_draft"] = dict(new_values)
-            st.success("Obiettivi di budget salvati con successo!")
+            st.success(t("budget.saved"))
             logger.info(f"Budget targets saved: {sum(1 for v in new_values.values() if v > 0)} categories, total {total_allocated:.1f}%")
 
     with col_reset:
-        if st.button("🔄 Ripristina da DB", use_container_width=True):
-            refreshed = {t["category"]: t["target_pct"] for t in svc.get_targets()}
+        if st.button(t("budget.restore"), use_container_width=True):
+            refreshed = {tgt["category"]: tgt["target_pct"] for tgt in svc.get_targets()}
             st.session_state["budget_targets_draft"] = {
                 cat: refreshed.get(cat, 0.0) for cat in cat_names
             }
