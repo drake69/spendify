@@ -117,6 +117,8 @@ class ProcessingConfig:
     # llama.cpp (local GGUF model)
     llama_cpp_model_path: str = ""
     llama_cpp_n_gpu_layers: int = -1
+    # Classifier mode: "single" (1 LLM call) or "multi_step" (3 sequential calls for small models)
+    classifier_mode: str = "single"
 
 
 @dataclass
@@ -683,6 +685,7 @@ def process_file(
             amount_plausibility_cap=config.max_transaction_amount,
             header_certain=_preprocess_info.header_certain,
             account_type=_account_type,
+            classifier_mode=config.classifier_mode,
         )
         _progress(0.25)
 

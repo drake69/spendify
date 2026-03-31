@@ -28,7 +28,10 @@ from core.llm_backends import LLMBackend, SanitizationRequiredError, call_with_f
 from core.models import Confidence, INVERT_SIGN_TYPES, NO_INVERT_TYPES
 from core.normalizer import compute_columns_key
 from core.sanitizer import SanitizationConfig, sanitize_dataframe_descriptions
-from core.schemas import DocumentSchema
+from core.schemas import (
+    DocumentSchema, fill_llm_defaults,
+    step1_json_schema, step2_json_schema, step3_json_schema,
+)
 from support.logging import setup_logging
 
 logger = setup_logging()
@@ -100,6 +103,139 @@ def compute_confidence_score(schema_dict: dict, header_certain: bool = True) -> 
     return round(min(score, 1.0), 2)
 
 
+# ── Multi-step classifier ─────────────────────────────────────────────────
+
+def _format_step_context(step_name: str, result: dict) -> str:
+    """Format a step's result as readable context for injection into the next step."""
+    lines = [f"## Previous analysis — {step_name}"]
+    for k, v in result.items():
+        lines.append(f"- {k} = {json.dumps(v, ensure_ascii=False)}")
+    return "\n".join(lines)
+
+
+def _classify_multi_step(
+    sample_json: str,
+    columns_list: str,
+    step0_text: str,
+    source_name: str,
+    llm_backend: LLMBackend,
+    fallback_backend: LLMBackend | None,
+    step0: "_Step0Result",
+    account_type: str | None = None,
+) -> dict[str, Any] | None:
+    """Run 3-step sequential LLM classification for small models."""
+
+    # ── Step 1: Document Identity ────────────────────────────────────────
+    # If user specified account_type, use it directly (skip LLM for doc_type)
+    if account_type:
+        logger.info(
+            f"classify_document [{source_name}]: multi-step Step 1 — "
+            f"using user-specified account_type='{account_type}' as doc_type"
+        )
+        step1_result = {
+            "doc_type": account_type,
+            "encoding": "utf-8",
+            "delimiter": None,
+            "sheet_name": None,
+            "skip_rows": 0,
+        }
+    else:
+        logger.info(f"classify_document [{source_name}]: multi-step Step 1 — Document Identity")
+        step1_user = _PROMPTS["step1_user_template"].format(
+            source_name=source_name,
+            columns_list=columns_list,
+            step0_analysis=step0_text,
+            sample_json=sample_json,
+        )
+        step1_result, _ = call_with_fallback(
+            primary=llm_backend,
+            system_prompt=_PROMPTS["step1_system"],
+            user_prompt=step1_user,
+            json_schema=step1_json_schema(),
+            fallback=fallback_backend,
+        )
+        if step1_result is None:
+            logger.warning(f"classify_document [{source_name}]: multi-step Step 1 FAILED — aborting")
+            return None
+    logger.info(f"classify_document [{source_name}]: Step 1 OK — doc_type={step1_result.get('doc_type')}")
+
+    # ── Step 2: Column Mapping ───────────────────────────────────────────
+    logger.info(f"classify_document [{source_name}]: multi-step Step 2 — Column Mapping")
+    step1_context = _format_step_context("Document Identity", step1_result)
+    step2_user = _PROMPTS["step2_user_template"].format(
+        doc_type=step1_result.get("doc_type", "unknown"),
+        source_name=source_name,
+        columns_list=columns_list,
+        step0_analysis=step0_text,
+        prev_steps_context=step1_context,
+        sample_json=sample_json,
+    )
+    step2_result, _ = call_with_fallback(
+        primary=llm_backend,
+        system_prompt=_PROMPTS["step2_system"],
+        user_prompt=step2_user,
+        json_schema=step2_json_schema(),
+        fallback=fallback_backend,
+    )
+    if step2_result is None:
+        # Fallback: use Phase 0 column mappings if available
+        if step0.date_col and step0.description_col:
+            logger.warning(f"classify_document [{source_name}]: Step 2 FAILED — using Phase 0 fallback")
+            step2_result = {
+                "date_col": step0.date_col,
+                "date_accounting_col": step0.date_accounting_col,
+                "amount_col": step0.amount_col,
+                "debit_col": step0.debit_col,
+                "credit_col": step0.credit_col,
+                "description_col": step0.description_col,
+                "description_cols": step0.description_cols,
+                "currency_col": None,
+                "default_currency": "EUR",
+            }
+        else:
+            logger.warning(f"classify_document [{source_name}]: Step 2 FAILED, no Phase 0 fallback — aborting")
+            return None
+    logger.info(f"classify_document [{source_name}]: Step 2 OK — date_col={step2_result.get('date_col')}")
+
+    # ── Step 3: Semantic Analysis ────────────────────────────────────────
+    logger.info(f"classify_document [{source_name}]: multi-step Step 3 — Semantic Analysis")
+    steps_context = step1_context + "\n\n" + _format_step_context("Column Mapping", step2_result)
+    step3_user = _PROMPTS["step3_user_template"].format(
+        doc_type=step1_result.get("doc_type", "unknown"),
+        source_name=source_name,
+        step0_analysis=step0_text,
+        prev_steps_context=steps_context,
+        sample_json=sample_json,
+    )
+    step3_result, _ = call_with_fallback(
+        primary=llm_backend,
+        system_prompt=_PROMPTS["step3_system"],
+        user_prompt=step3_user,
+        json_schema=step3_json_schema(),
+        fallback=fallback_backend,
+    )
+    if step3_result is None:
+        logger.warning(f"classify_document [{source_name}]: Step 3 FAILED — using degraded defaults")
+        step3_result = {
+            "sign_convention": "signed_single",
+            "invert_sign": False,
+            "date_format": "%d/%m/%Y",
+            "is_zero_sum": False,
+            "internal_transfer_patterns": [],
+            "account_label": source_name.rsplit(".", 1)[0],
+            "confidence": "low",
+            "positive_ratio": None,
+            "negative_ratio": None,
+            "semantic_evidence": ["Step 3 LLM failed — using degraded defaults"],
+            "normalization_case_id": "C5",
+        }
+
+    # ── Merge all 3 steps ────────────────────────────────────────────────
+    merged = {**step1_result, **step2_result, **step3_result}
+    logger.info(f"classify_document [{source_name}]: multi-step complete — {len(merged)} fields")
+    return merged
+
+
 def classify_document(
     df_raw: pd.DataFrame,
     llm_backend: LLMBackend,
@@ -110,6 +246,7 @@ def classify_document(
     amount_plausibility_cap: float = _AMOUNT_PLAUSIBILITY_CAP_DEFAULT,
     header_certain: bool = True,
     account_type: str | None = None,
+    classifier_mode: str = "single",
 ) -> DocumentSchema | None:
     """
     Flow 2: classify a raw DataFrame and return a DocumentSchema.
@@ -178,37 +315,55 @@ def classify_document(
             f"'{account_type}' → doc_type hint '{_doc_hint}'"
         )
 
-    user_prompt = _PROMPTS["user_template"].format(
-        source_name=source_name,
-        columns_list=columns_list,
-        sample_json=sample_json,
-        step0_analysis=step0_text,
-    )
+    if classifier_mode == "multi_step":
+        # ── Multi-step path (3 sequential LLM calls) ────────────────────
+        logger.info(f"classify_document [{source_name}]: using multi-step classifier mode")
+        result = _classify_multi_step(
+            sample_json=sample_json,
+            columns_list=columns_list,
+            step0_text=step0_text,
+            source_name=source_name,
+            llm_backend=llm_backend,
+            fallback_backend=fallback_backend,
+            step0=step0,
+            account_type=account_type,
+        )
+        if result is None:
+            logger.warning(f"classify_document: multi-step failed for {source_name}")
+            return None
+        result = fill_llm_defaults(result)
+        logger.info(f"classify_document: multi-step complete (confidence={result.get('confidence')})")
+    else:
+        # ── Single-step path (1 LLM call, original behavior) ────────────
+        user_prompt = _PROMPTS["user_template"].format(
+            source_name=source_name,
+            columns_list=columns_list,
+            sample_json=sample_json,
+            step0_analysis=step0_text,
+        )
+        schema = DocumentSchema(
+            doc_type="unknown",
+            date_col="",
+            amount_col="",
+            sign_convention="signed_single",
+            date_format="%d/%m/%Y",
+            account_label=source_name,
+            confidence="low",
+        )
+        json_schema = schema.llm_json_schema()
 
-    schema = DocumentSchema(
-        doc_type="unknown",
-        date_col="",
-        amount_col="",
-        sign_convention="signed_single",
-        date_format="%d/%m/%Y",
-        account_label=source_name,
-        confidence="low",
-    )
-    json_schema = schema.llm_json_schema()
-
-    result, backend_used = call_with_fallback(
-        primary=llm_backend,
-        system_prompt=_PROMPTS["system"],
-        user_prompt=user_prompt,
-        json_schema=json_schema,
-        fallback=fallback_backend,
-    )
-
-    if result is None:
-        logger.warning(f"classify_document: all backends failed for {source_name}")
-        return None
-
-    logger.info(f"classify_document: classified via {backend_used} (confidence={result.get('confidence')})")
+        result, backend_used = call_with_fallback(
+            primary=llm_backend,
+            system_prompt=_PROMPTS["system"],
+            user_prompt=user_prompt,
+            json_schema=json_schema,
+            fallback=fallback_backend,
+        )
+        if result is None:
+            logger.warning(f"classify_document: all backends failed for {source_name}")
+            return None
+        result = fill_llm_defaults(result)
+        logger.info(f"classify_document: classified via {backend_used} (confidence={result.get('confidence')})")
 
     # Validate that column names returned by the LLM actually exist in the DataFrame.
     result = _coerce_column_names(result, list(df_raw.columns), source_name)

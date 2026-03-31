@@ -229,12 +229,27 @@ Il backend LLM viene usato per:
 
 La scelta predefinita per le **nuove installazioni**: nessun servizio esterno necessario. Spendify carica il modello GGUF direttamente in memoria tramite `llama-cpp-python`, senza bisogno di Ollama o altri server.
 
+**Requisiti hardware minimi (inferenza locale):**
+
+| Componente | Minimo | Consigliato |
+|---|---|---|
+| **RAM libera** | 4 GB (modelli 3B) | 8 GB (modelli 7B) |
+| **CPU** | Qualsiasi x86-64 o ARM64 degli ultimi 5 anni | Apple Silicon (M1+) o CPU con AVX2 |
+| **GPU** | Non necessaria | Apple Metal o CUDA (accelera 3-5x) |
+| **Disco** | 2.5 GB per modello | 5-7 GB per modello 7B |
+
+> **Nota:** Se l'hardware non soddisfa i requisiti minimi, usa un backend remoto (OpenAI, Claude) — vedi sezioni 9.2 e 9.3.
+
 **Modelli GGUF suggeriti:**
 
-| Modello | Dimensione | Descrizione |
-|---|---|---|
-| `gemma-2-2b-it-Q4_K_M` | ~1.6 GB | Google Gemma 2B — leggero, buono per categorizzazione |
-| `phi-3-mini-4k-instruct-Q4_K_M` | ~2.3 GB | Microsoft Phi-3 Mini — bilanciato qualità/velocità |
+| Modello | Dimensione | Classificatore | Categorizzatore | Note |
+|---|---|---|---|---|
+| `Qwen2.5-7B-Instruct-Q4_K_M` | ~4.4 GB | single-step | buono | **Consigliato** — miglior rapporto qualità/dimensione |
+| `Phi-3-mini-4k-instruct-Q4_K_M` | ~2.2 GB | multi-step | buono | Buona qualità per la dimensione |
+| `qwen2.5-3b-instruct-q4_k_m` | ~2.0 GB | multi-step | discreto | Minimo funzionante per classificazione |
+| `gemma-3-12b-it-Q4_K_M` | ~6.8 GB | single-step | ottimo | Migliore qualità, richiede >= 8 GB RAM |
+
+> **single-step vs multi-step:** I modelli >= 7B classificano in un'unica chiamata LLM (più veloce). I modelli 2-4B usano il classificatore multi-step (3 chiamate sequenziali, stessa qualità finale). Configurabile in Impostazioni → `classifier_mode`.
 
 **Scaricare un modello dall'app:**
 
