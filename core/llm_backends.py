@@ -380,6 +380,11 @@ class LlamaCppBackend(LLMBackend):
         return results
 
     @property
+    def model(self) -> str:
+        """Return the GGUF filename (without extension) as model identifier."""
+        return Path(self._model_path).stem
+
+    @property
     def is_remote(self) -> bool:
         return False
 

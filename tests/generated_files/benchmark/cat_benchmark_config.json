@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-03-27 13:27:56",
+  "timestamp": "2026-03-31 16:57:09",
   "git_commit": "unknown",
   "git_branch": "unknown",
   "provider": "llamacpp",
-  "model": "unknown",
+  "model": "Qwen2.5-7B-Instruct-Q4_K_M",
   "temperature": "default",
   "llm_timeout_s": "120",
   "runtime_os": "macOS 26.3.1",
@@ -13,7 +13,12 @@
   "runtime_gpu_cores": "32",
   "llm_host": "localhost (in-process)",
   "llm_hw": "same as runtime",
-  "n_runs": 10,
+  "n_ctx": "4096",
+  "n_batch": "1024",
+  "n_threads": "?",
+  "n_gpu_layers": "?",
+  "flash_attn": "?",
+  "n_runs": 1,
   "n_files": 9,
   "benchmark_type": "categorizer"
 }

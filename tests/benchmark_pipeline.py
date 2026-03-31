@@ -742,12 +742,43 @@ def _write_all_runs_csv(all_results: list[RunFileResult]) -> None:
         target_dir.mkdir(parents=True, exist_ok=True)
         path = target_dir / "results_all_runs.csv"
         write_header = not path.exists() or path.stat().st_size == 0
+        # Migrate: if existing header has fewer columns, rewrite with padded rows
+        if not write_header:
+            _migrate_csv_header(path)
         with open(path, "a", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
             if write_header:
                 writer.writerow(_CSV_HEADER)
             for r in all_results:
                 writer.writerow(_result_to_row(r))
+
+
+def _migrate_csv_header(path: Path) -> None:
+    """If existing CSV has fewer columns than current _CSV_HEADER, rewrite with padded rows."""
+    with open(path, "r", newline="", encoding="utf-8") as f:
+        reader = csv.reader(f)
+        old_header = next(reader, None)
+        if old_header is None or old_header == _CSV_HEADER:
+            return
+        if len(old_header) >= len(_CSV_HEADER):
+            return
+        # Find positions of new columns (in current header but not in old)
+        old_set = set(old_header)
+        new_cols = [(i, col) for i, col in enumerate(_CSV_HEADER) if col not in old_set]
+        if not new_cols:
+            return
+        # Read all existing rows and pad them
+        rows = list(reader)
+    # Rewrite with new header, inserting empty values at new column positions
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(_CSV_HEADER)
+        for row in rows:
+            padded = list(row)
+            for offset, (insert_idx, _) in enumerate(new_cols):
+                padded.insert(insert_idx, "")
+            writer.writerow(padded)
+    print(f"[migrate] {path.name}: added {len(new_cols)} columns ({', '.join(c for _, c in new_cols)})")
 
 
 def _compute_variance(all_results: list[RunFileResult]) -> tuple[list[dict], list[dict]]:
