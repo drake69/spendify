@@ -1224,8 +1224,9 @@ def main() -> None:
             filled = int(bar_len * pct)
             bar = "█" * filled + "░" * (bar_len - filled)
 
+            _now_prog = datetime.now().strftime('%H:%M:%S')
             print(
-                f"\r  {bar} {pct:5.1%} | "
+                f"\r  [{_now_prog}] {bar} {pct:5.1%} | "
                 f"Run {run_id}/{n_runs} File {file_idx}/{n_files} "
                 f"| ETA {eta_min:02d}:{eta_sec:02d} | "
                 f"{entry.filename}",
@@ -1237,8 +1238,9 @@ def main() -> None:
             run_results.append(result)
 
             status = "OK" if not result.error else f"ERR: {result.error[:40]}"
+            _now = datetime.now().strftime('%H:%M:%S')
             print(
-                f"\r  [Run {run_id}/{n_runs}] [File {file_idx}/{n_files}] "
+                f"\r  [{_now}] [Run {run_id}/{n_runs}] [File {file_idx}/{n_files}] "
                 f"{entry.filename} "
                 f"{result.duration_seconds:.1f}s "
                 f"dt={'Y' if result.doc_type_match else 'N'} "
