@@ -310,15 +310,58 @@ def classify_document(
         )
 
     # Build a compact sample for the prompt (max 20 rows).
-    # Use rarity-weighted scoring: columns with low fill rate (e.g. Accrediti
-    # at 1%) contribute more to the row score than dense columns (Addebiti at
-    # 99%).  This ensures the LLM sees at least some rows with rare column
-    # values, which is critical for detecting complementary debit/credit pairs.
+    # Two rarity signals combined:
+    #
+    # 1. Column rarity: columns with low fill rate (e.g. Accrediti at 1%)
+    #    contribute more to the row score than dense columns (99%).
+    #    Ensures the LLM sees rare column values (complementary D/C pairs).
+    #
+    # 2. Sign rarity: for amount columns, the minority sign (e.g. 5% negative
+    #    in a mostly-positive file) gets boosted so the LLM sees both signs
+    #    and can decide invert_sign correctly. Sample is split 50/50 between
+    #    majority and minority sign when both exist.
+    _n_sample = min(20, len(df_raw))
+
+    # Column rarity weights
     _col_density = df_raw.notna().mean()
-    _col_weights = 1.0 / _col_density.replace(0, 1)  # avoid div by zero
+    _col_weights = 1.0 / _col_density.replace(0, 1)
     _row_score = (df_raw.notna() * _col_weights).sum(axis=1)
-    _top_idx = _row_score.nlargest(min(20, len(df_raw))).index
-    sample = df_raw.loc[_top_idx].copy()
+
+    # Sign rarity boost: find amount columns and split by sign
+    _amount_cols = [c for c in df_raw.columns
+                    if _classify_column_content(df_raw[c]) == "amount"]
+    if _amount_cols and len(_amount_cols) == 1:
+        _amt_col = _amount_cols[0]
+        _numeric = pd.to_numeric(
+            df_raw[_amt_col].astype(str)
+            .str.replace(r"[€$£¥₹\s]", "", regex=True)
+            .str.replace(",", ".", regex=False),
+            errors="coerce",
+        )
+        _pos_mask = _numeric > 0
+        _neg_mask = _numeric < 0
+        _n_pos = _pos_mask.sum()
+        _n_neg = _neg_mask.sum()
+
+        if _n_pos > 0 and _n_neg > 0:
+            # Both signs present — split sample 50/50
+            _half = _n_sample // 2
+            _pos_idx = _row_score[_pos_mask].nlargest(min(_half, _n_pos)).index
+            _neg_idx = _row_score[_neg_mask].nlargest(min(_half, _n_neg)).index
+            _top_idx = _pos_idx.append(_neg_idx)
+            # Fill remaining slots from overall top scores
+            _remaining = _n_sample - len(_top_idx)
+            if _remaining > 0:
+                _rest = _row_score.drop(_top_idx, errors="ignore").nlargest(_remaining).index
+                _top_idx = _top_idx.append(_rest)
+        else:
+            _top_idx = _row_score.nlargest(_n_sample).index
+    else:
+        _top_idx = _row_score.nlargest(_n_sample).index
+
+    # Sort sample by original row order (preserves chronological date order)
+    # so the LLM sees a natural progression, not scattered rows
+    sample = df_raw.loc[sorted(_top_idx)].copy()
 
     if sanitize:
         for col in sample.select_dtypes(include="object").columns:
