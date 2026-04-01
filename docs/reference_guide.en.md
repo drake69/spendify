@@ -55,7 +55,11 @@ On the **first import** of a file with an unknown format (header SHA256 not pres
 
 1. **Raw preview** — first 10 rows of the raw file (without preprocessing)
 2. **skip_rows selector** — how many rows to skip before the actual header
-3. **Editable schema fields** — document type, columns, sign convention
+3. **Editable schema fields** — document type, columns, sign convention:
+   - `signed_single` — single amount column with positive/negative values
+   - `debit_positive` — debits are positive, credits are negative
+   - `credit_negative` — credits are negative (card statements)
+   - `debit_credit_signed` — separate debit/credit columns, values already carry sign (debit negative, credit positive)
 4. **Parsed preview** — first 8 transactions with the current schema (live)
 
 After confirmation, the schema is saved with the `header_sha256` fingerprint. On re-import of the same format: immediate lookup, no LLM call, no UI.

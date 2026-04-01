@@ -520,7 +520,7 @@ Every `DocumentSchema` produced by Flow 2 includes four diagnostic fields for au
 | `positive_ratio` | `float \| null` | Fraction of amount-column values > 0 in the sample |
 | `negative_ratio` | `float \| null` | Fraction of amount-column values < 0 in the sample |
 | `semantic_evidence` | `list[str]` | 2–4 short sentences from the LLM explaining the decision |
-| `normalization_case_id` | `str \| null` | C1 = bank signed_single · C2 = card inverted · C3 = card already negative · C4 = Dare/Avere columns · C5 = ambiguous |
+| `normalization_case_id` | `str \| null` | C1 = bank signed_single · C2 = card inverted · C3 = card already negative · C4 = Dare/Avere columns · C5 = ambiguous · C6 = debit\_credit\_signed (separate debit/credit columns, values already carry sign) |
 
 These fields are persisted in the `document_schema` DB table and are visible in the Flow 2 schema review step in the UI.
 

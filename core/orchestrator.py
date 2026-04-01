@@ -197,7 +197,7 @@ def load_raw_dataframe(
     2. Detect and skip leading non-data rows (CSV: ``detect_header_row``).
     3. Load into DataFrame.
     4. Strip any pre-header metadata rows (statistical median approach).
-    5. Drop low-variability columns (e.g., repeated account name / card PAN).
+    5. Drop empty columns (all-null). Sparse columns with even one value are preserved.
 
     Args:
         raw_bytes: Raw file content.
