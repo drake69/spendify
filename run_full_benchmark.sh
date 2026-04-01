@@ -10,12 +10,34 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-PYTHON=".venv/bin/python"
 BENCH="tests/benchmark_pipeline.py"
 CAT_BENCH="tests/benchmark_categorizer.py"
 RUNS=1
 MODELS_DIR="$HOME/.spendify/models"
 OPENAI_KEY="${1:-}"
+
+# ── Environment bootstrap ────────────────────────────────────────────────
+# Ensures Python venv + dependencies are ready. Zero manual steps.
+
+if [ ! -d ".venv" ]; then
+    echo "[setup] Creating virtual environment..."
+    if command -v uv &>/dev/null; then
+        uv venv .venv
+    else
+        python3 -m venv .venv
+    fi
+fi
+
+PYTHON=".venv/bin/python"
+
+# Install/sync dependencies
+if command -v uv &>/dev/null; then
+    echo "[setup] uv sync..."
+    uv sync --quiet 2>/dev/null || uv pip install -r requirements.txt --quiet 2>/dev/null || true
+else
+    echo "[setup] pip install..."
+    $PYTHON -m pip install -r requirements.txt --quiet 2>/dev/null || true
+fi
 
 # ── Utility functions ─────────────────────────────────────────────────────
 
