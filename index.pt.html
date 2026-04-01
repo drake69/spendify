@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="pt">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Spendify — I tuoi movimenti unificati, sul tuo computer</title>
-  <meta name="description" content="Spendify aggrega automaticamente i movimenti di banche diverse in un unico ledger, senza duplicati, senza abbonamenti, senza inviare i tuoi dati a nessuno." />
-  <meta property="og:title" content="Spendify — I tuoi movimenti unificati" />
-  <meta property="og:description" content="Un registro finanziario personale open source che gira sul tuo computer. I tuoi dati restano tuoi." />
+  <title>Spendify — Seu extrato bancário unificado, no seu computador</title>
+  <meta name="description" content="Spendify agrega automaticamente arquivos de movimentações de diferentes bancos em um único extrato — sem duplicatas, sem assinaturas, sem enviar seus dados a ninguém." />
+  <meta property="og:title" content="Spendify — Seu extrato bancário unificado" />
+  <meta property="og:description" content="Um extrato financeiro pessoal open source que roda no seu computador. Seus dados continuam sendo seus." />
   <meta property="og:type" content="website" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -36,7 +36,7 @@
       line-height: 1.6;
     }
 
-    /* ── NAV ─────────────────────────────────────────────────── */
+    /* ── NAV ─────────────────────────────────────────────── */
     nav {
       position: sticky;
       top: 0;
@@ -82,7 +82,7 @@
     }
     .nav-cta:hover { opacity: .85; }
 
-    /* ── HERO ────────────────────────────────────────────────── */
+    /* ── HERO ────────────────────────────────────────────── */
     .hero {
       padding: 6rem 2rem 5rem;
       text-align: center;
@@ -157,7 +157,7 @@
       font-size: .85rem;
     }
 
-    /* ── TRUST BAR ───────────────────────────────────────────── */
+    /* ── TRUST BAR ───────────────────────────────────────── */
     .trust-bar {
       border-top: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
@@ -176,7 +176,7 @@
     }
     .trust-item .ico { font-size: 1rem; }
 
-    /* ── SECTIONS ────────────────────────────────────────────── */
+    /* ── SECTIONS ────────────────────────────────────────── */
     section { padding: 5rem 2rem; }
     .container { max-width: 1100px; margin: 0 auto; }
     .section-label {
@@ -201,7 +201,7 @@
       margin-bottom: 3rem;
     }
 
-    /* ── PROBLEM ─────────────────────────────────────────────── */
+    /* ── PROBLEM ─────────────────────────────────────────── */
     .problem-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -228,7 +228,7 @@
     }
     .problem-card p { color: var(--muted); font-size: .95rem; }
 
-    /* ── STEPS ───────────────────────────────────────────────── */
+    /* ── STEPS ───────────────────────────────────────────── */
     .steps {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -264,7 +264,7 @@
     }
     .step p { color: var(--muted); font-size: .95rem; }
 
-    /* ── DIFFERENTIATORS ─────────────────────────────────────── */
+    /* ── DIFFERENTIATORS ─────────────────────────────────── */
     .diff-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -323,7 +323,7 @@
       margin-top: 2px;
     }
 
-    /* ── PRIVACY ─────────────────────────────────────────────── */
+    /* ── PRIVACY ─────────────────────────────────────────── */
     .privacy-section { background: var(--surface); }
     .privacy-grid {
       display: grid;
@@ -360,7 +360,7 @@
       border-radius: 4px;
     }
 
-    /* ── FOR WHO ─────────────────────────────────────────────── */
+    /* ── FOR WHO ─────────────────────────────────────────── */
     .audience-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -390,7 +390,7 @@
     .audience-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: .4rem; }
     .audience-card p { color: var(--muted); font-size: .9rem; }
 
-    /* ── FEATURES TABLE ──────────────────────────────────────── */
+    /* ── FEATURES TABLE ──────────────────────────────────── */
     .features-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -418,7 +418,7 @@
       font-size: .88rem;
     }
 
-    /* ── STACK ───────────────────────────────────────────────── */
+    /* ── STACK ───────────────────────────────────────────── */
     .stack-grid {
       display: flex;
       flex-wrap: wrap;
@@ -438,7 +438,7 @@
     .stack-badge strong { color: var(--text); }
     .stack-badge span { color: var(--muted); font-size: .82rem; }
 
-    /* ── INSTALL ─────────────────────────────────────────────── */
+    /* ── INSTALL ─────────────────────────────────────────── */
     .install-section { background: var(--surface); }
     .os-tabs {
       display: flex;
@@ -523,7 +523,7 @@
     }
     .install-post strong { color: var(--text); }
 
-    /* ── PIPELINE ────────────────────────────────────────────── */
+    /* ── PIPELINE ────────────────────────────────────────── */
     .pipeline-box {
       background: #010409;
       border: 1px solid var(--border);
@@ -540,7 +540,7 @@
     .pipeline-box .label { color: var(--text); }
     .pipeline-box .note { color: #6a737d; }
 
-    /* ── ROADMAP ─────────────────────────────────────────────── */
+    /* ── ROADMAP ─────────────────────────────────────────── */
     .roadmap-list {
       list-style: none;
       display: flex;
@@ -566,7 +566,7 @@
       flex-shrink: 0;
     }
 
-    /* ── CONTRIBUTE ──────────────────────────────────────────── */
+    /* ── CONTRIBUTE ──────────────────────────────────────── */
     .contribute-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -581,7 +581,7 @@
     .contribute-card h3 { font-size: .95rem; font-weight: 700; margin-bottom: .5rem; }
     .contribute-card p { color: var(--muted); font-size: .88rem; }
 
-    /* ── FOOTER ──────────────────────────────────────────────── */
+    /* ── FOOTER ──────────────────────────────────────────── */
     footer {
       border-top: 1px solid var(--border);
       padding: 2.5rem 2rem;
@@ -599,10 +599,10 @@
       opacity: .7;
     }
 
-    /* ── DIVIDER ─────────────────────────────────────────────── */
+    /* ── DIVIDER ─────────────────────────────────────────── */
     .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
 
-    /* ── FADE-IN ANIMATION ───────────────────────────────────── */
+    /* ── FADE-IN ANIMATION ───────────────────────────────── */
     .fade-in {
       opacity: 0;
       transform: translateY(24px);
@@ -613,7 +613,7 @@
       transform: none;
     }
 
-    /* ── RESPONSIVE ──────────────────────────────────────────── */
+    /* ── RESPONSIVE ──────────────────────────────────────── */
     @media (max-width: 768px) {
       .problem-grid,
       .steps,
@@ -654,81 +654,81 @@
 <nav>
   <a class="nav-logo" href="#">💰 <span>Spend</span>ify</a>
   <ul class="nav-links">
-    <li><a href="#come-funziona">Come funziona</a></li>
-    <li><a href="#privacy">Privacy</a></li>
-    <li><a href="#features">Funzionalità</a></li>
-    <li><a href="#developer">Developer</a></li>
+    <li><a href="#how-it-works">Como funciona</a></li>
+    <li><a href="#privacy">Privacidade</a></li>
+    <li><a href="#features">Funcionalidades</a></li>
+    <li><a href="#developer">Desenvolvedor</a></li>
     <li><a href="https://github.com/drake69/spendify" target="_blank" class="nav-cta">GitHub ↗</a></li>
   </ul>
   <div class="lang-switcher">
-    <a href="index.html" title="Italiano" class="active">🇮🇹</a>
+    <a href="index.html" title="Italiano">🇮🇹</a>
     <a href="index.en.html" title="English">🇬🇧</a>
     <a href="index.de.html" title="Deutsch">🇩🇪</a>
     <a href="index.fr.html" title="Français">🇫🇷</a>
     <a href="index.es.html" title="Español">🇪🇸</a>
-    <a href="index.pt.html" title="Português">🇵🇹</a>
+    <a href="index.pt.html" title="Português" class="active">🇵🇹</a>
   </div>
 </nav>
 
 <!-- ── HERO ─────────────────────────────────────────────────────────────── -->
 <section class="hero">
-  <div class="hero-badge">Open source · <strong>Offline-first</strong> · Nessun abbonamento</div>
-  <h1>I tuoi movimenti <span class="accent">unificati</span>,<br>sul tuo computer</h1>
+  <div class="hero-badge">Open source · <strong>Offline-first</strong> · Sem assinatura</div>
+  <h1>Seu extrato bancário <span class="accent">unificado</span>,<br>no seu computador</h1>
   <p class="hero-sub">
-    Importa i file di tutte le tue banche. Spendify li unifica, elimina i doppi conteggi,
-    classifica ogni transazione — e i tuoi dati non lasciano mai il tuo disco.
+    Importe arquivos de todos os seus bancos. Spendify os unifica, elimina a contagem dupla,
+    classifica cada transação — e seus dados nunca saem do seu disco.
   </p>
   <div class="hero-actions">
-    <a class="btn btn-primary" href="#install">▶ Installa ora</a>
+    <a class="btn btn-primary" href="#install">▶ Instalar agora</a>
     <a class="btn btn-secondary" href="https://github.com/drake69/spendify" target="_blank">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-      Vedi su GitHub
+      Ver no GitHub
     </a>
   </div>
-  <p class="hero-note">Python · Streamlit · SQLite · Ollama · nessun account richiesto</p>
+  <p class="hero-note">Python · Streamlit · SQLite · Ollama · nenhuma conta necessária</p>
 </section>
 
 <!-- ── TRUST BAR ─────────────────────────────────────────────────────────── -->
 <div class="trust-bar">
-  <div class="trust-item"><span class="ico">🔒</span> Dati solo sul tuo computer</div>
-  <div class="trust-item"><span class="ico">🔁</span> Import idempotente SHA-256</div>
-  <div class="trust-item"><span class="ico">🏦</span> Multi-banca, multi-formato</div>
-  <div class="trust-item"><span class="ico">🤖</span> AI locale o cloud con PII redaction</div>
-  <div class="trust-item"><span class="ico">🧪</span> 199 test, zero dipendenze esterne</div>
+  <div class="trust-item"><span class="ico">🔒</span> Dados apenas no seu computador</div>
+  <div class="trust-item"><span class="ico">🔁</span> Importação idempotente SHA-256</div>
+  <div class="trust-item"><span class="ico">🏦</span> Multi-banco, multi-formato</div>
+  <div class="trust-item"><span class="ico">🤖</span> IA local ou na nuvem com redação de PII</div>
+  <div class="trust-item"><span class="ico">🧪</span> 199 testes, zero dependências externas</div>
 </div>
 
-<!-- ── PROBLEMA ──────────────────────────────────────────────────────────── -->
+<!-- ── PROBLEM ──────────────────────────────────────────────────────────── -->
 <section id="problema">
   <div class="container">
-    <div class="section-label">Il problema</div>
-    <h2>Tre banche, tre file, un casino</h2>
+    <div class="section-label">O problema</div>
+    <h2>Três bancos, três arquivos, uma bagunça</h2>
     <p class="section-sub">
-      Ogni mese: scarica, apri Excel, incolla, aggiusta i segni, trova i doppioni.
-      E ogni volta qualcosa non torna.
+      Todo mês: baixar, abrir o Excel, colar, corrigir os sinais, encontrar as duplicatas.
+      E toda vez algo não bate.
     </p>
 
     <div class="problem-grid fade-in">
       <div class="problem-card">
-        <h3>😩 La routine mensile che tutti odiano</h3>
-        <p>Tre file movimenti da tre portali bancari diversi, formati CSV incompatibili,
-        date in formati differenti, importi con segni a caso. Unirli a mano richiede ore
-        e genera sempre errori.</p>
+        <h3>😩 A rotina mensal que todos detestam</h3>
+        <p>Três arquivos de movimentações de três portais bancários diferentes, formatos CSV incompatíveis,
+        datas em formatos diferentes, valores com sinais aleatórios. Unificar tudo manualmente leva horas
+        e sempre produz erros.</p>
       </div>
       <div class="problem-card highlight">
-        <h3>🔴 Il problema dei problemi: il doppio conteggio</h3>
-        <p>La spesa al supermercato appare nei movimenti della carta <em>e</em> nel conto corrente
-        come addebito mensile aggregato. Sommando tutto, le tue spese sembrano il doppio di
-        quelle reali. Nessuno strumento comune risolve questo automaticamente.</p>
+        <h3>🔴 O problema de todos os problemas: contagem dupla</h3>
+        <p>A compra no supermercado aparece na fatura do cartão de crédito <em>e</em> na conta corrente
+        como débito mensal agregado. Somando tudo, suas despesas parecem o dobro
+        do que realmente são. Nenhuma ferramenta comum resolve isso automaticamente.</p>
       </div>
       <div class="problem-card">
-        <h3>🔄 I giroconti che falsano il bilancio</h3>
-        <p>Un bonifico al conto deposito non è una spesa. Ma se importi entrambi i conti,
-        lo stesso movimento appare due volte — come uscita dal corrente e come entrata sul deposito.</p>
+        <h3>🔄 Transferências internas que distorcem seu saldo</h3>
+        <p>Uma transferência para a poupança não é uma despesa. Mas se você importar ambas as contas,
+        a mesma transação aparece duas vezes — como saída da conta corrente e como entrada na poupança.</p>
       </div>
       <div class="problem-card">
-        <h3>📋 La categorizzazione che non finisce mai</h3>
-        <p>Classificare 300 transazioni al mese a mano è un lavoro. Le app cloud lo fanno,
-        ma inviano i tuoi dati bancari ai loro server e ti chiedono un abbonamento mensile.</p>
+        <h3>📋 A categorização que nunca termina</h3>
+        <p>Classificar 300 transações por mês manualmente é um trabalho. Apps na nuvem fazem isso,
+        mas enviam seus dados bancários para seus servidores e cobram uma assinatura mensal.</p>
       </div>
     </div>
   </div>
@@ -736,30 +736,30 @@
 
 <hr class="divider">
 
-<!-- ── COME FUNZIONA ─────────────────────────────────────────────────────── -->
-<section id="come-funziona">
+<!-- ── HOW IT WORKS ──────────────────────────────────────────────────────── -->
+<section id="how-it-works">
   <div class="container">
-    <div class="section-label">Come funziona</div>
-    <h2>Tre passi, nessuna magia nera</h2>
-    <p class="section-sub">Nessuna integrazione bancaria, nessun account, nessuna configurazione per tipo di file.</p>
+    <div class="section-label">Como funciona</div>
+    <h2>Três passos, sem mágica</h2>
+    <p class="section-sub">Sem integrações bancárias, sem conta, sem configuração por arquivo.</p>
 
     <div class="steps fade-in">
       <div class="step">
-        <h3>Scarica i file dalla tua banca</h3>
-        <p>Esporta i movimenti in CSV o XLSX dal portale della tua banca.
-        Funziona con qualsiasi banca italiana (e non solo) — Spendify riconosce
-        automaticamente il formato senza configurazione manuale.</p>
+        <h3>Baixe os arquivos do seu banco</h3>
+        <p>Exporte arquivos de movimentações como CSV ou XLSX do portal do seu banco.
+        Funciona com qualquer banco — Spendify detecta automaticamente
+        o formato sem configuração manual.</p>
       </div>
       <div class="step">
-        <h3>Trascinali in Spendify e clicca Elabora</h3>
-        <p>Seleziona tutti i file insieme, anche da banche diverse, anche di anni diversi.
-        Spendify rileva il tipo di documento, corregge i segni, elimina i doppi conteggi
-        tra carta e conto, classifica ogni transazione.</p>
+        <h3>Arraste para o Spendify e clique em Processar</h3>
+        <p>Selecione todos os arquivos de uma vez, mesmo de bancos diferentes, mesmo de anos diferentes.
+        Spendify detecta o tipo de documento, corrige sinais, elimina a contagem dupla
+        entre cartão e conta, e classifica cada transação.</p>
       </div>
       <div class="step">
-        <h3>Guarda dove vanno i tuoi soldi</h3>
-        <p>Il ledger unificato mostra tutto in un posto solo: grafici, filtri, export,
-        e la certezza che ogni euro viene contato <strong>una volta sola</strong>.</p>
+        <h3>Veja para onde vai seu dinheiro</h3>
+        <p>O extrato unificado mostra tudo em um só lugar: gráficos, filtros, exportação,
+        e a certeza de que cada real é contado <strong>exatamente uma vez</strong>.</p>
       </div>
     </div>
   </div>
@@ -767,48 +767,48 @@
 
 <hr class="divider">
 
-<!-- ── DIFFERENTIATORI ───────────────────────────────────────────────────── -->
+<!-- ── DIFFERENTIATORS ───────────────────────────────────────────────────── -->
 <section id="algoritmi">
   <div class="container">
-    <div class="section-label">Cosa nessun altro fa automaticamente</div>
-    <h2>Algoritmi che risolvono i problemi reali</h2>
-    <p class="section-sub">Non è una app di budgeting generica. È progettata attorno ai problemi specifici di chi ha più conti bancari italiani.</p>
+    <div class="section-label">O que ninguém mais faz automaticamente</div>
+    <h2>Algoritmos que resolvem problemas reais</h2>
+    <p class="section-sub">Isso não é um app genérico de orçamento. Foi projetado para os problemas específicos de quem tem múltiplas contas bancárias.</p>
 
     <div class="diff-grid fade-in">
       <div class="diff-card">
         <div class="tag">RF-03</div>
-        <h3>Riconciliazione carta–conto corrente</h3>
-        <p>Quando la carta di credito addebita l'importo mensile sul conto corrente,
-        Spendify riconosce la relazione e rimuove il doppio conteggio automaticamente.</p>
+        <h3>Conciliação cartão de crédito–conta corrente</h3>
+        <p>Quando o cartão de crédito debita o valor mensal na conta corrente,
+        Spendify reconhece a relação e remove a contagem dupla automaticamente.</p>
         <p style="margin-top:.75rem; color: var(--muted); font-size:.88rem;">
-          Finestra temporale ±45 giorni · 3 fasi di matching:
-          finestra scorrevole → subset sum per importi frazionati → riconciliazione parziale
+          Janela temporal ±45 dias · 3 fases de correspondência:
+          janela deslizante → soma de subconjuntos para valores divididos → conciliação parcial
         </p>
       </div>
       <div class="diff-card">
         <div class="tag">RF-04</div>
-        <h3>Rilevamento giroconti interni</h3>
-        <p>Un bonifico dal conto corrente al conto deposito non è né una spesa né
-        un'entrata: è un trasferimento interno. Spendify lo riconosce confrontando
-        importi, date e nomi dei titolari nelle descrizioni — anche se i due file
-        sono stati importati in momenti diversi.</p>
+        <h3>Detecção de transferências internas</h3>
+        <p>Uma transferência da conta corrente para a poupança não é despesa nem
+        receita: é uma transferência interna. Spendify reconhece comparando
+        valores, datas e nomes do titular nas descrições — mesmo que os dois arquivos
+        tenham sido importados em momentos diferentes.</p>
       </div>
       <div class="diff-card">
         <div class="tag">Dedup</div>
-        <h3>Deduplicazione idempotente</h3>
-        <p>Ogni transazione ha un ID univoco calcolato sul contenuto (SHA-256).
-        Se importi lo stesso file due volte, non accade nulla.
-        Puoi reimportare tutta la storia bancaria senza paura di duplicati.</p>
+        <h3>Deduplicação idempotente</h3>
+        <p>Cada transação tem um ID único calculado a partir do seu conteúdo (SHA-256).
+        Se você importar o mesmo arquivo duas vezes, nada acontece.
+        Você pode reimportar todo o seu histórico de transações sem medo de duplicatas.</p>
       </div>
       <div class="diff-card">
-        <div class="tag">Categorie</div>
-        <h3>Classificazione ibrida a cascata</h3>
-        <p>La categorizzazione usa quattro livelli in sequenza:</p>
+        <div class="tag">Categories</div>
+        <h3>Classificação híbrida em cascata</h3>
+        <p>A categorização usa quatro níveis em sequência:</p>
         <ul class="cascade-list">
-          <li><span class="num">1</span><span><strong>Le tue regole</strong> — "CONAD" → Alimentari (applicate retroattivamente)</span></li>
-          <li><span class="num">2</span><span><strong>Regex statiche</strong> — pattern predefiniti per le categorie comuni</span></li>
-          <li><span class="num">3</span><span><strong>LLM</strong> — per tutto il resto, AI locale o cloud</span></li>
-          <li><span class="num">4</span><span><strong>Fallback</strong> — "Da rivedere" se tutto il resto fallisce</span></li>
+          <li><span class="num">1</span><span><strong>Suas regras</strong> — "CONAD" → Supermercado (aplicado retroativamente)</span></li>
+          <li><span class="num">2</span><span><strong>Regex estático</strong> — padrões predefinidos para categorias comuns</span></li>
+          <li><span class="num">3</span><span><strong>LLM</strong> — para todo o resto, IA local ou na nuvem</span></li>
+          <li><span class="num">4</span><span><strong>Fallback</strong> — "A revisar" se tudo mais falhar</span></li>
         </ul>
       </div>
     </div>
@@ -820,39 +820,39 @@
 <!-- ── PRIVACY ───────────────────────────────────────────────────────────── -->
 <section id="privacy" class="privacy-section">
   <div class="container">
-    <div class="section-label">Privacy</div>
-    <h2>I tuoi dati restano tuoi. Sul serio.</h2>
-    <p class="section-sub">Non è solo uno slogan. È l'architettura.</p>
+    <div class="section-label">Privacidade</div>
+    <h2>Seus dados continuam sendo seus. De verdade.</h2>
+    <p class="section-sub">Não é apenas um slogan. É a arquitetura.</p>
 
     <div class="privacy-grid fade-in">
       <div class="privacy-card">
         <div class="ico-big">🏠</div>
-        <h3>Offline-first per default</h3>
-        <p>Spendify usa <strong>Ollama in locale</strong> di default: un motore AI che gira
-        sul tuo computer, senza connessione internet. I tuoi movimenti non
-        lasciano mai il tuo disco.</p>
+        <h3>Offline-first por padrão</h3>
+        <p>Spendify usa o <strong>Ollama localmente</strong> por padrão: um motor de IA que roda
+        no seu computador, sem conexão com a internet. Seus arquivos de movimentações nunca
+        saem do seu disco.</p>
       </div>
       <div class="privacy-card">
         <div class="ico-big">🛡️</div>
-        <h3>PII redaction automatica</h3>
-        <p>Se usi OpenAI o Claude, Spendify rimuove automaticamente tutti i dati
-        identificativi prima di qualsiasi chiamata remota:</p>
+        <h3>Redação automática de PII</h3>
+        <p>Se você usar OpenAI ou Claude, Spendify remove automaticamente todos os
+        dados identificáveis antes de qualquer chamada remota:</p>
         <div class="pii-chips">
           <span class="pii-chip">IBAN → &lt;ACCOUNT_ID&gt;</span>
           <span class="pii-chip">PAN → &lt;CARD_ID&gt;</span>
-          <span class="pii-chip">CF → &lt;FISCAL_ID&gt;</span>
-          <span class="pii-chip">Nome → alias fittizio</span>
+          <span class="pii-chip">CPF → &lt;FISCAL_ID&gt;</span>
+          <span class="pii-chip">Nome → alias fictício</span>
         </div>
         <p style="margin-top:.75rem; font-size:.83rem; color:var(--muted)">
-          Se il controllo fallisce, la chiamata viene bloccata — non degradata silenziosamente.
+          Se a verificação falhar, a chamada é bloqueada — não silenciosamente degradada.
         </p>
       </div>
       <div class="privacy-card">
         <div class="ico-big">💾</div>
-        <h3>Database locale portabile</h3>
-        <p>I dati sono in un file SQLite sul tuo computer. Puoi copiarlo, spostarlo,
-        farne backup come qualsiasi altro file. Nessun cloud obbligatorio,
-        nessun account, nessun abbonamento.</p>
+        <h3>Banco de dados local portátil</h3>
+        <p>Os dados são armazenados em um arquivo SQLite no seu computador. Você pode copiar, mover,
+        fazer backup como qualquer outro arquivo. Sem nuvem obrigatória,
+        sem conta, sem assinatura.</p>
       </div>
     </div>
   </div>
@@ -860,46 +860,46 @@
 
 <hr class="divider">
 
-<!-- ── PER CHI ───────────────────────────────────────────────────────────── -->
+<!-- ── FOR WHO ───────────────────────────────────────────────────────────── -->
 <section id="per-chi">
   <div class="container">
-    <div class="section-label">Per chi è Spendify</div>
-    <h2>Non per tutti. Per chi vuole il controllo vero.</h2>
-    <p class="section-sub">Quattro profili che trovano in Spendify qualcosa che le alternative non danno.</p>
+    <div class="section-label">Para quem é o Spendify</div>
+    <h2>Não é para todos. É para quem quer controle real.</h2>
+    <p class="section-sub">Quatro perfis que encontram no Spendify algo que as alternativas não oferecem.</p>
 
     <div class="audience-grid fade-in">
       <div class="audience-card">
         <div class="ico-circle">🏦</div>
         <div>
-          <h3>Chi ha più conti in banche diverse</h3>
-          <p>Conto corrente + carta di credito + conto deposito + conto trading?
-          Spendify li unifica tutti in un unico ledger senza dover fare nulla a mano.</p>
+          <h3>Pessoas com contas em múltiplos bancos</h3>
+          <p>Conta corrente + cartão de crédito + poupança + conta de investimentos?
+          Spendify unifica tudo em um único extrato sem fazer nada manualmente.</p>
         </div>
       </div>
       <div class="audience-card">
         <div class="ico-circle">📊</div>
         <div>
-          <h3>Chi tiene i conti seriamente</h3>
-          <p>Se usi Excel per le spese, Spendify può sostituire quella routine:
-          importi i file una volta, Spendify unifica e classifica, tu controlli
-          solo le eccezioni.</p>
+          <h3>Pessoas que controlam suas finanças a sério</h3>
+          <p>Se você usa Excel para suas despesas, Spendify pode substituir essa rotina:
+          você importa os arquivos uma vez, Spendify unifica e classifica, você revisa
+          apenas as exceções.</p>
         </div>
       </div>
       <div class="audience-card">
         <div class="ico-circle">🔐</div>
         <div>
-          <h3>Chi non si fida del cloud</h3>
-          <p>Nessun backend remoto obbligatorio, nessun account, nessuna registrazione.
-          I tuoi dati bancari restano dove devono restare: sul tuo computer.</p>
+          <h3>Pessoas que não confiam na nuvem</h3>
+          <p>Sem backend remoto obrigatório, sem conta, sem cadastro.
+          Seus dados bancários ficam onde devem ficar: no seu computador.</p>
         </div>
       </div>
       <div class="audience-card">
         <div class="ico-circle">👨‍💻</div>
         <div>
-          <h3>Developer</h3>
-          <p>Progetto open source Python con architettura modulare, pipeline LLM su dati
-          strutturati, test suite completo. Un punto di partenza per sperimentare o
-          costruire integrazioni custom.</p>
+          <h3>Desenvolvedores</h3>
+          <p>Projeto Python open source com arquitetura modular, pipeline de LLM em dados estruturados,
+          suíte de testes completa. Um ponto de partida para experimentar ou
+          construir integrações personalizadas.</p>
         </div>
       </div>
     </div>
@@ -911,58 +911,58 @@
 <!-- ── FEATURES ──────────────────────────────────────────────────────────── -->
 <section id="features">
   <div class="container">
-    <div class="section-label">Funzionalità</div>
-    <h2>Tutto quello che serve, niente di più</h2>
+    <div class="section-label">Funcionalidades</div>
+    <h2>Tudo que você precisa, nada além</h2>
     <br>
 
     <div class="features-grid fade-in">
       <div class="feature-row">
-        <span class="feature-name">Import multi-banca</span>
-        <span class="feature-desc">CSV e XLSX da qualsiasi banca italiana (e non solo)</span>
+        <span class="feature-name">Importação multi-banco</span>
+        <span class="feature-desc">CSV e XLSX de qualquer banco</span>
       </div>
       <div class="feature-row">
-        <span class="feature-name">Auto-detect formato</span>
-        <span class="feature-desc">Nessuna configurazione manuale per ogni tipo di file</span>
+        <span class="feature-name">Detecção automática de formato</span>
+        <span class="feature-desc">Sem configuração manual para cada tipo de arquivo</span>
       </div>
       <div class="feature-row">
-        <span class="feature-name">Ledger unificato</span>
-        <span class="feature-desc">Tutte le transazioni cronologiche, filtrabili per data / conto / categoria / contesto</span>
+        <span class="feature-name">Extrato unificado</span>
+        <span class="feature-desc">Todas as transações em ordem cronológica, filtráveis por data / conta / categoria / contexto</span>
       </div>
       <div class="feature-row">
-        <span class="feature-name">Classificazione automatica</span>
-        <span class="feature-desc">15 categorie spese + 7 entrate con sottocategorie</span>
+        <span class="feature-name">Classificação automática</span>
+        <span class="feature-desc">15 categorias de despesas + 7 categorias de receitas com subcategorias</span>
       </div>
       <div class="feature-row">
-        <span class="feature-name">Tassonomia personalizzabile</span>
-        <span class="feature-desc">Aggiungi / modifica categorie senza riavviare l'app</span>
+        <span class="feature-name">Taxonomia personalizável</span>
+        <span class="feature-desc">Adicionar / editar categorias sem reiniciar o app</span>
       </div>
       <div class="feature-row">
-        <span class="feature-name">Regole deterministiche</span>
-        <span class="feature-desc">Regole "ESSELUNGA → Alimentari" applicate retroattivamente</span>
+        <span class="feature-name">Regras determinísticas</span>
+        <span class="feature-desc">Regras "ESSELUNGA → Supermercado" aplicadas retroativamente</span>
       </div>
       <div class="feature-row">
-        <span class="feature-name">Analytics interattiva</span>
-        <span class="feature-desc">7 grafici: andamento mensile, bilancio cumulato, torta categorie, top 10 commercianti</span>
+        <span class="feature-name">Análises interativas</span>
+        <span class="feature-desc">7 gráficos: tendência mensal, saldo acumulado, pizza por categoria, top 10 comerciantes</span>
       </div>
       <div class="feature-row">
-        <span class="feature-name">Contesti di vita</span>
-        <span class="feature-desc">Segmenta le spese per Lavoro / Vacanza / Quotidianità</span>
+        <span class="feature-name">Contextos de vida</span>
+        <span class="feature-desc">Segmente despesas por Trabalho / Férias / Dia a dia</span>
       </div>
       <div class="feature-row">
         <span class="feature-name">Check List</span>
-        <span class="feature-desc">Tabella pivot mese × conto: vedi quali mesi non hai ancora importato</span>
+        <span class="feature-desc">Tabela dinâmica mês × conta: veja quais meses você ainda não importou</span>
       </div>
       <div class="feature-row">
-        <span class="feature-name">Export</span>
-        <span class="feature-desc">HTML standalone (con grafici), CSV, XLSX</span>
+        <span class="feature-name">Exportação</span>
+        <span class="feature-desc">HTML autônomo (com gráficos), CSV, XLSX</span>
       </div>
       <div class="feature-row">
-        <span class="feature-name">LLM configurabile</span>
-        <span class="feature-desc">Ollama, OpenAI, Claude, Groq, Gemini, LM Studio, qualsiasi API compatibile</span>
+        <span class="feature-name">LLM configurável</span>
+        <span class="feature-desc">Ollama, OpenAI, Claude, Groq, Gemini, LM Studio, qualquer API compatível</span>
       </div>
       <div class="feature-row">
-        <span class="feature-name">PII sanitization</span>
-        <span class="feature-desc">Protezione automatica IBAN / PAN / codice fiscale / nome prima di chiamate remote</span>
+        <span class="feature-name">Sanitização de PII</span>
+        <span class="feature-desc">Proteção automática de IBAN / número do cartão / CPF / nome antes de chamadas remotas</span>
       </div>
     </div>
   </div>
@@ -973,9 +973,9 @@
 <!-- ── INSTALL ───────────────────────────────────────────────────────────── -->
 <section id="install" class="install-section">
   <div class="container">
-    <div class="section-label">Installazione</div>
-    <h2>Un comando, l'app è pronta</h2>
-    <p class="section-sub">Serve solo <a href="https://www.docker.com/products/docker-desktop/" target="_blank" style="color:var(--blue)">Docker Desktop</a>. Nessun git clone, nessuna configurazione.</p>
+    <div class="section-label">Instalação</div>
+    <h2>Um comando, app pronto</h2>
+    <p class="section-sub">Apenas o <a href="https://www.docker.com/products/docker-desktop/" target="_blank" style="color:var(--blue)">Docker Desktop</a> é necessário. Sem git clone, sem configuração.</p>
 
     <div class="os-tabs">
       <button class="os-tab active" onclick="switchOS('mac')">🍎 Mac / Linux</button>
@@ -990,7 +990,7 @@
             <span class="d1"></span><span class="d2"></span><span class="d3"></span>
           </div>
           <span class="code-label">bash</span>
-          <button class="copy-btn" onclick="copyCode(this, 'mac')">Copia</button>
+          <button class="copy-btn" onclick="copyCode(this, 'mac')">Copiar</button>
         </div>
         <div class="code-body">
           <div><span class="p">$ </span><span class="c">curl</span><span class="a"> -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/install.sh | bash</span></div>
@@ -1006,7 +1006,7 @@
             <span class="d1"></span><span class="d2"></span><span class="d3"></span>
           </div>
           <span class="code-label">powershell</span>
-          <button class="copy-btn" onclick="copyCode(this, 'win')">Copia</button>
+          <button class="copy-btn" onclick="copyCode(this, 'win')">Copiar</button>
         </div>
         <div class="code-body">
           <div><span class="p">PS&gt; </span><span class="c">irm</span><span class="a"> https://raw.githubusercontent.com/drake69/spendify/main/installer/install.ps1 | iex</span></div>
@@ -1015,15 +1015,15 @@
     </div>
 
     <p class="install-post">
-      Lo script scarica l'immagine da <strong>GitHub Container Registry</strong>, avvia il container
-      e apre il browser su <strong>http://localhost:8501</strong> automaticamente.<br>
-      <strong>AI locale opzionale:</strong> lo script chiede se installare Ollama con <code>gemma3:12b</code> — scaricato in background (~8 GB). Funziona su Apple Silicon (arm64) e amd64.<br>
-      <small>Per disinstallare: <code>curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.sh | bash</code></small>
+      O script baixa a imagem do <strong>GitHub Container Registry</strong>, inicia o container
+      e abre o navegador em <strong>http://localhost:8501</strong> automaticamente.<br>
+      <strong>IA local opcional:</strong> o instalador pergunta se deseja adicionar Ollama com <code>gemma3:12b</code> — baixado em segundo plano (~8 GB). Funciona em Apple Silicon (arm64) e amd64.<br>
+      <small>Para desinstalar: <code>curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.sh | bash</code></small>
     </p>
 
     <p class="install-dev-link">
-      Sviluppatore o installazione nativa? →
-      <a href="https://github.com/drake69/spendify/blob/main/docs/installazione.md" target="_blank">Guida completa (Mac nativo · Linux Docker · Windows llama.cpp)</a>
+      Desenvolvedor ou instalação nativa? →
+      <a href="https://github.com/drake69/spendify/blob/main/docs/installazione.en.md" target="_blank">Guia completo (Mac nativo · Linux Docker · Windows llama.cpp)</a>
     </p>
   </div>
 </section>
@@ -1033,20 +1033,20 @@
 <!-- ── STACK ─────────────────────────────────────────────────────────────── -->
 <section id="stack">
   <div class="container">
-    <div class="section-label">Stack tecnologico</div>
-    <h2>Tecnologie mature, nessuna dipendenza esotica</h2>
-    <p class="section-sub">Nessun framework LLM (no LangChain) — i backend AI usano direttamente gli SDK ufficiali.</p>
+    <div class="section-label">Stack tecnológico</div>
+    <h2>Tecnologias maduras, sem dependências exóticas</h2>
+    <p class="section-sub">Sem framework de LLM (sem LangChain) — backends de IA usam os SDKs oficiais diretamente.</p>
 
     <div class="stack-grid fade-in">
       <div class="stack-badge"><strong>Python 3.13</strong> <span>+ pandas</span></div>
-      <div class="stack-badge"><strong>Streamlit</strong> <span>interfaccia web</span></div>
+      <div class="stack-badge"><strong>Streamlit</strong> <span>interface web</span></div>
       <div class="stack-badge"><strong>SQLite</strong> <span>+ SQLAlchemy</span></div>
-      <div class="stack-badge"><strong>Pydantic v2</strong> <span>validazione schemi</span></div>
-      <div class="stack-badge"><strong>Plotly</strong> <span>grafici interattivi</span></div>
-      <div class="stack-badge"><strong>uv</strong> <span>package manager</span></div>
-      <div class="stack-badge"><strong>Ollama</strong> <span>AI locale</span></div>
-      <div class="stack-badge"><strong>chardet</strong> <span>encoding detection</span></div>
-      <div class="stack-badge"><strong>openpyxl</strong> <span>parsing Excel</span></div>
+      <div class="stack-badge"><strong>Pydantic v2</strong> <span>validação de schema</span></div>
+      <div class="stack-badge"><strong>Plotly</strong> <span>gráficos interativos</span></div>
+      <div class="stack-badge"><strong>uv</strong> <span>gerenciador de pacotes</span></div>
+      <div class="stack-badge"><strong>Ollama</strong> <span>IA local</span></div>
+      <div class="stack-badge"><strong>chardet</strong> <span>detecção de encoding</span></div>
+      <div class="stack-badge"><strong>openpyxl</strong> <span>parsing de Excel</span></div>
     </div>
   </div>
 </section>
@@ -1056,39 +1056,39 @@
 <!-- ── DEVELOPER ─────────────────────────────────────────────────────────── -->
 <section id="developer">
   <div class="container">
-    <div class="section-label">Per i developer</div>
-    <h2>Architettura modulare, test suite completo</h2>
+    <div class="section-label">Para desenvolvedores</div>
+    <h2>Arquitetura modular, suíte de testes completa</h2>
 
     <div class="pipeline-box fade-in">
-<span class="ph">File CSV/XLSX</span>
-  <span class="ar">→</span> <span class="label">Pre-processing</span>       <span class="note">(strip righe sparse, drop colonne metadati)</span>
-  <span class="ar">→</span> <span class="label">Classificatore schema</span> <span class="note">(fingerprint SHA-256 → LLM se schema nuovo)</span>
-  <span class="ar">→</span> <span class="label">Normalizzatore</span>         <span class="note">(encoding, parse_amount Decimal, SHA-256 tx_id)</span>
-  <span class="ar">→</span> <span class="label">Riconciliatore RF-03</span>  <span class="note">(carta–conto corrente, 3 fasi)</span>
-  <span class="ar">→</span> <span class="label">Rilevatore RF-04</span>      <span class="note">(giroconti interni, matching simbolico)</span>
-  <span class="ar">→</span> <span class="label">Description cleaner</span>   <span class="note">(LLM: rumore → testo canonico)</span>
-  <span class="ar">→</span> <span class="label">Categorizzatore</span>        <span class="note">(regole → regex → LLM → fallback)</span>
-  <span class="ar">→</span> <span class="label">Database</span>               <span class="note">(SQLAlchemy, upsert idempotente)</span>
+<span class="ph">CSV/XLSX File</span>
+  <span class="ar">→</span> <span class="label">Pre-processing</span>       <span class="note">(strip sparse rows, drop metadata columns)</span>
+  <span class="ar">→</span> <span class="label">Schema classifier</span>    <span class="note">(SHA-256 fingerprint → LLM if new schema)</span>
+  <span class="ar">→</span> <span class="label">Normalizer</span>            <span class="note">(encoding, parse_amount Decimal, SHA-256 tx_id)</span>
+  <span class="ar">→</span> <span class="label">RF-03 Reconciler</span>     <span class="note">(credit card–current account, 3 phases)</span>
+  <span class="ar">→</span> <span class="label">RF-04 Detector</span>       <span class="note">(internal transfers, symbolic matching)</span>
+  <span class="ar">→</span> <span class="label">Description cleaner</span>   <span class="note">(LLM: noise → canonical text)</span>
+  <span class="ar">→</span> <span class="label">Categorizer</span>           <span class="note">(rules → regex → LLM → fallback)</span>
+  <span class="ar">→</span> <span class="label">Database</span>              <span class="note">(SQLAlchemy, idempotent upsert)</span>
     </div>
 
     <br>
 
     <div class="contribute-grid fade-in">
       <div class="contribute-card">
-        <h3>🔌 Nuovi backend LLM</h3>
-        <p>Implementa <code>LLMBackend</code> (3 metodi) e registralo in <code>BackendFactory</code>. Funziona con qualsiasi API OpenAI-compatible.</p>
+        <h3>🔌 Novos backends de LLM</h3>
+        <p>Implemente <code>LLMBackend</code> (3 métodos) e registre no <code>BackendFactory</code>. Funciona com qualquer API compatível com OpenAI.</p>
       </div>
       <div class="contribute-card">
-        <h3>🏦 Nuovi formati bancari</h3>
-        <p>Flow 2 li riconosce automaticamente via LLM senza modifiche al codice. Lo schema viene salvato e riutilizzato nelle importazioni successive.</p>
+        <h3>🏦 Novos formatos bancários</h3>
+        <p>O Flow 2 os reconhece automaticamente via LLM sem alterações no código. O schema é salvo e reutilizado nas importações seguintes.</p>
       </div>
       <div class="contribute-card">
-        <h3>🏷️ Nuove categorie</h3>
-        <p>Dalla pagina Tassonomia, senza toccare il codice. La tassonomia è completamente configurabile dall'interfaccia.</p>
+        <h3>🏷️ Novas categorias</h3>
+        <p>Pela página de Taxonomia, sem tocar no código. A taxonomia é totalmente configurável pela interface.</p>
       </div>
       <div class="contribute-card">
-        <h3>🚀 API REST</h3>
-        <p>La pipeline <code>process_file()</code> è completamente separata dall'UI — si può esporre via FastAPI senza modifiche.</p>
+        <h3>🚀 REST API</h3>
+        <p>O pipeline <code>process_file()</code> é completamente separado da UI — pode ser exposto via FastAPI sem alterações.</p>
       </div>
     </div>
 
@@ -1101,8 +1101,8 @@
         <span class="code-label">bash — test suite</span>
       </div>
       <div class="code-body">
-        <div><span class="p">$ </span><span class="c">uv run pytest</span><span class="a"> tests/ -v</span>         <span class="co"># 199 test, zero dipendenze esterne</span></div>
-        <div><span class="p">$ </span><span class="c">uv run pytest</span><span class="a"> tests/ --cov=core</span>  <span class="co"># coverage del business logic layer</span></div>
+        <div><span class="p">$ </span><span class="c">uv run pytest</span><span class="a"> tests/ -v</span>         <span class="co"># 199 tests, zero external dependencies</span></div>
+        <div><span class="p">$ </span><span class="c">uv run pytest</span><span class="a"> tests/ --cov=core</span>  <span class="co"># coverage of business logic layer</span></div>
       </div>
     </div>
   </div>
@@ -1114,15 +1114,15 @@
 <section id="roadmap">
   <div class="container">
     <div class="section-label">Roadmap</div>
-    <h2>Cosa sta arrivando</h2>
+    <h2>O que está por vir</h2>
     <br>
     <ul class="roadmap-list fade-in">
-      <li><span class="dot"></span>Supporto PDF — parsing nativo file movimenti PDF bancari</li>
-      <li><span class="dot"></span>Budget mensile per categoria con alerting</li>
-      <li><span class="dot"></span>Importazione automatica via Open Banking (PSD2)</li>
-      <li><span class="dot"></span>API REST per integrazioni esterne</li>
-      <li><span class="dot"></span>Versione multi-utente con autenticazione</li>
-      <li><span class="dot"></span>App mobile — visualizzazione ledger e analytics</li>
+      <li><span class="dot"></span>Suporte a PDF — parsing nativo de arquivos de movimentações em PDF</li>
+      <li><span class="dot"></span>Orçamento mensal por categoria com alertas</li>
+      <li><span class="dot"></span>Importação automática via Open Banking (PSD2)</li>
+      <li><span class="dot"></span>REST API para integrações externas</li>
+      <li><span class="dot"></span>Versão multi-usuário com autenticação</li>
+      <li><span class="dot"></span>App mobile — visualizador de extrato e análises</li>
     </ul>
   </div>
 </section>
@@ -1133,25 +1133,25 @@
 <section id="contribuire">
   <div class="container">
     <div class="section-label">Open source</div>
-    <h2>Contribuire è benvenuto</h2>
-    <p class="section-sub">Le aree dove il contributo è più utile:</p>
+    <h2>Contribuições são bem-vindas</h2>
+    <p class="section-sub">Áreas onde contribuições são mais úteis:</p>
 
     <div class="contribute-grid fade-in">
       <div class="contribute-card">
-        <h3>🏦 Nuovi formati bancari</h3>
-        <p>Se la tua banca non viene riconosciuta automaticamente, apri una issue con un campione CSV anonimizzato.</p>
+        <h3>🏦 Novos formatos bancários</h3>
+        <p>Se o seu banco não é reconhecido automaticamente, abra uma issue com um CSV anonimizado de exemplo.</p>
       </div>
       <div class="contribute-card">
-        <h3>🧪 Test UI</h3>
-        <p>La suite copre il layer di business logic ma non ancora l'interfaccia Streamlit. C'è spazio per contribuire.</p>
+        <h3>🧪 Testes de UI</h3>
+        <p>A suíte cobre a camada de lógica de negócios, mas ainda não a interface Streamlit. Há espaço para contribuir.</p>
       </div>
       <div class="contribute-card">
-        <h3>🌍 Internazionalizzazione</h3>
-        <p>L'architettura supporta già più lingue per le descrizioni. La UI è in italiano — c'è margine per aggiungere altre lingue.</p>
+        <h3>🌍 Internacionalização</h3>
+        <p>A arquitetura já suporta múltiplos idiomas para descrições. A UI está em italiano — há escopo para adicionar outros idiomas.</p>
       </div>
       <div class="contribute-card">
         <h3>⚡ Performance</h3>
-        <p>La categorizzazione batch è il collo di bottiglia con LLM locale. C'è margine per parallelizzazione.</p>
+        <p>A categorização em lote é o gargalo com LLM local. Há espaço para paralelização.</p>
       </div>
     </div>
 
@@ -1159,7 +1159,7 @@
     <div style="text-align:center; margin-top: 1rem;">
       <a class="btn btn-primary" href="https://github.com/drake69/spendify" target="_blank">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-        Vai su GitHub
+        Ir para o GitHub
       </a>
     </div>
   </div>
@@ -1168,14 +1168,14 @@
 <!-- ── FOOTER ─────────────────────────────────────────────────────────────── -->
 <footer>
   <p>
-    <strong>Spendify</strong> è open source —
+    <strong>Spendify</strong> é open source —
     <a href="https://github.com/drake69/spendify" target="_blank">github.com/drake69/spendify</a>
   </p>
   <p class="disclaimer">
-    Spendify non è un servizio cloud. È un programma che gira sul tuo computer.
-    I tuoi dati bancari non vengono mai inviati a server di terzi, a meno che tu non scelga
-    esplicitamente un backend LLM remoto — in quel caso, tutti i dati identificativi vengono
-    rimossi prima dell'invio.
+    Spendify não é um serviço na nuvem. É um programa que roda no seu computador.
+    Seus dados bancários nunca são enviados a servidores de terceiros, a menos que você escolha explicitamente
+    um backend de LLM remoto — nesse caso, todos os dados identificáveis são
+    removidos antes da transmissão.
   </p>
 </footer>
 
@@ -1206,8 +1206,8 @@
   };
   function copyCode(btn, os) {
     navigator.clipboard.writeText(installCmds[os] || installCmds.mac).then(() => {
-      btn.textContent = 'Copiato ✓';
-      setTimeout(() => btn.textContent = 'Copia', 2000);
+      btn.textContent = 'Copiado ✓';
+      setTimeout(() => btn.textContent = 'Copiar', 2000);
     });
   }
 </script>

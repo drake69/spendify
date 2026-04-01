@@ -628,6 +628,24 @@
       section { padding: 3.5rem 1.25rem; }
       .trust-bar { gap: 1.5rem; }
     }
+
+    /* ── LANG SWITCHER ────────────────────────────────────── */
+    .lang-switcher {
+      display: flex;
+      gap: 0.4rem;
+      align-items: center;
+      margin-left: 1rem;
+    }
+    .lang-switcher a {
+      font-size: 1.1rem;
+      text-decoration: none;
+      opacity: 0.5;
+      transition: opacity 0.2s;
+    }
+    .lang-switcher a:hover,
+    .lang-switcher a.active {
+      opacity: 1;
+    }
   </style>
 </head>
 <body>
@@ -641,8 +659,15 @@
     <li><a href="#features">Features</a></li>
     <li><a href="#developer">Developer</a></li>
     <li><a href="https://github.com/drake69/spendify" target="_blank" class="nav-cta">GitHub ↗</a></li>
-    <li><a href="index.html">🇮🇹 IT</a></li>
   </ul>
+  <div class="lang-switcher">
+    <a href="index.html" title="Italiano">🇮🇹</a>
+    <a href="index.en.html" title="English" class="active">🇬🇧</a>
+    <a href="index.de.html" title="Deutsch">🇩🇪</a>
+    <a href="index.fr.html" title="Français">🇫🇷</a>
+    <a href="index.es.html" title="Español">🇪🇸</a>
+    <a href="index.pt.html" title="Português">🇵🇹</a>
+  </div>
 </nav>
 
 <!-- ── HERO ─────────────────────────────────────────────────────────────── -->
