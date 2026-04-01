@@ -1130,7 +1130,7 @@ def _merge_step0_into_result(result: dict, step0: _Step0Result, source_name: str
     # Phase 0 knows the STRUCTURE (complementary split, sign pattern) but NOT
     # the SEMANTICS (which column is debit, which is credit — that requires
     # understanding column names like Dare/Avere in the file's language).
-    if step0.amount_semantics in ("debit_positive", "debit_credit_signed", "debit_positive_candidates"):
+    if step0.amount_semantics in ("debit_positive", "debit_credit_signed"):
         _set("sign_convention", step0.amount_semantics, "density + sign analysis")
         # LLM's debit_col/credit_col take precedence (it sees column names+values).
         # Only fill in from Phase 0 if the LLM left them blank.
