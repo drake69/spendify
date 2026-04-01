@@ -74,6 +74,10 @@ class ManifestEntry:
     amount_format: str
     has_debit_credit_split: bool
     column_names: list[str]
+    n_income_rows: int = 0
+    n_expense_rows: int = 0
+    n_internal_transfers: int = 0
+    has_borders: bool = False
 
 
 @dataclass
@@ -123,6 +127,18 @@ class RunFileResult:
     prompt_tokens: int = 0
     completion_tokens: int = 0
     total_tokens: int = 0
+    # File characteristics (from manifest)
+    file_doc_type: str = ""
+    file_format: str = ""
+    file_amount_format: str = ""
+    file_n_header_rows: int = 0
+    file_n_data_rows: int = 0
+    file_n_footer_rows: int = 0
+    file_has_debit_credit_split: str = ""
+    file_has_borders: str = ""
+    file_n_income_rows: int = 0
+    file_n_expense_rows: int = 0
+    file_n_internal_transfers: int = 0
     # Phase 0 → LLM → merge diagnostic traceability
     phase0_sign_convention: str = ""   # convention detected by Phase 0
     phase0_debit_col: str = ""         # debit candidate from Phase 0
@@ -261,6 +277,10 @@ def _load_manifest(file_pattern: Optional[str] = None) -> list[ManifestEntry]:
                 amount_format=row["amount_format"],
                 has_debit_credit_split=row["has_debit_credit_split"].strip().lower() == "true",
                 column_names=row["column_names"].split("|"),
+                n_income_rows=int(row.get("n_income_rows", 0) or 0),
+                n_expense_rows=int(row.get("n_expense_rows", 0) or 0),
+                n_internal_transfers=int(row.get("n_internal_transfers", 0) or 0),
+                has_borders=row.get("has_borders", "false").strip().lower() == "true",
             ))
     return entries
 
@@ -646,6 +666,19 @@ def _evaluate_file(
         return RunFileResult(
             run_id=run_id,
             filename=entry.filename,
+            # File characteristics
+            file_doc_type=entry.doc_type,
+            file_format=entry.fmt,
+            file_amount_format=entry.amount_format,
+            file_n_header_rows=entry.n_header_rows,
+            file_n_data_rows=entry.n_data_rows,
+            file_n_footer_rows=entry.n_footer_rows,
+            file_has_debit_credit_split=str(entry.has_debit_credit_split).lower(),
+            file_has_borders=str(entry.has_borders).lower(),
+            file_n_income_rows=entry.n_income_rows,
+            file_n_expense_rows=entry.n_expense_rows,
+            file_n_internal_transfers=entry.n_internal_transfers,
+            # Results
             header_detected=detected_skip,
             header_expected=entry.n_header_rows,
             header_match=header_match,
@@ -713,7 +746,12 @@ _CSV_HEADER = [
     # Inference parameters (for reproducibility & performance analysis)
     "n_ctx", "n_batch", "n_threads", "n_gpu_layers", "flash_attn",
     # Runtime HW
-    "runtime_os", "runtime_cpu", "runtime_ram_gb", "runtime_gpu",
+    "runtime_os", "runtime_cpu", "runtime_ram_gb", "runtime_gpu", "runtime_gpu_cores",
+    # File characteristics (from manifest — self-contained row)
+    "file_doc_type", "file_format", "file_amount_format",
+    "file_n_header_rows", "file_n_data_rows", "file_n_footer_rows",
+    "file_has_debit_credit_split", "file_has_borders",
+    "file_n_income_rows", "file_n_expense_rows", "file_n_internal_transfers",
     # Classifier results
     "header_detected", "header_expected", "header_match",
     "rows_detected", "rows_expected", "rows_match",
@@ -772,6 +810,13 @@ def _result_to_row(r: RunFileResult) -> list:
         _LLM_META.get("runtime_cpu", ""),
         _LLM_META.get("runtime_ram_gb", ""),
         _LLM_META.get("runtime_gpu", ""),
+        _LLM_META.get("runtime_gpu_cores", ""),
+        # File characteristics
+        r.file_doc_type, r.file_format, r.file_amount_format,
+        r.file_n_header_rows, r.file_n_data_rows, r.file_n_footer_rows,
+        r.file_has_debit_credit_split, r.file_has_borders,
+        r.file_n_income_rows, r.file_n_expense_rows, r.file_n_internal_transfers,
+        # Results
         r.header_detected, r.header_expected, r.header_match,
         r.rows_detected, r.rows_expected, r.rows_match,
         r.doc_type_detected, r.doc_type_expected, r.doc_type_match,
