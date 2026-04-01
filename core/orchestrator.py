@@ -239,18 +239,18 @@ def load_raw_dataframe(
         except Exception:
             sheet_name = 0  # fallback to first sheet
 
-        # If border detection found a bounded region, limit rows loaded
+        # Load rows using combined border + density signals.
+        # Border is a strong hint but not absolute — if dense data rows exist
+        # beyond the border, they are included (border may not cover full table).
         read_kwargs: dict = {
             "sheet_name": sheet_name,
             "skiprows": skip_rows if skip_rows > 0 else None,
         }
         if border_region is not None:
             r1, r2, _c1, _c2 = border_region
-            # nrows = data rows count (region height minus the header row itself)
-            read_kwargs["nrows"] = r2 - skip_rows  # skip_rows is the header row index
             logger.info(
-                "load_raw_dataframe: border region → nrows=%d (rows %d..%d)",
-                read_kwargs["nrows"], skip_rows, r2,
+                "load_raw_dataframe: border hint rows %d..%d (header at %d) — loading all, will reconcile with density",
+                r1, r2, skip_rows,
             )
 
         df = pd.read_excel(
@@ -274,6 +274,66 @@ def load_raw_dataframe(
     # Defensive: coerce all column names to str — Excel files may have datetime
     # or numeric objects as column headers, which crash downstream .lower() calls.
     df.columns = [str(c) for c in df.columns]
+
+    # ── Combined border + density row filtering ─────────────────────────────
+    # Two signals determine the data extent:
+    #   1. Border signal (Excel only): bordered region suggests data boundaries
+    #   2. Density signal (universal): rows with >= 50% columns filled are data
+    #
+    # Decision logic:
+    #   - Border strong + density agrees  → use border (it's exact)
+    #   - Border strong + dense rows outside → extend beyond border (border incomplete)
+    #   - No border → density decides everything
+    #   - Trailing sparse rows always trimmed (footer/decoration)
+    if len(df) > 0:
+        n_cols = len(df.columns)
+        if n_cols > 0:
+            row_density = df.notna().sum(axis=1) / n_cols
+            _density_threshold = 0.5
+            dense_mask = row_density >= _density_threshold
+
+            if border_region is not None:
+                _r1, _r2, _c1, _c2 = border_region
+                # Border says data ends at row _r2 (relative to file, not DataFrame).
+                # Translate to DataFrame index: border row count from header.
+                _border_nrows = _r2 - skip_rows
+                _n_dense_total = dense_mask.sum()
+                _n_dense_beyond_border = dense_mask.iloc[_border_nrows:].sum() if _border_nrows < len(df) else 0
+
+                if _n_dense_beyond_border > 0:
+                    # Dense rows exist outside the border → border is incomplete.
+                    # Trust density: trim only trailing sparse rows.
+                    last_dense_idx = dense_mask[::-1].idxmax()
+                    n_before = len(df)
+                    df = df.loc[:last_dense_idx].copy()
+                    logger.info(
+                        "load_raw_dataframe: border says %d rows but %d dense rows found beyond → "
+                        "extending to %d rows (density wins over border)",
+                        _border_nrows, _n_dense_beyond_border, len(df),
+                    )
+                else:
+                    # No dense rows beyond border → border and density agree.
+                    # Use border as the precise boundary.
+                    n_before = len(df)
+                    df = df.iloc[:_border_nrows].copy()
+                    if n_before != len(df):
+                        logger.info(
+                            "load_raw_dataframe: border and density agree → trimmed to %d rows",
+                            len(df),
+                        )
+            else:
+                # No border — trim trailing sparse rows by density alone.
+                if dense_mask.any():
+                    last_dense_idx = dense_mask[::-1].idxmax()
+                    n_before = len(df)
+                    df = df.loc[:last_dense_idx].copy()
+                    n_trimmed = n_before - len(df)
+                    if n_trimmed > 0:
+                        logger.info(
+                            "load_raw_dataframe: density filter trimmed %d trailing sparse rows "
+                            "(threshold=%.0f%%, kept %d rows)",
+                            n_trimmed, _density_threshold * 100, len(df),
+                        )
 
     # Phase-0 preprocessing: post-load preheader strip
     # When pre-load detection was certain (and skip_rows > 0), the pre-header

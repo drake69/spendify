@@ -309,8 +309,13 @@ def classify_document(
             "Sanitization is mandatory before any LLM call (RF-10)."
         )
 
-    # Build a compact sample for the prompt (max 20 rows)
-    sample = df_raw.head(20).copy()
+    # Build a compact sample for the prompt (max 20 rows).
+    # Select rows with highest column density (most non-null values) so the LLM
+    # sees representative data even when some columns (e.g. credit/Avere) are
+    # sparse and only populated in a few rows.
+    _density = df_raw.notna().sum(axis=1)
+    _top_idx = _density.nlargest(min(20, len(df_raw))).index
+    sample = df_raw.loc[_top_idx].copy()
 
     if sanitize:
         for col in sample.select_dtypes(include="object").columns:
@@ -832,15 +837,16 @@ def _run_step0_analysis(
             {c: f"{d:.0%}" for c, d in densities.items()},
         )
         # Try all pairs when > 2 amount columns.
-        # Complementary = sum ≈ 1.0 (>0.85) and neither is 100% (<0.98).
+        # Complementary = sum ≈ 1.0 (>0.85) and neither is 100% (<1.00).
         # A bank account may have 90% expenses / 10% income — perfectly normal.
+        # A savings account might be 98% debit / 2% credit — still complementary.
         best_pair = None
         best_complement = 0.0
         for i, c1 in enumerate(amount_cols_found):
             for c2 in amount_cols_found[i + 1:]:
                 d1, d2 = densities[c1], densities[c2]
                 complement = d1 + d2
-                if complement > 0.85 and max(d1, d2) < 0.98 and complement > best_complement:
+                if complement > 0.85 and max(d1, d2) < 1.00 and complement > best_complement:
                     best_pair = (c1, c2, d1, d2)
                     best_complement = complement
 

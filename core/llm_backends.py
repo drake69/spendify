@@ -20,6 +20,9 @@ class SanitizationRequiredError(Exception):
 
 class LLMBackend(ABC):
 
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+
     @abstractmethod
     def complete_structured(
         self,
@@ -42,6 +45,31 @@ class LLMBackend(ABC):
     @abstractmethod
     def name(self) -> str:
         ...
+
+    # ── Token usage tracking ──────────────────────────────────────────────
+    # last_usage: populated after each complete_structured() call.
+    # cumulative_usage: accumulated across multiple calls (reset with reset_cumulative_usage).
+    last_usage: dict[str, int] = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+    cumulative_usage: dict[str, int] = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
+    def _reset_usage(self) -> None:
+        self.last_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
+    def _set_usage(self, prompt: int, completion: int) -> None:
+        self.last_usage = {
+            "prompt_tokens": prompt,
+            "completion_tokens": completion,
+            "total_tokens": prompt + completion,
+        }
+        self.cumulative_usage = {
+            "prompt_tokens": self.cumulative_usage.get("prompt_tokens", 0) + prompt,
+            "completion_tokens": self.cumulative_usage.get("completion_tokens", 0) + completion,
+            "total_tokens": self.cumulative_usage.get("total_tokens", 0) + prompt + completion,
+        }
+
+    def reset_cumulative_usage(self) -> None:
+        """Reset cumulative counters (call before each benchmark file)."""
+        self.cumulative_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
 
 
 # ── Ollama ────────────────────────────────────────────────────────────────────
@@ -84,6 +112,7 @@ class OllamaBackend(LLMBackend):
             "format": json_schema,
             "options": {"temperature": temperature},
         }
+        self._reset_usage()
         try:
             resp = self._requests.post(
                 f"{self.base_url}/api/generate",
@@ -91,7 +120,12 @@ class OllamaBackend(LLMBackend):
                 timeout=self.timeout,
             )
             resp.raise_for_status()
-            content = resp.json()["response"]
+            data = resp.json()
+            content = data["response"]
+            self._set_usage(
+                data.get("prompt_eval_count", 0),
+                data.get("eval_count", 0),
+            )
             result = json.loads(content)
             _validate_required(result, json_schema)
             return result
@@ -132,7 +166,12 @@ class OpenAIBackend(LLMBackend):
         json_schema: dict[str, Any],
         temperature: float = 0.0,
     ) -> dict[str, Any]:
+        self._reset_usage()
         client = self._openai.OpenAI(api_key=self.api_key, timeout=self.timeout)
+        # OpenAI strict mode requires all properties listed in required
+        _schema = json.loads(json.dumps(json_schema))  # deep copy
+        if "properties" in _schema:
+            _schema["required"] = list(_schema["properties"].keys())
         try:
             response = client.chat.completions.create(
                 model=self.model,
@@ -142,10 +181,12 @@ class OpenAIBackend(LLMBackend):
                 ],
                 response_format={
                     "type": "json_schema",
-                    "json_schema": {"name": "response", "schema": json_schema, "strict": True},
+                    "json_schema": {"name": "response", "schema": _schema, "strict": True},
                 },
                 temperature=temperature,
             )
+            if response.usage:
+                self._set_usage(response.usage.prompt_tokens, response.usage.completion_tokens)
             content = response.choices[0].message.content
             result = json.loads(content)
             _validate_required(result, json_schema)
@@ -180,6 +221,7 @@ class ClaudeBackend(LLMBackend):
         json_schema: dict[str, Any],
         temperature: float = 0.0,
     ) -> dict[str, Any]:
+        self._reset_usage()
         client = self._anthropic.Anthropic(api_key=self.api_key, timeout=self.timeout)
         tool_def = {
             "name": "submit_result",
@@ -196,6 +238,8 @@ class ClaudeBackend(LLMBackend):
                 tool_choice={"type": "tool", "name": "submit_result"},
                 temperature=temperature,
             )
+            if response.usage:
+                self._set_usage(response.usage.input_tokens, response.usage.output_tokens)
             tool_use = next(
                 (b for b in response.content if b.type == "tool_use"),
                 None,
@@ -255,6 +299,7 @@ class OpenAICompatibleBackend(LLMBackend):
         )
         # Append JSON instruction to system prompt for providers that don't support
         # response_format=json_schema
+        self._reset_usage()
         system_with_json = system_prompt + "\n\nRespond ONLY with valid JSON."
         try:
             response = client.chat.completions.create(
@@ -266,6 +311,8 @@ class OpenAICompatibleBackend(LLMBackend):
                 response_format={"type": "json_object"},
                 temperature=temperature,
             )
+            if response.usage:
+                self._set_usage(response.usage.prompt_tokens, response.usage.completion_tokens)
             content = response.choices[0].message.content
             result = json.loads(content)
             _validate_required(result, json_schema)
@@ -404,30 +451,52 @@ class LlamaCppBackend(LLMBackend):
         json_schema: dict[str, Any],
         temperature: float = 0.0,
     ) -> dict[str, Any]:
-        system_with_json = system_prompt + "\n\nRespond ONLY with valid JSON."
+        self._reset_usage()
+        from llama_cpp import LlamaGrammar
+
+        # Build a GBNF grammar from the JSON schema — forces the model to produce
+        # output conforming to the schema structure (same approach as Ollama).
         try:
-            # Try with system role first; fall back to merged prompt if unsupported
+            grammar = LlamaGrammar.from_json_schema(
+                json.dumps(json_schema), verbose=False
+            )
+        except Exception:
+            grammar = None  # fallback: no grammar constraint
+
+        try:
             messages = [
-                {"role": "system", "content": system_with_json},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ]
+            # Sampling params aligned with Ollama defaults for deterministic output
+            _sampling = {
+                "temperature": temperature,
+                "top_p": 0.9,
+                "top_k": 40,
+                "repeat_penalty": 1.1,
+            }
             try:
                 response = self._llm.create_chat_completion(
                     messages=messages,
-                    response_format={"type": "json_object"},
-                    temperature=temperature,
+                    grammar=grammar,
+                    **_sampling,
                 )
             except Exception as e:
                 if "System role not supported" in str(e) or "system" in str(e).lower():
                     # Model doesn't support system role — merge into user prompt
-                    merged = f"{system_with_json}\n\n---\n\n{user_prompt}"
+                    merged = f"{system_prompt}\n\n---\n\n{user_prompt}"
                     response = self._llm.create_chat_completion(
                         messages=[{"role": "user", "content": merged}],
-                        response_format={"type": "json_object"},
-                        temperature=temperature,
+                        grammar=grammar,
+                        **_sampling,
                     )
                 else:
                     raise
+            usage = response.get("usage", {})
+            self._set_usage(
+                usage.get("prompt_tokens", 0),
+                usage.get("completion_tokens", 0),
+            )
             raw = response["choices"][0]["message"]["content"]
             result = json.loads(raw)
             _validate_required(result, json_schema)
