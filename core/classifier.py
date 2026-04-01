@@ -128,6 +128,16 @@ class MultiStepDiagnostics:
     step1_skipped: bool = False  # True when account_type used directly
     step2_fallback: bool = False  # True when Phase 0 fallback used
     step3_fallback: bool = False  # True when degraded defaults used
+    # Phase 0 → LLM → merge traceability
+    phase0_sign_convention: str = ""
+    phase0_debit_col: str = ""
+    phase0_credit_col: str = ""
+    llm_debit_col: str = ""
+    llm_credit_col: str = ""
+    llm_invert_sign: str = ""
+    final_debit_col: str = ""
+    final_credit_col: str = ""
+    final_invert_sign: str = ""
 
 
 def _classify_multi_step(
@@ -475,6 +485,11 @@ def classify_document(
     # Validate that column names returned by the LLM actually exist in the DataFrame.
     result = _coerce_column_names(result, list(df_raw.columns), source_name)
 
+    # ── Capture LLM decisions BEFORE merge (for diagnostic traceability) ──
+    _llm_debit = result.get("debit_col", "") or ""
+    _llm_credit = result.get("credit_col", "") or ""
+    _llm_invert = str(result.get("invert_sign", ""))
+
     # Merge Phase 0 deterministic findings — Phase 0 wins for all resolved fields.
     result = _merge_step0_into_result(result, step0, source_name)
 
@@ -498,6 +513,16 @@ def classify_document(
         # Attach multi-step diagnostics (if available) for benchmark tracking
         if _ms_diag is None:
             _ms_diag = MultiStepDiagnostics(classifier_mode=classifier_mode)
+        # Populate Phase 0 → LLM → final traceability
+        _ms_diag.phase0_sign_convention = step0.amount_semantics or ""
+        _ms_diag.phase0_debit_col = step0.debit_col or ""
+        _ms_diag.phase0_credit_col = step0.credit_col or ""
+        _ms_diag.llm_debit_col = _llm_debit
+        _ms_diag.llm_credit_col = _llm_credit
+        _ms_diag.llm_invert_sign = _llm_invert
+        _ms_diag.final_debit_col = result.get("debit_col", "") or ""
+        _ms_diag.final_credit_col = result.get("credit_col", "") or ""
+        _ms_diag.final_invert_sign = str(result.get("invert_sign", ""))
         doc_schema._classifier_diagnostics = _ms_diag  # type: ignore[attr-defined]
         return doc_schema
     except Exception as exc:

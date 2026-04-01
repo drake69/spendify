@@ -123,6 +123,16 @@ class RunFileResult:
     prompt_tokens: int = 0
     completion_tokens: int = 0
     total_tokens: int = 0
+    # Phase 0 → LLM → merge diagnostic traceability
+    phase0_sign_convention: str = ""   # convention detected by Phase 0
+    phase0_debit_col: str = ""         # debit candidate from Phase 0
+    phase0_credit_col: str = ""        # credit candidate from Phase 0
+    llm_debit_col: str = ""            # debit assigned by LLM
+    llm_credit_col: str = ""           # credit assigned by LLM
+    llm_invert_sign: str = ""          # invert_sign decided by LLM
+    final_debit_col: str = ""          # final debit after merge
+    final_credit_col: str = ""         # final credit after merge
+    final_invert_sign: str = ""        # final invert_sign after merge
     # Multi-step classifier diagnostics
     classifier_mode: str = ""
     step1_time_s: float = 0.0
@@ -675,6 +685,16 @@ def _evaluate_file(
             prompt_tokens=backend.cumulative_usage.get("prompt_tokens", 0) if hasattr(backend, "cumulative_usage") else 0,
             completion_tokens=backend.cumulative_usage.get("completion_tokens", 0) if hasattr(backend, "cumulative_usage") else 0,
             total_tokens=backend.cumulative_usage.get("total_tokens", 0) if hasattr(backend, "cumulative_usage") else 0,
+            # Phase 0 → LLM → merge traceability
+            phase0_sign_convention=_diag.phase0_sign_convention if _diag else "",
+            phase0_debit_col=_diag.phase0_debit_col if _diag else "",
+            phase0_credit_col=_diag.phase0_credit_col if _diag else "",
+            llm_debit_col=_diag.llm_debit_col if _diag else "",
+            llm_credit_col=_diag.llm_credit_col if _diag else "",
+            llm_invert_sign=_diag.llm_invert_sign if _diag else "",
+            final_debit_col=_diag.final_debit_col if _diag else "",
+            final_credit_col=_diag.final_credit_col if _diag else "",
+            final_invert_sign=_diag.final_invert_sign if _diag else "",
         )
 
     except Exception as e:
@@ -715,6 +735,10 @@ _CSV_HEADER = [
     "cpu_load_avg", "gpu_utilization_pct",
     # Token usage (for cost tracking with remote APIs)
     "prompt_tokens", "completion_tokens", "total_tokens",
+    # Phase 0 → LLM → merge traceability
+    "phase0_sign_convention", "phase0_debit_col", "phase0_credit_col",
+    "llm_debit_col", "llm_credit_col", "llm_invert_sign",
+    "final_debit_col", "final_credit_col", "final_invert_sign",
     # Multi-step classifier diagnostics
     "classifier_mode",
     "step1_time_s", "step2_time_s", "step3_time_s",
@@ -764,6 +788,10 @@ def _result_to_row(r: RunFileResult) -> list:
         f"{r.cpu_load_avg:.2f}", f"{r.gpu_power_watts:.1f}",
         # Token usage
         r.prompt_tokens, r.completion_tokens, r.total_tokens,
+        # Phase 0 → LLM → merge traceability
+        r.phase0_sign_convention, r.phase0_debit_col, r.phase0_credit_col,
+        r.llm_debit_col, r.llm_credit_col, r.llm_invert_sign,
+        r.final_debit_col, r.final_credit_col, r.final_invert_sign,
         # Multi-step diagnostics
         r.classifier_mode,
         f"{r.step1_time_s:.2f}" if r.step1_time_s else "",
