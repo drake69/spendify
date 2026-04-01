@@ -991,28 +991,25 @@ def _format_step0_for_prompt(r: _Step0Result) -> str:
         lines.append(f"- date_accounting_col = '{r.date_accounting_col}'  [RESOLVED]")
 
     # Amount / sign
-    if r.amount_semantics == "debit_credit_signed":
-        lines.append("- sign_convention = 'debit_credit_signed'  [RESOLVED by density + sign analysis]")
-        lines.append(f"- debit_col = '{r.debit_col}'  [RESOLVED — expenses/outflows column, values already negative]")
-        lines.append(f"- credit_col = '{r.credit_col}'  [RESOLVED — income/inflows column, values positive]")
-        lines.append("- amount_col: not applicable (using debit/credit split)")
-        lines.append("- invert_sign: not applicable (values already carry correct sign)")
-    elif r.amount_semantics == "debit_positive":
-        lines.append("- sign_convention = 'debit_positive'  [RESOLVED by density + sign analysis]")
-        lines.append(f"- debit_col = '{r.debit_col}'  [RESOLVED — expenses/outflows column, values positive]")
-        lines.append(f"- credit_col = '{r.credit_col}'  [RESOLVED — income/inflows column, values positive]")
-        lines.append("- amount_col: not applicable (using debit/credit split)")
-        lines.append("- invert_sign: not applicable (debit_positive convention)")
-    elif r.amount_semantics == "debit_positive_candidates":
-        lines.append("- sign_convention = 'debit_positive'  [RESOLVED by density analysis]")
+    if r.amount_semantics in ("debit_credit_signed", "debit_positive"):
+        # Phase 0 detected the convention but does NOT assign column roles.
+        # The LLM must determine which column is debit and which is credit
+        # based on column names (Dare/Avere, Addebiti/Accrediti, Debit/Credit).
+        conv_label = r.amount_semantics
+        if conv_label == "debit_credit_signed":
+            sign_hint = "values already carry sign (debit negative, credit positive)"
+        else:
+            sign_hint = "both columns have positive values"
+        lines.append(f"- sign_convention = '{conv_label}'  [RESOLVED by density + sign analysis]")
         lines.append(
-            f"- Two complementary amount columns detected: '{r.debit_col}' and '{r.credit_col}'"
+            f"- Two complementary amount columns detected: '{r.debit_col}' and '{r.credit_col}' — {sign_hint}"
         )
         lines.append(
             "- IMPORTANT: assign debit_col and credit_col based on column names and sample values. "
             "The column with expenses/outflows is debit_col; the column with income/inflows is credit_col."
         )
-        lines.append("- invert_sign: not applicable (debit_positive convention)")
+        lines.append("- amount_col: not applicable (using debit/credit split)")
+        lines.append(f"- invert_sign: not applicable ({conv_label} convention)")
     elif r.amount_col:
         lines.append(
             f"- amount_col = '{r.amount_col}'  "
