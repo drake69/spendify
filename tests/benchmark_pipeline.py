@@ -119,6 +119,10 @@ class RunFileResult:
     duration_seconds: float
     cpu_load_avg: float = 0.0      # avg CPU load during file processing (1-min loadavg)
     gpu_power_watts: float = 0.0   # avg GPU power draw during file processing (macOS only)
+    # Token usage (for cost tracking with remote APIs)
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
     # Multi-step classifier diagnostics
     classifier_mode: str = ""
     step1_time_s: float = 0.0
@@ -533,6 +537,9 @@ def _evaluate_file(
         rows_match = 1 if abs(rows_detected - entry.n_data_rows) <= 2 else 0
 
         # 3. Classify via LLM (pass account_type from manifest, like the app does)
+        # Reset cumulative token counter before classification (may involve multiple LLM calls)
+        if hasattr(backend, 'reset_cumulative_usage'):
+            backend.reset_cumulative_usage()
         schema = classify_document(
             df_raw=df,
             llm_backend=backend,
@@ -665,6 +672,9 @@ def _evaluate_file(
             step1_doc_type_match="Y" if _diag and _diag.step1_doc_type == entry.doc_type else ("N" if _diag and _diag.step1_doc_type else ""),
             step2_date_col_match="Y" if _diag and _diag.step2_date_col else "",
             step2_amount_col_match="Y" if _diag and _diag.step2_amount_col else "",
+            prompt_tokens=backend.cumulative_usage.get("prompt_tokens", 0) if hasattr(backend, "cumulative_usage") else 0,
+            completion_tokens=backend.cumulative_usage.get("completion_tokens", 0) if hasattr(backend, "cumulative_usage") else 0,
+            total_tokens=backend.cumulative_usage.get("total_tokens", 0) if hasattr(backend, "cumulative_usage") else 0,
         )
 
     except Exception as e:
@@ -703,6 +713,8 @@ _CSV_HEADER = [
     "duration_seconds",
     # HW stress (sampled during file processing)
     "cpu_load_avg", "gpu_utilization_pct",
+    # Token usage (for cost tracking with remote APIs)
+    "prompt_tokens", "completion_tokens", "total_tokens",
     # Multi-step classifier diagnostics
     "classifier_mode",
     "step1_time_s", "step2_time_s", "step3_time_s",
@@ -750,6 +762,8 @@ def _result_to_row(r: RunFileResult) -> list:
         "", "", "",  # cat_exact_accuracy, cat_fuzzy_accuracy, cat_fallback_rate
         f"{r.duration_seconds:.2f}",
         f"{r.cpu_load_avg:.2f}", f"{r.gpu_power_watts:.1f}",
+        # Token usage
+        r.prompt_tokens, r.completion_tokens, r.total_tokens,
         # Multi-step diagnostics
         r.classifier_mode,
         f"{r.step1_time_s:.2f}" if r.step1_time_s else "",
@@ -1008,7 +1022,11 @@ def main() -> None:
     parser.add_argument("--model-path", type=str, default=None,
                         help="Model path for llama-cpp backend (e.g. path to .gguf file)")
     parser.add_argument("--model", type=str, default=None,
-                        help="Model name override for Ollama (e.g. 'phi3:3.8b', 'gemma3:12b')")
+                        help="Model name override (e.g. 'phi3:3.8b', 'gpt-4o-mini', 'claude-3-5-haiku-20241022')")
+    parser.add_argument("--api-key", type=str, default=None,
+                        help="API key for remote backends (OpenAI, Claude, OpenAI-compatible)")
+    parser.add_argument("--base-url", type=str, default=None,
+                        help="Base URL for Ollama or OpenAI-compatible backends")
     args = parser.parse_args()
 
     n_runs = args.runs
@@ -1025,6 +1043,8 @@ def main() -> None:
     backend_override = args.backend
     model_path_override = getattr(args, 'model_path', None)
     model_override = args.model
+    api_key_override = args.api_key
+    base_url_override = args.base_url
 
     if not backend_override or backend_override == "local_ollama":
         print("\n[check] Verifying Ollama is reachable...")
@@ -1033,6 +1053,21 @@ def main() -> None:
             print("       Start Ollama before running this benchmark.")
             sys.exit(1)
         print("[check] Ollama OK")
+    elif backend_override in ("openai", "claude", "openai_compatible"):
+        if not api_key_override:
+            # Try environment variables as fallback
+            env_key = {
+                "openai": "OPENAI_API_KEY",
+                "claude": "ANTHROPIC_API_KEY",
+                "openai_compatible": "COMPAT_API_KEY",
+            }.get(backend_override, "")
+            api_key_override = os.environ.get(env_key, "")
+            if not api_key_override:
+                print(f"ERROR: --api-key required for backend '{backend_override}'")
+                print(f"       Or set environment variable {env_key}")
+                sys.exit(1)
+            print(f"[check] Using API key from ${env_key}")
+        print(f"\n[check] Backend: {backend_override} (remote API)")
     else:
         print(f"\n[check] Backend: {backend_override} (skipping Ollama check)")
 
@@ -1068,7 +1103,22 @@ def main() -> None:
     if model_path_override and backend_override == "local_llama_cpp":
         config.llama_cpp_model_path = model_path_override
     if model_override:
-        config.ollama_model = model_override  # works for Ollama backend
+        config.ollama_model = model_override
+        config.openai_model = model_override
+        config.claude_model = model_override
+        config.compat_model = model_override
+    if api_key_override:
+        if backend_override == "openai":
+            config.openai_api_key = api_key_override
+        elif backend_override == "claude":
+            config.anthropic_api_key = api_key_override
+        elif backend_override == "openai_compatible":
+            config.compat_api_key = api_key_override
+    if base_url_override:
+        if backend_override == "local_ollama":
+            config.ollama_base_url = base_url_override
+        elif backend_override == "openai_compatible":
+            config.compat_base_url = base_url_override
     backend = _build_backend(config)
 
     # ── Collect LLM metadata ─────────────────────────────────────────────
@@ -1198,6 +1248,27 @@ def main() -> None:
 
     # Print summary
     _print_summary(global_rows, n_runs, n_files, total_time)
+
+    # Token usage summary
+    _total_prompt = sum(r.prompt_tokens for r in all_results)
+    _total_completion = sum(r.completion_tokens for r in all_results)
+    _total_tokens = sum(r.total_tokens for r in all_results)
+    if _total_tokens > 0:
+        print(f"  Token usage: {_total_prompt:,} prompt + {_total_completion:,} completion = {_total_tokens:,} total")
+        _avg_per_file = _total_tokens / len(all_results) if all_results else 0
+        print(f"  Avg per file: {_avg_per_file:,.0f} tokens")
+        # Cost estimates (per 1M tokens) for common providers
+        _cost_table = {
+            "gpt-4o-mini":              (0.15, 0.60),    # input, output per 1M tokens
+            "gpt-4o":                   (2.50, 10.00),
+            "claude-3-5-haiku":         (0.80, 4.00),
+            "claude-sonnet-4":          (3.00, 15.00),
+        }
+        print(f"  Cost estimates ({_total_tokens:,} tokens, {len(all_results)} files):")
+        for model_name, (in_cost, out_cost) in _cost_table.items():
+            est = (_total_prompt * in_cost + _total_completion * out_cost) / 1_000_000
+            print(f"    {model_name:<25} ${est:.4f}")
+        print()
 
     # Count errors
     n_errors = sum(1 for r in all_results if r.error)
