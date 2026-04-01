@@ -10,13 +10,13 @@
 |---|---|
 | **Import** | Upload CSV/XLSX files, start the processing pipeline |
 | **Ledger** | Table view of all imported transactions |
-| **Modifiche massive** | Bulk operations: category, context, internal transfer, **deletion by filter** |
+| **Bulk Edit** | Bulk operations: category, context, internal transfer, **deletion by filter** |
 | **Analytics** | Aggregated charts and reports by period/account/category |
 | **Review** | Transactions with uncertain classification or requiring review |
-| **Regole** | Management of deterministic categorization rules |
-| **Tassonomia** | Customizable category/subcategory structure |
-| **Impostazioni** | LLM backend, API keys, date/amount formats, language |
-| **Check List** | Month × account pivot table: presence and quantity of transactions |
+| **Rules** | Management of deterministic categorization rules |
+| **Taxonomy** | Customizable category/subcategory structure |
+| **Settings** | LLM backend, API keys, date/amount formats, language |
+| **Checklist** | Month × account pivot table: presence and quantity of transactions |
 
 ---
 
@@ -66,9 +66,9 @@ After confirmation, the schema is saved with the `header_sha256` fingerprint. On
 
 The category is assigned in the following order; the first match wins:
 
-1. **User rules** — defined in the Regole page (exact / contains / regex)
+1. **User rules** — defined in the Rules page (exact / contains / regex)
 2. **Static rules** — hardcoded patterns for common cases (stamp duties, F24, standard rents)
-3. **LLM** — the model configured in Impostazioni; receives the sanitized description
+3. **LLM** — the model configured in Settings; receives the sanitized description
 4. **Fallback** — category "Altro" if all previous steps fail
 
 The **subcategory is the source of truth**: if the LLM or a rule assigns a subcategory present in the taxonomy, the parent category is derived automatically.
@@ -125,8 +125,8 @@ An internal transfer is a transfer between two of your own accounts (e.g., "Tran
 |---|---|---|---|
 | **Ollama** | Local (default) | Total — no data leaves your PC | Requires Ollama installed and model downloaded |
 | **llama.cpp** | Local (Docker container) | Total — no data leaves your PC | GGUF files in `models/`, URL `http://llama-cpp:8080/v1` |
-| **OpenAI** | Remote | PII redacted before sending | API key in Impostazioni |
-| **Claude** | Remote | PII redacted before sending | API key in Impostazioni |
+| **OpenAI** | Remote | PII redacted before sending | API key in Settings |
+| **Claude** | Remote | PII redacted before sending | API key in Settings |
 
 **Circuit breaker:** if the configured backend does not respond, Spendify automatically falls back to local Ollama. If Ollama is also offline, the transaction is imported with `to_review=True` and raw description.
 
@@ -147,11 +147,11 @@ Sanitization occurs in memory; the original data is never modified in the databa
 
 ---
 
-## Tassonomia
+## Taxonomy
 
 2-level structure: **Category → Subcategory**.
 
-- Editable from the Tassonomia page without restarting the app
+- Editable from the Taxonomy page without restarting the app
 - Default categories: Alimentari, Casa, Trasporti, Salute, Svago, Abbonamenti, Utenze, Istruzione, Lavoro, Finanza, Viaggi, Regali, Tasse, Altro + income categories
 - You can add custom subcategories without touching the code
 
@@ -186,9 +186,9 @@ Distinct from categorization rules. Used to replace unreadable raw descriptions 
 
 ---
 
-## Modifiche massive — dedicated page
+## Bulk Edit — dedicated page
 
-The **✏️ Modifiche massive** page collects all operations that act on multiple transactions simultaneously.
+The **✏️ Bulk Edit** page collects all operations that act on multiple transactions simultaneously.
 
 ### Sections 1–3: operations on a reference transaction
 
@@ -221,9 +221,9 @@ Allows bulk deletion of transactions selected via combinable filters:
 
 ---
 
-## Check List — dedicated page
+## Checklist — dedicated page
 
-The **✅ Check List** page shows a **month × account** pivot table with the number of transactions present for each combination.
+The **✅ Checklist** page shows a **month × account** pivot table with the number of transactions present for each combination.
 
 ### Layout
 

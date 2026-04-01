@@ -19,7 +19,7 @@ The app automatically shows the **onboarding wizard** (4 steps). No need to look
 1. **Step 1 — Language:** choose the taxonomy language. The wizard suggests your browser language. This also sets date format and number separators (e.g. `31/12/2025` with `,` separator for Italian).
 2. **Step 2 — Holders:** enter your name (and the variants used by the bank — e.g. `Mario Rossi, ROSSI MARIO`). These names are used to protect your privacy in LLM prompts and to detect internal transfers.
 3. **Step 3 — Accounts:** add your bank accounts (name + bank + account type). The account type is mandatory and indicates the financial instrument: *Bank account*, *Credit card*, *Debit card*, *Prepaid card*, *Savings account* or *Cash*. You can skip this step and add them later from Settings.
-4. **Step 4 — Confirm:** review the summary and click **Inizia!** — data is saved only at this point.
+4. **Step 4 — Confirm:** review the summary and click **Start!** — data is saved only at this point.
 
 > **Updating from a previous version?** The wizard does not appear if the database already has data — the app opens normally.
 
@@ -171,11 +171,11 @@ At the bottom of the Review page there is the **🔄 Rielabora con LLM** button.
 
 ---
 
-## 5. Regole: don't correct the same thing twice
+## 5. Rules: don't correct the same thing twice
 
 **Situation:** Every month "ADDEBITO SDD ENEL ENERGIA" shows up and every month you have to correct it manually.
 
-Go to **Regole**, create a new rule:
+Go to **Rules**, create a new rule:
 - **Pattern:** `ENEL ENERGIA`
 - **Category:** Utenze → Elettricità
 
@@ -192,11 +192,11 @@ If you have created many rules across different sessions and want to apply them 
 
 ---
 
-## 6. Modifiche massive: category, context, and bulk deletion
+## 6. Bulk Edit: category, context, and bulk deletion
 
 **Situation:** You've imported years of transaction files and want to clean up incorrect data or remove an entire account you no longer want to track.
 
-Go to **✏️ Modifiche massive**. The page is divided into two main areas.
+Go to **✏️ Bulk Edit**. The page is divided into two main areas.
 
 ### 6a — Operations on a reference transaction
 
@@ -385,13 +385,13 @@ For each category with a defined target:
 
 ---
 
-## 13. Check List: is everything in order?
+## 13. Checklist: is everything in order?
 
 **Situation:** You want to check at a glance whether you are regularly importing all your transaction files, without gaps of months.
 
-Go to **✅ Check List**. You'll find a table with:
+Go to **✅ Checklist**. You'll find a table with:
 - **One row for each month**, from the current month going back into the past
-- **One column for each account** you have configured in Impostazioni
+- **One column for each account** you have configured in Settings
 
 Each cell shows the number of transactions imported for that month and account. If the number is **—** (grey), you have no transactions for that combination.
 
@@ -416,7 +416,7 @@ You can download the table as CSV with the **⬇️ Scarica CSV** button.
 
 **Situation:** You want to use a different model for classification (e.g. Claude instead of local Ollama).
 
-Go to **⚙️ Impostazioni**:
+Go to **⚙️ Settings**:
 - **Backend LLM:** choose between llama.cpp (local, free, default for new installations), Ollama (local, free), OpenAI, Claude, or any OpenAI-compatible provider (Groq, Google AI Studio, etc.)
 - **Model:** specify the model name (e.g. `gpt-4o-mini`, `claude-3-5-haiku-20241022`, `gemma2-9b-it`) or select a `.gguf` file for llama.cpp
 - **API Key:** enter the key if you use a remote service
@@ -442,7 +442,7 @@ Every account has a mandatory **type** indicating the financial instrument:
 
 ### Renaming an account
 
-You can rename a bank account at any time from **⚙️ Impostazioni → 🏦 Conti bancari**. When you rename an account, Spendify automatically recalculates the unique identifier of every associated transaction, because the account name is part of the hash key.
+You can rename a bank account at any time from **⚙️ Settings → 🏦 Bank Accounts**. When you rename an account, Spendify automatically recalculates the unique identifier of every associated transaction, because the account name is part of the hash key.
 
 The operation is **atomic**: if anything goes wrong during recalculation, no data is changed. Your data always remains intact.
 
@@ -452,7 +452,7 @@ The operation is **atomic**: if anything goes wrong during recalculation, no dat
 
 If you use llama.cpp as your backend (default for new installations), you can download a GGUF model directly from the app:
 
-1. Go to **⚙️ Impostazioni → 🤖 Configurazione LLM**
+1. Go to **⚙️ Settings → 🤖 LLM Configuration**
 2. Select the **llama.cpp (local)** backend
 3. Choose a suggested model (e.g. `gemma-2-2b-it-Q4_K_M`, ~1.6 GB) or paste a direct URL
 4. Click **⬇️ Scarica**
@@ -463,7 +463,7 @@ Models are saved in `~/.spendify/models/`. The **Local models** section shows th
 
 If you use Ollama as your backend, you can download or update the model directly from the app without opening a terminal:
 
-1. Go to **⚙️ Impostazioni → 🤖 Configurazione LLM**
+1. Go to **⚙️ Settings → 🤖 LLM Configuration**
 2. Enter the model name (e.g. `gemma3:12b`)
 3. Click **⬇️ Pull modello**
 
@@ -484,7 +484,7 @@ Spendify sends a test prompt ("PAGAMENTO POS FARMACIA") and shows the model's re
 
 Spendify remembers the structure of each imported file (columns, date format, sign convention) to speed up future imports. If a file was imported with the wrong schema — for example, income rows are missing or columns are swapped — you can reset the cache:
 
-1. Go to **⚙️ Impostazioni → 📐 Schema file importati**
+1. Go to **⚙️ Settings → 📐 Imported File Schemas**
 2. Click **🗑️ Cancella tutti gli schemi salvati**
 3. Re-import the file — Spendify re-analyses it from scratch and asks you to confirm the schema
 
@@ -517,5 +517,5 @@ Spendify handles this automatically (it's called "card-account reconciliation").
 **I want to export the data.**
 In Analytics you'll find the **Esporta** button which generates HTML, CSV, or XLSX.
 
-**I changed the Tassonomia but the old transactions haven't updated.**
+**I changed the Taxonomy but the old transactions haven't updated.**
 Old categories stay as they are. You can reprocess them manually from the Review page or by re-applying the rules.

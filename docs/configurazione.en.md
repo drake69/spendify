@@ -1,6 +1,6 @@
 # Spendify — Configuration Manual
 
-> Complete reference for all settings available on the **⚙️ Impostazioni** page.
+> Complete reference for all settings available on the **⚙️ Settings** page.
 > Settings are persisted in the database (`ledger.db`) and take effect immediately on the next save.
 
 ---
@@ -26,24 +26,24 @@
 
 ## 1. Initial configuration — onboarding wizard
 
-On first launch the app automatically shows the **onboarding wizard** (4 steps). There is no need to navigate to Impostazioni before importing: the wizard collects the minimum required data and writes it to the DB in a single atomic operation when you click "Inizia!".
+On first launch the app automatically shows the **onboarding wizard** (4 steps). There is no need to navigate to Settings before importing: the wizard collects the minimum required data and writes it to the DB in a single atomic operation when you click "Start!".
 
 | Step | What is configured |
 |---|---|
 | **1 — Language** | Taxonomy language (Italian, English, French, German, Spanish). Pre-selected from the browser language. Also sets date format and number separators. |
 | **2 — Holders** | Account holder names (required). Used for PII redaction and internal transfer detection. |
-| **3 — Accounts** | Bank accounts (name + bank + mandatory account type). Optional: can be skipped and added later from Impostazioni. |
-| **4 — Confirm** | Summary and "Inizia!" button — only here is data written to the DB. |
+| **3 — Accounts** | Bank accounts (name + bank + mandatory account type). Optional: can be skipped and added later from Settings. |
+| **4 — Confirm** | Summary and "Start!" button — only here is data written to the DB. |
 
 > **Updating from a previous version?** The wizard is skipped automatically if the database already contains data — the app opens normally.
 
-After the wizard you can refine any setting from the **⚙️ Impostazioni** page at any time.
+After the wizard you can refine any setting from the **⚙️ Settings** page at any time.
 
 ---
 
 ## 2. Bank accounts
 
-**Path:** Impostazioni → 🏦 Conti bancari
+**Path:** Settings → 🏦 Bank Accounts
 
 Defines the current accounts, cards, and deposit accounts you own. Each account has:
 
@@ -71,7 +71,7 @@ The account type is used as a constraint during file schema classification: it b
 ### Why define accounts
 
 - On the Import page you can **associate each file with a specific account** instead of relying on automatic detection.
-- The account name is saved with each transaction (`account_label`) and is the key used for the **Check List** (month × account pivot).
+- The account name is saved with each transaction (`account_label`) and is the key used for the **Checklist** (month × account pivot).
 - Improves **deduplication**: transactions from the same account imported in different sessions are correctly recognised.
 
 ### Operational notes
@@ -87,7 +87,7 @@ Renaming an account is safe: Spendify atomically recalculates the ID (`tx_id`) o
 
 ## 3. Account holders
 
-**Path:** Impostazioni → 👤 Titolari del conto
+**Path:** Settings → 👤 Account Owners
 
 ### Field: Account holder names
 
@@ -116,7 +116,7 @@ Mario Rossi, Anna Bianchi
 
 ## 4. Display format
 
-**Path:** Impostazioni → Formato visualizzazione
+**Path:** Settings → Display Format
 
 Controls how dates and amounts are shown in Ledger, Analytics, and Review. Does not affect the database (which always uses ISO 8601 and Numeric).
 
@@ -141,7 +141,7 @@ The page shows a **real-time preview** (e.g. `1.234,56 €`) before saving.
 
 ## 5. Description language
 
-**Path:** Impostazioni → Lingua delle descrizioni
+**Path:** Settings → Description Language
 
 | Option | Code |
 |---|---|
@@ -158,7 +158,7 @@ This is passed to the LLM categoriser prompt to help it correctly interpret tran
 
 ## 6. Giroconti mode
 
-**Path:** Impostazioni → 🔄 Modalità Giroconti
+**Path:** Settings → 🔄 Internal Transfer Mode
 
 Internal transfers (giroconti) between your own accounts are **always detected and always saved** to the database, regardless of the selected mode. This ensures reconciliation and data integrity. The mode controls **only the visibility** in views (Ledger, Analytics, Reports).
 
@@ -175,7 +175,7 @@ The mode applies globally. You can override it for a single view using the *Nasc
 
 ## 7. Life contexts
 
-**Path:** Impostazioni → 🌍 Contesti di vita
+**Path:** Settings → 🌍 Life Contexts
 
 Free list of labels to segment expenses by context (e.g. `Quotidianità`, `Lavoro`, `Vacanza`).
 
@@ -189,7 +189,7 @@ Free list of labels to segment expenses by context (e.g. `Quotidianità`, `Lavor
 
 ## 8. Import test mode
 
-**Path:** Impostazioni → 📥 Importazione
+**Path:** Settings → 📥 Import Settings
 
 | Toggle | Behaviour |
 |---|---|
@@ -207,7 +207,7 @@ Useful for:
 
 ## 9. LLM backend
 
-**Path:** Impostazioni → 🤖 Configurazione LLM
+**Path:** Settings → 🤖 LLM Configuration
 
 The LLM backend is used for:
 - **Category classification** — assigns category/subcategory to each transaction
@@ -253,7 +253,7 @@ The default choice for **new installations**: no external service needed. Spendi
 
 **Downloading a model from the app:**
 
-1. Go to **⚙️ Impostazioni → 🤖 Configurazione LLM**
+1. Go to **⚙️ Settings → 🤖 LLM Configuration**
 2. Select the **llama.cpp (local)** backend
 3. In the **Download model** section, choose a suggested model or paste a direct URL to a `.gguf` file on HuggingFace
 4. Click **⬇️ Scarica** — a progress bar shows the downloaded MB
@@ -532,7 +532,7 @@ On first installation the database is initialised with these values:
 [ ] 2. Step 1: choose the taxonomy language
 [ ] 3. Step 2: enter your name (and variants used by the bank)
 [ ] 4. Step 3: add your bank accounts (or skip and add later)
-[ ] 5. Step 4: click "Inizia!" to complete the setup
-[ ] 6. (Optional) Go to ⚙️ Impostazioni → configure the LLM backend
+[ ] 5. Step 4: click "Start!" to complete the setup
+[ ] 6. (Optional) Go to ⚙️ Settings → configure the LLM backend
 [ ] 7. Go to 📥 Import and load the first transactions file
 ```
