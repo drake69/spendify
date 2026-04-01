@@ -968,7 +968,10 @@ def _run_step0_analysis(
             )
     elif amount_cols_found and len(amount_cols_found) == 1:
         r.amount_col = amount_cols_found[0]
-        r.amount_semantics = "neutral"
+        # Single amount column → convention is ALWAYS signed_single.
+        # It cannot be debit_positive or credit_negative (those require 2 columns).
+        # Phase 0 resolves convention; LLM only decides invert_sign.
+        r.amount_semantics = "signed_single"
     elif not amount_cols_found:
         # No content-detected amount columns — leave everything unresolved
         # for the LLM (Phase 1) to determine from column names and sample data.
@@ -1017,7 +1020,9 @@ def _inspect_neutral_column_sign(step0: _Step0Result, df: pd.DataFrame, source_n
             f"neutral column '{col}': {pct_negative:.0%} negative → invert_sign=False [RESOLVED]"
         )
         step0.invert_sign = False
-        step0.amount_semantics = "signed_neutral"
+        # Keep signed_single if already set (single column → convention resolved)
+        if step0.amount_semantics != "signed_single":
+            step0.amount_semantics = "signed_neutral"
     else:
         logger.info(
             f"classify_document [{source_name}]: Step 0 data inspection — "
@@ -1080,18 +1085,13 @@ def _format_step0_for_prompt(r: _Step0Result) -> str:
         lines.append(f"- invert_sign: not applicable ({conv_label} convention)")
     elif r.amount_col:
         lines.append(
-            f"- amount_col = '{r.amount_col}'  "
-            f"[RESOLVED, semantics={r.amount_semantics}]"
+            f"- amount_col = '{r.amount_col}'  [RESOLVED]"
         )
-        # Add density hint if we have column density info
-        if hasattr(r, '_density_info') and r._density_info:
-            lines.append(f"  Column density: {r._density_info}")
+        # Single column → convention is always signed_single (resolved by Phase 0)
+        if r.amount_semantics in ("signed_single", "signed_neutral"):
+            lines.append("- sign_convention = 'signed_single'  [RESOLVED — single amount column, cannot be debit_positive or credit_negative]")
         if r.invert_sign is not None:
-            reason = (
-                "column contains negative values → signs already embedded"
-                if r.amount_semantics == "signed_neutral"
-                else f"column is {r.amount_semantics}"
-            )
+            reason = "column contains negative values → signs already embedded"
             lines.append(
                 f"- invert_sign = {str(r.invert_sign).lower()}  "
                 f"[RESOLVED — {reason}]"
@@ -1151,11 +1151,22 @@ def _merge_step0_into_result(result: dict, step0: _Step0Result, source_name: str
             )
             out["currency_col"] = None
 
-    # Amount / sign — Phase 0 sets sign_convention; LLM assigns column roles.
-    # Phase 0 knows the STRUCTURE (complementary split, sign pattern) but NOT
-    # the SEMANTICS (which column is debit, which is credit — that requires
-    # understanding column names like Dare/Avere in the file's language).
-    if step0.amount_semantics in ("debit_positive", "debit_credit_signed"):
+    # Amount / sign — Phase 0 resolves structure; LLM resolves semantics.
+    # Single column → convention is signed_single (Phase 0 wins, LLM cannot override).
+    # Two columns → Phase 0 sets convention, LLM assigns which is debit/credit.
+    if step0.amount_semantics in ("signed_single", "signed_neutral"):
+        # Single amount column → force signed_single (LLM may have guessed debit_positive)
+        _set("sign_convention", "signed_single", "single amount column (Phase 0)")
+        if step0.amount_col:
+            _set("amount_col", step0.amount_col, "single amount column (Phase 0)")
+        # Clear any debit/credit cols the LLM may have hallucinated
+        if out.get("debit_col"):
+            logger.info("classify_document [%s]: clearing LLM debit_col='%s' (single column)", source_name, out["debit_col"])
+            out["debit_col"] = None
+        if out.get("credit_col"):
+            logger.info("classify_document [%s]: clearing LLM credit_col='%s' (single column)", source_name, out["credit_col"])
+            out["credit_col"] = None
+    elif step0.amount_semantics in ("debit_positive", "debit_credit_signed"):
         _set("sign_convention", step0.amount_semantics, "density + sign analysis")
         # LLM's debit_col/credit_col take precedence (it sees column names+values).
         # Only fill in from Phase 0 if the LLM left them blank.
