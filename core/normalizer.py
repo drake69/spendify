@@ -154,9 +154,24 @@ def detect_header_row(lines: list[str]) -> tuple[int, bool]:
     best_density = 0.0
     best_text_count = 0
 
-    logger.info("── detect_header_row: scanning %d lines ──", max_scan)
+    # Detect delimiter from the first non-empty lines (for CSV-aware splitting)
+    import csv as _csv_mod
+    _sample_text = "\n".join(lines[:max_scan])
+    try:
+        _dialect = _csv_mod.Sniffer().sniff(_sample_text, delimiters=',;\t|')
+        _delim = _dialect.delimiter
+    except _csv_mod.Error:
+        _delim = ','
+
+    logger.info("── detect_header_row: scanning %d lines (delimiter='%s') ──", max_scan, _delim)
     for i in range(max_scan):
-        fields = [f.strip() for f in re.split(r'[,;\t|]', lines[i])]
+        # Use csv.reader to correctly handle quoted fields (e.g. "POS 222,70 EUR")
+        # instead of naive regex split that breaks on commas inside quotes
+        try:
+            _parsed = list(_csv_mod.reader([lines[i]], delimiter=_delim, quotechar='"'))
+            fields = [f.strip() for f in _parsed[0]] if _parsed else []
+        except Exception:
+            fields = [f.strip() for f in re.split(r'[,;\t|]', lines[i])]
         density = _row_density(fields)
         text_count = _row_non_numeric_count(fields)
         n_fields = len([f for f in fields if f])
