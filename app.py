@@ -2,18 +2,18 @@
 
 Pages:
   📥 Import             – upload + pipeline processing
-  📜 Storico import     – import history with undo
+  📜 Import History     – import timeline with undo
   📋 Ledger             – filterable transaction table + export
-  ✏️ Modifiche massive  – bulk edits: category, context, deletion
+  ✏️ Bulk Edit          – bulk edits: category, context, deletion, duplicates
   📊 Analytics          – interactive charts (Plotly)
   📋 Report             – spending by context/category with pivot, trends, Excel export
-  💰 Budget             – define % budget targets per category (A-02)
-  📊 Budget vs Actual   – compare actual spending vs budget targets (A-02)
+  💰 Budget             – define % budget targets per category
+  📊 Budget vs Actual   – compare actual spending vs budget targets
   🔍 Review             – manual review of low-confidence items
-  📏 Regole             – manage category rules (edit / delete / create)
-  🗂️ Tassonomia         – manage categories and subcategories
-  ⚙️ Impostazioni       – locale and language preferences
-  ✅ Check List         – monthly tx presence per account (pivot table)
+  📏 Rules              – manage category rules (edit / delete / create)
+  🗂️ Taxonomy           – manage categories and subcategories
+  ⚙️ Settings           – locale, language, LLM backend preferences
+  ✅ Checklist          – monthly tx presence per account (pivot table)
 """
 import os
 
@@ -33,11 +33,11 @@ from core.prompt_guard import verify_prompt_integrity
 
 _prompt_errors = verify_prompt_integrity()
 if _prompt_errors:
+    # Shown before i18n is loaded — hardcoded bilingual warning
     st.error(
-        "**Prompt LLM modificati rispetto alla versione certificata.**\n\n"
+        "**LLM prompts modified from certified version / Prompt LLM modificati rispetto alla versione certificata.**\n\n"
         + "\n".join(f"- {e}" for e in _prompt_errors)
-        + "\n\nVerificare prima di procedere. "
-        "Eseguire: `python tools/compute_prompt_hashes.py`"
+        + "\n\nRun / Eseguire: `python tools/compute_prompt_hashes.py`"
     )
 
 # ── DB bootstrap ──────────────────────────────────────────────────────────────

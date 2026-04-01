@@ -16,6 +16,7 @@ from services.settings_service import SettingsService
 from services.transaction_service import TransactionService
 from support.formatting import format_amount_display
 from support.logging import setup_logging
+from ui.i18n import t
 from ui.widgets.tree_filter import render_tree_filter, build_full_tree_data
 
 logger = setup_logging()
@@ -25,7 +26,7 @@ _GIROCONTO_TYPES = {"internal_out", "internal_in"}
 
 
 def render_analysis_page(engine):
-    st.header("📊 Analytics — Analisi Finanziaria")
+    st.header(t("analytics.title"))
 
     cfg_svc = SettingsService(engine)
     tx_svc  = TransactionService(engine)
@@ -53,42 +54,42 @@ def render_analysis_page(engine):
     _rel_last_prev  = _cur_from - timedelta(days=1)
     _rel_first_prev = _rel_last_prev.replace(day=1)
 
-    st.caption("**Periodo rapido**")
+    st.caption(t("analytics.quick_period"))
     pc1, pc2, pc3, pc4, pc5 = st.columns(5)
-    if pc1.button("📅 Mese corrente",   key="an_preset_cur",  use_container_width=True):
+    if pc1.button(t("analytics.preset.current_month"),  key="an_preset_cur",  use_container_width=True):
         st.session_state["analytics_from"] = _first_cur
         st.session_state["analytics_to"]   = today
         st.rerun()
-    if pc2.button("⏮ Mese precedente",  key="an_preset_prev", use_container_width=True):
+    if pc2.button(t("analytics.preset.prev_month"),    key="an_preset_prev", use_container_width=True):
         st.session_state["analytics_from"] = _rel_first_prev
         st.session_state["analytics_to"]   = _rel_last_prev
         st.rerun()
-    if pc3.button("📆 Ultimi 3 mesi",   key="an_preset_3m",   use_container_width=True):
+    if pc3.button(t("analytics.preset.last_3_months"), key="an_preset_3m",   use_container_width=True):
         st.session_state["analytics_from"] = today - timedelta(days=90)
         st.session_state["analytics_to"]   = today
         st.rerun()
-    if pc4.button("🗓 Anno corrente",    key="an_preset_year", use_container_width=True):
+    if pc4.button(t("analytics.preset.current_year"),  key="an_preset_year", use_container_width=True):
         st.session_state["analytics_from"] = today.replace(month=1, day=1)
         st.session_state["analytics_to"]   = today
         st.rerun()
-    if pc5.button("♾ Tutto",             key="an_preset_all",  use_container_width=True):
+    if pc5.button(t("analytics.preset.all"),           key="an_preset_all",  use_container_width=True):
         st.session_state.pop("analytics_from", None)
         st.session_state.pop("analytics_to",   None)
         st.rerun()
 
     fc1, fc2, fc3 = st.columns([2, 2, 2])
     with fc1:
-        date_from = st.date_input("Da", key="analytics_from")
+        date_from = st.date_input(t("ledger.filter.from"), key="analytics_from")
     with fc2:
-        date_to   = st.date_input("A",  key="analytics_to")
+        date_to   = st.date_input(t("ledger.filter.to"),  key="analytics_to")
     with fc3:
         account_filter = st.selectbox(
-            "Conto", ["tutti i conti"] + _accounts, key="an_account"
+            t("ledger.filter.account"), [t("ledger.filter.account_all")] + _accounts, key="an_account"
         )
 
     # ── Tree filter for categories / subcategories / contexts ────────────
     _tree_cats = build_full_tree_data(cfg_svc)
-    with st.expander("🗂️ Filtro categorie e contesti", expanded=False):
+    with st.expander(t("analytics.filter_categories"), expanded=False):
         tree_sel = render_tree_filter(
             categories=_tree_cats,
             contexts=_contexts,
@@ -101,7 +102,7 @@ def render_analysis_page(engine):
         filters["date_from"] = date_from.isoformat()
     if date_to:
         filters["date_to"] = date_to.isoformat()
-    if account_filter != "tutti i conti":
+    if account_filter != t("ledger.filter.account_all"):
         filters["account_label"] = account_filter
 
     # Apply tree filter selections — only restrict when user deselected something
@@ -122,15 +123,15 @@ def render_analysis_page(engine):
     txs = tx_svc.get_transactions(filters=filters)
 
     if not txs:
-        st.info("Nessuna transazione disponibile con i filtri selezionati.")
+        st.info(t("analytics.no_transactions"))
         return
 
     excluded = set(_ALWAYS_EXCLUDED)
     if giroconto_mode == "exclude":
         excluded |= _GIROCONTO_TYPES
-        st.caption("ℹ️ Giroconti esclusi dall'analisi (modalità *Escludi giroconti*).")
+        st.caption(t("analytics.giro_excluded"))
     else:
-        st.caption("ℹ️ Giroconti inclusi nell'analisi (modalità *Neutrale*). Puoi cambiarla in ⚙️ Impostazioni.")
+        st.caption(t("analytics.giro_included"))
 
     rows = []
     for tx in txs:
@@ -150,16 +151,18 @@ def render_analysis_page(engine):
 
     df = pd.DataFrame(rows)
     if df.empty:
-        st.info("Nessuna transazione da visualizzare dopo i filtri.")
+        st.info(t("analytics.no_transactions_after_filter"))
         return
 
     df["month"] = df["date"].dt.to_period("M").astype(str)
     df["year"]  = df["date"].dt.year
 
     # ── 1. Monthly income/expense grouped bar ──────────────────────────────────
-    st.subheader("Entrate / Uscite mensili")
+    st.subheader(t("analytics.monthly_income_expense"))
+    _lbl_income  = t("ledger.metric.income")
+    _lbl_expense = t("ledger.metric.expenses")
     monthly = (
-        df.assign(sign=df["amount"].apply(lambda x: "Entrate" if x > 0 else "Uscite"),
+        df.assign(sign=df["amount"].apply(lambda x: _lbl_income if x > 0 else _lbl_expense),
                   abs_amount=df["amount"].abs())
           .groupby(["month", "sign"])["abs_amount"]
           .sum()
@@ -167,25 +170,25 @@ def render_analysis_page(engine):
     )
     if not monthly.empty:
         fig1 = px.bar(monthly, x="month", y="abs_amount", color="sign",
-                      barmode="group", labels={"abs_amount": "€", "month": "Mese"},
-                      color_discrete_map={"Entrate": "#27ae60", "Uscite": "#c0392b"})
+                      barmode="group", labels={"abs_amount": "€", "month": t("analytics.label.month")},
+                      color_discrete_map={_lbl_income: "#27ae60", _lbl_expense: "#c0392b"})
         st.plotly_chart(fig1, width="stretch")
 
     # ── 2. Cumulative balance ──────────────────────────────────────────────────
-    st.subheader("Saldo cumulativo")
+    st.subheader(t("analytics.cumulative_balance"))
     df_sorted = df.sort_values("date")
     df_sorted["cumulative"] = df_sorted["amount"].cumsum()
     fig2 = go.Figure()
     fig2.add_trace(go.Scatter(
         x=df_sorted["date"], y=df_sorted["cumulative"],
-        mode="lines", name="Saldo cumulativo", line=dict(color="#2980b9"),
+        mode="lines", name=t("analytics.cumulative_balance"), line=dict(color="#2980b9"),
     ))
     fig2.add_hline(y=0, line_dash="dash", line_color="gray")
-    fig2.update_layout(xaxis_title="Data", yaxis_title="€")
+    fig2.update_layout(xaxis_title=t("ledger.col.date"), yaxis_title="€")
     st.plotly_chart(fig2, width="stretch")
 
     # ── 3. Category pie + treemap — Uscite ────────────────────────────────────
-    st.subheader("Distribuzione categorie — Uscite")
+    st.subheader(t("analytics.category_dist_expenses"))
     expenses_df = df[df["amount"] < 0].copy()
     expenses_df["abs_amount"] = expenses_df["amount"].abs()
     if not expenses_df.empty:
@@ -194,7 +197,7 @@ def render_analysis_page(engine):
         total_expenses = pie_data["abs_amount"].sum()
         fig_pie = px.pie(
             pie_data, names="category", values="abs_amount",
-            title=f"Uscite per categoria — totale {format_amount_display(total_expenses, _dec, _thou)}",
+            title=t("analytics.pie_expenses_title", total=format_amount_display(total_expenses, _dec, _thou)),
             hole=0.35,
         )
         fig_pie.update_traces(
@@ -208,7 +211,7 @@ def render_analysis_page(engine):
         cat_sum = expenses_df.groupby(["category", "subcategory"])["abs_amount"].sum().reset_index()
         fig3 = px.treemap(
             cat_sum, path=["category", "subcategory"], values="abs_amount",
-            title="Dettaglio uscite per categoria / sottocategoria",
+            title=t("analytics.treemap_expenses_title"),
         )
         fig3.update_traces(
             hovertemplate="<b>%{label}</b><br>%{value:.2f} €<br>%{percentRoot:.1%} del totale<extra></extra>"
@@ -216,21 +219,21 @@ def render_analysis_page(engine):
         st.plotly_chart(fig3, width="stretch")
 
     # ── 4. Category drill-down (interactive) ──────────────────────────────────
-    st.subheader("Drill-down per categoria")
+    st.subheader(t("analytics.drilldown_title"))
     all_cats_with_data = sorted(df["category"].unique().tolist())
     selected_cat = st.selectbox(
-        "Seleziona categoria",
-        ["— tutte le uscite —"] + all_cats_with_data,
+        t("analytics.select_category"),
+        [t("analytics.all_expenses")] + all_cats_with_data,
         key="analytics_cat_filter",
     )
 
-    if selected_cat == "— tutte le uscite —":
+    if selected_cat == t("analytics.all_expenses"):
         drill_df    = expenses_df.copy() if not expenses_df.empty else pd.DataFrame()
-        drill_title = "Uscite per sottocategoria — tutte le categorie"
+        drill_title = t("analytics.drilldown_all_title")
     else:
         drill_df = df[(df["category"] == selected_cat)].copy()
         drill_df["abs_amount"] = drill_df["amount"].abs()
-        drill_title = f"Dettaglio: {selected_cat}"
+        drill_title = t("analytics.drilldown_cat_title", cat=selected_cat)
 
     if not drill_df.empty and "abs_amount" in drill_df.columns:
         sub_data = (
@@ -243,7 +246,7 @@ def render_analysis_page(engine):
             fig_drill = px.bar(
                 sub_data, x="abs_amount", y="subcategory", orientation="h",
                 title=drill_title,
-                labels={"abs_amount": "€", "subcategory": "Sottocategoria"},
+                labels={"abs_amount": "€", "subcategory": t("ledger.col.subcategory")},
                 color="abs_amount",
                 color_continuous_scale="Blues",
             )
@@ -251,20 +254,20 @@ def render_analysis_page(engine):
             fig_drill.update_traces(hovertemplate="<b>%{y}</b><br>%{x:.2f} €<extra></extra>")
             st.plotly_chart(fig_drill, width="stretch")
 
-            if selected_cat != "— tutte le uscite —":
+            if selected_cat != t("analytics.all_expenses"):
                 monthly_cat = drill_df.groupby("month")["abs_amount"].sum().reset_index()
                 fig_trend = px.line(
                     monthly_cat, x="month", y="abs_amount",
-                    title=f"Trend mensile: {selected_cat}",
-                    labels={"abs_amount": "€", "month": "Mese"},
+                    title=t("analytics.monthly_trend", cat=selected_cat),
+                    labels={"abs_amount": "€", "month": t("analytics.label.month")},
                     markers=True,
                 )
                 st.plotly_chart(fig_trend, width="stretch")
     else:
-        st.info("Nessun dato per la selezione corrente.")
+        st.info(t("analytics.no_data_selection"))
 
     # ── 5. Income breakdown ────────────────────────────────────────────────────
-    st.subheader("Distribuzione categorie — Entrate")
+    st.subheader(t("analytics.category_dist_income"))
     income_df = df[df["amount"] > 0].copy()
     income_df["abs_amount"] = income_df["amount"]
     if not income_df.empty:
@@ -273,7 +276,7 @@ def render_analysis_page(engine):
         total_income = inc_pie["abs_amount"].sum()
         fig_inc_pie = px.pie(
             inc_pie, names="category", values="abs_amount",
-            title=f"Entrate per categoria — totale {format_amount_display(total_income, _dec, _thou)}",
+            title=t("analytics.pie_income_title", total=format_amount_display(total_income, _dec, _thou)),
             hole=0.35,
             color_discrete_sequence=px.colors.sequential.Greens_r,
         )
@@ -288,14 +291,14 @@ def render_analysis_page(engine):
         if not inc_tree.empty and len(inc_tree) > 1:
             fig_inc_tree = px.treemap(
                 inc_tree, path=["category", "subcategory"], values="abs_amount",
-                title="Dettaglio entrate per categoria / sottocategoria",
+                title=t("analytics.treemap_income_title"),
                 color_discrete_sequence=px.colors.sequential.Greens_r,
             )
             st.plotly_chart(fig_inc_tree, width="stretch")
 
     # ── 6. Analisi per contesto ────────────────────────────────────────────────
     if len(df["context"].unique()) > 1:
-        st.subheader("Distribuzione per contesto")
+        st.subheader(t("analytics.context_distribution"))
         ctx_data = (
             df.assign(abs_amount=df["amount"].abs())
               .groupby(["context", "month"])["abs_amount"]
@@ -306,8 +309,8 @@ def render_analysis_page(engine):
             fig_ctx = px.bar(
                 ctx_data, x="month", y="abs_amount", color="context",
                 barmode="stack",
-                labels={"abs_amount": "€", "month": "Mese", "context": "Contesto"},
-                title="Importo mensile per contesto",
+                labels={"abs_amount": "€", "month": t("analytics.label.month"), "context": t("ledger.col.context")},
+                title=t("analytics.monthly_by_context"),
             )
             st.plotly_chart(fig_ctx, width="stretch")
 
@@ -321,7 +324,7 @@ def render_analysis_page(engine):
         if not ctx_pie.empty:
             fig_ctx_pie = px.pie(
                 ctx_pie, names="context", values="abs_amount",
-                title="Ripartizione totale per contesto",
+                title=t("analytics.pie_context_title"),
                 hole=0.35,
             )
             fig_ctx_pie.update_traces(
@@ -332,12 +335,8 @@ def render_analysis_page(engine):
             st.plotly_chart(fig_ctx_pie, width="stretch")
 
     # ── 7. Anomaly detection — family benchmark ────────────────────────────────
-    st.subheader("🚨 Anomalie di spesa — Confronto famiglia di riferimento")
-    st.caption(
-        "Confronta la tua distribuzione di spesa con i benchmark ISTAT per una famiglia italiana. "
-        "Valori molto superiori al benchmark possono indicare errori di categorizzazione "
-        "(es. commissioni bancarie al 40% delle uscite)."
-    )
+    st.subheader(t("analytics.anomaly_title"))
+    st.caption(t("analytics.anomaly_caption"))
 
     _BENCHMARK_2P: dict[str, float] = {
         "Casa":                    26.0,
@@ -359,7 +358,7 @@ def render_analysis_page(engine):
     _PERCAPITA_CATS = {"Alimentari", "Abbigliamento", "Salute", "Istruzione", "Cura personale"}
 
     n_members = st.radio(
-        "Componenti del nucleo familiare",
+        t("analytics.family_members"),
         [1, 2, 3, 4, 5],
         index=1,
         horizontal=True,
@@ -385,37 +384,50 @@ def render_analysis_page(engine):
             dev       = (user_pct / bench_pct) if bench_pct > 0 else 0.0
 
             if dev > 1.5:
-                status = "🔴 Alta"
+                status = t("analytics.status.high")
             elif user_pct > 0 and bench_pct > 0 and dev < 0.5:
-                status = "🔵 Bassa"
+                status = t("analytics.status.low")
             elif user_pct == 0:
-                status = "⚪ Assente"
+                status = t("analytics.status.absent")
             else:
-                status = "🟢 Normale"
+                status = t("analytics.status.normal")
 
+            _c_cat   = t("ledger.col.category")
+            _c_spent = t("analytics.col.spent")
+            _c_yours = t("analytics.col.yours_pct")
+            _c_bench = t("analytics.col.benchmark_pct")
+            _c_ref   = "×Ref"
+            _c_stato = t("analytics.col.status")
             anomaly_rows.append({
-                "Categoria":    cat,
-                "Speso (€)":    round(user_amt, 2),
-                "Tua %":        round(user_pct, 1),
-                "Benchmark %":  round(bench_pct, 1),
-                "×Ref":         round(dev, 1),
-                "Stato":        status,
+                _c_cat:    cat,
+                _c_spent:  round(user_amt, 2),
+                _c_yours:  round(user_pct, 1),
+                _c_bench:  round(bench_pct, 1),
+                _c_ref:    round(dev, 1),
+                _c_stato:  status,
             })
+
+        _c_cat   = t("ledger.col.category")
+        _c_spent = t("analytics.col.spent")
+        _c_yours = t("analytics.col.yours_pct")
+        _c_bench = t("analytics.col.benchmark_pct")
+        _c_ref   = "×Ref"
+        _c_stato = t("analytics.col.status")
 
         df_anom = (
             pd.DataFrame(anomaly_rows)
-            .sort_values("×Ref", ascending=False)
+            .sort_values(_c_ref, ascending=False)
             .reset_index(drop=True)
         )
         st.dataframe(
             df_anom,
             width="stretch",
             column_config={
-                "Speso (€)":    st.column_config.NumberColumn(format="%.2f"),
-                "Tua %":        st.column_config.NumberColumn(format="%.1f %%"),
-                "Benchmark %":  st.column_config.NumberColumn(format="%.1f %%"),
-                "×Ref":         st.column_config.NumberColumn(
-                    help="Rapporto tua%/benchmark. 🔴>1.5× troppo alta · 🔵<0.5× troppo bassa · 🟢 normale",
+                _c_spent:  st.column_config.NumberColumn(format="%.2f"),
+                _c_yours:  st.column_config.NumberColumn(format="%.1f %%"),
+                _c_bench:  st.column_config.NumberColumn(format="%.1f %%"),
+                _c_ref:    st.column_config.NumberColumn(
+                    help=t("analytics.ref_help"),
                     format="%.1f ×",
                 ),
             },
@@ -424,51 +436,51 @@ def render_analysis_page(engine):
 
         _chart_rows = []
         for row in anomaly_rows:
-            if row["Speso (€)"] > 0 or row["Benchmark %"] > 0:
-                _chart_rows.append({"Categoria": row["Categoria"], "Tipo": "Tua %",       "Percentuale": row["Tua %"]})
-                _chart_rows.append({"Categoria": row["Categoria"], "Tipo": "Benchmark %", "Percentuale": row["Benchmark %"]})
+            if row[_c_spent] > 0 or row[_c_bench] > 0:
+                _chart_rows.append({_c_cat: row[_c_cat], "Tipo": _c_yours,  t("analytics.col.percentage"): row[_c_yours]})
+                _chart_rows.append({_c_cat: row[_c_cat], "Tipo": _c_bench, t("analytics.col.percentage"): row[_c_bench]})
         if _chart_rows:
             _df_chart = pd.DataFrame(_chart_rows)
-            _cat_order = df_anom["Categoria"].tolist()
-            _df_chart["Categoria"] = pd.Categorical(_df_chart["Categoria"], categories=_cat_order, ordered=True)
-            _df_chart = _df_chart.sort_values("Categoria")
+            _cat_order = df_anom[_c_cat].tolist()
+            _df_chart[_c_cat] = pd.Categorical(_df_chart[_c_cat], categories=_cat_order, ordered=True)
+            _df_chart = _df_chart.sort_values(_c_cat)
             fig_bench = px.bar(
-                _df_chart, x="Percentuale", y="Categoria", color="Tipo",
+                _df_chart, x=t("analytics.col.percentage"), y=_c_cat, color="Tipo",
                 barmode="group", orientation="h",
-                color_discrete_map={"Tua %": "#e74c3c", "Benchmark %": "#95a5a6"},
-                labels={"Percentuale": "% del totale uscite", "Categoria": ""},
-                title=f"Distribuzione uscite: reale vs benchmark ISTAT ({n_members} {'persona' if n_members == 1 else 'persone'})",
+                color_discrete_map={_c_yours: "#e74c3c", _c_bench: "#95a5a6"},
+                labels={t("analytics.col.percentage"): t("analytics.label.pct_total_expenses"), _c_cat: ""},
+                title=t("analytics.benchmark_chart_title", n=n_members),
             )
             fig_bench.update_layout(legend_title_text="", height=500)
             st.plotly_chart(fig_bench, width="stretch")
 
-        _high = df_anom[df_anom["Stato"] == "🔴 Alta"]
-        _low  = df_anom[df_anom["Stato"] == "🔵 Bassa"]
+        _high = df_anom[df_anom[_c_stato].str.contains("🔴")]
+        _low  = df_anom[df_anom[_c_stato].str.contains("🔵")]
         if not _high.empty:
             st.error(
-                "**Spesa anomalmente alta** (>1.5× il benchmark) — possibili errori di categorizzazione:\n"
+                t("analytics.anomaly_high_header") + "\n"
                 + "\n".join(
-                    f"- **{r['Categoria']}**: {r['Tua %']:.1f}% vs {r['Benchmark %']:.1f}% di riferimento "
-                    f"({r['×Ref']:.1f}×) — {format_amount_display(r['Speso (€)'], _dec, _thou)}"
+                    f"- **{r[_c_cat]}**: {r[_c_yours]:.1f}% vs {r[_c_bench]:.1f}% "
+                    f"({r[_c_ref]:.1f}×) — {format_amount_display(r[_c_spent], _dec, _thou)}"
                     for _, r in _high.iterrows()
                 )
             )
         if not _low.empty:
             st.warning(
-                "**Spesa anomalmente bassa** (<50% del benchmark) — categoria poco usata o mancante:\n"
+                t("analytics.anomaly_low_header") + "\n"
                 + "\n".join(
-                    f"- **{r['Categoria']}**: {r['Tua %']:.1f}% vs {r['Benchmark %']:.1f}% di riferimento "
-                    f"({r['×Ref']:.1f}×)"
+                    f"- **{r[_c_cat]}**: {r[_c_yours]:.1f}% vs {r[_c_bench]:.1f}% "
+                    f"({r[_c_ref]:.1f}×)"
                     for _, r in _low.iterrows()
                 )
             )
         if _high.empty and _low.empty:
-            st.success("✅ Nessuna anomalia macroscopica rilevata rispetto al benchmark di riferimento.")
+            st.success(t("analytics.no_anomalies"))
     else:
-        st.info("Nessuna uscita nel periodo selezionato.")
+        st.info(t("analytics.no_expenses_period"))
 
     # ── 8. Top-N merchant ──────────────────────────────────────────────────────
-    st.subheader("Top 10 descrizioni per importo assoluto")
+    st.subheader(t("analytics.top10_title"))
     top_n = (
         df.assign(abs_amount=df["amount"].abs())
           .groupby("description")["abs_amount"]
@@ -482,7 +494,7 @@ def render_analysis_page(engine):
         st.plotly_chart(fig4, width="stretch")
 
     # ── 9. Account breakdown ───────────────────────────────────────────────────
-    st.subheader("Composizione per conto")
+    st.subheader(t("analytics.account_breakdown"))
     acc_monthly = (
         df.assign(abs_amount=df["amount"].abs())
           .groupby(["month", "account_label"])["abs_amount"]
@@ -491,16 +503,12 @@ def render_analysis_page(engine):
     )
     if not acc_monthly.empty:
         fig5 = px.bar(acc_monthly, x="month", y="abs_amount", color="account_label",
-                      barmode="stack", labels={"abs_amount": "€", "month": "Mese"})
+                      barmode="stack", labels={"abs_amount": "€", "month": t("analytics.label.month")})
         st.plotly_chart(fig5, width="stretch")
 
     # ── 10. Associazioni descrizione → categoria ───────────────────────────────
-    st.subheader("🔗 Associazioni descrizione → categoria")
-    st.caption(
-        "Associazioni apprese dalle transazioni validate manualmente. "
-        "L'omogeneità misura quanto una descrizione è associata in modo coerente "
-        "a una singola categoria (1.0 = sempre la stessa, 0.0 = dispersa)."
-    )
+    st.subheader(t("analytics.associations_title"))
+    st.caption(t("analytics.associations_caption"))
 
     with get_session(engine) as _hist_session:
         _profiles = get_description_profiles(_hist_session)
@@ -512,23 +520,31 @@ def render_analysis_page(engine):
         # Sort by count descending
         _profiles.sort(key=lambda p: p.total_validated, reverse=True)
 
+        _col_desc  = t("analytics.assoc.col.description")
+        _col_mcat  = t("analytics.assoc.col.main_category")
+        _col_sub   = t("analytics.assoc.col.subcategory")
+        _col_val   = t("analytics.assoc.col.validations")
+        _col_homo  = t("analytics.assoc.col.homogeneity")
+        _col_conf  = t("analytics.assoc.col.confidence")
+        _col_stat  = t("analytics.assoc.col.status")
+
         _assoc_rows = []
         for p in _profiles:
             if p.homogeneity >= 0.90:
-                badge = "🟢 Auto"
+                badge = t("analytics.assoc.badge.auto")
             elif p.homogeneity >= 0.50:
-                badge = "🟡 Mista"
+                badge = t("analytics.assoc.badge.mixed")
             else:
-                badge = "🔴 Eterogenea"
+                badge = t("analytics.assoc.badge.heterogeneous")
 
             _assoc_rows.append({
-                "Descrizione": p.description or "",
-                "Categoria principale": p.top_category,
-                "Sottocategoria": p.top_subcategory or "",
-                "Validazioni": p.total_validated,
-                "Omogeneità": round(p.homogeneity, 2),
-                "Confidenza": round(p.confidence, 2),
-                "Stato": badge,
+                _col_desc:  p.description or "",
+                _col_mcat:  p.top_category,
+                _col_sub:   p.top_subcategory or "",
+                _col_val:   p.total_validated,
+                _col_homo:  round(p.homogeneity, 2),
+                _col_conf:  round(p.confidence, 2),
+                _col_stat:  badge,
             })
 
         df_assoc = pd.DataFrame(_assoc_rows)
@@ -536,10 +552,10 @@ def render_analysis_page(engine):
             df_assoc,
             width="stretch",
             column_config={
-                "Omogeneità": st.column_config.ProgressColumn(
+                _col_homo: st.column_config.ProgressColumn(
                     min_value=0.0, max_value=1.0, format="%.2f",
                 ),
-                "Confidenza": st.column_config.ProgressColumn(
+                _col_conf: st.column_config.ProgressColumn(
                     min_value=0.0, max_value=1.0, format="%.2f",
                 ),
             },
@@ -550,15 +566,12 @@ def render_analysis_page(engine):
         _n_mixed = sum(1 for p in _profiles if 0.50 <= p.homogeneity < 0.90)
         _n_hetero = sum(1 for p in _profiles if p.homogeneity < 0.50)
         st.caption(
-            f"**Riepilogo**: {_n_auto} auto-categorizzabili (🟢), "
-            f"{_n_mixed} miste (🟡), {_n_hetero} eterogenee (🔴) — "
-            f"su {len(_profiles)} descrizioni con almeno 3 validazioni."
+            t("analytics.assoc.summary",
+              n_auto=_n_auto, n_mixed=_n_mixed,
+              n_hetero=_n_hetero, n_total=len(_profiles))
         )
     else:
-        st.info(
-            "Nessuna associazione disponibile. "
-            "Valida manualmente alcune transazioni per attivare l'auto-apprendimento."
-        )
+        st.info(t("analytics.assoc.no_data"))
 
     # ── HTML report download ───────────────────────────────────────────────────
     st.divider()
@@ -567,7 +580,7 @@ def render_analysis_page(engine):
         date_to=filters.get("date_to"),
     )
     st.download_button(
-        "📥 Scarica Report HTML",
+        t("analytics.download_html_report"),
         html_str.encode("utf-8"),
         "spendify_report.html",
         "text/html",

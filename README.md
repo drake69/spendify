@@ -46,14 +46,14 @@ Aggregates heterogeneous movements files (current accounts, credit cards, debit 
 | **Cascade categorization (RF-05)** | User rules → static regex → structured LLM → fallback "Other" |
 | **Rule engine with bulk apply** | Deterministic rules apply to all existing transactions on save, not just future imports |
 | **Subcategory-authoritative matching** | Subcategory is the primary key: if an LLM or rule assigns a subcategory present in the taxonomy, the parent category is resolved automatically |
-| **Guided onboarding wizard** | 4-step first-run wizard: language selection (browser-detected), owner names, bank accounts, confirmation. Atomic write: DB populated only on final "Inizia!". Skipped automatically if taxonomy already exists (existing installations). |
+| **Guided onboarding wizard** | 4-step first-run wizard: language selection (browser-detected), owner names, bank accounts, confirmation. Atomic write: DB populated only on final "Start!". Skipped automatically if taxonomy already exists (existing installations). |
 | **Multi-language taxonomy** | Built-in default taxonomy in 5 languages (🇮🇹 🇬🇧 🇫🇷 🇩🇪 🇪🇸). Seeded from `taxonomy_default` DB table (no YAML file). Language chosen at onboarding; can be reset from Settings at any time. |
-| **2-level taxonomy in DB** | 15 expense + 7 income categories; managed via the Tassonomia UI page (DB-backed, no file restart required) |
+| **2-level taxonomy in DB** | 15 expense + 7 income categories; managed via the Taxonomy UI page (DB-backed, no file restart required) |
 | **Multi-provider LLM backend** | Ollama (local, default), OpenAI, Claude — shared abstract interface, no LangChain |
 | **LLM config in UI** | Backend, model and API keys are configurable from the Settings page without editing `.env` |
 | **PII sanitization (RF-10)** | IBAN, PAN, fiscal codes, owner names redacted before any remote call |
 | **Circuit breaker** | Automatic fallback to local Ollama; quarantine (`to_review=True`) if all backends fail |
-| **Life contexts** | User-configurable orthogonal dimension (e.g. Quotidianità / Lavoro / Vacanza) assignable to any transaction; Jaccard-based similarity suggestions pre-fill context from past transactions |
+| **Life contexts** | User-configurable orthogonal dimension (e.g. Everyday / Work / Vacation) assignable to any transaction; Jaccard-based similarity suggestions pre-fill context from past transactions |
 | **LLM re-run on failures** | Review page button re-runs description cleaning + categorization only on transactions where the LLM previously failed (`description == raw_description`) |
 | **Cross-account giroconto re-detection** | Review page button re-runs `detect_internal_transfers` globally on all transactions to catch pairs missed because the counterpart file was imported later |
 | **Owner-name permutation matching** | All token permutations of account-holder names are checked for giroconto detection, preventing missed matches when the name order varies across bank files |
@@ -61,7 +61,8 @@ Aggregates heterogeneous movements files (current accounts, credit cards, debit 
 | **SQLAlchemy persistence** | 11 ORM tables; idempotent CRUD; automatic migrations on startup |
 | **Cross-session import progress** | Import job state stored in DB; all browser sessions see live progress |
 | **Report export** | Standalone HTML (Plotly), CSV, XLSX |
-| **9-page Streamlit UI** | Import → Ledger → Modifiche massive → Analytics → Review → Regole → Tassonomia → Impostazioni → Check List |
+| **13-page Streamlit UI** | Import → Import History → Ledger → Bulk Edit → Analytics → Report → Budget → Budget vs Actual → Review → Rules → Taxonomy → Settings → Checklist |
+| **Full i18n (EN + IT)** | 753 translation keys, all 15 UI pages internationalized; JSON-based with `t(key)` and Italian fallback |
 | **Monthly coverage checklist** | Pivot table (month × account) showing transaction counts; highlights missing months at a glance |
 
 ---
@@ -313,18 +314,21 @@ uv run streamlit run app.py
 
 On the **first run** the onboarding wizard appears automatically (4 steps: language, owner names, bank accounts, confirmation). Existing installations with data already in the taxonomy are detected automatically and skip the wizard.
 
-The app opens at `http://localhost:8501` with 9 pages:
+The app opens at `http://localhost:8501` with 13 pages:
 
 | Page | Description |
 |---|---|
 | **📥 Import** | Upload one or more files (CSV / XLSX). Shows live progress (visible across all browser sessions). Summary: imported transactions, reconciliations, transfer links, flow used (1/2). |
 | **📋 Ledger** | Filterable table (date, type, description, category, context, review flag). Click any row to select it instantly. Split Entrata/Uscita columns, right-aligned. Net/income/expense metrics. Context filter + assignment expander with Jaccard similarity suggestions. Giroconto toggle with bulk-apply. CSV/XLSX download. |
-| **✏️ Modifiche massive** | Bulk operations on a reference transaction: giroconto toggle, context assignment (with Jaccard similarity), category correction + rule save. Mass deletion by combined filters (date, account, type, description, category) with preview and mandatory `ELIMINA` confirmation. |
+| **✏️ Bulk Edit** | Bulk operations on a reference transaction: giroconto toggle, context assignment (with Jaccard similarity), category correction + rule save. LLM reprocessing by scope. Mass deletion by combined filters (date, account, type, description, category) with preview and mandatory confirmation keyword. Cross-account duplicate detection and cleanup. |
 | **📊 Analytics** | 7 interactive Plotly charts: monthly bar chart, cumulative balance, expense pie+treemap, interactive category drill-down with subcategory bar + monthly trend, income pie+treemap, top-10 descriptions, stacked by account. HTML export. |
 | **🔍 Review** | Transactions with `to_review=True`. Giroconto toggle (with bulk-apply). Category/subcategory correction + optional save as permanent rule applied immediately. "Re-run LLM" button for uncleaned transactions. "Re-detect cross-account giroconti" button. |
-| **📏 Regole** | Full CRUD for category rules. Edit/delete existing rules + optional bulk re-categorization of already-matched transactions. "▶️ Esegui tutte le regole" button applies all rules to every transaction in the ledger at once. |
-| **🗂️ Tassonomia** | DB-backed CRUD for categories and subcategories (expenses and income). Changes take effect immediately without restarting. |
-| **⚙️ Impostazioni** | Date format, amount separators, description language, life contexts, bank account list, LLM backend (model + API keys). All persisted in DB. |
+| **📜 Import History** | Import timeline with undo capability. Shows date, file, account, transaction count, status. Cancel import to permanently delete all transactions from a batch. |
+| **📏 Rules** | Full CRUD for category rules. Edit/delete existing rules + optional bulk re-categorization of already-matched transactions. "Run all rules" button applies all rules to every transaction in the ledger at once. |
+| **🗂️ Taxonomy** | DB-backed CRUD for categories and subcategories (expenses and income). Changes take effect immediately without restarting. |
+| **💰 Budget** | Define spending % targets per expense category. Visual allocation bar with remaining liquidity and over-100% warnings. |
+| **📊 Budget vs Actual** | Compare actual spending with budget targets by period (month/quarter/year/custom). Traffic-light status per category, bar chart + donut distribution. |
+| **⚙️ Settings** | Date format, amount separators, description language, UI language, life contexts, bank account list, schema cache, LLM backend (6 backends: llama.cpp, Ollama, OpenAI, Claude, OpenAI-compatible), power user profile. All persisted in DB. |
 | **✅ Check List** | Pivot table (month × account). Current month at top, descending. Cells show tx count; **—** = no transactions. Color-coded by volume. Filters: account selection, last N months, hide empty rows. CSV export. |
 
 ---
@@ -337,7 +341,7 @@ The taxonomy is stored in the database (`taxonomy_category` / `taxonomy_subcateg
 
 The `taxonomy_default` table contains immutable built-in templates in 5 languages — Italian, English, French, German, Spanish. These are seeded from `db/taxonomy_defaults.py` on first startup (no YAML file required). During onboarding the user selects a language and the matching template is copied into the editable user taxonomy.
 
-To reset the user taxonomy to a different language at any time: **⚙️ Impostazioni → 🔄 Reset tassonomia**.
+To reset the user taxonomy to a different language at any time: **⚙️ Settings → 🔄 Reset Taxonomy**.
 
 ### Default taxonomy (Italian)
 
@@ -404,7 +408,7 @@ The pipeline tries to match transfers automatically during import using three pa
 
 ### Cross-account re-detection
 
-When two counterpart transactions belong to files imported at different times, the first import cannot find the pair. Use the **"🔁 Riesegui rilevamento giroconti"** button on the **🔍 Review** page to re-run detection globally on all non-giroconto transactions and update newly detectable pairs.
+When two counterpart transactions belong to files imported at different times, the first import cannot find the pair. Use the **"🔁 Re-run internal transfer detection"** button on the **🔍 Review** page to re-run detection globally on all non-giroconto transactions and update newly detectable pairs.
 
 ### Manual toggle
 
@@ -428,19 +432,19 @@ Life contexts are an orthogonal classification dimension that complements the ca
 | **Storage** | Nullable `VARCHAR(64)` column `context` on the `Transaction` table |
 | **Orthogonality** | Independent of category/subcategory — any combination is valid |
 | **User-configurable** | Add, rename, or remove contexts from the **⚙️ Impostazioni** page (stored as JSON in `user_settings`) |
-| **Default contexts** | Quotidianità · Lavoro · Vacanza |
+| **Default contexts** | Everyday · Work · Vacation |
 
 ### Assignment
 
-From the **📋 Ledger** page, select any transaction and open the "🌍 Assegna contesto" expander:
+From the **📋 Ledger** page, select any transaction and open the "🌍 Assign context" expander:
 
 1. Choose a context from the dropdown (or clear it)
-2. Optionally enable **"Applica anche a transazioni simili"** — Jaccard token similarity (threshold 0.35) finds other transactions whose cleaned description is semantically close and pre-fills the same context
-3. Click **Applica**
+2. Optionally enable **"Also apply to similar transactions"** — Jaccard token similarity (threshold 0.35) finds other transactions whose cleaned description is semantically close and pre-fills the same context
+3. Click **Apply**
 
 ### Filtering
 
-The ledger's filter bar includes a context selector: *tutti*, individual context values, or *— nessuno —* (transactions with no context assigned).
+The ledger's filter bar includes a context selector: *all*, individual context values, or *— none —* (transactions with no context assigned).
 
 ---
 

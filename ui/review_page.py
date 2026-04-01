@@ -464,6 +464,6 @@ def render_review_page(engine):
                             st.success(f"{n_upd} aggiornate · {n_cat} ri-categorizzate.")
                             st.rerun()
                     with _btn_col2:
-                        if st.button("🗑", key=f"desc_rule_del_{_rule.id}", help="Elimina regola"):
+                        if st.button("🗑", key=f"desc_rule_del_{_rule.id}", help=t("common.delete")):
                             rule_svc.delete_description_rule(_rule.id)
                             st.rerun()

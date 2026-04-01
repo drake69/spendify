@@ -162,7 +162,7 @@ def render_registry_page(engine):
     txs = tx_svc.get_transactions(filters=filters)
 
     if not txs:
-        st.info("Nessuna transazione trovata con i filtri selezionati.")
+        st.info(t("ledger.no_transactions"))
         return
 
     # ── Metrics ────────────────────────────────────────────────────────────────
@@ -423,7 +423,7 @@ def render_registry_page(engine):
             else:
                 st.rerun()
         else:
-            st.info("Nessuna modifica rilevata.")
+            st.info(t("ledger.no_changes"))
 
     # ── C-06: Fan-out action buttons ─────────────────────────────────────────
     if st.session_state.get("_fan_out_pending"):

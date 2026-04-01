@@ -12,6 +12,7 @@ from services.settings_service import SettingsService
 from services.transaction_service import TransactionService
 from support.formatting import format_amount_display
 from support.logging import setup_logging
+from ui.i18n import t
 
 logger = setup_logging()
 
@@ -77,7 +78,7 @@ def _generate_xlsx(
 
 
 def render_report_page(engine):
-    st.header("📋 Report — Spesa per Contesto e Categoria")
+    st.header(t("report.title"))
 
     cfg_svc = SettingsService(engine)
     tx_svc = TransactionService(engine)
@@ -96,7 +97,7 @@ def render_report_page(engine):
         st.session_state["report_to"] = today
 
     # ── Date presets ──────────────────────────────────────────────────────────
-    st.caption("**Periodo rapido**")
+    st.caption(f"**{t('report.quick_period')}**")
     pc1, pc2, pc3, pc4, pc5 = st.columns(5)
     _first_cur = today.replace(day=1)
     _cur_from = st.session_state.get("report_from", _first_cur)
@@ -105,23 +106,23 @@ def render_report_page(engine):
     _rel_last_prev = _cur_from - timedelta(days=1)
     _rel_first_prev = _rel_last_prev.replace(day=1)
 
-    if pc1.button("Mese corrente", key="rpt_preset_cur", use_container_width=True):
+    if pc1.button(t("report.preset_current_month"), key="rpt_preset_cur", use_container_width=True):
         st.session_state["report_from"] = _first_cur
         st.session_state["report_to"] = today
         st.rerun()
-    if pc2.button("Mese precedente", key="rpt_preset_prev", use_container_width=True):
+    if pc2.button(t("report.preset_prev_month"), key="rpt_preset_prev", use_container_width=True):
         st.session_state["report_from"] = _rel_first_prev
         st.session_state["report_to"] = _rel_last_prev
         st.rerun()
-    if pc3.button("Ultimi 3 mesi", key="rpt_preset_3m", use_container_width=True):
+    if pc3.button(t("report.preset_3months"), key="rpt_preset_3m", use_container_width=True):
         st.session_state["report_from"] = today - timedelta(days=90)
         st.session_state["report_to"] = today
         st.rerun()
-    if pc4.button("Anno corrente", key="rpt_preset_year", use_container_width=True):
+    if pc4.button(t("report.preset_year"), key="rpt_preset_year", use_container_width=True):
         st.session_state["report_from"] = today.replace(month=1, day=1)
         st.session_state["report_to"] = today
         st.rerun()
-    if pc5.button("Tutto", key="rpt_preset_all", use_container_width=True):
+    if pc5.button(t("report.preset_all"), key="rpt_preset_all", use_container_width=True):
         st.session_state["report_from"] = date(2000, 1, 1)
         st.session_state["report_to"] = today
         st.rerun()
@@ -129,13 +130,13 @@ def render_report_page(engine):
     # ── Filters ───────────────────────────────────────────────────────────────
     fc1, fc2, fc3 = st.columns([2, 2, 2])
     with fc1:
-        date_from = st.date_input("Da", key="report_from")
+        date_from = st.date_input(t("report.filter_from"), key="report_from")
     with fc2:
-        date_to = st.date_input("A", key="report_to")
+        date_to = st.date_input(t("report.filter_to"), key="report_to")
     with fc3:
         account_filter = st.multiselect(
-            "Conti", _accounts, default=[], key="rpt_accounts",
-            placeholder="Tutti i conti",
+            t("report.filter_accounts"), _accounts, default=[], key="rpt_accounts",
+            placeholder=t("report.filter_accounts_placeholder"),
         )
 
     # Build filter params
@@ -152,7 +153,7 @@ def render_report_page(engine):
     )
 
     if not agg_data:
-        st.info("Nessuna transazione disponibile con i filtri selezionati.")
+        st.info(t("report.no_transactions"))
         return
 
     monthly_data = tx_svc.get_monthly_spending(
@@ -163,8 +164,8 @@ def render_report_page(engine):
     )
 
     # ── Vista 1: Dove vanno i soldi ───────────────────────────────────────────
-    st.subheader("Dove vanno i soldi")
-    st.caption("Tabella riepilogativa per contesto e categoria. Giroconti esclusi.")
+    st.subheader(t("report.where_money_goes"))
+    st.caption(t("report.where_money_goes_caption"))
 
     df_agg = pd.DataFrame(agg_data)
 
@@ -172,15 +173,15 @@ def render_report_page(engine):
     df_expenses = df_agg[df_agg["total_amount"] < 0].copy()
     df_income = df_agg[df_agg["total_amount"] > 0].copy()
 
-    tab_exp, tab_inc = st.tabs(["Uscite", "Entrate"])
+    tab_exp, tab_inc = st.tabs([t("report.tab_expenses"), t("report.tab_income")])
 
     for tab, df_section, sign_label in [
-        (tab_exp, df_expenses, "Uscite"),
-        (tab_inc, df_income, "Entrate"),
+        (tab_exp, df_expenses, t("report.tab_expenses")),
+        (tab_inc, df_income, t("report.tab_income")),
     ]:
         with tab:
             if df_section.empty:
-                st.info(f"Nessuna {sign_label.lower()} nel periodo selezionato.")
+                st.info(t("report.no_section", label=sign_label.lower()))
                 continue
 
             df_section = df_section.copy()
@@ -235,7 +236,7 @@ def render_report_page(engine):
                 column_config={
                     "Importo": st.column_config.NumberColumn(
                         format="%.2f",
-                        help="Importo in EUR",
+                        help=t("report.col_amount_help"),
                     ),
                     "% del totale": st.column_config.NumberColumn(
                         format="%.1f %%",
@@ -245,19 +246,19 @@ def render_report_page(engine):
             )
 
     # ── Vista 2: Trend temporale ──────────────────────────────────────────────
-    st.subheader("Trend temporale")
+    st.subheader(t("report.trend_title"))
 
     if not monthly_data:
-        st.info("Nessun dato mensile disponibile.")
+        st.info(t("report.no_monthly"))
     else:
         df_monthly = pd.DataFrame(monthly_data)
 
-        tab_trend_exp, tab_trend_inc = st.tabs(["Uscite", "Entrate"])
+        tab_trend_exp, tab_trend_inc = st.tabs([t("report.tab_expenses"), t("report.tab_income")])
 
         with tab_trend_exp:
             df_m_exp = df_monthly[df_monthly["total_amount"] < 0].copy()
             if df_m_exp.empty:
-                st.info("Nessuna uscita nel periodo.")
+                st.info(t("report.no_expenses_period"))
             else:
                 df_m_exp["abs_amount"] = df_m_exp["total_amount"].abs()
 
@@ -273,26 +274,26 @@ def render_report_page(engine):
                 # Line chart
                 fig_line = px.line(
                     df_m_top, x="month", y="abs_amount", color="category",
-                    title="Trend uscite mensili — Top 10 categorie",
-                    labels={"abs_amount": "Importo (EUR)", "month": "Mese", "category": "Categoria"},
+                    title=t("report.chart_expense_trend"),
+                    labels={"abs_amount": t("report.chart_amount"), "month": t("report.chart_month"), "category": t("report.chart_category")},
                     markers=True,
                 )
-                fig_line.update_layout(xaxis_title="Mese", yaxis_title="EUR")
+                fig_line.update_layout(xaxis_title=t("report.chart_month"), yaxis_title="EUR")
                 st.plotly_chart(fig_line, use_container_width=True)
 
                 # Stacked bar chart
                 fig_stack = px.bar(
                     df_m_top, x="month", y="abs_amount", color="category",
                     barmode="stack",
-                    title="Composizione uscite mensili — Top 10 categorie",
-                    labels={"abs_amount": "Importo (EUR)", "month": "Mese", "category": "Categoria"},
+                    title=t("report.chart_expense_stack"),
+                    labels={"abs_amount": t("report.chart_amount"), "month": t("report.chart_month"), "category": t("report.chart_category")},
                 )
                 st.plotly_chart(fig_stack, use_container_width=True)
 
         with tab_trend_inc:
             df_m_inc = df_monthly[df_monthly["total_amount"] > 0].copy()
             if df_m_inc.empty:
-                st.info("Nessuna entrata nel periodo.")
+                st.info(t("report.no_income_period"))
             else:
                 # Top 10 categories
                 top_cats_inc = (
@@ -305,24 +306,24 @@ def render_report_page(engine):
 
                 fig_line_inc = px.line(
                     df_m_top_inc, x="month", y="total_amount", color="category",
-                    title="Trend entrate mensili — Top 10 categorie",
-                    labels={"total_amount": "Importo (EUR)", "month": "Mese", "category": "Categoria"},
+                    title=t("report.chart_income_trend"),
+                    labels={"total_amount": t("report.chart_amount"), "month": t("report.chart_month"), "category": t("report.chart_category")},
                     markers=True,
                 )
-                fig_line_inc.update_layout(xaxis_title="Mese", yaxis_title="EUR")
+                fig_line_inc.update_layout(xaxis_title=t("report.chart_month"), yaxis_title="EUR")
                 st.plotly_chart(fig_line_inc, use_container_width=True)
 
                 fig_stack_inc = px.bar(
                     df_m_top_inc, x="month", y="total_amount", color="category",
                     barmode="stack",
-                    title="Composizione entrate mensili — Top 10 categorie",
-                    labels={"total_amount": "Importo (EUR)", "month": "Mese", "category": "Categoria"},
+                    title=t("report.chart_income_stack"),
+                    labels={"total_amount": t("report.chart_amount"), "month": t("report.chart_month"), "category": t("report.chart_category")},
                 )
                 st.plotly_chart(fig_stack_inc, use_container_width=True)
 
     # ── Vista 3: Export Excel ─────────────────────────────────────────────────
     st.divider()
-    st.subheader("Esporta Report")
+    st.subheader(t("report.export_title"))
 
     # Build pivot for export
     pivot_rows = []
@@ -362,7 +363,7 @@ def render_report_page(engine):
         period_label += date_to.strftime("%Y%m%d")
 
     st.download_button(
-        "Esporta Excel",
+        t("report.export_btn"),
         xlsx_bytes,
         f"spendify_report_{period_label}.xlsx",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
