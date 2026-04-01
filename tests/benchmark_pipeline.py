@@ -53,7 +53,7 @@ _AMOUNT_FORMAT_TO_SIGN_CONVENTION = {
     "signed_single": "signed_single",
     "positive_only": "signed_single",
     "debit_credit_split": "debit_positive",
-    "debit_credit_signed": "credit_negative",
+    "debit_credit_signed": "debit_credit_signed",
 }
 
 

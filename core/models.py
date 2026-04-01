@@ -32,9 +32,10 @@ class TransactionType(str, Enum):
 
 
 class SignConvention(str, Enum):
-    signed_single = "signed_single"     # single column, negative = expense
-    debit_positive = "debit_positive"   # debit and credit in separate columns, both positive
-    credit_negative = "credit_negative" # credit column positive, debit column negative
+    signed_single = "signed_single"             # single column, negative = expense
+    debit_positive = "debit_positive"           # debit and credit in separate columns, both positive
+    credit_negative = "credit_negative"         # credit column positive, debit column negative
+    debit_credit_signed = "debit_credit_signed" # separate debit/credit columns, values already carry sign (debit negative, credit positive)
 
 
 class Confidence(str, Enum):

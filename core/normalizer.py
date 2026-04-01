@@ -596,6 +596,19 @@ def apply_sign_convention(
         debit_abs = abs(debit) if debit is not None else Decimal(0)
         credit_abs = abs(credit) if credit is not None else Decimal(0)
         return credit_abs - debit_abs
+    elif convention == SignConvention.debit_credit_signed:
+        # Both columns already carry correct sign: debit values are negative,
+        # credit values are positive. Read as-is, no abs() or negation needed.
+        debit = parse_amount(row.get(debit_col)) if debit_col else None
+        credit = parse_amount(row.get(credit_col)) if credit_col else None
+        if debit is None and credit is None:
+            return parse_amount(row.get(amount_col)) if amount_col else None
+        # Take whichever is non-null (complementary columns: one is filled per row)
+        if debit is not None:
+            return debit   # already negative for expenses
+        if credit is not None:
+            return credit  # already positive for income
+        return None
     elif convention == SignConvention.credit_negative:
         # credit column is positive (income), debit column is negative (expense)
         credit = parse_amount(row.get(credit_col)) if credit_col else None

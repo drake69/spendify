@@ -672,7 +672,7 @@ def _classify_column_content(
 
 def _assign_debit_credit_roles(
     df: pd.DataFrame, c1: str, c2: str, d1: float, d2: float,
-) -> tuple[str, str]:
+) -> tuple[str, str, str]:
     """Deterministically assign debit/credit roles to two complementary columns.
 
     Strategy (language-agnostic, inspects actual values):
@@ -682,7 +682,10 @@ def _assign_debit_credit_roles(
     4. If both have negatives or neither does, the denser column is debit
        (in a typical bank account, expenses outnumber income).
 
-    Returns (debit_col, credit_col).
+    Returns (debit_col, credit_col, sign_convention).
+    sign_convention is:
+      - "debit_credit_signed" if debit column already has negative values
+      - "debit_positive" if both columns have only positive values
     """
     def _has_negatives(col_name: str) -> bool:
         vals = pd.to_numeric(
@@ -702,19 +705,34 @@ def _assign_debit_credit_roles(
     )
 
     if c1_neg and not c2_neg:
-        # c1 has negatives → debit (expenses), c2 → credit (income)
-        return c1, c2
-    elif c2_neg and not c1_neg:
-        return c2, c1
-    else:
-        # Ambiguous sign → denser column is debit (more expense rows)
+        # c1 has negatives → debit (expenses already signed), c2 → credit
         logger.info(
-            "Phase 0 role assignment: ambiguous sign, using density tiebreak "
-            "(denser='%s' → debit)", c1 if d1 >= d2 else c2,
+            "Phase 0 role assignment: debit '%s' has negatives → debit_credit_signed", c1,
+        )
+        return c1, c2, "debit_credit_signed"
+    elif c2_neg and not c1_neg:
+        logger.info(
+            "Phase 0 role assignment: debit '%s' has negatives → debit_credit_signed", c2,
+        )
+        return c2, c1, "debit_credit_signed"
+    elif not c1_neg and not c2_neg:
+        # Neither has negatives → both positive → debit_positive
+        logger.info(
+            "Phase 0 role assignment: no negatives in either column → debit_positive, "
+            "density tiebreak (denser='%s' → debit)", c1 if d1 >= d2 else c2,
         )
         if d1 >= d2:
-            return c1, c2
-        return c2, c1
+            return c1, c2, "debit_positive"
+        return c2, c1, "debit_positive"
+    else:
+        # Both have negatives → ambiguous, use density
+        logger.info(
+            "Phase 0 role assignment: both have negatives → debit_credit_signed, "
+            "density tiebreak (denser='%s' → debit)", c1 if d1 >= d2 else c2,
+        )
+        if d1 >= d2:
+            return c1, c2, "debit_credit_signed"
+        return c2, c1, "debit_credit_signed"
 
 
 def _run_step0_analysis(
@@ -856,17 +874,18 @@ def _run_step0_analysis(
             # - Column with negative values → debit (expenses)
             # - Column with positive/no-neg values → credit (income)
             # If both or neither have negatives, the denser column is debit.
-            debit_col, credit_col = _assign_debit_credit_roles(
+            debit_col, credit_col, sign_conv = _assign_debit_credit_roles(
                 df_raw, c1, c2, d1, d2
             )
             r.debit_col = debit_col
             r.credit_col = credit_col
-            r.amount_semantics = "debit_positive"
+            r.amount_semantics = sign_conv
             logger.info(
                 "Phase 0: complementary density RESOLVED — "
-                "debit_col='%s' (%.0f%%), credit_col='%s' (%.0f%%) → debit_positive",
+                "debit_col='%s' (%.0f%%), credit_col='%s' (%.0f%%) → %s",
                 debit_col, densities[debit_col] * 100,
                 credit_col, densities[credit_col] * 100,
+                sign_conv,
             )
         else:
             # No complementary pattern; fall back to single column
@@ -969,10 +988,16 @@ def _format_step0_for_prompt(r: _Step0Result) -> str:
         lines.append(f"- date_accounting_col = '{r.date_accounting_col}'  [RESOLVED]")
 
     # Amount / sign
-    if r.amount_semantics == "debit_positive":
+    if r.amount_semantics == "debit_credit_signed":
+        lines.append("- sign_convention = 'debit_credit_signed'  [RESOLVED by density + sign analysis]")
+        lines.append(f"- debit_col = '{r.debit_col}'  [RESOLVED — expenses/outflows column, values already negative]")
+        lines.append(f"- credit_col = '{r.credit_col}'  [RESOLVED — income/inflows column, values positive]")
+        lines.append("- amount_col: not applicable (using debit/credit split)")
+        lines.append("- invert_sign: not applicable (values already carry correct sign)")
+    elif r.amount_semantics == "debit_positive":
         lines.append("- sign_convention = 'debit_positive'  [RESOLVED by density + sign analysis]")
-        lines.append(f"- debit_col = '{r.debit_col}'  [RESOLVED — expenses/outflows column]")
-        lines.append(f"- credit_col = '{r.credit_col}'  [RESOLVED — income/inflows column]")
+        lines.append(f"- debit_col = '{r.debit_col}'  [RESOLVED — expenses/outflows column, values positive]")
+        lines.append(f"- credit_col = '{r.credit_col}'  [RESOLVED — income/inflows column, values positive]")
         lines.append("- amount_col: not applicable (using debit/credit split)")
         lines.append("- invert_sign: not applicable (debit_positive convention)")
     elif r.amount_semantics == "debit_positive_candidates":
