@@ -444,6 +444,59 @@ class LlamaCppBackend(LLMBackend):
     def name(self) -> str:
         return "local_llama_cpp"
 
+    def _render_prompt(self, system_prompt: str, user_prompt: str) -> str:
+        """Render system+user messages using the model's Jinja2 chat template.
+
+        Reads the template from GGUF metadata and applies it, exactly like
+        Ollama does internally.  If the template rejects the system role
+        (e.g. Gemma), the system content is prepended to the user message.
+        Falls back to a simple concatenation if no template is available.
+        """
+        from jinja2 import Template, TemplateSyntaxError, UndefinedError
+
+        raw_template = self._llm.metadata.get("tokenizer.chat_template", "")
+        if not raw_template:
+            # No template — simple format
+            return f"{system_prompt}\n\n{user_prompt}"
+
+        # Check if template supports system role by looking for raise_exception
+        _supports_system = "raise_exception" not in raw_template or "system" not in raw_template
+
+        if _supports_system:
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ]
+        else:
+            # Model rejects system role (e.g. Gemma) — prepend to user
+            messages = [
+                {"role": "user", "content": f"{system_prompt}\n\n{user_prompt}"},
+            ]
+
+        try:
+            t = Template(raw_template)
+            return t.render(
+                messages=messages,
+                bos_token=self._llm.metadata.get("tokenizer.ggml.bos_token_id", ""),
+                eos_token=self._llm.metadata.get("tokenizer.ggml.eos_token_id", ""),
+                add_generation_prompt=True,
+            )
+        except (TemplateSyntaxError, UndefinedError, TypeError):
+            # Template rendering failed — try without system role
+            messages = [
+                {"role": "user", "content": f"{system_prompt}\n\n{user_prompt}"},
+            ]
+            try:
+                t = Template(raw_template)
+                return t.render(
+                    messages=messages,
+                    bos_token="",
+                    eos_token="",
+                    add_generation_prompt=True,
+                )
+            except Exception:
+                return f"{system_prompt}\n\n{user_prompt}"
+
     def complete_structured(
         self,
         system_prompt: str,
@@ -464,40 +517,28 @@ class LlamaCppBackend(LLMBackend):
             grammar = None  # fallback: no grammar constraint
 
         try:
-            messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ]
+            # Render the prompt using the model's native Jinja2 chat template.
+            # This mirrors Ollama's approach: apply the exact template the model
+            # was trained with, then run raw completion with grammar enforcement.
+            prompt = self._render_prompt(system_prompt, user_prompt)
+
             # Sampling params aligned with Ollama defaults for deterministic output
-            _sampling = {
-                "temperature": temperature,
-                "top_p": 0.9,
-                "top_k": 40,
-                "repeat_penalty": 1.1,
-            }
-            try:
-                response = self._llm.create_chat_completion(
-                    messages=messages,
-                    grammar=grammar,
-                    **_sampling,
-                )
-            except Exception as e:
-                if "System role not supported" in str(e) or "system" in str(e).lower():
-                    # Model doesn't support system role — merge into user prompt
-                    merged = f"{system_prompt}\n\n---\n\n{user_prompt}"
-                    response = self._llm.create_chat_completion(
-                        messages=[{"role": "user", "content": merged}],
-                        grammar=grammar,
-                        **_sampling,
-                    )
-                else:
-                    raise
+            response = self._llm.create_completion(
+                prompt=prompt,
+                grammar=grammar,
+                temperature=temperature,
+                top_p=0.9,
+                top_k=40,
+                repeat_penalty=1.1,
+                max_tokens=2048,
+                stop=["<|im_end|>", "<end_of_turn>", "</s>", "<|eot_id|>"],
+            )
             usage = response.get("usage", {})
             self._set_usage(
                 usage.get("prompt_tokens", 0),
                 usage.get("completion_tokens", 0),
             )
-            raw = response["choices"][0]["message"]["content"]
+            raw = response["choices"][0]["text"]
             result = json.loads(raw)
             _validate_required(result, json_schema)
             return result
