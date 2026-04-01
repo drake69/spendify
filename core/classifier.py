@@ -310,11 +310,14 @@ def classify_document(
         )
 
     # Build a compact sample for the prompt (max 20 rows).
-    # Select rows with highest column density (most non-null values) so the LLM
-    # sees representative data even when some columns (e.g. credit/Avere) are
-    # sparse and only populated in a few rows.
-    _density = df_raw.notna().sum(axis=1)
-    _top_idx = _density.nlargest(min(20, len(df_raw))).index
+    # Use rarity-weighted scoring: columns with low fill rate (e.g. Accrediti
+    # at 1%) contribute more to the row score than dense columns (Addebiti at
+    # 99%).  This ensures the LLM sees at least some rows with rare column
+    # values, which is critical for detecting complementary debit/credit pairs.
+    _col_density = df_raw.notna().mean()
+    _col_weights = 1.0 / _col_density.replace(0, 1)  # avoid div by zero
+    _row_score = (df_raw.notna() * _col_weights).sum(axis=1)
+    _top_idx = _row_score.nlargest(min(20, len(df_raw))).index
     sample = df_raw.loc[_top_idx].copy()
 
     if sanitize:
