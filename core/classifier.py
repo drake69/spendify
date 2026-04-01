@@ -1126,15 +1126,19 @@ def _merge_step0_into_result(result: dict, step0: _Step0Result, source_name: str
             )
             out["currency_col"] = None
 
-    # Amount / sign — override when Phase 0 resolved it
-    if step0.amount_semantics == "debit_positive":
-        _set("sign_convention", "debit_positive", "debit+credit columns found (density + sign)")
-        if step0.debit_col:
-            _set("debit_col", step0.debit_col, "deterministic: sign analysis")
-        if step0.credit_col:
-            _set("credit_col", step0.credit_col, "deterministic: sign analysis")
-        # Clear amount_col — with debit/credit split it's not used and would
-        # cause income rows to be lost (the exact bug we're fixing).
+    # Amount / sign — Phase 0 sets sign_convention; LLM assigns column roles.
+    # Phase 0 knows the STRUCTURE (complementary split, sign pattern) but NOT
+    # the SEMANTICS (which column is debit, which is credit — that requires
+    # understanding column names like Dare/Avere in the file's language).
+    if step0.amount_semantics in ("debit_positive", "debit_credit_signed", "debit_positive_candidates"):
+        _set("sign_convention", step0.amount_semantics, "density + sign analysis")
+        # LLM's debit_col/credit_col take precedence (it sees column names+values).
+        # Only fill in from Phase 0 if the LLM left them blank.
+        if not out.get("debit_col"):
+            _set("debit_col", step0.debit_col, "density candidate (LLM did not assign)")
+        if not out.get("credit_col"):
+            _set("credit_col", step0.credit_col, "density candidate (LLM did not assign)")
+        # Clear amount_col — with debit/credit split it's not used
         if out.get("amount_col"):
             logger.info(
                 "classify_document [%s]: Step 0 merge — clearing amount_col='%s' "
@@ -1142,16 +1146,6 @@ def _merge_step0_into_result(result: dict, step0: _Step0Result, source_name: str
                 source_name, out.get("amount_col"),
             )
             out["amount_col"] = None
-    elif step0.amount_semantics == "debit_positive_candidates":
-        # Density detected the split pattern; sign_convention is debit_positive.
-        # LLM assigns which candidate is debit and which is credit.
-        _set("sign_convention", "debit_positive", "density complementary pattern")
-        # LLM's debit_col/credit_col take precedence (it sees column names+values).
-        # Only fill in from Phase 0 if the LLM left them blank.
-        if not out.get("debit_col"):
-            _set("debit_col", step0.debit_col, "density candidate (LLM did not assign)")
-        if not out.get("credit_col"):
-            _set("credit_col", step0.credit_col, "density candidate (LLM did not assign)")
     else:
         if step0.invert_sign is not None:
             _set("invert_sign", step0.invert_sign, f"semantics={step0.amount_semantics}")
