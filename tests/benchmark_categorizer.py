@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import os
 import fnmatch
 import json
 import math
@@ -875,7 +876,11 @@ def main() -> None:
     parser.add_argument("--model-path", type=str, default=None,
                         help="Model path for llama-cpp backend (e.g. path to .gguf file)")
     parser.add_argument("--model", type=str, default=None,
-                        help="Model name override for Ollama (e.g. 'phi3:3.8b', 'gemma3:12b')")
+                        help="Model name override (e.g. 'phi3:3.8b', 'gpt-4o-mini', 'claude-3-5-haiku-20241022')")
+    parser.add_argument("--api-key", type=str, default=None,
+                        help="API key for remote backends (OpenAI, Claude, OpenAI-compatible)")
+    parser.add_argument("--base-url", type=str, default=None,
+                        help="Base URL for Ollama or OpenAI-compatible backends")
     args = parser.parse_args()
 
     n_runs = args.runs
@@ -892,6 +897,8 @@ def main() -> None:
     backend_override = args.backend
     model_path_override = getattr(args, 'model_path', None)
     model_override = args.model
+    api_key_override = args.api_key
+    base_url_override = args.base_url
 
     if not backend_override or backend_override == "local_ollama":
         print("\n[check] Verifying Ollama is reachable...")
@@ -900,6 +907,20 @@ def main() -> None:
             print("       Start Ollama before running this benchmark.")
             sys.exit(1)
         print("[check] Ollama OK")
+    elif backend_override in ("openai", "claude", "openai_compatible"):
+        if not api_key_override:
+            env_key = {
+                "openai": "OPENAI_API_KEY",
+                "claude": "ANTHROPIC_API_KEY",
+                "openai_compatible": "COMPAT_API_KEY",
+            }.get(backend_override, "")
+            api_key_override = os.environ.get(env_key, "")
+            if not api_key_override:
+                print(f"ERROR: --api-key required for backend '{backend_override}'")
+                print(f"       Or set environment variable {env_key}")
+                sys.exit(1)
+            print(f"[check] Using API key from ${env_key}")
+        print(f"\n[check] Backend: {backend_override} (remote API)")
     else:
         print(f"\n[check] Backend: {backend_override} (skipping Ollama check)")
 
@@ -940,6 +961,21 @@ def main() -> None:
         config.llama_cpp_model_path = model_path_override
     if model_override:
         config.ollama_model = model_override
+        config.openai_model = model_override
+        config.claude_model = model_override
+        config.compat_model = model_override
+    if api_key_override:
+        if backend_override == "openai":
+            config.openai_api_key = api_key_override
+        elif backend_override == "claude":
+            config.anthropic_api_key = api_key_override
+        elif backend_override == "openai_compatible":
+            config.compat_api_key = api_key_override
+    if base_url_override:
+        if backend_override == "local_ollama":
+            config.ollama_base_url = base_url_override
+        elif backend_override == "openai_compatible":
+            config.compat_base_url = base_url_override
     backend = _build_backend(config)
 
     # ── Collect LLM metadata ─────────────────────────────────────────────
