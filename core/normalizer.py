@@ -934,36 +934,26 @@ def drop_low_variability_columns(
     source_name: str = "",
     min_ratio: float = _LOW_VARIABILITY_RATIO,
 ) -> tuple[pd.DataFrame, list[str]]:
-    """Remove columns whose value diversity is too low to carry transaction data.
+    """Remove columns that are completely empty (all null/NaN).
 
-    Columns like "Nome titolare" (always the same name) or "Numero carta"
-    (same masked PAN on every row) add noise without information.  A column
-    is considered metadata/constant if::
+    Originally this function dropped columns with low variability
+    (nunique/nrows < 1.5%), but this incorrectly removed sparse
+    amount columns (e.g., a credit column with 4 values out of 300
+    rows in a savings account). Now only truly empty columns are
+    dropped — columns with even a single non-null value are preserved.
 
-        nunique(col) / nrows < min_ratio
-
-    At least 2 columns are always preserved so downstream processing has
-    something to work with.
-
-    Args:
-        df: DataFrame (may already be pre-header-stripped).
-        source_name: Filename used only for log messages.
-        min_ratio: Fraction threshold (default ``_LOW_VARIABILITY_RATIO``
-            = 1.5 %).
+    At least 2 columns are always preserved.
 
     Returns:
-        ``(cleaned_df, dropped_column_names)``.  If nothing was dropped,
-        ``dropped_column_names`` is an empty list.
+        ``(cleaned_df, dropped_column_names)``.
     """
     if len(df) < 2 or len(df.columns) <= 2:
         return df, []
 
-    nrows = len(df)
     to_drop: list[str] = []
 
     for col in df.columns:
-        ratio = df[col].nunique(dropna=True) / nrows
-        if ratio < min_ratio:
+        if df[col].notna().sum() == 0:
             to_drop.append(col)
 
     # Never drop below 2 columns.
@@ -976,7 +966,7 @@ def drop_low_variability_columns(
 
     result = df.drop(columns=to_drop)
     logger.info(
-        "[%s] Dropped %d low-variability column(s): %s",
+        "[%s] Dropped %d empty column(s): %s",
         source_name, len(to_drop), to_drop,
     )
     return result, to_drop
