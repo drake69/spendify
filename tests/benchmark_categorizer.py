@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import csv
 import os
+import subprocess
 import fnmatch
 import json
 import math
@@ -399,6 +400,44 @@ def _write_config_json(meta: dict[str, str], n_runs: int, n_files: int) -> None:
 
 # ── Main evaluation ──────────────────────────────────────────────────────
 
+def _sample_cpu_load() -> float:
+    """Return 1-minute load average (cross-platform)."""
+    try:
+        return os.getloadavg()[0]
+    except (OSError, AttributeError):
+        return 0.0
+
+
+def _sample_gpu_utilization() -> float:
+    """Return GPU utilization % (0-100). macOS: Apple GPU power; Linux: nvidia-smi."""
+    import platform as _pf
+    system = _pf.system()
+    if system == "Darwin":
+        try:
+            result = subprocess.run(
+                ["ioreg", "-r", "-d", "1", "-c", "AppleARMIODevice", "-n", "gpu"],
+                capture_output=True, text=True, timeout=2,
+            )
+            import re as _re
+            for line in result.stdout.splitlines():
+                if "power" in line.lower():
+                    nums = _re.findall(r"(\d+\.?\d*)", line)
+                    if nums:
+                        return float(nums[-1])
+        except Exception:
+            pass
+    if system in ("Linux", "Windows"):
+        try:
+            result = subprocess.run(
+                ["nvidia-smi", "--query-gpu=utilization.gpu", "--format=csv,noheader,nounits"],
+                capture_output=True, text=True, timeout=3,
+            )
+            return float(result.stdout.strip().split("\n")[0])
+        except Exception:
+            pass
+    return 0.0
+
+
 def _evaluate_file(
     entry: ManifestEntry,
     ground_truth: list[GroundTruthRow],
@@ -409,6 +448,8 @@ def _evaluate_file(
     """Normalize a file with its ground truth schema, then categorize and compare."""
     filepath = _GENERATED_DIR / entry.filename
     t_start = time.time()
+    cpu_samples: list[float] = [_sample_cpu_load()]
+    gpu_samples: list[float] = [_sample_gpu_utilization()]
 
     error_result = CatRunResult(
         run_id=run_id,
@@ -477,6 +518,10 @@ def _evaluate_file(
             sanitize_config=None,
         )
 
+        # Sample HW after cleaner
+        cpu_samples.append(_sample_cpu_load())
+        gpu_samples.append(_sample_gpu_utilization())
+
         # 4. Categorize using LLM
         cat_results = categorize_batch(
             transactions=transactions,
@@ -490,6 +535,10 @@ def _evaluate_file(
             source_name=entry.filename,
             history_cache=None,
         )
+
+        # Sample HW after categorization
+        cpu_samples.append(_sample_cpu_load())
+        gpu_samples.append(_sample_gpu_utilization())
 
         # 5. Compare with ground truth
         n_compare = min(n_tx, len(ground_truth))
@@ -562,6 +611,8 @@ def _evaluate_file(
             fuzzy_accuracy=n_correct_fuzzy / n_compare if n_compare > 0 else 0.0,
             fallback_rate=n_fallback / n_compare if n_compare > 0 else 0.0,
             duration_seconds=duration,
+            cpu_load_avg=sum(cpu_samples) / len(cpu_samples) if cpu_samples else 0.0,
+            gpu_utilization_pct=sum(gpu_samples) / len(gpu_samples) if gpu_samples else 0.0,
         ), detail_rows
 
     except Exception as e:
