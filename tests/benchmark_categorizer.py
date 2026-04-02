@@ -1080,6 +1080,7 @@ def main() -> None:
                 _key = (
                     int(_row.get("run_id", 0)),
                     _row.get("filename", ""),
+                    str(_row.get("cleaner_batch_size", "30")),
                     _row.get("git_commit", ""),
                     _row.get("git_branch", ""),
                     _row.get("provider", ""),
@@ -1105,6 +1106,7 @@ def main() -> None:
             # Check resume key: (run_id, filename, git_commit, git_branch, provider, model)
             _resume_key = (
                 run_id, entry.filename,
+                str(args.cleaner_batch_size),
                 _LLM_META.get("git_commit", ""),
                 _LLM_META.get("git_branch", ""),
                 _LLM_META.get("provider", ""),
