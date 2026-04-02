@@ -467,6 +467,16 @@ def _evaluate_file(
 
         n_tx = len(transactions)
 
+        # 3b. Clean descriptions: extract counterpart name (as in production)
+        from core.description_cleaner import clean_descriptions_batch
+        transactions = clean_descriptions_batch(
+            transactions,
+            llm_backend=backend,
+            fallback_backend=None,
+            source_name=entry.filename,
+            sanitize_config=None,
+        )
+
         # 4. Categorize using LLM
         cat_results = categorize_batch(
             transactions=transactions,
