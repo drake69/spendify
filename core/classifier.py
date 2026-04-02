@@ -493,6 +493,14 @@ def classify_document(
     # Merge Phase 0 deterministic findings — Phase 0 wins for all resolved fields.
     result = _merge_step0_into_result(result, step0, source_name)
 
+    # Safety net: enforce account_type constraint (user-specified doc_type wins over LLM)
+    if account_type and result.get("doc_type") != account_type:
+        logger.info(
+            "classify_document [%s]: enforcing user account_type='%s' over LLM doc_type='%s'",
+            source_name, account_type, result.get("doc_type"),
+        )
+        result["doc_type"] = account_type
+
     # Safety net: re-enforce invert_sign after merge (catches any LLM re-override).
     result = _apply_step0_invert_sign(result, source_name, account_type=account_type)
 
