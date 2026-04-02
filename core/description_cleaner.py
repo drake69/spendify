@@ -164,6 +164,10 @@ def _process_group(
     """Process a group of transactions (expense or income) in batches.
     Updates txs[i]["description"] in place. Returns count of cleaned descriptions.
 
+    Optimization: deduplicates descriptions before sending to LLM.
+    300 transactions with 40 unique descriptions → only 40 LLM calls.
+    Results are remapped to all transactions sharing the same description.
+
     Privacy flow (when sanitize_config is provided):
         1. raw_description → redact_pii()     → <OWNER_N> placeholders replace names
         2. sanitized text  → LLM              → counterpart extracted (may contain <OWNER_N>)
@@ -171,40 +175,74 @@ def _process_group(
     """
     cleaned_count = 0
 
-    for batch_start in range(0, len(indices), batch_size):
-        batch_indices = indices[batch_start: batch_start + batch_size]
-        # Prefer raw_description: it already contains all description_cols merged
-        # (done by _normalize_df_with_schema) and preserves original casing —
-        # better for LLM pattern matching than the casefold'd "description".
-        raw_descs = [
-            txs[i].get("raw_description") or txs[i].get("description") or ""
-            for i in batch_indices
-        ]
+    # ── Step 1: Dedup descriptions ────────────────────────────────────────
+    # Group indices by unique raw_description → send each unique desc once
+    desc_to_indices: dict[str, list[int]] = {}
+    for i in indices:
+        raw = txs[i].get("raw_description") or txs[i].get("description") or ""
+        desc_to_indices.setdefault(raw, []).append(i)
 
-        # Always redact before LLM (owner names + IBAN/PAN/fiscal code)
-        # Then strip emoji and non-text symbols so the LLM sees clean text only
-        llm_descs = [_strip_non_text(redact_pii(d, sanitize_config)) for d in raw_descs]
-
-        cleaned = _call_llm_batch(
-            llm_descs, system_prompt, llm_backend, fallback_backend,
-            source_name, label,
+    unique_descs = list(desc_to_indices.keys())
+    n_total = len(indices)
+    n_unique = len(unique_descs)
+    if n_unique < n_total:
+        logger.info(
+            f"clean_descriptions_batch [{source_name}] {label}: "
+            f"dedup {n_total} → {n_unique} unique descriptions"
         )
 
-        for j, idx in enumerate(batch_indices):
-            original = raw_descs[j]
-            result = cleaned[j] if j < len(cleaned) else None
-            if result:
-                # Restore <OWNER_N> → real name before storing
-                result = restore_owner_placeholders(result, sanitize_config)
-                result = result.strip()
-                # Discard known bad LLM outputs: "null", "none", "n/a", etc.
-                if result.lower() in {"null", "none", "n/a", "na", "nan", "-", "—"}:
-                    result = None
-            if result and len(result) >= 2 and result != original:
+    # ── Step 2: Clean unique descriptions via LLM (indexed batch) ────────
+    # Sanitize + strip non-text
+    llm_descs = [_strip_non_text(redact_pii(d, sanitize_config)) for d in unique_descs]
+
+    cleaned = _call_llm_batch(
+        llm_descs, system_prompt, llm_backend, fallback_backend,
+        batch_size, source_name, label,
+    )
+
+    # ── Step 3: Remap results to all transactions ────────────────────────
+    for j, raw_desc in enumerate(unique_descs):
+        result = cleaned[j] if j < len(cleaned) else None
+        if result:
+            result = restore_owner_placeholders(result, sanitize_config)
+            result = result.strip()
+            if result.lower() in {"null", "none", "n/a", "na", "nan", "-", "—"}:
+                result = None
+        if result and len(result) >= 2 and result != raw_desc:
+            # Apply to ALL transactions with this raw_description
+            for idx in desc_to_indices[raw_desc]:
                 txs[idx]["description"] = result
                 cleaned_count += 1
 
     return cleaned_count
+
+
+# ── Indexed LLM schema ────────────────────────────────────────────────────
+
+_INDEXED_RESPONSE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "results": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "idx": {"type": "integer"},
+                    "name": {"type": "string"},
+                },
+                "required": ["idx", "name"],
+            },
+            "description": "Extracted counterpart names with index matching input order",
+        }
+    },
+    "required": ["results"],
+}
+
+_INDEXED_USER_TEMPLATE = (
+    "Extract the counterpart from each of these {n} transaction descriptions.\n"
+    "Return exactly {n} results. Each result must include the idx from the input.\n\n"
+    "{descriptions_json}"
+)
 
 
 def _call_llm_batch(
@@ -212,53 +250,73 @@ def _call_llm_batch(
     system_prompt: str,
     llm_backend: LLMBackend,
     fallback_backend: LLMBackend | None,
+    batch_size: int,
     source_name: str,
     label: str,
 ) -> list[str]:
-    """Single LLM call for one directional batch. Returns same-length list.
+    """Send descriptions to LLM in indexed batches. Returns same-length list.
+    Uses indexed input/output to prevent shuffle on small models.
     Falls back to original descriptions on any failure.
     """
-    n = len(descriptions)
-    descriptions_json = json.dumps(descriptions, ensure_ascii=False, indent=2)
-    user_prompt = _USER_TEMPLATE.format(n=n, descriptions_json=descriptions_json)
+    all_results: list[str | None] = [None] * len(descriptions)
 
-    result, backend_used = call_with_fallback(
-        primary=llm_backend,
-        system_prompt=system_prompt,
-        user_prompt=user_prompt,
-        json_schema=_RESPONSE_SCHEMA,
-        fallback=fallback_backend,
-    )
+    for batch_start in range(0, len(descriptions), batch_size):
+        batch = descriptions[batch_start: batch_start + batch_size]
+        n = len(batch)
 
-    if result is None:
-        logger.warning(
-            f"clean_descriptions_batch [{source_name}] {label}: "
-            f"LLM failed — keeping original descriptions"
+        # Build indexed input
+        indexed_input = [{"idx": batch_start + i, "name": d} for i, d in enumerate(batch)]
+        descriptions_json = json.dumps(indexed_input, ensure_ascii=False, indent=2)
+        user_prompt = _INDEXED_USER_TEMPLATE.format(n=n, descriptions_json=descriptions_json)
+
+        result, backend_used = call_with_fallback(
+            primary=llm_backend,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            json_schema=_INDEXED_RESPONSE_SCHEMA,
+            fallback=fallback_backend,
         )
-        return descriptions
 
-    results = result.get("results")
-    if not isinstance(results, list):
-        logger.warning(
+        if result is None:
+            logger.warning(
+                f"clean_descriptions_batch [{source_name}] {label}: "
+                f"LLM failed on batch {batch_start}..{batch_start + n} — keeping originals"
+            )
+            for i, d in enumerate(batch):
+                all_results[batch_start + i] = d
+            continue
+
+        results = result.get("results")
+        if not isinstance(results, list):
+            logger.warning(
+                f"clean_descriptions_batch [{source_name}] {label}: "
+                f"unexpected response type {type(results)!r} — keeping originals"
+            )
+            for i, d in enumerate(batch):
+                all_results[batch_start + i] = d
+            continue
+
+        # Map by idx (anti-shuffle)
+        idx_to_name: dict[int, str] = {}
+        for item in results:
+            if isinstance(item, dict) and "idx" in item and "name" in item:
+                idx_to_name[item["idx"]] = str(item["name"])
+            elif isinstance(item, str):
+                # Fallback: old-style flat array (backward compat)
+                pass
+
+        for i, d in enumerate(batch):
+            global_idx = batch_start + i
+            name = idx_to_name.get(global_idx)
+            if name:
+                all_results[global_idx] = name
+            else:
+                all_results[global_idx] = d  # keep original
+
+        logger.debug(
             f"clean_descriptions_batch [{source_name}] {label}: "
-            f"unexpected response type {type(results)!r} — keeping originals"
+            f"batch {batch_start}..{batch_start + n} via {backend_used}, "
+            f"{len(idx_to_name)}/{n} mapped by idx"
         )
-        return descriptions
 
-    if len(results) != n:
-        logger.warning(
-            f"clean_descriptions_batch [{source_name}] {label}: "
-            f"unexpected response shape (expected {n}, got {len(results)})"
-            f" — using partial results, keeping originals for missing entries"
-        )
-        # Pad or truncate: use what we have, fall back to original for the rest
-        results = list(results[:n]) + [None] * max(0, n - len(results))
-
-    logger.debug(
-        f"clean_descriptions_batch [{source_name}] {label}: "
-        f"batch of {n} via {backend_used}"
-    )
-    mapped = [str(r) if r else descriptions[i] for i, r in enumerate(results)]
-    for i, (inp, out) in enumerate(zip(descriptions, mapped)):
-        logger.debug(f"  [{label}] #{i}: {inp!r} → {out!r}")
-    return mapped
+    return [r if r else descriptions[i] for i, r in enumerate(all_results)]
