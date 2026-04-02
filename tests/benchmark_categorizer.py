@@ -444,6 +444,7 @@ def _evaluate_file(
     backend,
     taxonomy: TaxonomyConfig,
     run_id: int,
+    cleaner_batch_size: int = 30,
 ) -> tuple[CatRunResult, list[CatDetailRow]]:
     """Normalize a file with its ground truth schema, then categorize and compare."""
     filepath = _GENERATED_DIR / entry.filename
@@ -514,6 +515,7 @@ def _evaluate_file(
             transactions,
             llm_backend=backend,
             fallback_backend=None,
+            batch_size=cleaner_batch_size,
             source_name=entry.filename,
             sanitize_config=None,
         )
@@ -942,6 +944,8 @@ def main() -> None:
                         help="API key for remote backends (OpenAI, Claude, OpenAI-compatible)")
     parser.add_argument("--base-url", type=str, default=None,
                         help="Base URL for Ollama or OpenAI-compatible backends")
+    parser.add_argument("--cleaner-batch-size", type=int, default=30,
+                        help="Batch size for counterpart extraction (default: 30, use 1 for strict ordering)")
     args = parser.parse_args()
 
     n_runs = args.runs
@@ -1123,7 +1127,8 @@ def main() -> None:
             )
 
             gt = ground_truth_map.get(entry.filename, [])
-            result, details = _evaluate_file(entry, gt, backend, taxonomy, run_id)
+            result, details = _evaluate_file(entry, gt, backend, taxonomy, run_id,
+                                              cleaner_batch_size=args.cleaner_batch_size)
             run_results.append(result)
             all_details.extend(details)
 
