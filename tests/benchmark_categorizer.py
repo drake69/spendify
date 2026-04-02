@@ -130,6 +130,7 @@ class CatRunResult:
     duration_seconds: float
     cpu_load_avg: float = 0.0      # avg CPU load during file processing
     gpu_utilization_pct: float = 0.0  # avg GPU utilization % during file processing
+    cleaner_batch_size: int = 30   # batch size used for counterpart extraction
     error: str = ""
 
 
@@ -615,6 +616,7 @@ def _evaluate_file(
             duration_seconds=duration,
             cpu_load_avg=sum(cpu_samples) / len(cpu_samples) if cpu_samples else 0.0,
             gpu_utilization_pct=sum(gpu_samples) / len(gpu_samples) if gpu_samples else 0.0,
+            cleaner_batch_size=cleaner_batch_size,
         ), detail_rows
 
     except Exception as e:
@@ -654,6 +656,8 @@ _CSV_HEADER = [
     "duration_seconds",
     # HW stress (sampled during file processing)
     "cpu_load_avg", "gpu_utilization_pct",
+    # Categorizer parameters
+    "cleaner_batch_size",
     # Multi-step classifier diagnostics (empty for categorizer rows)
     "classifier_mode",
     "step1_time_s", "step2_time_s", "step3_time_s",
@@ -713,6 +717,8 @@ def _result_to_row(r: CatRunResult) -> list:
         # Common
         f"{r.duration_seconds:.2f}",
         f"{r.cpu_load_avg:.2f}", f"{r.gpu_utilization_pct:.1f}",
+        # Categorizer parameters
+        r.cleaner_batch_size,
         # Multi-step classifier diagnostics (empty for categorizer rows)
         "", "", "", "", "", "", "",
         r.error,
