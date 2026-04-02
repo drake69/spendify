@@ -168,10 +168,19 @@ class OpenAIBackend(LLMBackend):
     ) -> dict[str, Any]:
         self._reset_usage()
         client = self._openai.OpenAI(api_key=self.api_key, timeout=self.timeout)
-        # OpenAI strict mode requires all properties listed in required
+        # OpenAI strict mode requires: all properties in required + additionalProperties=false
         _schema = json.loads(json.dumps(json_schema))  # deep copy
-        if "properties" in _schema:
-            _schema["required"] = list(_schema["properties"].keys())
+        def _fix_strict(obj):
+            if isinstance(obj, dict):
+                if "properties" in obj:
+                    obj["required"] = list(obj["properties"].keys())
+                    obj["additionalProperties"] = False
+                for v in obj.values():
+                    _fix_strict(v)
+            elif isinstance(obj, list):
+                for item in obj:
+                    _fix_strict(item)
+        _fix_strict(_schema)
         try:
             response = client.chat.completions.create(
                 model=self.model,
