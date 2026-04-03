@@ -147,7 +147,6 @@ bash tests/run_benchmark_dual.sh --runs 3
 | `gemma-2-2b-it-Q4_K_M.gguf` | `gemma2:2b` | ~1.6 GB |
 | `Qwen3.5-2B-Q4_K_M.gguf` | `qwen3.5:2b` | ~1.7 GB |
 | `Qwen3.5-4B-Q4_K_M.gguf` | `qwen3.5:4b` | ~2.5 GB |
-| `gemma-4-E2B-it-Q3_K_M.gguf` | `gemma4:e2b` | ~2.7 GB |
 | `gemma-4-E2B-it-Q4_K_M.gguf` | `gemma4:e2b` | ~3.1 GB |
 | `Llama-3.2-3B-Instruct-Q4_K_M.gguf` | `llama3.2:3b` | ~1.9 GB |
 | `qwen2.5-3b-instruct-q4_k_m.gguf` | `qwen2.5:3b-instruct` | ~2.0 GB |
