@@ -14,6 +14,7 @@ Pages:
   🗂️ Taxonomy           – manage categories and subcategories
   ⚙️ Settings           – locale, language, LLM backend preferences
   ✅ Checklist          – monthly tx presence per account (pivot table)
+  💬 Chat              – adaptive support chatbot (RAG cloud/local or FAQ match)
 """
 import os
 
@@ -144,3 +145,7 @@ elif page == "settings":
 elif page == "checklist":
     from ui.checklist_page import render_checklist_page
     render_checklist_page(engine)
+
+elif page == "chat":
+    from ui.chat_page import render_chat_page
+    render_chat_page(engine)

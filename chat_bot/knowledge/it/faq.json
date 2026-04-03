@@ -1,0 +1,14 @@
+[
+  {
+    "q": "Come importo un file di transazioni?",
+    "a": "Vai nella pagina Importa, seleziona il file (CSV, Excel o PDF) e clicca su Avvia importazione. Spendify rileverà automaticamente il formato e categorizzerà le transazioni."
+  },
+  {
+    "q": "Quali formati di file sono supportati?",
+    "a": "Spendify supporta file CSV, Excel (.xlsx) e PDF degli estratti conto bancari. Il sistema rileva automaticamente la struttura del file."
+  },
+  {
+    "q": "Come cambio la categoria di una transazione?",
+    "a": "Puoi modificare la categoria dalla pagina Registro cliccando sulla transazione, oppure dalla pagina Revisione per le transazioni con bassa confidenza."
+  }
+]

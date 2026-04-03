@@ -27,6 +27,8 @@
   "nav.settings.desc": "Bank accounts, LLM backend and general preferences",
   "nav.checklist": "✅ Checklist",
   "nav.checklist.desc": "Verify completeness and quality of imported data",
+  "nav.chat": "💬 Assistant",
+  "nav.chat.desc": "Spendify support chatbot",
 
   "sidebar.title": "🏦 Spendify",
   "sidebar.llm_warning": "⚠️ AI processing in progress. Changing page will interrupt the process.",
@@ -774,5 +776,13 @@
   "common.error": "Error",
   "common.success": "Operation completed",
   "common.yes": "Yes",
-  "common.no": "No"
+  "common.no": "No",
+
+  "chat.title": "Spendify Assistant",
+  "chat.mode_label": "Mode: **{mode}**",
+  "chat.welcome": "Hi! I'm the Spendify assistant. How can I help you?",
+  "chat.placeholder": "Type your question...",
+  "chat.thinking": "Searching...",
+  "chat.sources": "Sources",
+  "chat.clear": "Clear conversation"
 }

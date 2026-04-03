@@ -17,6 +17,7 @@ _NAV_KEYS = [
     ("taxonomy",        "taxonomy"),
     ("settings",        "settings"),
     ("checklist",       "checklist"),
+    ("chat",            "chat"),
 ]
 
 
