@@ -245,11 +245,15 @@ The default choice for **new installations**: no external service needed. Spendi
 | Model | Size | Classifier | Categoriser | Notes |
 |---|---|---|---|---|
 | `Qwen2.5-7B-Instruct-Q4_K_M` | ~4.4 GB | single-step | good | **Recommended** — best quality/size ratio |
+| `gemma-4-E2B-it-Q4_K_M` | ~3.1 GB | multi-step | good | Gemma 4 — latest architecture, great for Italian |
+| `gemma-4-E2B-it-Q3_K_M` | ~2.7 GB | multi-step | good | Gemma 4 lighter quantisation, for 4-6 GB RAM |
 | `Phi-3-mini-4k-instruct-Q4_K_M` | ~2.2 GB | multi-step | good | Good quality for its size |
 | `qwen2.5-3b-instruct-q4_k_m` | ~2.0 GB | multi-step | fair | Minimum viable for classification |
 | `gemma-3-12b-it-Q4_K_M` | ~6.8 GB | single-step | excellent | Best quality, requires >= 8 GB RAM |
 
 > **single-step vs multi-step:** Models >= 7B classify in a single LLM call (faster). Models in the 2-4B range use the multi-step classifier (3 sequential calls, same final quality). Configurable in Settings → `classifier_mode`.
+
+> **Gemma 4 E2B:** requires an up-to-date `llama-cpp-python` (`uv pip install --upgrade llama-cpp-python`). Download from `unsloth/gemma-4-E2B-it-GGUF` on HuggingFace.
 
 **Downloading a model from the app:**
 

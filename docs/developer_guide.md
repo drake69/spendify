@@ -356,27 +356,104 @@ python tools/compute_prompt_hashes.py --verify || {
 
 ## 10. Benchmark (T-09)
 
-### Benchmark classifier (schema detection + parsing)
+### Quick start (zero-config)
+
+Su una macchina qualsiasi — anche appena clonata — basta un solo comando:
 
 ```bash
-# Singolo modello
-uv run python tests/benchmark_pipeline.py --runs 1 --backend local_ollama --model gemma3:12b
+# macOS / Linux
+bash tests/run_benchmark.sh                         # pipeline, 1 run, tutti i modelli piccoli
+bash tests/run_benchmark.sh categorizer              # solo categorizer
+bash tests/run_benchmark.sh both --runs 3            # entrambi, 3 run ciascuno
+bash tests/run_benchmark.sh pipeline --files 'CC-1*' # pipeline con filtro file
 
-# Singolo modello llama.cpp
+# Windows (PowerShell)
+powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1
+powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1 both -Runs 3
+```
+
+`run_benchmark.sh` / `run_benchmark.ps1` gestiscono automaticamente: installazione `uv`, creazione `.venv`, `uv sync`, download modelli GGUF mancanti (≤3.5 GB), esecuzione benchmark.
+
+### Setup modelli + Dual benchmark (llama.cpp + Ollama)
+
+Per confrontare lo stesso modello su entrambi i backend:
+
+```bash
+cd ~/Documents/Progetti/PERSONALE/Spendify/sw_artifacts
+
+# Prima volta (o nuova macchina): scarica Ollama models + GGUF
+bash tests/setup_benchmark_models.sh
+
+# Solo modelli piccoli (≤3B, macchine con ≤8 GB RAM)
+bash tests/setup_benchmark_models.sh --small-only
+
+# Solo GGUF, senza Ollama
+bash tests/setup_benchmark_models.sh --skip-ollama
+
+# Lancia il dual benchmark (llama.cpp + Ollama, 9 modelli × 2 backend)
+bash tests/run_benchmark_dual.sh
+
+# Con più run per ridurre la varianza
+bash tests/run_benchmark_dual.sh --runs 3
+```
+
+`run_benchmark_dual.sh` non scarica nulla: se un file GGUF o un modello Ollama manca mostra `[SKIP]` e continua.
+
+### Comandi manuali (avanzato)
+
+```bash
+# Singolo modello llama.cpp (n_ctx auto-detect dal GGUF)
 uv run python tests/benchmark_pipeline.py --runs 1 --backend local_llama_cpp \
   --model-path ~/.spendify/models/gemma-3-12b-it-Q4_K_M.gguf
 
-# Suite completa (tutti i modelli Ollama + llama.cpp)
+# Forza un n_ctx specifico (limita RAM)
+uv run python tests/benchmark_pipeline.py --runs 1 --backend local_llama_cpp \
+  --model-path ~/.spendify/models/gemma-3-12b-it-Q4_K_M.gguf --n-ctx 2048
+
+# Singolo modello Ollama (n_ctx auto-detect via /api/show)
+uv run python tests/benchmark_pipeline.py --runs 1 --backend local_ollama --model gemma3:12b
+
+# Gemma 4 E2B
+uv run python tests/benchmark_pipeline.py --runs 1 --backend local_llama_cpp \
+  --model-path ~/.spendify/models/gemma-4-E2B-it-Q4_K_M.gguf
+uv run python tests/benchmark_pipeline.py --runs 1 --backend local_ollama --model gemma4:e2b
+
+# Categorizer con Ollama
+uv run python tests/benchmark_categorizer.py --runs 1 --backend local_ollama --model gemma3:12b
+
+# vLLM (locale o remoto — auto-detect modello e context window)
+vllm serve Qwen/Qwen2.5-3B-Instruct  # in un altro terminale
+uv run python tests/benchmark_pipeline.py --runs 1 --backend vllm
+
+# Suite completa llama.cpp
 bash tests/run_all_benchmarks.sh
 ```
 
-### Benchmark categorizer
+Tutti i run scrivono in `tests/generated_files/benchmark/results_all_runs.csv` (append-only). Resume key: `(run_id, filename, commit, branch, provider, model)`.
 
-```bash
-uv run python tests/benchmark_categorizer.py --runs 1 --backend local_ollama --model gemma3:12b
-```
+### Context window auto-detect
 
-Entrambi scrivono nello stesso `tests/generated_files/benchmark/results_all_runs.csv` con colonna `benchmark_type` (classifier/categorizer). Il resume key include `(run_id, filename, commit, branch, provider, model)` — cambiando modello o commit, i run precedenti vengono skippati.
+Il benchmark rileva automaticamente la context window ottimale per ogni modello:
+
+| Backend | Metodo |
+|---------|--------|
+| llama.cpp | Legge `llama.context_length` dall'header GGUF (senza caricare i pesi) |
+| Ollama | Chiama `/api/show` e legge il context del modello |
+| OpenAI / Claude | Lookup statico (`_KNOWN_CONTEXT`: gpt-4o=128k, claude-3-5=200k, …) |
+| vLLM | Interroga `/v1/models` |
+
+`--n-ctx 0` (default) = auto-detect. Imposta un valore esplicito per limitare l'uso di RAM.
+
+### Script disponibili
+
+| Script | Scopo |
+|--------|-------|
+| `tests/run_benchmark.sh` | **Zero-config** (macOS/Linux): env + modelli + benchmark in un comando |
+| `tests/run_benchmark.ps1` | **Zero-config** (Windows): equivalente PowerShell, include download modelli |
+| `tests/run_all_benchmarks.sh` | Tutti i modelli GGUF (llama.cpp only) |
+| `tests/run_benchmark_dual.sh` | 9 modelli su entrambi i backend (llama.cpp + Ollama) |
+| `tests/setup_benchmark_models.sh` | Download modelli (Ollama pull + GGUF) senza lanciare benchmark |
+| `tests/cleanup_benchmark.sh` | Pulizia file generati |
 
 ### Metriche registrate
 

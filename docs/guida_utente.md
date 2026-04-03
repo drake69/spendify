@@ -454,10 +454,12 @@ Se usi llama.cpp come backend (default per nuove installazioni), puoi scaricare 
 
 1. Vai su **⚙️ Impostazioni → 🤖 Configurazione LLM**
 2. Seleziona il backend **llama.cpp (locale)**
-3. Scegli un modello suggerito (es. `gemma-2-2b-it-Q4_K_M`, ~1.6 GB) oppure incolla un URL diretto
+3. Scegli un modello suggerito (es. `gemma-4-E2B-it-Q4_K_M`, ~3.1 GB) oppure incolla un URL diretto
 4. Clicca **⬇️ Scarica**
 
-I modelli vengono salvati in `~/.spendify/models/`. La sezione **Modelli locali** mostra i file `.gguf` disponibili, con percorso e dimensione.
+I modelli vengono salvati in `~/.spendify/models/`. La sezione **Modelli locali** mostra i file `.gguf` disponibili, con percorso e dimensione. Selezionando un modello dalla lista il percorso e la **finestra di contesto** vengono configurati automaticamente.
+
+> **Gemma 4 E2B** (`gemma-4-E2B-it-Q4_K_M` o `Q3_K_M`) è il modello consigliato per macchine con 4-6 GB di RAM — ottima qualità per l'italiano, architettura di ultima generazione.
 
 ### Scaricare un modello (Ollama)
 
@@ -476,7 +478,11 @@ Per qualsiasi backend (llama.cpp, Ollama, OpenAI, Claude, Compatible):
 1. Configura backend, URL/API key e modello
 2. Clicca **🧪 Test LLM**
 
-Spendify invia un prompt di prova ("PAGAMENTO POS FARMACIA") e mostra la risposta del modello (categoria + livello di confidenza). Se qualcosa non va, il messaggio di errore indica se il problema è la connessione, l'API key o il modello.
+Spendify invia un prompt di prova ("PAGAMENTO POS FARMACIA") e mostra:
+- La risposta del modello (categoria + livello di confidenza)
+- **📐 Finestra di contesto** — token configurati e massimo nativo del modello (es. `📐 configurato: 8192 token · max modello: 131072 token`)
+
+La finestra di contesto viene rilevata automaticamente al cambio di modello per tutti i backend. Se qualcosa non va, il messaggio di errore indica se il problema è la connessione, l'API key o il modello.
 
 > **Consiglio:** fai sempre il test dopo aver cambiato modello o backend, prima di lanciare un import.
 

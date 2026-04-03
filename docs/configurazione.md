@@ -245,11 +245,15 @@ La scelta predefinita per le **nuove installazioni**: nessun servizio esterno ne
 | Modello | Dimensione | Classificatore | Categorizzatore | Note |
 |---|---|---|---|---|
 | `Qwen2.5-7B-Instruct-Q4_K_M` | ~4.4 GB | single-step | buono | **Consigliato** — miglior rapporto qualità/dimensione |
+| `gemma-4-E2B-it-Q4_K_M` | ~3.1 GB | multi-step | buono | Gemma 4 — architettura recente, ottima per italiano |
+| `gemma-4-E2B-it-Q3_K_M` | ~2.7 GB | multi-step | buono | Gemma 4 quantizzazione leggera, per 4-6 GB RAM |
 | `Phi-3-mini-4k-instruct-Q4_K_M` | ~2.2 GB | multi-step | buono | Buona qualità per la dimensione |
 | `qwen2.5-3b-instruct-q4_k_m` | ~2.0 GB | multi-step | discreto | Minimo funzionante per classificazione |
 | `gemma-3-12b-it-Q4_K_M` | ~6.8 GB | single-step | ottimo | Migliore qualità, richiede >= 8 GB RAM |
 
 > **single-step vs multi-step:** I modelli >= 7B classificano in un'unica chiamata LLM (più veloce). I modelli 2-4B usano il classificatore multi-step (3 chiamate sequenziali, stessa qualità finale). Configurabile in Impostazioni → `classifier_mode`.
+
+> **Gemma 4 E2B:** richiede `llama-cpp-python` aggiornato all'ultima versione (`uv pip install --upgrade llama-cpp-python`). Scaricare da `unsloth/gemma-4-E2B-it-GGUF` su HuggingFace.
 
 **Scaricare un modello dall'app:**
 
@@ -267,8 +271,11 @@ La sezione **Modelli locali** mostra i file `.gguf` presenti nella cartella mode
 | Campo | Default | Descrizione |
 |---|---|---|
 | **Percorso modello** | *(primo .gguf in `~/.spendify/models/`)* | Percorso al file `.gguf` da usare |
+| **Finestra di contesto (n_ctx)** | 0 = auto-detect | Token massimi di contesto. `0` = rileva automaticamente dall'header GGUF |
 
-> **Nota:** llama.cpp supporta automaticamente l'accelerazione GPU su Apple Silicon (Metal) e CUDA. Se il modello non supporta il ruolo `system`, Spendify fonde automaticamente il system prompt nel prompt utente.
+> **Auto-detect context window:** lascia `n_ctx = 0` (default). Spendify legge il valore nativo direttamente dall'header del file GGUF senza caricare i pesi — nessuna configurazione manuale richiesta. Impostando un valore specifico (es. `2048`) si limita la RAM usata a scapito del contesto disponibile.
+
+> **Accelerazione GPU:** llama.cpp usa automaticamente Apple Metal su Mac con chip Apple Silicon, CUDA su Linux/Windows con GPU NVIDIA. Per AMD su Linux (ROCm): `CMAKE_ARGS="-DGGML_HIPBLAS=on" uv pip install llama-cpp-python --upgrade`. Se il modello non supporta il ruolo `system`, Spendify fonde automaticamente il system prompt nel prompt utente.
 
 ---
 

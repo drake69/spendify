@@ -638,7 +638,11 @@ class LlamaCppBackend(LLMBackend):
 
     @staticmethod
     def read_gguf_context_length(model_path: str) -> int | None:
-        """Read llama.context_length from a GGUF file header without loading model weights.
+        """Read context_length from a GGUF file header without loading model weights.
+
+        Searches for any key ending in '.context_length' — covers all known architectures:
+        llama.context_length, qwen2.context_length, gemma4.context_length,
+        phi3.context_length, mistral.context_length, …
 
         Parses the binary GGUF metadata section using struct — fast (reads only the header,
         no GPU allocation, no tokenizer loading).  Returns None if the file is not a valid
@@ -670,7 +674,7 @@ class LlamaCppBackend(LLMBackend):
                     klen = struct.unpack("<Q", f.read(8))[0]
                     key  = f.read(klen).decode("utf-8", errors="replace")
                     vtype = struct.unpack("<I", f.read(4))[0]
-                    if key == "llama.context_length":
+                    if key.endswith(".context_length"):  # works for any architecture prefix
                         return struct.unpack("<I", f.read(4))[0]  # uint32
                     _skip(f, vtype)
         except Exception:

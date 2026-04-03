@@ -108,12 +108,18 @@ uv run huggingface-cli download google/gemma-3-12b-it-GGUF gemma-3-12b-it-Q4_K_M
 uv run huggingface-cli download Qwen/Qwen2.5-7B-Instruct-GGUF qwen2.5-7b-instruct-q4_k_m.gguf \
     --local-dir ~/.spendify/models
 
-# RAM 4 GB:
+# RAM 4-6 GB — Gemma 4 E2B (architettura recente, ottima per italiano):
+uv run huggingface-cli download unsloth/gemma-4-E2B-it-GGUF gemma-4-E2B-it-Q4_K_M.gguf \
+    --local-dir ~/.spendify/models
+
+# RAM 4 GB — alternativa leggera:
 uv run huggingface-cli download Qwen/Qwen2.5-3B-Instruct-GGUF qwen2.5-3b-instruct-q4_k_m.gguf \
     --local-dir ~/.spendify/models
 ```
 
 > **Il modello viene scaricato una sola volta** in `~/.spendify/models/` e riutilizzato ad ogni avvio successivo. In alternativa, puoi scaricare il modello direttamente dall'app in ⚙️ Impostazioni → Scarica modello.
+
+> **Gemma 4 E2B:** richiede `llama-cpp-python` aggiornato. Se ottieni `unknown model architecture: 'gemma4'`, esegui: `uv pip install --upgrade llama-cpp-python`.
 
 ### Step 6 — Avvia l'app
 
@@ -200,7 +206,7 @@ uv run huggingface-cli download Qwen/Qwen2.5-3B-Instruct-GGUF qwen2.5-3b-instruc
     --local-dir ~/.spendify/models
 ```
 
-> Se hai una GPU NVIDIA con driver CUDA, llama.cpp la usa automaticamente per accelerare l'inferenza.
+> **GPU su Linux:** llama.cpp usa automaticamente CUDA se i driver NVIDIA sono installati. Per GPU AMD (ROCm): `CMAKE_ARGS="-DGGML_HIPBLAS=on" uv pip install llama-cpp-python --upgrade` (richiede `rocm-dev` e `hipblas-dev`).
 
 ### Step 6 — Avvia l'app
 
