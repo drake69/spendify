@@ -454,10 +454,12 @@ If you use llama.cpp as your backend (default for new installations), you can do
 
 1. Go to **⚙️ Settings → 🤖 LLM Configuration**
 2. Select the **llama.cpp (local)** backend
-3. Choose a suggested model (e.g. `gemma-2-2b-it-Q4_K_M`, ~1.6 GB) or paste a direct URL
-4. Click **⬇️ Scarica**
+3. Choose a suggested model (e.g. `gemma-4-E2B-it-Q4_K_M`, ~3.1 GB) or paste a direct URL
+4. Click **⬇️ Download**
 
-Models are saved in `~/.spendify/models/`. The **Local models** section shows the available `.gguf` files, with path and size.
+Models are saved in `~/.spendify/models/`. The **Local models** section shows the available `.gguf` files, with path and size. Selecting a model from the list automatically fills in the path and **context window**.
+
+> **Gemma 4 E2B** (`gemma-4-E2B-it-Q4_K_M` or `Q3_K_M`) is the recommended model for machines with 4-6 GB of RAM — excellent quality for Italian, latest-generation architecture.
 
 ### Downloading a model (Ollama)
 
@@ -476,7 +478,11 @@ For any backend (llama.cpp, Ollama, OpenAI, Claude, Compatible):
 1. Configure backend, URL/API key, and model
 2. Click **🧪 Test LLM**
 
-Spendify sends a test prompt ("PAGAMENTO POS FARMACIA") and shows the model's response (category + confidence level). If something is wrong, the error message indicates whether the problem is the connection, the API key, or the model.
+Spendify sends a test prompt ("PAGAMENTO POS FARMACIA") and shows:
+- The model's response (category + confidence level)
+- **📐 Context window** — configured tokens and the model's native maximum (e.g. `📐 configured: 8192 tokens · model max: 131072 tokens`)
+
+The context window is detected automatically when you change model for all backends. If something is wrong, the error message indicates whether the problem is the connection, the API key, or the model.
 
 > **Tip:** always run the test after changing model or backend, before starting an import.
 
