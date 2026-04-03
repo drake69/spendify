@@ -49,8 +49,8 @@ Aggregates heterogeneous movements files (current accounts, credit cards, debit 
 | **Guided onboarding wizard** | 4-step first-run wizard: language selection (browser-detected), owner names, bank accounts, confirmation. Atomic write: DB populated only on final "Start!". Skipped automatically if taxonomy already exists (existing installations). |
 | **Multi-language taxonomy** | Built-in default taxonomy in 5 languages (🇮🇹 🇬🇧 🇫🇷 🇩🇪 🇪🇸). Seeded from `taxonomy_default` DB table (no YAML file). Language chosen at onboarding; can be reset from Settings at any time. |
 | **2-level taxonomy in DB** | 15 expense + 7 income categories; managed via the Taxonomy UI page (DB-backed, no file restart required) |
-| **Multi-provider LLM backend** | Ollama (local, default), OpenAI, Claude — shared abstract interface, no LangChain |
-| **LLM config in UI** | Backend, model and API keys are configurable from the Settings page without editing `.env` |
+| **Multi-provider LLM backend** | llama.cpp (local GGUF), Ollama (local, default), OpenAI, Claude, vLLM, OpenAI-compatible — shared abstract interface, no LangChain |
+| **LLM config in UI** | Backend, model and API keys are configurable from the Settings page without editing `.env`. Context window auto-detected from GGUF header / Ollama API / static lookup — no manual input required. |
 | **PII sanitization (RF-10)** | IBAN, PAN, fiscal codes, owner names redacted before any remote call |
 | **Circuit breaker** | Automatic fallback to local Ollama; quarantine (`to_review=True`) if all backends fail |
 | **Life contexts** | User-configurable orthogonal dimension (e.g. Everyday / Work / Vacation) assignable to any transaction; Jaccard-based similarity suggestions pre-fill context from past transactions |
@@ -457,6 +457,23 @@ uv run python -m pytest tests/ -v
 # With coverage
 uv run python -m pytest tests/ --cov=core --cov=db --cov-report=term-missing
 ```
+
+### LLM Benchmark
+
+End-to-end benchmark against real LLM backends. Measures classifier accuracy (schema detection, parsing) and categorizer accuracy across all supported backends and models.
+
+```bash
+# Setup models + run dual benchmark (llama.cpp + Ollama), macOS/Linux
+bash tests/setup_benchmark_models.sh && bash tests/run_benchmark_dual.sh
+
+# Zero-config single run (downloads models automatically), macOS/Linux
+bash tests/run_benchmark.sh
+
+# Zero-config single run (downloads models automatically), Windows
+powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1
+```
+
+Results are appended to `tests/generated_files/benchmark/results_all_runs.csv` (resume-safe). See [`tests/README.md`](tests/README.md) for full documentation (backends, GPU setup, model list, context auto-detect, collaborative workflow).
 
 ### Test files
 
