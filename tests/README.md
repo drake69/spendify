@@ -145,6 +145,8 @@ bash tests/run_benchmark_dual.sh --runs 3
 |------------------|--------|------|
 | `qwen2.5-1.5b-instruct-q4_k_m.gguf` | `qwen2.5:1.5b-instruct` | ~1.0 GB |
 | `gemma-2-2b-it-Q4_K_M.gguf` | `gemma2:2b` | ~1.6 GB |
+| `Qwen3.5-2B-Q4_K_M.gguf` | `qwen3.5:2b` | ~1.7 GB |
+| `Qwen3.5-4B-Q4_K_M.gguf` | `qwen3.5:4b` | ~2.5 GB |
 | `gemma-4-E2B-it-Q3_K_M.gguf` | `gemma4:e2b` | ~2.7 GB |
 | `gemma-4-E2B-it-Q4_K_M.gguf` | `gemma4:e2b` | ~3.1 GB |
 | `Llama-3.2-3B-Instruct-Q4_K_M.gguf` | `llama3.2:3b` | ~1.9 GB |
@@ -252,6 +254,8 @@ Vantaggi di vLLM rispetto a llama.cpp:
 | Llama 3.2 3B Instruct | ~1.9 GB | Q4_K_M | `Llama-3.2-3B-Instruct-Q4_K_M.gguf` |
 | Qwen 2.5 3B Instruct | ~2.0 GB | Q4_K_M | `qwen2.5-3b-instruct-q4_k_m.gguf` |
 | Phi-3 Mini 4K Instruct | ~2.2 GB | Q4_K_M | `Phi-3-mini-4k-instruct-Q4_K_M.gguf` |
+| Qwen 3.5 2B | ~1.7 GB | Q4_K_M | `Qwen3.5-2B-Q4_K_M.gguf` |
+| Qwen 3.5 4B | ~2.5 GB | Q4_K_M | `Qwen3.5-4B-Q4_K_M.gguf` |
 | Gemma 4 E2B IT | ~2.7 GB | Q3_K_M | `gemma-4-E2B-it-Q3_K_M.gguf` |
 | Gemma 4 E2B IT | ~3.1 GB | Q4_K_M | `gemma-4-E2B-it-Q4_K_M.gguf` |
 

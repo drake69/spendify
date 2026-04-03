@@ -247,6 +247,8 @@ The default choice for **new installations**: no external service needed. Spendi
 | `Qwen2.5-7B-Instruct-Q4_K_M` | ~4.4 GB | single-step | good | **Recommended** — best quality/size ratio |
 | `gemma-4-E2B-it-Q4_K_M` | ~3.1 GB | multi-step | good | Gemma 4 — latest architecture, great for Italian |
 | `gemma-4-E2B-it-Q3_K_M` | ~2.7 GB | multi-step | good | Gemma 4 lighter quantisation, for 4-6 GB RAM |
+| `Qwen3.5-2B-Q4_K_M` | ~1.7 GB | multi-step | good | Qwen 3.5 2B — lightweight, excellent quality/size ratio |
+| `Qwen3.5-4B-Q4_K_M` | ~2.5 GB | multi-step | good | Qwen 3.5 4B — balanced quality/speed |
 | `Phi-3-mini-4k-instruct-Q4_K_M` | ~2.2 GB | multi-step | good | Good quality for its size |
 | `qwen2.5-3b-instruct-q4_k_m` | ~2.0 GB | multi-step | fair | Minimum viable for classification |
 | `gemma-3-12b-it-Q4_K_M` | ~6.8 GB | single-step | excellent | Best quality, requires >= 8 GB RAM |

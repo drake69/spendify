@@ -525,6 +525,16 @@ DEFAULT_GGUF_MODELS = {
         "size_gb": 2.5,
         "description": "Google Gemma 4 E2B — versione compressa, per Mac con RAM limitata",
     },
+    "Qwen3.5-2B-Q4_K_M": {
+        "url": "https://huggingface.co/bartowski/Qwen_Qwen3.5-2B-GGUF/resolve/main/Qwen3.5-2B-Q4_K_M.gguf",
+        "size_gb": 1.7,
+        "description": "Qwen 3.5 2B — leggero, ottimo rapporto qualità/dimensione",
+    },
+    "Qwen3.5-4B-Q4_K_M": {
+        "url": "https://huggingface.co/bartowski/Qwen_Qwen3.5-4B-GGUF/resolve/main/Qwen3.5-4B-Q4_K_M.gguf",
+        "size_gb": 2.5,
+        "description": "Qwen 3.5 4B — bilanciato qualità/velocità",
+    },
 }
 
 

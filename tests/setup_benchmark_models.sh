@@ -39,6 +39,12 @@ if [ "$SKIP_OLLAMA" = false ]; then
         echo "[pull] gemma4:e2b..."
         ollama pull gemma4:e2b
 
+        echo "[pull] qwen3.5:2b..."
+        ollama pull qwen3.5:2b
+
+        echo "[pull] qwen3.5:4b..."
+        ollama pull qwen3.5:4b
+
         echo "[pull] phi3:3.8b..."
         ollama pull phi3:3.8b
 
@@ -121,6 +127,14 @@ if [ "$SKIP_GGUF" = false ]; then
 
         echo "[download] Phi-3-mini-4k-instruct Q4_K_M (2.2 GB)..."
         $HF_CMD microsoft/Phi-3-mini-4k-instruct-gguf Phi-3-mini-4k-instruct-Q4_K_M.gguf \
+            --local-dir "$MODELS_DIR" 2>&1 | tail -1
+
+        echo "[download] Qwen3.5-2B Q4_K_M (~1.7 GB)..."
+        $HF_CMD bartowski/Qwen_Qwen3.5-2B-GGUF Qwen3.5-2B-Q4_K_M.gguf \
+            --local-dir "$MODELS_DIR" 2>&1 | tail -1
+
+        echo "[download] Qwen3.5-4B Q4_K_M (~2.5 GB)..."
+        $HF_CMD bartowski/Qwen_Qwen3.5-4B-GGUF Qwen3.5-4B-Q4_K_M.gguf \
             --local-dir "$MODELS_DIR" 2>&1 | tail -1
 
         echo "[download] gemma-4-E2B-it Q3_K_M (~2.7 GB)..."

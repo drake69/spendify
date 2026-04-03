@@ -247,6 +247,8 @@ La scelta predefinita per le **nuove installazioni**: nessun servizio esterno ne
 | `Qwen2.5-7B-Instruct-Q4_K_M` | ~4.4 GB | single-step | buono | **Consigliato** — miglior rapporto qualità/dimensione |
 | `gemma-4-E2B-it-Q4_K_M` | ~3.1 GB | multi-step | buono | Gemma 4 — architettura recente, ottima per italiano |
 | `gemma-4-E2B-it-Q3_K_M` | ~2.7 GB | multi-step | buono | Gemma 4 quantizzazione leggera, per 4-6 GB RAM |
+| `Qwen3.5-2B-Q4_K_M` | ~1.7 GB | multi-step | buono | Qwen 3.5 2B — leggero, ottimo rapporto qualità/dimensione |
+| `Qwen3.5-4B-Q4_K_M` | ~2.5 GB | multi-step | buono | Qwen 3.5 4B — bilanciato qualità/velocità |
 | `Phi-3-mini-4k-instruct-Q4_K_M` | ~2.2 GB | multi-step | buono | Buona qualità per la dimensione |
 | `qwen2.5-3b-instruct-q4_k_m` | ~2.0 GB | multi-step | discreto | Minimo funzionante per classificazione |
 | `gemma-3-12b-it-Q4_K_M` | ~6.8 GB | single-step | ottimo | Migliore qualità, richiede >= 8 GB RAM |

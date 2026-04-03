@@ -23,6 +23,8 @@ GGUF_FILES=(
     "$MODELS_DIR/gemma-4-E2B-it-Q4_K_M.gguf"
     "$MODELS_DIR/gemma-4-E2B-it-Q3_K_M.gguf"
     "$MODELS_DIR/gemma-2-2b-it-Q4_K_M.gguf"
+    "$MODELS_DIR/Qwen3.5-2B-Q4_K_M.gguf"
+    "$MODELS_DIR/Qwen3.5-4B-Q4_K_M.gguf"
     "$MODELS_DIR/qwen2.5-1.5b-instruct-q4_k_m.gguf"
     "$MODELS_DIR/qwen2.5-3b-instruct-q4_k_m.gguf"
     "$MODELS_DIR/Llama-3.2-3B-Instruct-Q4_K_M.gguf"
