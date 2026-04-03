@@ -117,6 +117,11 @@ class ProcessingConfig:
     # llama.cpp (local GGUF model)
     llama_cpp_model_path: str = ""
     llama_cpp_n_gpu_layers: int = -1
+    llama_cpp_n_ctx: int = 0   # 0 = auto-detect from GGUF metadata at load time
+    # vLLM (local or remote)
+    vllm_base_url: str = "http://localhost:8000/v1"
+    vllm_model: str = ""
+    vllm_api_key: str = "EMPTY"
     # Classifier mode: "auto" (detect from model size), "single" (1 LLM call), "multi_step" (3 calls)
     classifier_mode: str = "auto"
 
@@ -170,6 +175,11 @@ def _build_backend(config: ProcessingConfig) -> LLMBackend:
         if config.llama_cpp_model_path:
             kwargs["model_path"] = config.llama_cpp_model_path
         kwargs["n_gpu_layers"] = config.llama_cpp_n_gpu_layers
+        kwargs["n_ctx"] = config.llama_cpp_n_ctx  # 0 = auto-detect from GGUF
+    elif config.llm_backend == "vllm":
+        kwargs["base_url"] = config.vllm_base_url
+        kwargs["model"] = config.vllm_model
+        kwargs["api_key"] = config.vllm_api_key
     return BackendFactory.create(config.llm_backend, **kwargs)
 
 

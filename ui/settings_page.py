@@ -66,6 +66,59 @@ def _do_ollama_pull(base_url: str, model: str) -> None:
         st.error(t("settings.ollama.pull_error", error=exc))
 
 
+def _autodetect_ctx_llama() -> None:
+    """on_change callback: read GGUF context length and update session state."""
+    from core.llm_backends import LlamaCppBackend
+    path = st.session_state.get("_wgt_llama_path", "")
+    if not path:
+        try:
+            path = LlamaCppBackend._default_model_path()
+        except Exception:
+            return
+    ctx = LlamaCppBackend.read_gguf_context_length(path)
+    if ctx:
+        st.session_state["_wgt_llama_n_ctx"] = ctx
+
+
+def _autodetect_ctx_ollama() -> None:
+    """on_change callback: query Ollama /api/show for context length."""
+    from core.llm_backends import OllamaBackend
+    model   = st.session_state.get("_wgt_ollama_model", "")
+    base_url = st.session_state.get("_wgt_ollama_url", "http://localhost:11434")
+    ctx = OllamaBackend.fetch_context_length(model, base_url)
+    st.session_state["_ollama_ctx_detected"] = ctx
+
+
+def _autodetect_ctx_openai() -> None:
+    """on_change callback: lookup known context window for OpenAI models."""
+    from core.llm_backends import _KNOWN_CONTEXT
+    model = st.session_state.get("_wgt_openai_model", "")
+    st.session_state["_openai_ctx_detected"] = _KNOWN_CONTEXT.get(model)
+
+
+def _autodetect_ctx_claude() -> None:
+    """on_change callback: lookup known context window for Claude models."""
+    from core.llm_backends import _KNOWN_CONTEXT
+    model = st.session_state.get("_wgt_claude_model", "")
+    st.session_state["_claude_ctx_detected"] = _KNOWN_CONTEXT.get(model)
+
+
+def _autodetect_ctx_vllm() -> None:
+    """on_change callback: query vLLM /v1/models for context length."""
+    from core.llm_backends import VllmBackend
+    base_url = st.session_state.get("_wgt_vllm_url", "http://localhost:8000/v1")
+    model    = st.session_state.get("_wgt_vllm_model", "")
+    ctx = VllmBackend.fetch_context_length(base_url, model)
+    st.session_state["_vllm_ctx_detected"] = ctx
+
+
+def _ctx_caption(ctx: int | None) -> str:
+    """Format a detected context length as a Streamlit caption string."""
+    if ctx:
+        return f"📐 contesto nativo: **{ctx:,}** token"
+    return ""
+
+
 def _do_llm_test(
     backend: str,
     base_url: str = "",
@@ -113,6 +166,17 @@ def _do_llm_test(
             cat = result.get("category", "?")
             conf = result.get("confidence", "?")
             st.success(t("settings.test_llm_ok", cat=cat, conf=conf))
+            ctx = llm.get_context_info()
+            if ctx:
+                n_cfg = ctx.get("n_ctx")
+                n_max = ctx.get("n_ctx_train")
+                parts = []
+                if n_cfg:
+                    parts.append(t("settings.test_llm_ctx_configured", n=f"{n_cfg:,}"))
+                if n_max:
+                    parts.append(t("settings.test_llm_ctx_max", n=f"{n_max:,}"))
+                if parts:
+                    st.info("📐 " + " · ".join(parts))
 
     except LLMValidationError as exc:
         st.error(t("settings.test_llm_validation_error", error=exc))
@@ -466,6 +530,10 @@ def render_settings_page(engine):
     # Initialise llama_cpp settings variables (used in save)
     llama_cpp_model_path = settings.get("llama_cpp_model_path", "")
     llama_cpp_n_gpu_layers = settings.get("llama_cpp_n_gpu_layers", "-1")
+    # Seed session state for n_ctx only on first load (not every rerun)
+    if "_wgt_llama_n_ctx" not in st.session_state:
+        st.session_state["_wgt_llama_n_ctx"] = int(settings.get("llama_cpp_n_ctx", "4096"))
+    llama_cpp_n_ctx = st.session_state["_wgt_llama_n_ctx"]
 
     if backend == "local_llama_cpp":
         st.caption(t("settings.llama_cpp.caption"))
@@ -476,17 +544,48 @@ def render_settings_page(engine):
             value=settings.get("llama_cpp_model_path", ""),
             placeholder=t("settings.llama_cpp.model_path_placeholder"),
             help=t("settings.llama_cpp.model_path_help"),
+            key="_wgt_llama_path",
+            on_change=_autodetect_ctx_llama,
         )
         llama_cpp_n_gpu_layers = st.text_input(
             t("settings.llama_cpp.gpu_layers"),
             value=settings.get("llama_cpp_n_gpu_layers", "-1"),
             help=t("settings.llama_cpp.gpu_layers_help"),
         )
+        llama_cpp_n_ctx = st.number_input(
+            t("settings.llama_cpp.n_ctx"),
+            min_value=512,
+            max_value=131072,
+            step=512,
+            help=t("settings.llama_cpp.n_ctx_help"),
+            key="_wgt_llama_n_ctx",
+        )
 
-        # Show locally available models
+        # Show locally available models + allow selecting one (auto-fills path + n_ctx)
         local_models = LlamaCppBackend.list_local_models()
         if local_models:
             st.markdown(t("settings.llama_cpp.local_models"))
+
+            def _on_local_model_select():
+                idx = st.session_state.get("_wgt_llama_local_select")
+                if idx is not None:
+                    m = local_models[idx]
+                    st.session_state["_wgt_llama_path"] = m["path"]
+                    ctx = LlamaCppBackend.read_gguf_context_length(m["path"])
+                    if ctx:
+                        st.session_state["_wgt_llama_n_ctx"] = ctx
+
+            local_labels = [f"{m['name']}  ({m['size_gb']} GB)" for m in local_models]
+            st.selectbox(
+                t("settings.llama_cpp.select_local"),
+                options=range(len(local_models)),
+                format_func=lambda i: local_labels[i],
+                index=None,
+                placeholder=t("settings.llama_cpp.select_local_placeholder"),
+                key="_wgt_llama_local_select",
+                on_change=_on_local_model_select,
+                label_visibility="collapsed",
+            )
             for m in local_models:
                 st.caption(f"  {m['name']}  ({m['size_gb']} GB) — `{m['path']}`")
         else:
@@ -539,6 +638,7 @@ def render_settings_page(engine):
                 except ValueError:
                     n_gpu = -1
                 test_kwargs["n_gpu_layers"] = n_gpu
+                test_kwargs["n_ctx"] = int(llama_cpp_n_ctx)
                 _do_llm_test(backend, **test_kwargs)
 
         # Preserve other backends' settings
@@ -555,12 +655,19 @@ def render_settings_page(engine):
             ollama_url = st.text_input(
                 t("settings.ollama.url"),
                 value=settings.get("ollama_base_url", "http://localhost:11434"),
+                key="_wgt_ollama_url",
+                on_change=_autodetect_ctx_ollama,
             )
         with col_model:
             ollama_model = st.text_input(
                 t("settings.ollama.model"),
                 value=settings.get("ollama_model", "gemma3:12b"),
+                key="_wgt_ollama_model",
+                on_change=_autodetect_ctx_ollama,
             )
+        _ollama_ctx = st.session_state.get("_ollama_ctx_detected")
+        if _ollama_ctx:
+            st.caption(_ctx_caption(_ollama_ctx))
 
         # ── Pull model + Test LLM ────────────────────────────────────────────
         btn_col1, btn_col2, btn_col3 = st.columns([1, 1, 2])
@@ -589,7 +696,12 @@ def render_settings_page(engine):
             openai_model = st.text_input(
                 t("settings.openai.model"),
                 value=settings.get("openai_model", "gpt-4o-mini"),
+                key="_wgt_openai_model",
+                on_change=_autodetect_ctx_openai,
             )
+        _openai_ctx = st.session_state.get("_openai_ctx_detected")
+        if _openai_ctx:
+            st.caption(_ctx_caption(_openai_ctx))
         if st.button(t("settings.test_llm_btn"), key="test_openai", help=t("settings.test_llm_help")):
             _do_llm_test(backend, api_key=openai_key, model=openai_model)
         ollama_url = settings.get("ollama_base_url", "http://localhost:11434")
@@ -610,7 +722,12 @@ def render_settings_page(engine):
             anthropic_model = st.text_input(
                 t("settings.anthropic.model"),
                 value=settings.get("anthropic_model", "claude-3-5-haiku-20241022"),
+                key="_wgt_claude_model",
+                on_change=_autodetect_ctx_claude,
             )
+        _claude_ctx = st.session_state.get("_claude_ctx_detected")
+        if _claude_ctx:
+            st.caption(_ctx_caption(_claude_ctx))
         if st.button(t("settings.test_llm_btn"), key="test_claude", help=t("settings.test_llm_help")):
             _do_llm_test(backend, api_key=anthropic_key, model=anthropic_model)
         ollama_url = settings.get("ollama_base_url", "http://localhost:11434")
@@ -695,6 +812,7 @@ def render_settings_page(engine):
             "compat_model":           compat_model,
             "llama_cpp_model_path":   llama_cpp_model_path,
             "llama_cpp_n_gpu_layers": str(llama_cpp_n_gpu_layers),
+            "llama_cpp_n_ctx":        str(int(llama_cpp_n_ctx)),
             "owner_names":            owner_names_raw.strip(),
             "use_owner_names_giroconto": "true" if use_owner_giroconto else "false",
             "import_test_mode":       "true" if import_test_mode else "false",

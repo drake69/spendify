@@ -36,6 +36,9 @@ if [ "$SKIP_OLLAMA" = false ]; then
         echo "       Windows: https://ollama.com/download/windows"
     else
         # Small models (always)
+        echo "[pull] gemma4:e2b..."
+        ollama pull gemma4:e2b
+
         echo "[pull] phi3:3.8b..."
         ollama pull phi3:3.8b
 
@@ -118,6 +121,14 @@ if [ "$SKIP_GGUF" = false ]; then
 
         echo "[download] Phi-3-mini-4k-instruct Q4_K_M (2.2 GB)..."
         $HF_CMD microsoft/Phi-3-mini-4k-instruct-gguf Phi-3-mini-4k-instruct-Q4_K_M.gguf \
+            --local-dir "$MODELS_DIR" 2>&1 | tail -1
+
+        echo "[download] gemma-4-E2B-it Q3_K_M (~2.7 GB)..."
+        $HF_CMD unsloth/gemma-4-E2B-it-GGUF gemma-4-E2B-it-Q3_K_M.gguf \
+            --local-dir "$MODELS_DIR" 2>&1 | tail -1
+
+        echo "[download] gemma-4-E2B-it Q4_K_M (~3.1 GB)..."
+        $HF_CMD unsloth/gemma-4-E2B-it-GGUF gemma-4-E2B-it-Q4_K_M.gguf \
             --local-dir "$MODELS_DIR" 2>&1 | tail -1
 
         if [ "$SMALL_ONLY" = false ]; then

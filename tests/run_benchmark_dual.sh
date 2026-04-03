@@ -4,7 +4,7 @@
 #
 # Usage: bash tests/run_benchmark_dual.sh [--runs N]
 #
-# Estimated time: ~3-6 hours for 7 models × 2 backends × 50 files × 1 run
+# Estimated time: ~4-8 hours for 9 models × 2 backends × 50 files × 1 run
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -29,6 +29,8 @@ echo "============================================================"
 declare -a GGUF_NAMES=(
     "qwen2.5-1.5b-instruct-q4_k_m.gguf"
     "gemma-2-2b-it-Q4_K_M.gguf"
+    "gemma-4-E2B-it-Q3_K_M.gguf"
+    "gemma-4-E2B-it-Q4_K_M.gguf"
     "Llama-3.2-3B-Instruct-Q4_K_M.gguf"
     "qwen2.5-3b-instruct-q4_k_m.gguf"
     "Phi-3-mini-4k-instruct-Q4_K_M.gguf"
@@ -39,6 +41,8 @@ declare -a GGUF_NAMES=(
 declare -a OLLAMA_NAMES=(
     "qwen2.5:1.5b-instruct"
     "gemma2:2b"
+    "gemma4:e2b"
+    "gemma4:e2b"
     "llama3.2:3b"
     "qwen2.5:3b-instruct"
     "phi3:3.8b"

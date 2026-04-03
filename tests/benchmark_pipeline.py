@@ -36,6 +36,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from core.normalizer import detect_skip_rows
 from core.orchestrator import ProcessingConfig, _build_backend, load_raw_dataframe, _normalize_df_with_schema
 from core.classifier import classify_document
+from core.llm_backends import LlamaCppBackend, DEFAULT_GGUF_MODELS
 
 # ── Paths ─────────────────────────────────────────────────────────────────
 _TESTS_DIR = Path(__file__).resolve().parent
@@ -436,8 +437,13 @@ def _collect_llm_metadata(config: ProcessingConfig, backend) -> dict[str, str]:
             meta["llm_hw"] = "same as runtime"
         else:
             meta["llm_hw"] = f"remote ({ollama_url})"
-        # Ollama inference params (defaults — user cannot change via API)
-        meta["n_ctx"] = "2048"  # Ollama default
+        # Ollama: detect native context from /api/show
+        from core.llm_backends import OllamaBackend as _OllamaBackend
+        _detected_ctx = _OllamaBackend.fetch_context_length(
+            getattr(config, "ollama_model", ""),
+            getattr(config, "ollama_base_url", "http://localhost:11434"),
+        )
+        meta["n_ctx"] = str(_detected_ctx) if _detected_ctx else "unknown"
         meta["n_batch"] = "512"  # Ollama default
         meta["n_threads"] = "auto"  # Ollama auto-detects
         meta["n_gpu_layers"] = "all"  # Ollama offloads all by default on Metal
@@ -458,6 +464,9 @@ def _collect_llm_metadata(config: ProcessingConfig, backend) -> dict[str, str]:
                 meta["flash_attn"] = str(model_params.flash_attn)
             else:
                 meta["flash_attn"] = "?"
+    elif "vllm" in meta["provider"].lower():
+        meta["llm_host"] = getattr(config, "vllm_base_url", "http://localhost:8000/v1")
+        meta["llm_hw"] = "same as runtime" if "localhost" in meta["llm_host"] or "127.0.0.1" in meta["llm_host"] else "remote"
     elif "openai" in meta["provider"].lower() or "claude" in meta["provider"].lower():
         meta["llm_host"] = "cloud API"
         meta["llm_hw"] = "cloud"
@@ -479,6 +488,31 @@ def _write_llm_metadata(meta: dict[str, str], n_runs: int, n_files: int) -> None
             json.dump(meta_out, f, indent=2, ensure_ascii=False)
     print(f"[output] Config: {_BENCHMARK_DIR / 'benchmark_config.json'}")
     print(f"[output] Config (docs): {_DOCS_BENCHMARK_DIR / 'benchmark_config.json'}")
+
+
+def _ensure_llamacpp_model(model_path_override: str | None) -> str | None:
+    """Ensure a GGUF model is available for llama.cpp, downloading if needed.
+
+    Returns the model path to use (None = use default detection).
+    """
+    if model_path_override and Path(model_path_override).exists():
+        return model_path_override
+
+    # Check if any .gguf already exists in default dir
+    models_dir = Path.home() / ".spendify" / "models"
+    existing = sorted(models_dir.glob("*.gguf")) if models_dir.exists() else []
+    if existing:
+        chosen = str(existing[0])
+        print(f"[check] llama.cpp: using existing model {Path(chosen).name}")
+        return chosen
+
+    # Auto-download first suggested model
+    first_key = next(iter(DEFAULT_GGUF_MODELS))
+    info = DEFAULT_GGUF_MODELS[first_key]
+    print(f"[check] llama.cpp: no model found, downloading {first_key} ({info['size_gb']} GB)...")
+    dest = LlamaCppBackend.download_model(info["url"])
+    print(f"[check] llama.cpp: downloaded → {dest}")
+    return dest
 
 
 def _check_ollama() -> bool:
@@ -1094,6 +1128,8 @@ def main() -> None:
                         help="LLM backend override (e.g. 'local_llama_cpp', 'local_ollama')")
     parser.add_argument("--model-path", type=str, default=None,
                         help="Model path for llama-cpp backend (e.g. path to .gguf file)")
+    parser.add_argument("--n-ctx", type=int, default=0,
+                        help="Context window size in tokens for llama-cpp (0 = auto-detect from GGUF, default: 0)")
     parser.add_argument("--model", type=str, default=None,
                         help="Model name override (e.g. 'phi3:3.8b', 'gpt-4o-mini', 'claude-3-5-haiku-20241022')")
     parser.add_argument("--api-key", type=str, default=None,
@@ -1115,6 +1151,7 @@ def main() -> None:
 
     backend_override = args.backend
     model_path_override = getattr(args, 'model_path', None)
+    n_ctx_override = getattr(args, 'n_ctx', 0)
     model_override = args.model
     api_key_override = args.api_key
     base_url_override = args.base_url
@@ -1141,6 +1178,12 @@ def main() -> None:
                 sys.exit(1)
             print(f"[check] Using API key from ${env_key}")
         print(f"\n[check] Backend: {backend_override} (remote API)")
+    elif backend_override == "local_llama_cpp":
+        model_path_override = _ensure_llamacpp_model(model_path_override)
+        print(f"\n[check] Backend: local_llama_cpp")
+    elif backend_override == "vllm":
+        vllm_url = base_url_override or "http://localhost:8000/v1"
+        print(f"\n[check] Backend: vllm ({vllm_url})")
     else:
         print(f"\n[check] Backend: {backend_override} (skipping Ollama check)")
 
@@ -1175,11 +1218,13 @@ def main() -> None:
         config.llm_backend = backend_override
     if model_path_override and backend_override == "local_llama_cpp":
         config.llama_cpp_model_path = model_path_override
+    config.llama_cpp_n_ctx = n_ctx_override  # 0 = auto-detect from GGUF
     if model_override:
         config.ollama_model = model_override
         config.openai_model = model_override
         config.claude_model = model_override
         config.compat_model = model_override
+        config.vllm_model = model_override
     if api_key_override:
         if backend_override == "openai":
             config.openai_api_key = api_key_override
@@ -1187,11 +1232,15 @@ def main() -> None:
             config.anthropic_api_key = api_key_override
         elif backend_override == "openai_compatible":
             config.compat_api_key = api_key_override
+        elif backend_override == "vllm":
+            config.vllm_api_key = api_key_override
     if base_url_override:
         if backend_override == "local_ollama":
             config.ollama_base_url = base_url_override
         elif backend_override == "openai_compatible":
             config.compat_base_url = base_url_override
+        elif backend_override == "vllm":
+            config.vllm_base_url = base_url_override
     backend = _build_backend(config)
 
     # ── Collect LLM metadata ─────────────────────────────────────────────

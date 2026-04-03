@@ -71,6 +71,15 @@ class LLMBackend(ABC):
         """Reset cumulative counters (call before each benchmark file)."""
         self.cumulative_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
 
+    def get_context_info(self) -> dict | None:
+        """Return context window info for this backend/model, or None if unavailable.
+
+        Returns a dict with any subset of:
+          n_ctx        – currently configured context window (tokens)
+          n_ctx_train  – model's native maximum context (tokens)
+        """
+        return None
+
 
 # ── Ollama ────────────────────────────────────────────────────────────────────
 
@@ -132,12 +141,51 @@ class OllamaBackend(LLMBackend):
         except (self._requests.RequestException, KeyError, json.JSONDecodeError) as exc:
             raise LLMValidationError(f"OllamaBackend error: {exc}") from exc
 
+    @staticmethod
+    def fetch_context_length(model: str, base_url: str = "http://localhost:11434") -> int | None:
+        """Query /api/show and return the model's native context length (no instance needed)."""
+        try:
+            import requests as _req
+            resp = _req.post(
+                f"{base_url.rstrip('/')}/api/show",
+                json={"model": model},
+                timeout=5,
+            )
+            resp.raise_for_status()
+            info = resp.json().get("model_info", {})
+            ctx = info.get("llama.context_length") or info.get("context_length")
+            return int(ctx) if ctx else None
+        except Exception:
+            return None
+
+    def get_context_info(self) -> dict | None:
+        ctx = OllamaBackend.fetch_context_length(self.model, self.base_url)
+        return {"n_ctx_train": ctx} if ctx else None
+
     def is_available(self) -> bool:
         try:
             resp = self._requests.get(f"{self.base_url}/api/tags", timeout=3)
             return resp.status_code == 200
         except Exception:
             return False
+
+
+# ── Known context windows for remote models ───────────────────────────────────
+_KNOWN_CONTEXT: dict[str, int] = {
+    # OpenAI
+    "gpt-4o": 128_000,
+    "gpt-4o-mini": 128_000,
+    "gpt-4-turbo": 128_000,
+    "gpt-4": 8_192,
+    "gpt-3.5-turbo": 16_385,
+    # Claude
+    "claude-opus-4-6": 200_000,
+    "claude-sonnet-4-6": 200_000,
+    "claude-haiku-4-5-20251001": 200_000,
+    "claude-3-5-sonnet-20241022": 200_000,
+    "claude-3-5-haiku-20241022": 200_000,
+    "claude-3-opus-20240229": 200_000,
+}
 
 
 # ── OpenAI ────────────────────────────────────────────────────────────────────
@@ -154,6 +202,10 @@ class OpenAIBackend(LLMBackend):
     @property
     def is_remote(self) -> bool:
         return True
+
+    def get_context_info(self) -> dict | None:
+        ctx = _KNOWN_CONTEXT.get(self.model)
+        return {"n_ctx_train": ctx} if ctx else None
 
     @property
     def name(self) -> str:
@@ -218,6 +270,10 @@ class ClaudeBackend(LLMBackend):
     @property
     def is_remote(self) -> bool:
         return True
+
+    def get_context_info(self) -> dict | None:
+        ctx = _KNOWN_CONTEXT.get(self.model)
+        return {"n_ctx_train": ctx} if ctx else None
 
     @property
     def name(self) -> str:
@@ -330,6 +386,121 @@ class OpenAICompatibleBackend(LLMBackend):
             raise LLMValidationError(f"OpenAICompatibleBackend error: {exc}") from exc
 
 
+# ── vLLM (local or remote, OpenAI-compatible with guided decoding) ─────────────
+
+class VllmBackend(LLMBackend):
+    """vLLM backend — uses the OpenAI-compatible /v1/chat/completions endpoint
+    with guided JSON decoding (extra_body.guided_json) for structured output.
+
+    Works with both local `vllm serve` and remote vLLM instances.
+    """
+
+    def __init__(
+        self,
+        base_url: str | None = None,
+        model: str | None = None,
+        api_key: str = "EMPTY",
+        timeout: int = 120,
+    ):
+        import openai as _openai
+        self._openai = _openai
+        self.base_url = (base_url or os.getenv("VLLM_BASE_URL", "http://localhost:8000/v1")).rstrip("/")
+        self.model = model or os.getenv("VLLM_MODEL", "")
+        self.api_key = api_key
+        self.timeout = timeout
+
+    @property
+    def is_remote(self) -> bool:
+        # Treat as local by default — user can override via subclassing if needed
+        return "localhost" not in self.base_url and "127.0.0.1" not in self.base_url
+
+    @property
+    def name(self) -> str:
+        return "vllm"
+
+    @staticmethod
+    def fetch_context_length(base_url: str, model: str = "", api_key: str = "EMPTY") -> int | None:
+        """Query the vLLM /v1/models endpoint and return context_length if exposed."""
+        try:
+            import openai as _openai
+            client = _openai.OpenAI(
+                api_key=api_key,
+                base_url=base_url.rstrip("/"),
+                timeout=5,
+            )
+            models = client.models.list()
+            target = model or (models.data[0].id if models.data else None)
+            if not target:
+                return None
+            # vLLM exposes context_length on the model object when available
+            for m in models.data:
+                if m.id == target:
+                    ctx = getattr(m, "context_length", None) or getattr(m, "max_context_length", None)
+                    return int(ctx) if ctx else None
+        except Exception:
+            pass
+        return None
+
+    def get_context_info(self) -> dict | None:
+        ctx = VllmBackend.fetch_context_length(self.base_url, self.model, self.api_key)
+        return {"n_ctx_train": ctx} if ctx else None
+
+    def _auto_detect_model(self) -> str:
+        """Query /v1/models and pick the first (and usually only) served model."""
+        client = self._openai.OpenAI(
+            api_key=self.api_key, base_url=self.base_url, timeout=10,
+        )
+        models = client.models.list()
+        if models.data:
+            return models.data[0].id
+        raise LLMValidationError("vLLM: nessun modello servito. Lancia vllm serve prima.")
+
+    def complete_structured(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        json_schema: dict[str, Any],
+        temperature: float = 0.0,
+    ) -> dict[str, Any]:
+        self._reset_usage()
+        if not self.model:
+            self.model = self._auto_detect_model()
+
+        client = self._openai.OpenAI(
+            api_key=self.api_key,
+            base_url=self.base_url,
+            timeout=self.timeout,
+        )
+        try:
+            response = client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=temperature,
+                extra_body={"guided_json": json_schema},
+            )
+            if response.usage:
+                self._set_usage(response.usage.prompt_tokens, response.usage.completion_tokens)
+            content = response.choices[0].message.content
+            result = json.loads(content)
+            _validate_required(result, json_schema)
+            return result
+        except (self._openai.OpenAIError, json.JSONDecodeError, KeyError) as exc:
+            raise LLMValidationError(f"VllmBackend error: {exc}") from exc
+
+    def is_available(self) -> bool:
+        try:
+            client = self._openai.OpenAI(
+                api_key=self.api_key, base_url=self.base_url, timeout=5,
+            )
+            client.models.list()
+            return True
+        except Exception:
+            return False
+
+
 # ── llama.cpp (local, no external service) ────────────────────────────────────
 
 # Suggested GGUF models for the download UI
@@ -344,6 +515,16 @@ DEFAULT_GGUF_MODELS = {
         "size_gb": 2.3,
         "description": "Microsoft Phi-3 Mini — bilanciato qualità/velocità",
     },
+    "gemma-4-E2B-it-Q4_K_M": {
+        "url": "https://huggingface.co/unsloth/gemma-4-E2B-it-GGUF/resolve/main/gemma-4-E2B-it-Q4_K_M.gguf",
+        "size_gb": 3.1,
+        "description": "Google Gemma 4 E2B — qualità/velocità bilanciati (consigliato)",
+    },
+    "gemma-4-E2B-it-Q3_K_M": {
+        "url": "https://huggingface.co/unsloth/gemma-4-E2B-it-GGUF/resolve/main/gemma-4-E2B-it-Q3_K_M.gguf",
+        "size_gb": 2.5,
+        "description": "Google Gemma 4 E2B — versione compressa, per Mac con RAM limitata",
+    },
 }
 
 
@@ -353,10 +534,18 @@ class LlamaCppBackend(LLMBackend):
     def __init__(
         self,
         model_path: str | None = None,
-        n_ctx: int = 4096,
+        n_ctx: int = 0,
         n_gpu_layers: int = -1,
         timeout: int = 120,
     ):
+        """
+        Args:
+            model_path: Path to a .gguf file. None = auto-detect from ~/.spendify/models/.
+            n_ctx: Context window size in tokens.
+                   0 (default) = auto-detect from GGUF metadata (model's native max),
+                   falling back to 4096 if detection fails.
+            n_gpu_layers: GPU layers to offload (-1 = all).
+        """
         try:
             from llama_cpp import Llama
         except ImportError:
@@ -371,6 +560,8 @@ class LlamaCppBackend(LLMBackend):
                 f"Modello non trovato in {model_path}. "
                 f"Scarica un modello GGUF dalla pagina Impostazioni (Scarica modello)."
             )
+        if n_ctx == 0:
+            n_ctx = LlamaCppBackend.read_gguf_context_length(model_path) or 4096
         self._model_path = model_path
         self._llm = Llama(
             model_path=model_path,
@@ -444,6 +635,53 @@ class LlamaCppBackend(LLMBackend):
     def model_size_bytes(self) -> int:
         """Return the GGUF file size in bytes."""
         return Path(self._model_path).stat().st_size
+
+    @staticmethod
+    def read_gguf_context_length(model_path: str) -> int | None:
+        """Read llama.context_length from a GGUF file header without loading model weights.
+
+        Parses the binary GGUF metadata section using struct — fast (reads only the header,
+        no GPU allocation, no tokenizer loading).  Returns None if the file is not a valid
+        GGUF or the key is absent.
+        """
+        import struct
+
+        _FIXED = {0: 1, 1: 1, 2: 2, 3: 2, 4: 4, 5: 4, 6: 4, 7: 1, 10: 8, 11: 8, 12: 8}
+
+        def _skip(f, vtype: int) -> None:
+            if vtype in _FIXED:
+                f.read(_FIXED[vtype])
+            elif vtype == 8:                          # string
+                f.read(struct.unpack("<Q", f.read(8))[0])
+            elif vtype == 9:                          # array
+                atype = struct.unpack("<I", f.read(4))[0]
+                n    = struct.unpack("<Q", f.read(8))[0]
+                for _ in range(n):
+                    _skip(f, atype)
+            # unknown types: silently stop — caller catches Exception
+
+        try:
+            with open(model_path, "rb") as f:
+                if f.read(4) != b"GGUF":
+                    return None
+                f.read(4 + 8)                         # version + n_tensors
+                n_kv = struct.unpack("<Q", f.read(8))[0]
+                for _ in range(n_kv):
+                    klen = struct.unpack("<Q", f.read(8))[0]
+                    key  = f.read(klen).decode("utf-8", errors="replace")
+                    vtype = struct.unpack("<I", f.read(4))[0]
+                    if key == "llama.context_length":
+                        return struct.unpack("<I", f.read(4))[0]  # uint32
+                    _skip(f, vtype)
+        except Exception:
+            pass
+        return None
+
+    def get_context_info(self) -> dict | None:
+        return {
+            "n_ctx": self._llm.n_ctx(),
+            "n_ctx_train": self._llm.n_ctx_train(),
+        }
 
     @property
     def is_remote(self) -> bool:
@@ -580,6 +818,8 @@ class BackendFactory:
             return OpenAICompatibleBackend(**kwargs)
         elif backend_name == "local_llama_cpp":
             return LlamaCppBackend(**kwargs)
+        elif backend_name == "vllm":
+            return VllmBackend(**kwargs)
         else:
             raise ValueError(f"Unknown backend: {backend_name}")
 
