@@ -294,7 +294,7 @@ function Invoke-Phase {
     Write-Host "  [step $($script:Step)] [$Phase] $Label"
     Write-Host "────────────────────────────────────────────────────────────"
     $allArgs = @($script, "--runs", $Runs) + $BenchArgs + $ExtraArgs
-    & $Python @allArgs
+    & $Python @allArgs 2>&1 | ForEach-Object { Write-Host $_ }
     if ($LASTEXITCODE -ne 0) {
         Write-Host "  [WARN] $Label [$Phase] failed (exit $LASTEXITCODE) — skipping"
     }
@@ -403,13 +403,7 @@ Write-Host "  FULL BENCHMARK COMPLETE  —  $EndTs"
 Write-Host "  Steps completed : $Step"
 Write-Host "════════════════════════════════════════════════════════════"
 Write-Host ""
-Write-Host "  Archive : benchmark\results\  (versioned per-run CSV)"
-if ($IsUNC) {
-    Write-Host "  Legacy (network): $SourceDir\benchmark\generated_files\benchmark\"
-    Write-Host "  Legacy (local):   $WorkDir\benchmark\generated_files\benchmark\"
-} else {
-    Write-Host "  Legacy  : benchmark\generated_files\benchmark\"
-}
+Write-Host "  Results : benchmark\results\  (versioned per-run CSV)"
 Write-Host "  Log     : $LogFile"
 
 Stop-Transcript | Out-Null

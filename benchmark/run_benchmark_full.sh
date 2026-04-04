@@ -167,8 +167,11 @@ PYEOF
             GGUF_SKIPPED=$((GGUF_SKIPPED + 1))
         else
             echo "[download] $gguf_file  (from $gguf_repo)"
-            _hf_download "$gguf_repo" "$gguf_file" --local-dir "$MODELS_DIR"
-            GGUF_DOWNLOADED=$((GGUF_DOWNLOADED + 1))
+            if _hf_download "$gguf_repo" "$gguf_file" --local-dir "$MODELS_DIR"; then
+                GGUF_DOWNLOADED=$((GGUF_DOWNLOADED + 1))
+            else
+                echo "[WARN] Failed to download $gguf_file from $gguf_repo — skipping"
+            fi
         fi
     done < <(_read_models_csv)
 
