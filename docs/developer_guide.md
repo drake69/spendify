@@ -421,18 +421,30 @@ python tools/compute_prompt_hashes.py --verify || {
 Su una macchina qualsiasi — anche appena clonata — basta un solo comando:
 
 ```bash
-# macOS / Linux
+# macOS / Linux — ENTRY POINT consigliato (tutti i backend × pipeline + categorizer)
+bash tests/run_benchmark_full.sh                             # pipeline + categorizer, 1 run, tutti i backend
+bash tests/run_benchmark_full.sh --benchmark pipeline        # solo pipeline
+bash tests/run_benchmark_full.sh --benchmark both --runs 3   # entrambi, 3 run ciascuno
+bash tests/run_benchmark_full.sh --setup-only                # solo download modelli
+
+# Windows (PowerShell) — ENTRY POINT consigliato
+powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1
+powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -Benchmark both -Runs 3
+
+# Singolo backend (llama.cpp) — macOS / Linux
 bash tests/run_benchmark.sh                         # pipeline, 1 run, tutti i modelli piccoli
 bash tests/run_benchmark.sh categorizer              # solo categorizer
 bash tests/run_benchmark.sh both --runs 3            # entrambi, 3 run ciascuno
 bash tests/run_benchmark.sh pipeline --files 'CC-1*' # pipeline con filtro file
 
-# Windows (PowerShell)
+# Singolo backend — Windows (PowerShell)
 powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1
 powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1 both -Runs 3
 ```
 
-`run_benchmark.sh` / `run_benchmark.ps1` gestiscono automaticamente: installazione `uv`, creazione `.venv`, `uv sync`, download modelli GGUF mancanti, esecuzione benchmark. `run_benchmark.sh` esegue **tutti** i modelli GGUF presenti (nessun filtro per dimensione).
+`run_benchmark_full.sh` / `run_benchmark_full.ps1` gestiscono: setup completo (GGUF + Ollama pull + rilevamento vLLM), poi eseguono pipeline e categorizer per ogni backend attivo. La lista modelli è letta da `tests/benchmark_models.csv`.
+
+`run_benchmark.sh` / `run_benchmark.ps1` gestiscono automaticamente: installazione `uv`, creazione `.venv`, `uv sync`, download modelli GGUF mancanti, esecuzione benchmark su llama.cpp. `run_benchmark.sh` esegue **tutti** i modelli GGUF presenti (nessun filtro per dimensione).
 
 ### Setup modelli + Dual benchmark (llama.cpp + Ollama)
 
@@ -504,6 +516,10 @@ Il benchmark rileva automaticamente la context window ottimale per ogni modello:
 
 `--n-ctx 0` (default) = auto-detect. Imposta un valore esplicito per limitare l'uso di RAM.
 
+### Catalogo modelli (benchmark_models.csv)
+
+`tests/benchmark_models.csv` è la sorgente unica della lista modelli per tutti gli script di benchmark (sostituisce gli array hardcoded nei vecchi script). Colonne: `name`, `gguf_file`, `gguf_repo`, `gguf_hf_url`, `ollama_tag`, `enabled`. Se `gguf_file` è valorizzato il modello è disponibile su llama.cpp; se `ollama_tag` è valorizzato è disponibile su Ollama. Impostare `enabled=false` per saltare un modello in tutti gli script. Il catalogo contiene 11 modelli (Qwen2.5-1.5B, Gemma2-2B, Qwen3.5-2B, Qwen3.5-4B, Gemma4-E2B Q3+Q4, Llama3.2-3B, Qwen2.5-3B, Phi3-mini, Qwen2.5-7B, Gemma3-12B). I modelli vLLM non sono nel CSV — vengono auto-rilevati dal server al runtime.
+
 ### Monitoraggio HW (CPU + GPU)
 
 Il modulo `tests/hw_monitor.py` (`HWMonitor`) campiona CPU e GPU in background ogni 0.5 s durante l'intero run di benchmark, producendo medie più accurate rispetto ai vecchi campioni point-in-time.
@@ -517,17 +533,27 @@ Il modulo `tests/hw_monitor.py` (`HWMonitor`) campiona CPU e GPU in background o
 
 `benchmark_pipeline.py` e `benchmark_categorizer.py` usano `HWMonitor` al posto delle vecchie funzioni inline `_sample_cpu_load()` / `_sample_gpu_utilization()`.
 
+### Monitor avanzamento (monitor_benchmark)
+
+`tests/monitor_benchmark.sh` / `monitor_benchmark.ps1` / `monitor_benchmark.py` mostrano l'avanzamento in tempo reale leggendo `results_all_runs.csv`. Features: progress bar per modello, fase corrente (classifier/categorizer) rilevata dalla colonna `benchmark_type`, statistiche CPU/GPU live via `HWMonitor.sample_once()` e medie storiche dal CSV. Opzioni principali: `--interval N` (refresh in secondi), `--runs N` (run attesi per modello), `--total N` (righe totali attese), `--once` (snapshot e termina), `--all` (mostra anche modelli completati).
+
 ### Script disponibili
 
 | Script | Scopo |
 |--------|-------|
-| `tests/run_benchmark.sh` | **Zero-config** (macOS/Linux): env + modelli + benchmark in un comando |
+| `tests/run_benchmark_full.sh` | **ENTRY POINT** (macOS/Linux): tutti i backend × pipeline + categorizer |
+| `tests/run_benchmark_full.ps1` | **ENTRY POINT** (Windows): tutti i backend × pipeline + categorizer |
+| `tests/run_benchmark.sh` | **Zero-config** (macOS/Linux): env + modelli + benchmark llama.cpp in un comando |
 | `tests/run_benchmark.ps1` | **Zero-config** (Windows): equivalente PowerShell, include download modelli |
 | `tests/run_all_benchmarks.sh` | Tutti i modelli GGUF (llama.cpp only) |
 | `tests/run_benchmark_dual.sh` | 9 modelli su entrambi i backend (llama.cpp + Ollama) |
 | `tests/setup_benchmark_models.sh` | Download modelli (Ollama pull + GGUF) senza lanciare benchmark |
 | `tests/cleanup_benchmark.sh` | Pulizia file generati |
+| `tests/benchmark_models.csv` | Catalogo modelli (sostituisce array hardcoded negli script) |
 | `tests/hw_monitor.py` | Monitoraggio HW in background (CPU + GPU cross-platform) |
+| `tests/monitor_benchmark.sh` | Monitor avanzamento benchmark in tempo reale (macOS/Linux) |
+| `tests/monitor_benchmark.ps1` | Monitor avanzamento benchmark in tempo reale (Windows) |
+| `tests/monitor_benchmark.py` | Monitor avanzamento benchmark cross-platform (Python) |
 | `tests/diagnose.ps1` | Diagnostica ambiente Windows (include rilevamento GPU: NVIDIA/AMD/Intel) |
 
 ### Logging
@@ -537,6 +563,7 @@ Ogni esecuzione salva un log in `tests/logs/` (gitignored, un file per run con t
 | Script | Log |
 |--------|-----|
 | `run_benchmark.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
+| `run_benchmark_full.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
 | `benchmark_pipeline.py` | `tests/logs/pipeline_YYYYMMDD_HHMMSS.log` |
 | `benchmark_categorizer.py` | `tests/logs/categorizer_YYYYMMDD_HHMMSS.log` |
 

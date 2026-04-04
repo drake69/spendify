@@ -353,6 +353,35 @@ uv run pytest tests/test_normalizer.py -v
 
 Tests use SQLite in-memory (`create_engine("sqlite://")`) — no DB mocks.
 
+### LLM Benchmark — quick start
+
+The recommended entry point for a full benchmark across all backends and both phases:
+
+```bash
+# macOS / Linux — RECOMMENDED (all backends × pipeline + categorizer)
+bash tests/run_benchmark_full.sh                             # pipeline + categorizer, 1 run
+bash tests/run_benchmark_full.sh --benchmark pipeline        # pipeline only
+bash tests/run_benchmark_full.sh --benchmark both --runs 3   # both phases, 3 runs each
+bash tests/run_benchmark_full.sh --setup-only                # download models only
+
+# Windows (PowerShell)
+powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1
+powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -Benchmark both -Runs 3
+
+# Single backend (llama.cpp) — macOS / Linux
+bash tests/run_benchmark.sh
+bash tests/run_benchmark.sh both --runs 3
+
+# Single backend — Windows
+powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1 both -Runs 3
+```
+
+`run_benchmark_full.sh` / `run_benchmark_full.ps1` perform full setup (download missing GGUF models, `ollama pull` missing Ollama models, detect vLLM), then run **pipeline (classifier)** and **categorizer** benchmarks for every active backend. The model list is read from `tests/benchmark_models.csv`. Flags: `--benchmark pipeline|categorizer|both`, `--runs N`, `--setup-only`, `--skip-llama/ollama/vllm`, `--vllm-url`, `--ollama-url` (PS1 equivalents: `-Benchmark`, `-Runs`, `-SetupOnly`, `-SkipLlama`, `-SkipOllama`, `-SkipVllm`, `-VllmUrl`, `-OllamaUrl`).
+
+### Model catalogue (benchmark_models.csv)
+
+`tests/benchmark_models.csv` is the single source of truth for the model list used by all benchmark scripts, replacing hardcoded arrays. Columns: `name`, `gguf_file`, `gguf_repo`, `gguf_hf_url`, `ollama_tag`, `enabled`. A populated `gguf_file` makes the model available on llama.cpp; a populated `ollama_tag` makes it available on Ollama. Set `enabled=false` to skip a model in all scripts. The catalogue contains 11 models (Qwen2.5-1.5B, Gemma2-2B, Qwen3.5-2B, Qwen3.5-4B, Gemma4-E2B Q3+Q4, Llama3.2-3B, Qwen2.5-3B, Phi3-mini, Qwen2.5-7B, Gemma3-12B). vLLM models are not in the CSV — they are auto-detected from the running server at runtime.
+
 ### LLM Benchmark — HW monitoring
 
 The benchmark suite (`tests/benchmark_pipeline.py`, `tests/benchmark_categorizer.py`) includes cross-platform GPU monitoring via `tests/hw_monitor.py`. A background thread (`HWMonitor`) samples CPU and GPU utilization every 0.5 s for the duration of each run, replacing the old point-in-time sampling functions.
@@ -366,6 +395,25 @@ The benchmark suite (`tests/benchmark_pipeline.py`, `tests/benchmark_categorizer
 
 All GGUF models are now benchmarked regardless of file size (the previous 3 GB filter has been removed).
 
+### Benchmark progress monitor
+
+`tests/monitor_benchmark.sh` / `monitor_benchmark.ps1` / `monitor_benchmark.py` show real-time benchmark progress by reading `results_all_runs.csv`. Features: per-model progress bars with elapsed time and ETA, current pipeline phase (classifier/categorizer) detected from the `benchmark_type` column, live CPU/GPU stats via `HWMonitor.sample_once()`, and historical averages from the CSV. Options: `--interval N` (refresh in seconds), `--runs N` (expected runs per model), `--total N` (expected total rows), `--once` (print snapshot and exit), `--all` (show completed models too).
+
+### Available scripts
+
+| Script | Purpose |
+|--------|---------|
+| `tests/run_benchmark_full.sh` | **ENTRY POINT** (macOS/Linux): all backends × pipeline + categorizer |
+| `tests/run_benchmark_full.ps1` | **ENTRY POINT** (Windows): all backends × pipeline + categorizer |
+| `tests/run_benchmark.sh` | Zero-config single backend (macOS/Linux) |
+| `tests/run_benchmark.ps1` | Zero-config single backend (Windows) |
+| `tests/benchmark_models.csv` | Model catalogue (replaces hardcoded arrays in scripts) |
+| `tests/monitor_benchmark.sh` | Benchmark progress monitor (macOS/Linux) |
+| `tests/monitor_benchmark.ps1` | Benchmark progress monitor (Windows) |
+| `tests/monitor_benchmark.py` | Benchmark progress monitor (cross-platform Python) |
+| `tests/hw_monitor.py` | Background HW monitoring (CPU + GPU, cross-platform) |
+| `tests/diagnose.ps1` | Windows environment diagnostics including GPU detection |
+
 ### Logging
 
 Each run saves a log to `tests/logs/` (gitignored, one timestamped file per run):
@@ -373,6 +421,7 @@ Each run saves a log to `tests/logs/` (gitignored, one timestamped file per run)
 | Script | Log |
 |--------|-----|
 | `run_benchmark.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
+| `run_benchmark_full.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
 | `benchmark_pipeline.py` | `tests/logs/pipeline_YYYYMMDD_HHMMSS.log` |
 | `benchmark_categorizer.py` | `tests/logs/categorizer_YYYYMMDD_HHMMSS.log` |
 | `diagnose.ps1` | `~/spendify_diagnose_YYYYMMDD_HHMMSS.log` |

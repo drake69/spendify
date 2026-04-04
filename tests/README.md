@@ -6,15 +6,38 @@ Su una macchina qualsiasi — anche appena clonata o copiata su chiavetta USB.
 Zero prerequisiti: serve solo internet. Lo script installa tutto da solo
 (uv, Python, dipendenze, modelli GGUF).
 
+### Benchmark completo (tutti i backend × classifier + categorizer) — CONSIGLIATO
+
 **macOS / Linux:**
 ```bash
 cd /path/to/sw_artifacts
+bash tests/run_benchmark_full.sh
+```
+
+**Windows (PowerShell):**
+```powershell
+cd D:\sw_artifacts
+powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1
+```
+
+`run_benchmark_full.sh` / `run_benchmark_full.ps1` eseguono automaticamente:
+1. Setup completo: scaricano i modelli GGUF mancanti + `ollama pull` dei modelli Ollama mancanti + rilevano vLLM
+2. Benchmark **pipeline (classifier)** per ogni backend attivo (llama.cpp, Ollama se in esecuzione, vLLM se in esecuzione)
+3. Benchmark **categorizer** per ogni backend attivo
+4. La lista modelli viene letta da `tests/benchmark_models.csv`
+5. `--runs N` si applica a entrambe le fasi
+
+### Benchmark singolo backend
+
+Per eseguire un singolo backend (llama.cpp) con meno opzioni:
+
+**macOS / Linux:**
+```bash
 bash tests/run_benchmark.sh
 ```
 
 **Windows (PowerShell):**
 ```powershell
-cd D:\sw_artifacts        # o il percorso della chiavetta/copia
 powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1
 ```
 
@@ -33,7 +56,34 @@ Entrambi fanno tutto in automatico:
 
 ### Opzioni
 
-**macOS / Linux:**
+**`run_benchmark_full.sh` (macOS / Linux):**
+```bash
+bash tests/run_benchmark_full.sh                             # pipeline + categorizer, 1 run, tutti i backend
+bash tests/run_benchmark_full.sh --benchmark pipeline        # solo pipeline
+bash tests/run_benchmark_full.sh --benchmark categorizer     # solo categorizer
+bash tests/run_benchmark_full.sh --benchmark both --runs 3   # entrambi, 3 run ciascuno
+bash tests/run_benchmark_full.sh --setup-only                # solo download modelli, senza benchmark
+bash tests/run_benchmark_full.sh --skip-ollama               # salta backend Ollama
+bash tests/run_benchmark_full.sh --skip-vllm                 # salta backend vLLM
+bash tests/run_benchmark_full.sh --skip-llama                # salta backend llama.cpp
+bash tests/run_benchmark_full.sh --vllm-url http://host:8000/v1  # URL vLLM custom
+bash tests/run_benchmark_full.sh --ollama-url http://host:11434   # URL Ollama custom
+```
+
+**`run_benchmark_full.ps1` (Windows PowerShell):**
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1                            # default
+powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -Benchmark pipeline        # solo pipeline
+powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -Benchmark both -Runs 3    # entrambi, 3 run
+powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -SetupOnly                 # solo setup
+powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -SkipOllama               # salta Ollama
+powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -SkipVllm                 # salta vLLM
+powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -SkipLlama                # salta llama.cpp
+powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -VllmUrl http://host:8000/v1
+powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -OllamaUrl http://host:11434
+```
+
+**`run_benchmark.sh` (macOS / Linux — singolo backend):**
 ```bash
 bash tests/run_benchmark.sh                         # pipeline, 1 run
 bash tests/run_benchmark.sh categorizer              # solo categorizer
@@ -42,7 +92,7 @@ bash tests/run_benchmark.sh both --runs 3            # 3 run ciascuno
 bash tests/run_benchmark.sh pipeline --files 'CC-1*' # con filtro file
 ```
 
-**Windows (PowerShell):**
+**`run_benchmark.ps1` (Windows — singolo backend):**
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1                                        # pipeline, 1 run
 powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1 categorizer                            # solo categorizer
@@ -55,21 +105,27 @@ powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1 pipeline -Ext
 
 ```
 tests/
-├── run_benchmark.sh              ← ENTRY POINT zero-config (macOS/Linux)
-├── run_benchmark.ps1             ← ENTRY POINT zero-config (Windows)
+├── run_benchmark_full.sh         ← ENTRY POINT full benchmark (tutti i backend × pipeline + categorizer) — macOS/Linux
+├── run_benchmark_full.ps1        ← ENTRY POINT full benchmark (tutti i backend × pipeline + categorizer) — Windows
+├── run_benchmark.sh              ← zero-config singolo backend (macOS/Linux)
+├── run_benchmark.ps1             ← zero-config singolo backend (Windows)
 ├── run_all_benchmarks.sh         ← tutti i modelli GGUF (llama.cpp)
 ├── run_benchmark_dual.sh         ← llama.cpp + Ollama, stessi modelli
 ├── setup_benchmark_models.sh     ← scarica modelli senza benchmark
 ├── cleanup_benchmark.sh          ← pulizia file generati
+├── benchmark_models.csv          ← catalogo modelli (sostituisce array hardcoded negli script)
 ├── benchmark_pipeline.py         ← benchmark classifier (schema + parsing)
 ├── benchmark_categorizer.py      ← benchmark categorizer (categorie)
 ├── hw_monitor.py                 ← monitoraggio HW background (CPU + GPU cross-platform)
+├── monitor_benchmark.sh          ← monitor avanzamento benchmark (macOS/Linux)
+├── monitor_benchmark.ps1         ← monitor avanzamento benchmark (Windows)
+├── monitor_benchmark.py          ← monitor avanzamento benchmark (cross-platform Python)
 ├── diagnose.ps1                  ← diagnostica ambiente Windows (include GPU)
 ├── generate_synthetic_files.py   ← genera i file sintetici di test
 ├── logs/                         ← LOG di ogni esecuzione benchmark (gitignored)
-│   ├── benchmark_YYYYMMDD_HHMMSS.log   ← log run_benchmark.sh
-│   ├── pipeline_YYYYMMDD_HHMMSS.log    ← log benchmark_pipeline.py
-│   └── categorizer_YYYYMMDD_HHMMSS.log ← log benchmark_categorizer.py
+│   ├── benchmark_YYYYMMDD_HHMMSS.log      ← log run_benchmark.sh / run_benchmark_full.sh
+│   ├── pipeline_YYYYMMDD_HHMMSS.log       ← log benchmark_pipeline.py
+│   └── categorizer_YYYYMMDD_HHMMSS.log    ← log benchmark_categorizer.py
 └── generated_files/
     ├── manifest.csv              ← elenco file sintetici + ground truth
     ├── benchmark/
@@ -119,6 +175,84 @@ uv run python tests/benchmark_categorizer.py --runs 1 --backend local_llama_cpp 
 | cat_fallback_rate | | x | % fallback (categoria default) |
 | duration_seconds | x | x | Tempo di esecuzione |
 | automation_score | x | x | Score composito |
+
+## Full benchmark (tutti i backend × classifier + categorizer)
+
+`run_benchmark_full.sh` / `run_benchmark_full.ps1` sono il punto di ingresso consigliato per eseguire un benchmark completo su tutti i backend disponibili.
+
+### Cosa fa
+
+1. **Setup automatico** — scarica i modelli GGUF mancanti da HuggingFace, esegue `ollama pull` per i modelli Ollama mancanti, rileva se vLLM è in esecuzione
+2. **Benchmark pipeline** — esegue `benchmark_pipeline.py` per ogni backend attivo (llama.cpp, Ollama, vLLM)
+3. **Benchmark categorizer** — esegue `benchmark_categorizer.py` per ogni backend attivo
+4. **Lista modelli da CSV** — legge `tests/benchmark_models.csv` anziché array hardcoded
+5. **`--runs N` unificato** — si applica a entrambe le fasi (pipeline e categorizer)
+
+### Flags
+
+| Flag (bash) | Flag (PS1) | Default | Descrizione |
+|-------------|-----------|---------|-------------|
+| `--benchmark pipeline\|categorizer\|both` | `-Benchmark` | `both` | Quale fase eseguire |
+| `--runs N` | `-Runs N` | `1` | Numero di run per fase |
+| `--setup-only` | `-SetupOnly` | off | Solo setup modelli, senza benchmark |
+| `--skip-llama` | `-SkipLlama` | off | Salta backend llama.cpp |
+| `--skip-ollama` | `-SkipOllama` | off | Salta backend Ollama |
+| `--skip-vllm` | `-SkipVllm` | off | Salta backend vLLM |
+| `--vllm-url URL` | `-VllmUrl URL` | `http://localhost:8000/v1` | URL server vLLM |
+| `--ollama-url URL` | `-OllamaUrl URL` | `http://localhost:11434` | URL server Ollama |
+
+### Note sui backend
+
+- **llama.cpp** — sempre disponibile se i file GGUF sono presenti (scaricati automaticamente)
+- **Ollama** — attivato solo se il server è in esecuzione al momento del lancio
+- **vLLM** — attivato solo se il server è raggiungibile all'URL configurato; i modelli sono auto-rilevati dal server
+
+## Catalogo modelli (benchmark_models.csv)
+
+`tests/benchmark_models.csv` è la sorgente unica della lista modelli per tutti gli script di benchmark. Sostituisce gli array hardcoded nei vecchi script.
+
+### Formato
+
+```
+name,gguf_file,gguf_repo,gguf_hf_url,ollama_tag,enabled
+```
+
+| Colonna | Descrizione |
+|---------|-------------|
+| `name` | Nome leggibile del modello |
+| `gguf_file` | Nome file `.gguf` (se valorizzato → modello disponibile su llama.cpp) |
+| `gguf_repo` | Repository HuggingFace da cui scaricare il file GGUF |
+| `gguf_hf_url` | URL diretto HuggingFace per il download |
+| `ollama_tag` | Tag Ollama (se valorizzato → modello disponibile su Ollama backend) |
+| `enabled` | `true` / `false` — `false` salta il modello in tutti gli script |
+
+### Modelli nel catalogo (11 modelli)
+
+| Nome | GGUF | Ollama | Enabled |
+|------|------|--------|---------|
+| Qwen2.5-1.5B | `qwen2.5-1.5b-instruct-q4_k_m.gguf` | `qwen2.5:1.5b-instruct` | true |
+| Gemma2-2B | `gemma-2-2b-it-Q4_K_M.gguf` | `gemma2:2b` | true |
+| Qwen3.5-2B | `Qwen3.5-2B-Q4_K_M.gguf` | `qwen3.5:2b` | true |
+| Qwen3.5-4B | `Qwen3.5-4B-Q4_K_M.gguf` | `qwen3.5:4b` | true |
+| Gemma4-E2B Q3 | `gemma-4-E2B-it-Q3_K_M.gguf` | — | true |
+| Gemma4-E2B Q4 | `gemma-4-E2B-it-Q4_K_M.gguf` | `gemma4:e2b` | true |
+| Llama3.2-3B | `Llama-3.2-3B-Instruct-Q4_K_M.gguf` | `llama3.2:3b` | true |
+| Qwen2.5-3B | `qwen2.5-3b-instruct-q4_k_m.gguf` | `qwen2.5:3b-instruct` | true |
+| Phi3-mini | `Phi-3-mini-4k-instruct-Q4_K_M.gguf` | `phi3:3.8b` | true |
+| Qwen2.5-7B | `Qwen2.5-7B-Instruct-Q4_K_M.gguf` | `qwen2.5:7b-instruct` | true |
+| Gemma3-12B | `gemma-3-12b-it-Q4_K_M.gguf` | `gemma3:12b` | true |
+
+### Come abilitare/disabilitare un modello
+
+Per saltare un modello in tutti gli script, imposta `enabled=false` nella riga corrispondente:
+
+```csv
+Gemma3-12B,gemma-3-12b-it-Q4_K_M.gguf,...,gemma3:12b,false
+```
+
+Per aggiungere un nuovo modello, aggiungi una riga con `enabled=true`. Se `gguf_file` è vuoto, il modello non viene usato su llama.cpp; se `ollama_tag` è vuoto, non viene usato su Ollama.
+
+**Nota:** vLLM non è nel CSV — i modelli serviti da vLLM vengono auto-rilevati dal server al runtime.
 
 ## Setup modelli + Dual benchmark (llama.cpp + Ollama)
 
@@ -210,6 +344,45 @@ uv run python tests/benchmark_pipeline.py --backend local_llama_cpp \
 
 ---
 
+## Monitoraggio avanzamento (monitor_benchmark)
+
+`tests/monitor_benchmark.sh` / `monitor_benchmark.ps1` / `monitor_benchmark.py` mostrano l'avanzamento del benchmark in tempo reale leggendo `results_all_runs.csv`.
+
+### Funzionalità
+
+- Progress bar per modello con percentuale completata, righe processate, elapsed e ETA
+- Fase corrente (classifier / categorizer) rilevata dalla colonna `benchmark_type`
+- Statistiche CPU e GPU live (via `HWMonitor.sample_once()`) e medie storiche dal CSV
+- Refresh automatico ogni N secondi (configurabile)
+
+### Opzioni
+
+**macOS / Linux (`monitor_benchmark.sh`):**
+```bash
+bash tests/monitor_benchmark.sh                  # refresh ogni 5 s, tutti i modelli
+bash tests/monitor_benchmark.sh --interval 10    # refresh ogni 10 s
+bash tests/monitor_benchmark.sh --runs 3         # attende 3 run per modello
+bash tests/monitor_benchmark.sh --total 100      # total righe attese
+bash tests/monitor_benchmark.sh --once           # stampa snapshot e termina
+bash tests/monitor_benchmark.sh --all            # mostra anche modelli completati
+```
+
+**Windows (`monitor_benchmark.ps1`):**
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tests\monitor_benchmark.ps1
+powershell -ExecutionPolicy Bypass -File .\tests\monitor_benchmark.ps1 -Interval 10
+powershell -ExecutionPolicy Bypass -File .\tests\monitor_benchmark.ps1 -Runs 3
+powershell -ExecutionPolicy Bypass -File .\tests\monitor_benchmark.ps1 -Once
+```
+
+**Python cross-platform (`monitor_benchmark.py`):**
+```bash
+uv run python tests/monitor_benchmark.py
+uv run python tests/monitor_benchmark.py --interval 10 --runs 3 --once
+```
+
+---
+
 ## Monitoraggio HW (CPU + GPU)
 
 Il modulo `tests/hw_monitor.py` (`HWMonitor`) campiona CPU e GPU **in background** ogni 0.5 s durante l'intero benchmark, restituendo medie più accurate rispetto ai vecchi campioni point-in-time (`_sample_cpu_load()` / `_sample_gpu_utilization()`, ora rimossi).
@@ -221,7 +394,7 @@ Il modulo `tests/hw_monitor.py` (`HWMonitor`) campiona CPU e GPU **in background
 | Linux AMD | `rocm-smi` → utilization % | Richiede ROCm |
 | Fallback | — | GPU utilization = 0.0 |
 
-`benchmark_pipeline.py` e `benchmark_categorizer.py` istanziano `HWMonitor` all'inizio del run e chiamano `stop()` alla fine per ottenere le medie.
+`benchmark_pipeline.py` e `benchmark_categorizer.py` istanziano `HWMonitor` all'inizio del run e chiamano `stop()` alla fine per ottenere le medie. `monitor_benchmark` usa `HWMonitor.sample_once()` per le statistiche live.
 
 ### Diagnostica GPU (Windows)
 
@@ -234,6 +407,7 @@ Ogni esecuzione salva un log completo in `tests/logs/` (gitignored):
 | Script | Log file |
 |--------|----------|
 | `run_benchmark.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
+| `run_benchmark_full.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
 | `benchmark_pipeline.py` | `tests/logs/pipeline_YYYYMMDD_HHMMSS.log` |
 | `benchmark_categorizer.py` | `tests/logs/categorizer_YYYYMMDD_HHMMSS.log` |
 | `diagnose.ps1` | `~/spendify_diagnose_YYYYMMDD_HHMMSS.log` |
@@ -299,7 +473,7 @@ Vantaggi di vLLM rispetto a llama.cpp:
 | Gemma 4 E2B IT | ~2.7 GB | Q3_K_M | `gemma-4-E2B-it-Q3_K_M.gguf` |
 | Gemma 4 E2B IT | ~3.1 GB | Q4_K_M | `gemma-4-E2B-it-Q4_K_M.gguf` |
 
-Scaricati automaticamente da `run_benchmark.sh` / `run_benchmark.ps1`.
+Scaricati automaticamente da `run_benchmark.sh` / `run_benchmark.ps1` / `run_benchmark_full.sh` / `run_benchmark_full.ps1`.
 Fonte GGUF: `unsloth/gemma-4-E2B-it-GGUF` (HuggingFace). Richiede llama.cpp ≥ build con supporto architettura `gemma4`.
 
 ## Resume e deduplicazione
@@ -320,7 +494,7 @@ Developer A (Mac M1)         GitHub              Developer B (Mac M4)
 git pull                    results_all_        git pull
   (prende righe di B)       runs.csv            (prende righe di A)
                             (cumulativo)
-bash tests/run_benchmark.sh                     bash tests/run_benchmark.sh
+bash tests/run_benchmark_full.sh                bash tests/run_benchmark_full.sh
   resume: skip esistenti                          resume: skip esistenti
   aggiunge solo nuove                             aggiunge solo nuove
 
@@ -350,3 +524,4 @@ uv run python tests/benchmark_pipeline.py --runs 1 \
 - Documentazione completa: `docs/developer_guide.md` § 10
 - Azure ML benchmark: `tools/azure_benchmark.py`
 - Modelli setup: `tests/setup_benchmark_models.sh`
+- Catalogo modelli: `tests/benchmark_models.csv`
