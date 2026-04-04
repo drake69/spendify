@@ -1,4 +1,4 @@
-# Full benchmark: classifier (pipeline) + categorizer × all active backends.
+﻿# Full benchmark: classifier (pipeline) + categorizer × all active backends.
 #
 # Model catalogue: tests\benchmark_models.csv
 #   gguf_file + gguf_hf_url   → llama.cpp  (empty = model not on llama)

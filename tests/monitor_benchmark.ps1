@@ -1,4 +1,4 @@
-# Benchmark progress monitor — Windows (PowerShell)
+﻿# Benchmark progress monitor — Windows (PowerShell)
 #
 # Usage:
 #   .\tests\monitor_benchmark.ps1                    # aggiorna ogni 60s

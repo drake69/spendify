@@ -1,4 +1,4 @@
-# Cleanup benchmark artifacts, models, venv and generated files.
+﻿# Cleanup benchmark artifacts, models, venv and generated files.
 # Reads model list from tests\benchmark_models.csv (no hardcoded names).
 #
 # Livelli (cumulativi):

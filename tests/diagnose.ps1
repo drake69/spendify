@@ -1,4 +1,4 @@
-# Spendify Benchmark — Diagnostic script for Windows
+﻿# Spendify Benchmark — Diagnostic script for Windows
 # Run this FIRST to check all prerequisites before launching the benchmark.
 #
 # Usage:
