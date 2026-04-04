@@ -515,13 +515,16 @@ uv run python -m pytest tests/ --cov=core --cov=db --cov-report=term-missing
 End-to-end benchmark against real LLM backends. Measures classifier accuracy (schema detection, parsing) and categorizer accuracy across all supported backends and models.
 
 ```bash
-# Setup models + run dual benchmark (llama.cpp + Ollama), macOS/Linux
-bash tests/setup_benchmark_models.sh && bash tests/run_benchmark_dual.sh
+# Full benchmark: all backends (llama.cpp + Ollama + vLLM), macOS/Linux
+bash tests/run_benchmark_full.sh
 
-# Zero-config single run (downloads models automatically), macOS/Linux
+# Full benchmark, Windows
+powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1
+
+# Single backend (llama.cpp only), macOS/Linux
 bash tests/run_benchmark.sh
 
-# Zero-config single run (downloads models automatically), Windows
+# Single backend (llama.cpp only), Windows
 powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1
 ```
 

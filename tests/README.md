@@ -109,9 +109,6 @@ tests/
 ├── run_benchmark_full.ps1        ← ENTRY POINT full benchmark (tutti i backend × pipeline + categorizer) — Windows
 ├── run_benchmark.sh              ← zero-config singolo backend (macOS/Linux)
 ├── run_benchmark.ps1             ← zero-config singolo backend (Windows)
-├── run_all_benchmarks.sh         ← tutti i modelli GGUF (llama.cpp)
-├── run_benchmark_dual.sh         ← llama.cpp + Ollama, stessi modelli
-├── setup_benchmark_models.sh     ← scarica modelli senza benchmark
 ├── cleanup_benchmark.sh          ← pulizia file generati
 ├── benchmark_models.csv          ← catalogo modelli (sostituisce array hardcoded negli script)
 ├── benchmark_pipeline.py         ← benchmark classifier (schema + parsing)
@@ -254,45 +251,14 @@ Per aggiungere un nuovo modello, aggiungi una riga con `enabled=true`. Se `gguf_
 
 **Nota:** vLLM non è nel CSV — i modelli serviti da vLLM vengono auto-rilevati dal server al runtime.
 
-## Setup modelli + Dual benchmark (llama.cpp + Ollama)
+## Setup modelli
 
-Per girare lo stesso modello su entrambi i backend e confrontare i risultati:
+Il setup è automatico: `run_benchmark_full.sh` scarica i modelli GGUF mancanti e fa `ollama pull` per i modelli Ollama. La lista modelli è in `tests/benchmark_models.csv`.
 
+Per solo setup senza benchmark:
 ```bash
-cd ~/Documents/Progetti/PERSONALE/Spendify/sw_artifacts
-
-# Prima volta (o nuova macchina): scarica tutti i modelli
-bash tests/setup_benchmark_models.sh
-
-# Solo modelli piccoli (≤3B, per macchine con ≤8GB RAM)
-bash tests/setup_benchmark_models.sh --small-only
-
-# Solo GGUF (senza Ollama pull)
-bash tests/setup_benchmark_models.sh --skip-ollama
-
-# Poi lancia il dual benchmark
-bash tests/run_benchmark_dual.sh
-
-# Con più run per ridurre la varianza
-bash tests/run_benchmark_dual.sh --runs 3
+bash tests/run_benchmark_full.sh --setup-only
 ```
-
-`setup_benchmark_models.sh` fa `ollama pull` per ogni modello Ollama **e** `huggingface-cli download` per ogni GGUF. Se un modello è già presente lo skippa. `run_benchmark_dual.sh` non scarica nulla — se un file GGUF o un modello Ollama manca mostra `[SKIP]` e continua.
-
-### Modelli dual benchmark
-
-| GGUF (llama.cpp) | Ollama | Size |
-|------------------|--------|------|
-| `qwen2.5-1.5b-instruct-q4_k_m.gguf` | `qwen2.5:1.5b-instruct` | ~1.0 GB |
-| `gemma-2-2b-it-Q4_K_M.gguf` | `gemma2:2b` | ~1.6 GB |
-| `Qwen3.5-2B-Q4_K_M.gguf` | `qwen3.5:2b` | ~1.7 GB |
-| `Qwen3.5-4B-Q4_K_M.gguf` | `qwen3.5:4b` | ~2.5 GB |
-| `gemma-4-E2B-it-Q4_K_M.gguf` | `gemma4:e2b` | ~3.1 GB |
-| `Llama-3.2-3B-Instruct-Q4_K_M.gguf` | `llama3.2:3b` | ~1.9 GB |
-| `qwen2.5-3b-instruct-q4_k_m.gguf` | `qwen2.5:3b-instruct` | ~2.0 GB |
-| `Phi-3-mini-4k-instruct-Q4_K_M.gguf` | `phi3:3.8b` | ~2.2 GB |
-| `Qwen2.5-7B-Instruct-Q4_K_M.gguf` | `qwen2.5:7b-instruct` | ~4.4 GB |
-| `gemma-3-12b-it-Q4_K_M.gguf` | `gemma3:12b` | ~6.8 GB |
 
 ---
 
@@ -523,5 +489,5 @@ uv run python tests/benchmark_pipeline.py --runs 1 \
 
 - Documentazione completa: `docs/developer_guide.md` § 10
 - Azure ML benchmark: `tools/azure_benchmark.py`
-- Modelli setup: `tests/setup_benchmark_models.sh`
+- Catalogo modelli: `tests/benchmark_models.csv`
 - Catalogo modelli: `tests/benchmark_models.csv`

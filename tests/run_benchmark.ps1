@@ -138,8 +138,8 @@ if ($Backend -eq "local_llama_cpp") {
     $SmallModels = [ordered]@{
         "qwen2.5-1.5b-instruct-q4_k_m.gguf"    = "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf"
         "gemma-2-2b-it-Q4_K_M.gguf"             = "https://huggingface.co/bartowski/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_K_M.gguf"
-        "Qwen3.5-2B-Q4_K_M.gguf"                = "https://huggingface.co/bartowski/Qwen_Qwen3.5-2B-GGUF/resolve/main/Qwen3.5-2B-Q4_K_M.gguf"
-        "Qwen3.5-4B-Q4_K_M.gguf"                = "https://huggingface.co/bartowski/Qwen_Qwen3.5-4B-GGUF/resolve/main/Qwen3.5-4B-Q4_K_M.gguf"
+        "Qwen_Qwen3.5-2B-Q4_K_M.gguf"           = "https://huggingface.co/bartowski/Qwen_Qwen3.5-2B-GGUF/resolve/main/Qwen_Qwen3.5-2B-Q4_K_M.gguf"
+        "Qwen_Qwen3.5-4B-Q4_K_M.gguf"           = "https://huggingface.co/bartowski/Qwen_Qwen3.5-4B-GGUF/resolve/main/Qwen_Qwen3.5-4B-Q4_K_M.gguf"
         "gemma-4-E2B-it-Q3_K_M.gguf"            = "https://huggingface.co/unsloth/gemma-4-E2B-it-GGUF/resolve/main/gemma-4-E2B-it-Q3_K_M.gguf"
         "gemma-4-E2B-it-Q4_K_M.gguf"            = "https://huggingface.co/unsloth/gemma-4-E2B-it-GGUF/resolve/main/gemma-4-E2B-it-Q4_K_M.gguf"
         "Llama-3.2-3B-Instruct-Q4_K_M.gguf"     = "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf"

@@ -448,28 +448,26 @@ powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1 both -Runs 3
 
 ### Setup modelli + Dual benchmark (llama.cpp + Ollama)
 
-Per confrontare lo stesso modello su entrambi i backend:
+Per eseguire un benchmark completo su tutti i backend:
 
 ```bash
 cd ~/Documents/Progetti/PERSONALE/Spendify/sw_artifacts
 
-# Prima volta (o nuova macchina): scarica Ollama models + GGUF
-bash tests/setup_benchmark_models.sh
+# Full benchmark: tutti i backend (llama.cpp + Ollama + vLLM), setup automatico
+bash tests/run_benchmark_full.sh
 
-# Solo modelli piccoli (≤3B, macchine con ≤8 GB RAM)
-bash tests/setup_benchmark_models.sh --small-only
-
-# Solo GGUF, senza Ollama
-bash tests/setup_benchmark_models.sh --skip-ollama
-
-# Lancia il dual benchmark (llama.cpp + Ollama, 9 modelli × 2 backend)
-bash tests/run_benchmark_dual.sh
+# Solo setup modelli, senza benchmark
+bash tests/run_benchmark_full.sh --setup-only
 
 # Con più run per ridurre la varianza
-bash tests/run_benchmark_dual.sh --runs 3
+bash tests/run_benchmark_full.sh --runs 3
+
+# Salta un backend specifico
+bash tests/run_benchmark_full.sh --skip-ollama
+bash tests/run_benchmark_full.sh --skip-vllm
 ```
 
-`run_benchmark_dual.sh` non scarica nulla: se un file GGUF o un modello Ollama manca mostra `[SKIP]` e continua.
+Il setup scarica automaticamente i modelli GGUF mancanti e fa `ollama pull` per i modelli Ollama. La lista modelli è in `tests/benchmark_models.csv`.
 
 ### Comandi manuali (avanzato)
 
@@ -497,8 +495,8 @@ uv run python tests/benchmark_categorizer.py --runs 1 --backend local_ollama --m
 vllm serve Qwen/Qwen2.5-3B-Instruct  # in un altro terminale
 uv run python tests/benchmark_pipeline.py --runs 1 --backend vllm
 
-# Suite completa llama.cpp
-bash tests/run_all_benchmarks.sh
+# Suite completa (tutti i backend)
+bash tests/run_benchmark_full.sh
 ```
 
 Tutti i run scrivono in `tests/generated_files/benchmark/results_all_runs.csv` (append-only). Resume key: `(run_id, filename, commit, branch, provider, model)`.
@@ -545,9 +543,6 @@ Il modulo `tests/hw_monitor.py` (`HWMonitor`) campiona CPU e GPU in background o
 | `tests/run_benchmark_full.ps1` | **ENTRY POINT** (Windows): tutti i backend × pipeline + categorizer |
 | `tests/run_benchmark.sh` | **Zero-config** (macOS/Linux): env + modelli + benchmark llama.cpp in un comando |
 | `tests/run_benchmark.ps1` | **Zero-config** (Windows): equivalente PowerShell, include download modelli |
-| `tests/run_all_benchmarks.sh` | Tutti i modelli GGUF (llama.cpp only) |
-| `tests/run_benchmark_dual.sh` | 9 modelli su entrambi i backend (llama.cpp + Ollama) |
-| `tests/setup_benchmark_models.sh` | Download modelli (Ollama pull + GGUF) senza lanciare benchmark |
 | `tests/cleanup_benchmark.sh` | Pulizia file generati |
 | `tests/benchmark_models.csv` | Catalogo modelli (sostituisce array hardcoded negli script) |
 | `tests/hw_monitor.py` | Monitoraggio HW in background (CPU + GPU cross-platform) |
@@ -786,7 +781,7 @@ fi
 git clone ...
 git pull                          # prende tutti i risultati storici
 
-bash tests/run_all_benchmarks.sh  # resume skippa tutto ciò che esiste,
+bash tests/run_benchmark_full.sh  # resume skippa tutto ciò che esiste,
                                   # aggiunge solo il suo HW + commit
 
 # Apri PR con i risultati (mai push diretto su main)
