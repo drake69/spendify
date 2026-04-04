@@ -1,4 +1,4 @@
-# Spendify — Manuale di Configurazione
+# Spendif.ai — Manuale di Configurazione
 
 > Riferimento completo per tutte le impostazioni disponibili nella pagina **⚙️ Impostazioni**.
 > Le impostazioni sono persistite nel database (`ledger.db`) e si applicano immediatamente al prossimo salvataggio.
@@ -81,7 +81,7 @@ Il tipo conto viene usato come vincolo nella classificazione dello schema file: 
 
 ### Rinominare un conto
 
-Rinominare un conto e sicuro: Spendify ricalcola atomicamente l'ID (`tx_id`) di tutte le transazioni associate, perche `account_label` fa parte della chiave hash. Se il ricalcolo fallisce, viene eseguito il rollback e nessun dato cambia. Al termine, il campo `updated_at` di ogni transazione aggiornata riflette la data dell'operazione.
+Rinominare un conto e sicuro: Spendif.ai ricalcola atomicamente l'ID (`tx_id`) di tutte le transazioni associate, perche `account_label` fa parte della chiave hash. Se il ricalcolo fallisce, viene eseguito il rollback e nessun dato cambia. Al termine, il campo `updated_at` di ogni transazione aggiornata riflette la data dell'operazione.
 
 ---
 
@@ -221,13 +221,13 @@ Il backend LLM viene usato per:
 | **Claude (Anthropic)** | ⚠️ PII redatte | 💰 Pay-per-use | ⚡⚡ Alta | Alta |
 | **OpenAI-compatible** | ⚠️ PII redatte | Varia | Varia | Varia |
 
-**Circuit breaker:** Se il backend configurato non risponde, Spendify fa fallback automatico su Ollama locale. Se anche Ollama è offline, la transazione viene importata con `to_review=True` e descrizione grezza.
+**Circuit breaker:** Se il backend configurato non risponde, Spendif.ai fa fallback automatico su Ollama locale. Se anche Ollama è offline, la transazione viene importata con `to_review=True` e descrizione grezza.
 
 ---
 
 ### 9.0 llama.cpp (locale, default)
 
-La scelta predefinita per le **nuove installazioni**: nessun servizio esterno necessario. Spendify carica il modello GGUF direttamente in memoria tramite `llama-cpp-python`, senza bisogno di Ollama o altri server.
+La scelta predefinita per le **nuove installazioni**: nessun servizio esterno necessario. Spendif.ai carica il modello GGUF direttamente in memoria tramite `llama-cpp-python`, senza bisogno di Ollama o altri server.
 
 **Requisiti hardware minimi (inferenza locale):**
 
@@ -264,7 +264,7 @@ La scelta predefinita per le **nuove installazioni**: nessun servizio esterno ne
 3. Nella sezione **Scarica modello**, scegli un modello suggerito o incolla un URL diretto a un file `.gguf` su HuggingFace
 4. Clicca **⬇️ Scarica** — una barra di progresso mostra i MB scaricati
 
-I modelli vengono salvati in `~/.spendify/models/`. Se nella cartella sono presenti più file `.gguf`, viene usato il primo in ordine alfabetico.
+I modelli vengono salvati in `~/.spendifai/models/`. Se nella cartella sono presenti più file `.gguf`, viene usato il primo in ordine alfabetico.
 
 **Gestione modelli locali:**
 
@@ -272,12 +272,12 @@ La sezione **Modelli locali** mostra i file `.gguf` presenti nella cartella mode
 
 | Campo | Default | Descrizione |
 |---|---|---|
-| **Percorso modello** | *(primo .gguf in `~/.spendify/models/`)* | Percorso al file `.gguf` da usare |
+| **Percorso modello** | *(primo .gguf in `~/.spendifai/models/`)* | Percorso al file `.gguf` da usare |
 | **Finestra di contesto (n_ctx)** | 0 = auto-detect | Token massimi di contesto. `0` = rileva automaticamente dall'header GGUF |
 
-> **Auto-detect context window:** lascia `n_ctx = 0` (default). Spendify legge il valore nativo direttamente dall'header del file GGUF senza caricare i pesi — nessuna configurazione manuale richiesta. Impostando un valore specifico (es. `2048`) si limita la RAM usata a scapito del contesto disponibile.
+> **Auto-detect context window:** lascia `n_ctx = 0` (default). Spendif.ai legge il valore nativo direttamente dall'header del file GGUF senza caricare i pesi — nessuna configurazione manuale richiesta. Impostando un valore specifico (es. `2048`) si limita la RAM usata a scapito del contesto disponibile.
 
-> **Accelerazione GPU:** llama.cpp usa automaticamente Apple Metal su Mac con chip Apple Silicon, CUDA su Linux/Windows con GPU NVIDIA. Per AMD su Linux (ROCm): `CMAKE_ARGS="-DGGML_HIPBLAS=on" uv pip install llama-cpp-python --upgrade`. Se il modello non supporta il ruolo `system`, Spendify fonde automaticamente il system prompt nel prompt utente.
+> **Accelerazione GPU:** llama.cpp usa automaticamente Apple Metal su Mac con chip Apple Silicon, CUDA su Linux/Windows con GPU NVIDIA. Per AMD su Linux (ROCm): `CMAKE_ARGS="-DGGML_HIPBLAS=on" uv pip install llama-cpp-python --upgrade`. Se il modello non supporta il ruolo `system`, Spendif.ai fonde automaticamente il system prompt nel prompt utente.
 
 ---
 
@@ -326,7 +326,7 @@ services:
     volumes:
       - ollama_data:/root/.ollama
 ```
-In questo caso imposta URL: `http://localhost:11434` (o l'IP del container se Spendify è a sua volta in Docker).
+In questo caso imposta URL: `http://localhost:11434` (o l'IP del container se Spendif.ai è a sua volta in Docker).
 
 **Modelli consigliati per qualità categorizzazione:**
 
@@ -349,10 +349,10 @@ In questo caso imposta URL: `http://localhost:11434` (o l'IP del container se Sp
 1. Accedi su https://platform.openai.com
 2. Menu in alto a destra → **API keys**
 3. Clicca **+ Create new secret key**
-4. Dai un nome (es. `Spendify`) e copia la chiave — **mostrata una sola volta**
+4. Dai un nome (es. `Spendif.ai`) e copia la chiave — **mostrata una sola volta**
 5. Assicurati di avere credito nel tuo account (sezione *Billing*)
 
-**Configurazione in Spendify:**
+**Configurazione in Spendif.ai:**
 ```
 Backend LLM:  OpenAI
 API Key:      sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -381,10 +381,10 @@ Modello:      gpt-4o-mini
 1. Accedi su https://console.anthropic.com
 2. Sezione **API Keys** (menu laterale)
 3. Clicca **Create Key**
-4. Dai un nome (es. `Spendify`) e copia la chiave
+4. Dai un nome (es. `Spendif.ai`) e copia la chiave
 5. Aggiungi credito in **Billing → Add Credits** (minimo $5)
 
-**Configurazione in Spendify:**
+**Configurazione in Spendif.ai:**
 ```
 Backend LLM:  Claude (Anthropic)
 API Key:      sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -432,7 +432,7 @@ API Key:      gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Modello:      gemma2-9b-it
 ```
 
-**Modelli Groq utili per Spendify:**
+**Modelli Groq utili per Spendif.ai:**
 
 | Modello | Note |
 |---|---|
@@ -501,7 +501,7 @@ LM Studio è un'app desktop (macOS, Windows, Linux) per eseguire modelli localme
 1. Scarica e installa LM Studio
 2. Scarica un modello dalla sezione *Discover*
 3. Avvia il server locale: **Local Server** → **Start Server**
-4. In Spendify:
+4. In Spendif.ai:
 
 ```
 Backend LLM:  OpenAI-compatible

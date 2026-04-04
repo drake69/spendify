@@ -1,4 +1,4 @@
-name: spendify-bench
+name: spendifai-bench
 channels:
   - conda-forge
   - defaults

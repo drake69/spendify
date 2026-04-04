@@ -1,4 +1,4 @@
-# Contribuire a Spendify
+# Contribuire a Spendif.ai
 
 Grazie per l'interesse! Queste linee guida descrivono come segnalare problemi, proporre funzionalità e contribuire codice.
 
@@ -44,11 +44,11 @@ Apri un commento sull'issue con la motivazione. Il maintainer rivaluta e aggiorn
 1. Cerca nelle [issue aperte](https://github.com/drake69/spendify/issues) — potrebbe esistere già
 2. Apri una nuova issue con il template **Bug report**
 3. Includi:
-   - Versione Spendify (o commit hash)
+   - Versione Spendif.ai (o commit hash)
    - OS e versione Docker/Python
    - Passi per riprodurre
    - Comportamento atteso vs effettivo
-   - Log rilevanti (`docker compose logs spendify`)
+   - Log rilevanti (`docker compose logs spendifai`)
 
 ---
 
@@ -99,7 +99,7 @@ fork → branch → commit → PR → review → merge
 
 ```bash
 git clone https://github.com/drake69/spendify.git
-cd spendify
+cd spendifai
 uv sync
 cp .env.example .env
 

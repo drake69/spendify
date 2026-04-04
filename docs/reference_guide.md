@@ -1,4 +1,4 @@
-# Spendify — Reference Guide
+# Spendif.ai — Reference Guide
 
 > Per la configurazione dettagliata di tutti i parametri e dei provider LLM vedi **[developer_guide.md](developer_guide.md)** e la documentazione tecnica in `documents/configurazione.md`.
 
@@ -99,7 +99,7 @@ Le regole vengono valutate in ordine di priorità decrescente (campo `priorità`
 
 ## Riconciliazione carta-conto (RF-03)
 
-Quando la banca addebita sul conto corrente il totale mensile della carta di credito, le singole spese della carta e l'addebito cumulativo sul conto sarebbero contate due volte. Spendify risolve questo automaticamente:
+Quando la banca addebita sul conto corrente il totale mensile della carta di credito, le singole spese della carta e l'addebito cumulativo sul conto sarebbero contate due volte. Spendif.ai risolve questo automaticamente:
 
 - Le transazioni della carta rimangono visibili nel Ledger
 - L'addebito aggregato sul conto viene marcato come giroconto (🔄) ed escluso dai totali
@@ -129,7 +129,7 @@ Un giroconto è un trasferimento tra due conti tuoi (es. "Bonifico a Conto Depos
 | **OpenAI** | Remoto | PII redatte prima dell'invio | API key in Impostazioni |
 | **Claude** | Remoto | PII redatte prima dell'invio | API key in Impostazioni |
 
-**Circuit breaker:** se il backend configurato non risponde, Spendify fa fallback automatico su Ollama locale. Se anche Ollama è offline, la transazione viene importata con `to_review=True` e descrizione grezza.
+**Circuit breaker:** se il backend configurato non risponde, Spendif.ai fa fallback automatico su Ollama locale. Se anche Ollama è offline, la transazione viene importata con `to_review=True` e descrizione grezza.
 
 ---
 
@@ -149,7 +149,7 @@ La knowledge base è in `chat_bot/knowledge/<lang>/` con FAQ (JSON/Markdown) e d
 
 ## PII Sanitization
 
-Prima di qualsiasi chiamata a backend remoto, Spendify redige:
+Prima di qualsiasi chiamata a backend remoto, Spendif.ai redige:
 
 | Dato | Esempio originale | Dopo sanitizzazione |
 |---|---|---|
@@ -353,10 +353,10 @@ Il layer FastAPI (`api/`) espone le stesse funzionalità del ledger via HTTP/JSO
 
 ```bash
 # Installazione Docker one-liner (Mac/Linux)
-curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/drake69/spendifai/main/installer/install.sh | bash
 
 # Installazione Docker one-liner (Windows PowerShell)
-# irm https://raw.githubusercontent.com/drake69/spendify/main/installer/install.ps1 | iex
+# irm https://raw.githubusercontent.com/drake69/spendifai/main/installer/install.ps1 | iex
 
 # Avvio sviluppo (build da sorgente)
 uv run streamlit run app.py

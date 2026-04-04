@@ -2,7 +2,7 @@
 RAG engine — retrieval-augmented generation for the chatbot.
 
 Uses TF-IDF for retrieval (zero external deps) and delegates generation
-to an LLM backend (local Ollama or cloud API via Spendify's BackendFactory).
+to an LLM backend (local Ollama or cloud API via Spendif.ai's BackendFactory).
 """
 
 from __future__ import annotations

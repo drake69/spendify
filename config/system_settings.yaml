@@ -1,7 +1,7 @@
-# Spendify — System Settings
+# Spendif.ai — System Settings
 # These are internal tuning parameters, NOT exposed in the UI.
 # Edit only if you know what you're doing.
-# Overridable per-installation via ~/.spendify/system_settings.yaml
+# Overridable per-installation via ~/.spendifai/system_settings.yaml
 
 # ── History engine (C-03/C-04/C-05) ─────────────────────────────────────
 history:

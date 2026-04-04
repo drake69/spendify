@@ -1,4 +1,4 @@
-# Spendify — Installation Guide
+# Spendif.ai — Installation Guide
 
 > Scenarios covered:
 > - **Mac One-Click** — automatic installation (recommended, zero configuration)
@@ -39,16 +39,16 @@ The configuration is saved in the database (`user_settings`) and persists across
 
 **Prerequisites:** macOS 12+, Python 3.11+, internet connection
 
-1. Download `install_spendify.command` from the [repository](https://github.com/drake69/spendify)
+1. Download `install_spendifai.command` from the [repository](https://github.com/drake69/spendify)
 2. **Double-click** the file in Finder
 3. The script:
    - Checks Python and installs `uv` (package manager)
-   - Downloads Spendify to `~/Applications/Spendify/`
+   - Downloads Spendif.ai to `~/Applications/Spendif.ai/`
    - Installs all dependencies
    - Detects your hardware and recommends the optimal LLM model
 4. On the first import, the model is downloaded automatically
 
-**To launch Spendify every day:** double-click `Spendify.command` in `~/Applications/Spendify/packaging/macos/`
+**To launch Spendif.ai every day:** double-click `Spendif.ai.command` in `~/Applications/Spendif.ai/packaging/macos/`
 
 **Minimum HW:** 4 GB RAM, Apple Silicon or Intel with AVX2. Metal GPU acceleration is automatic.
 
@@ -68,8 +68,8 @@ llama.cpp on Mac uses **Metal (Apple Silicon)** acceleration automatically. Insi
 ### Step 1 — Clone the repository
 
 ```bash
-git clone https://github.com/drake69/spendify.git spendify
-cd spendify
+git clone https://github.com/drake69/spendify.git spendifai
+cd spendifai
 ```
 
 ### Step 2 — Install uv
@@ -94,7 +94,7 @@ cp .env.example .env
 
 ### Step 5 — Download the LLM model
 
-The model is loaded directly by llama.cpp (built into Spendify) — **no external service to install**.
+The model is loaded directly by llama.cpp (built into Spendif.ai) — **no external service to install**.
 
 ```bash
 # Download a GGUF model (once)
@@ -102,22 +102,22 @@ The model is loaded directly by llama.cpp (built into Spendify) — **no externa
 
 # RAM >= 16 GB (recommended):
 uv run huggingface-cli download google/gemma-3-12b-it-GGUF gemma-3-12b-it-Q4_K_M.gguf \
-    --local-dir ~/.spendify/models
+    --local-dir ~/.spendifai/models
 
 # RAM 8 GB:
 uv run huggingface-cli download Qwen/Qwen2.5-7B-Instruct-GGUF qwen2.5-7b-instruct-q4_k_m.gguf \
-    --local-dir ~/.spendify/models
+    --local-dir ~/.spendifai/models
 
 # RAM 4-6 GB — Gemma 4 E2B (latest architecture, great for Italian):
 uv run huggingface-cli download unsloth/gemma-4-E2B-it-GGUF gemma-4-E2B-it-Q4_K_M.gguf \
-    --local-dir ~/.spendify/models
+    --local-dir ~/.spendifai/models
 
 # RAM 4 GB — lightweight alternative:
 uv run huggingface-cli download Qwen/Qwen2.5-3B-Instruct-GGUF qwen2.5-3b-instruct-q4_k_m.gguf \
-    --local-dir ~/.spendify/models
+    --local-dir ~/.spendifai/models
 ```
 
-> **The model is downloaded only once** into `~/.spendify/models/` and reused on every subsequent launch. Alternatively, you can download the model directly from the app in ⚙️ Settings → Download model.
+> **The model is downloaded only once** into `~/.spendifai/models/` and reused on every subsequent launch. Alternatively, you can download the model directly from the app in ⚙️ Settings → Download model.
 
 > **Gemma 4 E2B:** requires an up-to-date `llama-cpp-python`. If you get `unknown model architecture: 'gemma4'`, run: `uv pip install --upgrade llama-cpp-python`.
 
@@ -164,8 +164,8 @@ Same procedure as Mac. llama.cpp automatically supports NVIDIA GPUs (CUDA) if dr
 ### Step 1 — Clone the repository
 
 ```bash
-git clone https://github.com/drake69/spendify.git spendify
-cd spendify
+git clone https://github.com/drake69/spendify.git spendifai
+cd spendifai
 ```
 
 ### Step 2 — Install uv
@@ -195,19 +195,19 @@ cp .env.example .env
 
 # RAM >= 16 GB (recommended):
 uv run huggingface-cli download google/gemma-3-12b-it-GGUF gemma-3-12b-it-Q4_K_M.gguf \
-    --local-dir ~/.spendify/models
+    --local-dir ~/.spendifai/models
 
 # RAM 8 GB:
 uv run huggingface-cli download Qwen/Qwen2.5-7B-Instruct-GGUF qwen2.5-7b-instruct-q4_k_m.gguf \
-    --local-dir ~/.spendify/models
+    --local-dir ~/.spendifai/models
 
 # RAM 4-6 GB — Gemma 4 E2B (latest architecture, great for Italian):
 uv run huggingface-cli download unsloth/gemma-4-E2B-it-GGUF gemma-4-E2B-it-Q4_K_M.gguf \
-    --local-dir ~/.spendify/models
+    --local-dir ~/.spendifai/models
 
 # RAM 4 GB — lightweight alternative:
 uv run huggingface-cli download Qwen/Qwen2.5-3B-Instruct-GGUF qwen2.5-3b-instruct-q4_k_m.gguf \
-    --local-dir ~/.spendify/models
+    --local-dir ~/.spendifai/models
 ```
 
 > **GPU on Linux:** llama.cpp uses CUDA automatically if NVIDIA drivers are installed. For AMD GPUs (ROCm): `CMAKE_ARGS="-DGGML_HIPBLAS=on" uv pip install llama-cpp-python --upgrade` (requires `rocm-dev` and `hipblas-dev`).
@@ -226,7 +226,7 @@ The app is available at **http://localhost:8501**
 
 Go to ⚙️ **Settings** → **LLM Backend** section:
 - Backend: `llama.cpp (local, zero-config)` ← already selected by default
-- Model path: detected automatically from `~/.spendify/models/`
+- Model path: detected automatically from `~/.spendifai/models/`
 
 > **Ollama alternative:** install with `curl -fsSL https://ollama.com/install.sh | sh`, download a model (`ollama pull gemma3:12b`), and select `Ollama (local)` in settings.
 
@@ -241,14 +241,14 @@ Go to ⚙️ **Settings** → **LLM Backend** section:
 ## 🐧 Linux — Docker with Ollama container
 
 This configuration starts two containers:
-- **`spendify_app`** — the web application
-- **`spendify_ollama`** — the Ollama LLM server
+- **`spendifai_app`** — the web application
+- **`spendifai_ollama`** — the Ollama LLM server
 
 ### Step 1 — Clone the repository
 
 ```bash
-git clone https://github.com/drake69/spendify.git spendify
-cd spendify
+git clone https://github.com/drake69/spendify.git spendifai
+cd spendifai
 ```
 
 ### Step 2 — Prepare the .env file
@@ -288,7 +288,7 @@ docker compose --profile ollama up -d
 
 ### Step 5 — Download the model (once)
 
-> **Note:** if you used `install.sh` with local AI, the download is already running in the background via the `ollama-init` container. Check with: `docker compose --project-directory ~/spendify logs -f ollama-init`
+> **Note:** if you used `install.sh` with local AI, the download is already running in the background via the `ollama-init` container. Check with: `docker compose --project-directory ~/spendifai logs -f ollama-init`
 
 ```bash
 # ~8 GB download, a few minutes of waiting
@@ -298,7 +298,7 @@ docker compose exec ollama ollama pull gemma3:12b
 # docker compose exec ollama ollama pull gemma3:4b
 ```
 
-> The model is saved in the Docker volume `spendify_ollama_models` and **persists across restarts**. No need to download it again.
+> The model is saved in the Docker volume `spendifai_ollama_models` and **persists across restarts**. No need to download it again.
 
 ### Step 6 — Configure the backend in the app
 
@@ -320,7 +320,7 @@ docker compose exec ollama ollama list      # downloaded models
 
 ## 🪟 Windows — Docker with llama.cpp server
 
-On Windows we use **llama.cpp server** as the LLM backend because it works in Docker without complex GPU configuration and is compatible with the OpenAI API (already supported by Spendify).
+On Windows we use **llama.cpp server** as the LLM backend because it works in Docker without complex GPU configuration and is compatible with the OpenAI API (already supported by Spendif.ai).
 
 ### Windows prerequisites
 
@@ -332,8 +332,8 @@ On Windows we use **llama.cpp server** as the LLM backend because it works in Do
 Open PowerShell or Git Bash:
 
 ```powershell
-git clone https://github.com/drake69/spendify.git spendify
-cd spendify
+git clone https://github.com/drake69/spendify.git spendifai
+cd spendifai
 ```
 
 ### Step 2 — Download the LLM model (once)
@@ -394,7 +394,7 @@ docker compose ps                           # container status
 1. Download **LM Studio**: https://lmstudio.ai
 2. In the **Discover** tab search for and download `gemma-3-4b-it`
 3. Go to **Local Server** → press **Start Server** (port `1234`)
-4. Start Spendify with standard Docker (without profile):
+4. Start Spendif.ai with standard Docker (without profile):
    ```powershell
    docker compose up -d
    ```
@@ -408,7 +408,7 @@ docker compose ps                           # container status
 
 ## 💾 Database backup and restore
 
-The database is saved in the Docker volume `spendify_data` and persists across restarts and app updates.
+The database is saved in the Docker volume `spendifai_data` and persists across restarts and app updates.
 
 For backup, restore, moving to another computer and direct inspection → **[Database guide](database.en.md)**.
 
@@ -430,13 +430,13 @@ For backup, restore, moving to another computer and direct inspection → **[Dat
 
 **Does the model need to be re-downloaded on every launch?**
 No. It is saved only once:
-- llama.cpp (native) → `~/.spendify/models/`
+- llama.cpp (native) → `~/.spendifai/models/`
 - Native Ollama → `~/.ollama/models/`
-- Ollama Docker → volume `spendify_ollama_models`
+- Ollama Docker → volume `spendifai_ollama_models`
 - llama.cpp Docker → `./models/` folder
 
 **Can I change the model after the first launch?**
-Yes. Go to ⚙️ Settings and select a different model. For llama.cpp, download the new GGUF into `~/.spendify/models/`. For Ollama: `ollama pull <model>` (native) or `docker compose exec ollama ollama pull <model>` (Docker).
+Yes. Go to ⚙️ Settings and select a different model. For llama.cpp, download the new GGUF into `~/.spendifai/models/`. For Ollama: `ollama pull <model>` (native) or `docker compose exec ollama ollama pull <model>` (Docker).
 
 **Can I use OpenAI or Anthropic instead of a local LLM?**
 Yes. In ⚙️ Settings select `OpenAI` or `Anthropic` and enter the API key. No LLM container required.
@@ -448,16 +448,16 @@ Yes:
 - LLM on the host, app in Docker → `http://host.docker.internal:11434`
 
 **Can I make a backup with the one-liner installation too?**
-Yes. The one-liner installation uses the same Docker volume `spendify_data`. → [Database guide](database.en.md)
+Yes. The one-liner installation uses the same Docker volume `spendifai_data`. → [Database guide](database.en.md)
 
 **Can I move my data to another computer?**
 Yes. → [Moving the database](database.en.md#6--moving-the-database-to-another-computer)
 
-**How do I completely uninstall Spendify?**
+**How do I completely uninstall Spendif.ai?**
 Use the interactive uninstall script:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.sh | bash
+curl -fsSL https://raw.githubusercontent.com/drake69/spendifai/main/installer/uninstall.sh | bash
 # Windows:
-# irm https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.ps1 | iex
+# irm https://raw.githubusercontent.com/drake69/spendifai/main/installer/uninstall.ps1 | iex
 ```
-The script asks separately whether to remove: database, GGUF models (`~/.spendify/models/`), Ollama models, Docker images, installation folder, and shows instructions for uninstalling Docker Desktop.
+The script asks separately whether to remove: database, GGUF models (`~/.spendifai/models/`), Ollama models, Docker images, installation folder, and shows instructions for uninstalling Docker Desktop.

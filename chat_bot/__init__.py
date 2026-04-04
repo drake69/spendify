@@ -1,5 +1,5 @@
 """
-Spendify ChatBot — Adaptive help/support chatbot.
+Spendif.ai ChatBot — Adaptive help/support chatbot.
 
 Three modes, auto-selected based on available resources:
 - RAG Cloud:  external API enabled (Claude/OpenAI) + vector retrieval

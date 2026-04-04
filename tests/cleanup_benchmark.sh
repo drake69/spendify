@@ -5,7 +5,7 @@
 # Livelli (cumulativi):
 #   (default)    — salva risultati + pulisce log, .pyc, __pycache__
 #   --results    — + reset results_all_runs.csv (mantiene solo header)
-#   --models     — + cancella GGUF da ~/.spendify/models/ + ollama rm
+#   --models     — + cancella GGUF da ~/.spendifai/models/ + ollama rm
 #   --generated  — + cancella file sintetici (tests/generated_files/)
 #   --venv       — + cancella .venv
 #   --all        — tutto quanto (equiv. a tutti i flag sopra)
@@ -21,7 +21,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 BENCHMARK_DIR="tests/generated_files/benchmark"
-MODELS_DIR="$HOME/.spendify/models"
+MODELS_DIR="$HOME/.spendifai/models"
 MODELS_CSV="tests/benchmark_models.csv"
 DOCS_BENCHMARK_DIR="../documents/04_software_engineering/benchmark"
 

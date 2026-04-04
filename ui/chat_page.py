@@ -1,4 +1,4 @@
-"""Chat page — Spendify support chatbot."""
+"""Chat page — Spendif.ai support chatbot."""
 from __future__ import annotations
 
 import streamlit as st

@@ -48,7 +48,7 @@ from api.routers.settings import accounts_router, router as settings_router
 from api.schemas import StatusResponse
 
 app = FastAPI(
-    title="Spendify API",
+    title="Spendif.ai API",
     description="REST API for the personal finance ledger. UI-independent — all logic in /services/.",
     version="1.0.0",
     docs_url="/docs",

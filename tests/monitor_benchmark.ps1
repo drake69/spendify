@@ -11,7 +11,7 @@ $ErrorActionPreference = "Stop"
 
 $SourceDir = Split-Path $PSScriptRoot -Parent
 $IsUNC     = $SourceDir -match '^\\\\' -or $SourceDir -match '^//'
-$WorkDir   = if ($IsUNC) { Join-Path $env:USERPROFILE ".spendify\sw_artifacts" } else { $SourceDir }
+$WorkDir   = if ($IsUNC) { Join-Path $env:USERPROFILE ".spendifai\sw_artifacts" } else { $SourceDir }
 
 Set-Location $WorkDir
 

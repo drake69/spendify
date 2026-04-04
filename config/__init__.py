@@ -1,7 +1,7 @@
 """System settings and model registry loader.
 
 Loads tuning parameters from config/system_settings.yaml (repo defaults)
-and merges with ~/.spendify/system_settings.yaml (user overrides) if present.
+and merges with ~/.spendifai/system_settings.yaml (user overrides) if present.
 
 Also loads the model registry from config/models_registry.yaml.
 
@@ -25,8 +25,8 @@ logger = setup_logging()
 
 _DEFAULTS_PATH = Path(__file__).parent / "system_settings.yaml"
 _USER_OVERRIDE_PATH = Path(os.environ.get(
-    "SPENDIFY_SYSTEM_SETTINGS",
-    Path.home() / ".spendify" / "system_settings.yaml",
+    "SPENDIFAI_SYSTEM_SETTINGS",
+    Path.home() / ".spendifai" / "system_settings.yaml",
 ))
 
 

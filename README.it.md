@@ -1,4 +1,4 @@
-# Spendify v3.0
+# Spendif.ai v3.0
 
 [![CI](https://github.com/drake69/spendify/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/drake69/spendify/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/drake69/spendify/graph/badge.svg)](https://codecov.io/gh/drake69/spendify)
@@ -6,8 +6,8 @@
 [![License: PolyForm NC](https://img.shields.io/badge/license-PolyForm%20Noncommercial-orange)](LICENSE)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![Streamlit](https://img.shields.io/badge/UI-Streamlit-ff4b4b?logo=streamlit&logoColor=white)](https://streamlit.io)
-[![Issues](https://img.shields.io/github/issues/drake69/spendify)](https://github.com/drake69/spendify/issues)
-[![Last commit](https://img.shields.io/github/last-commit/drake69/spendify)](https://github.com/drake69/spendify/commits/main)
+[![Issues](https://img.shields.io/github/issues/drake69/spendifai)](https://github.com/drake69/spendify/issues)
+[![Last commit](https://img.shields.io/github/last-commit/drake69/spendifai)](https://github.com/drake69/spendify/commits/main)
 
 > 🇬🇧 [Read in English](README.md)
 
@@ -123,7 +123,7 @@ Aggrega movimenti eterogenei (conti correnti, carte di credito, carte di debito,
 ## Struttura del progetto
 
 ```
-spendify/
+spendifai/
 ├── app.py                  # Entry point Streamlit — onboarding gate + 9 pagine
 ├── .env.example            # Template variabili d'ambiente
 ├── pyproject.toml          # Dipendenze (uv / pip)
@@ -201,12 +201,12 @@ L'unico prerequisito è **[Docker Desktop](https://www.docker.com/products/docke
 
 **Mac / Linux:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/drake69/spendifai/main/installer/install.sh | bash
 ```
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/drake69/spendify/main/installer/install.ps1 | iex
+irm https://raw.githubusercontent.com/drake69/spendifai/main/installer/install.ps1 | iex
 ```
 
 Lo script scarica l'immagine pre-compilata da GitHub Container Registry, avvia il container e apre il browser su **http://localhost:8501** automaticamente.
@@ -215,10 +215,10 @@ Lo script scarica l'immagine pre-compilata da GitHub Container Registry, avvia i
 
 > **Aggiornamento all'ultima versione:**
 > ```bash
-> docker compose --project-directory ~/spendify pull && docker compose --project-directory ~/spendify up -d
+> docker compose --project-directory ~/spendifai pull && docker compose --project-directory ~/spendifai up -d
 > ```
 
-> **Disinstallazione:** `curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.sh | bash`
+> **Disinstallazione:** `curl -fsSL https://raw.githubusercontent.com/drake69/spendifai/main/installer/uninstall.sh | bash`
 
 ---
 
@@ -236,7 +236,7 @@ Lo script scarica l'immagine pre-compilata da GitHub Container Registry, avvia i
 
 ```bash
 git clone https://github.com/drake69/spendify.git
-cd spendify
+cd spendifai
 ```
 
 ### 2. Installa le dipendenze
@@ -268,7 +268,7 @@ Il file `.env` contiene solo parametri infrastrutturali. Tutto il resto — back
 
 ```dotenv
 # URI database — lascia invariato per uso locale; sovrascritto da docker-compose per Docker
-SPENDIFY_DB=sqlite:///ledger.db
+SPENDIFAI_DB=sqlite:///ledger.db
 ```
 
 > **Nient'altro appartiene al `.env`.** Backend LLM, URL Ollama, nome modello, chiavi API OpenAI/Anthropic e nomi titolari sono tutti salvati nella tabella `user_settings` e modificabili live dall'UI senza riavviare l'app.

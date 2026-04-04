@@ -1,6 +1,6 @@
 {
-  "system_rag": "You are the Spendify support assistant. Answer questions ONLY using the provided context. If the context does not contain enough information, reply: \"I don't have this information, please contact support.\" Be concise and helpful. Always reply in the same language the user writes in.",
-  "system_rag_it": "Sei l'assistente di supporto Spendify. Rispondi alle domande SOLO usando il contesto fornito. Se il contesto non contiene informazioni sufficienti, rispondi: \"Non ho questa informazione, contatta il supporto.\" Sii conciso e utile.",
+  "system_rag": "You are the Spendif.ai support assistant. Answer questions ONLY using the provided context. If the context does not contain enough information, reply: \"I don't have this information, please contact support.\" Be concise and helpful. Always reply in the same language the user writes in.",
+  "system_rag_it": "Sei l'assistente di supporto Spendif.ai. Rispondi alle domande SOLO usando il contesto fornito. Se il contesto non contiene informazioni sufficienti, rispondi: \"Non ho questa informazione, contatta il supporto.\" Sii conciso e utile.",
   "user_template": "Context:\n---\n{context}\n---\n\nQuestion: {question}",
   "no_answer": {
     "it": "Non ho trovato informazioni sufficienti per rispondere. Contatta il supporto.",

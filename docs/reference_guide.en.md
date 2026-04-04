@@ -1,4 +1,4 @@
-# Spendify — Reference Guide
+# Spendif.ai — Reference Guide
 
 > For detailed configuration of all parameters and LLM providers see **[developer_guide.en.md](developer_guide.en.md)** and the technical documentation in `documents/configurazione.en.md`.
 
@@ -103,7 +103,7 @@ Rules are evaluated in descending priority order (`priority` field, default 10).
 
 ## Card–Account Reconciliation (RF-03)
 
-When the bank charges the monthly credit card total to the current account, the individual card expenses and the cumulative debit on the account would be counted twice. Spendify resolves this automatically:
+When the bank charges the monthly credit card total to the current account, the individual card expenses and the cumulative debit on the account would be counted twice. Spendif.ai resolves this automatically:
 
 - Card transactions remain visible in the Ledger
 - The aggregated debit on the account is marked as an internal transfer (🔄) and excluded from totals
@@ -133,7 +133,7 @@ An internal transfer is a transfer between two of your own accounts (e.g., "Tran
 | **OpenAI** | Remote | PII redacted before sending | API key in Settings |
 | **Claude** | Remote | PII redacted before sending | API key in Settings |
 
-**Circuit breaker:** if the configured backend does not respond, Spendify automatically falls back to local Ollama. If Ollama is also offline, the transaction is imported with `to_review=True` and raw description.
+**Circuit breaker:** if the configured backend does not respond, Spendif.ai automatically falls back to local Ollama. If Ollama is also offline, the transaction is imported with `to_review=True` and raw description.
 
 ---
 
@@ -153,7 +153,7 @@ The knowledge base is in `chat_bot/knowledge/<lang>/` with FAQ (JSON/Markdown) a
 
 ## PII Sanitization
 
-Before any call to a remote backend, Spendify redacts:
+Before any call to a remote backend, Spendif.ai redacts:
 
 | Data | Original example | After sanitization |
 |---|---|---|
@@ -357,10 +357,10 @@ The FastAPI layer (`api/`) exposes the same ledger features over HTTP/JSON — i
 
 ```bash
 # Docker one-liner install (Mac/Linux)
-curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/drake69/spendifai/main/installer/install.sh | bash
 
 # Docker one-liner install (Windows PowerShell)
-# irm https://raw.githubusercontent.com/drake69/spendify/main/installer/install.ps1 | iex
+# irm https://raw.githubusercontent.com/drake69/spendifai/main/installer/install.ps1 | iex
 
 # Development start (build from source)
 uv run streamlit run app.py

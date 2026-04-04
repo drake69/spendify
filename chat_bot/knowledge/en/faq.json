@@ -1,11 +1,11 @@
 [
   {
     "q": "How do I import a transaction file?",
-    "a": "Go to the Import page, select your file (CSV, Excel or PDF) and click Start Import. Spendify will automatically detect the format and categorize your transactions."
+    "a": "Go to the Import page, select your file (CSV, Excel or PDF) and click Start Import. Spendif.ai will automatically detect the format and categorize your transactions."
   },
   {
     "q": "What file formats are supported?",
-    "a": "Spendify supports CSV, Excel (.xlsx) and PDF bank statement files. The system automatically detects the file structure."
+    "a": "Spendif.ai supports CSV, Excel (.xlsx) and PDF bank statement files. The system automatically detects the file structure."
   },
   {
     "q": "How do I change a transaction's category?",

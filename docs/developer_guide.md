@@ -1,4 +1,4 @@
-# Spendify — Developer Guide
+# Spendif.ai — Developer Guide
 
 > Versione: 3.0 — aggiornato 2026-03-21
 >
@@ -68,7 +68,7 @@ Questa regola è verificata automaticamente in CI (vedi §5).
 
 ```bash
 git clone https://github.com/drake69/spendify.git
-cd spendify
+cd spendifai
 uv sync
 cp .env.example .env
 
@@ -88,7 +88,7 @@ App disponibile su `http://localhost:8501`.
 `.env` contiene solo:
 
 ```
-SPENDIFY_DB=sqlite:///ledger.db   # percorso DB SQLite
+SPENDIFAI_DB=sqlite:///ledger.db   # percorso DB SQLite
 ```
 
 La configurazione LLM (backend, modello, API key) vive nel database e si gestisce dall'UI → Impostazioni.
@@ -97,10 +97,10 @@ La configurazione LLM (backend, modello, API key) vive nel database e si gestisc
 
 Parametri interni di tuning **non esposti nell'UI**. Solo per sviluppatori e power user.
 
-**File:** `config/system_settings.yaml` (default nel repo) + `~/.spendify/system_settings.yaml` (override locale)
+**File:** `config/system_settings.yaml` (default nel repo) + `~/.spendifai/system_settings.yaml` (override locale)
 
 ```yaml
-# Esempio override locale (~/.spendify/system_settings.yaml):
+# Esempio override locale (~/.spendifai/system_settings.yaml):
 history:
   auto_threshold: 0.85      # abbassa la soglia auto-assign
 history_context:
@@ -110,7 +110,7 @@ history_context:
 **Come funziona:**
 - Il loader (`config/__init__.py`) legge i default dal repo, poi fa deep merge con il file locale
 - Le chiavi non specificate nel file locale mantengono il valore di default
-- Variabile d'ambiente `SPENDIFY_SYSTEM_SETTINGS` per path custom
+- Variabile d'ambiente `SPENDIFAI_SYSTEM_SETTINGS` per path custom
 - **Non serve riavviare** — i valori sono caricati all'import del modulo
 
 **Sezioni disponibili:**
@@ -129,7 +129,7 @@ history_context:
 ## 3. Struttura del progetto
 
 ```
-spendify/
+spendifai/
 ├── app.py                  # entry point Streamlit
 ├── config/                 # system settings (YAML, non UI)
 │   ├── __init__.py         # loader con deep merge
@@ -223,7 +223,7 @@ Il classifier supporta una pipeline LLM a 3 step sequenziali, dove l'output di o
 | Step | Scopo | Output |
 |------|-------|--------|
 | **Step 1 — Document Identity** | Identifica il tipo di documento e i parametri di lettura | `doc_type`, `encoding`, `delimiter`, `sheet_name`, `skip_rows` |
-| **Step 2 — Column Mapping** | Mappa le colonne del file ai campi Spendify | `date_col`, `amount_col`, `description_col`, `balance_col`, `credit_col`, `debit_col` |
+| **Step 2 — Column Mapping** | Mappa le colonne del file ai campi Spendif.ai | `date_col`, `amount_col`, `description_col`, `balance_col`, `credit_col`, `debit_col` |
 | **Step 3 — Semantic Analysis** | Analizza la semantica dei valori (segno, formato data, ecc.) | `sign_convention`, `invert_sign`, `date_format`, `decimal_separator`, `account_holder` |
 
 Ogni step riceve come contesto l'output degli step precedenti, consentendo al modello di concentrarsi su un sotto-problema alla volta.
@@ -298,7 +298,7 @@ Il server usa gli stessi `services.*` dell'UI Streamlit — nessuna logica dupli
 
 ## 7b. Chatbot di supporto
 
-Il modulo `chat_bot/` implementa un chatbot adattivo che risponde a domande sull'uso di Spendify. La modalità viene scelta automaticamente in base al backend LLM configurato dall'utente in Impostazioni.
+Il modulo `chat_bot/` implementa un chatbot adattivo che risponde a domande sull'uso di Spendif.ai. La modalità viene scelta automaticamente in base al backend LLM configurato dall'utente in Impostazioni.
 
 ### Architettura
 
@@ -442,7 +442,7 @@ bash tests/run_benchmark_full.sh --skip-ollama --skip-vllm
 Per eseguire un benchmark completo su tutti i backend:
 
 ```bash
-cd ~/Documents/Progetti/PERSONALE/Spendify/sw_artifacts
+cd ~/Documents/Progetti/PERSONALE/Spendif.ai/sw_artifacts
 
 # Full benchmark: tutti i backend (llama.cpp + Ollama + vLLM), setup automatico
 bash tests/run_benchmark_full.sh
@@ -465,18 +465,18 @@ Il setup scarica automaticamente i modelli GGUF mancanti e fa `ollama pull` per 
 ```bash
 # Singolo modello llama.cpp (n_ctx auto-detect dal GGUF)
 uv run python tests/benchmark_pipeline.py --runs 1 --backend local_llama_cpp \
-  --model-path ~/.spendify/models/gemma-3-12b-it-Q4_K_M.gguf
+  --model-path ~/.spendifai/models/gemma-3-12b-it-Q4_K_M.gguf
 
 # Forza un n_ctx specifico (limita RAM)
 uv run python tests/benchmark_pipeline.py --runs 1 --backend local_llama_cpp \
-  --model-path ~/.spendify/models/gemma-3-12b-it-Q4_K_M.gguf --n-ctx 2048
+  --model-path ~/.spendifai/models/gemma-3-12b-it-Q4_K_M.gguf --n-ctx 2048
 
 # Singolo modello Ollama (n_ctx auto-detect via /api/show)
 uv run python tests/benchmark_pipeline.py --runs 1 --backend local_ollama --model gemma3:12b
 
 # Gemma 4 E2B
 uv run python tests/benchmark_pipeline.py --runs 1 --backend local_llama_cpp \
-  --model-path ~/.spendify/models/gemma-4-E2B-it-Q4_K_M.gguf
+  --model-path ~/.spendifai/models/gemma-4-E2B-it-Q4_K_M.gguf
 uv run python tests/benchmark_pipeline.py --runs 1 --backend local_ollama --model gemma4:e2b
 
 # Categorizer con Ollama
@@ -582,10 +582,10 @@ brew install llama.cpp
 # 2. Scarica modello
 brew install huggingface-cli
 huggingface-cli download google/gemma-3-12b-it-GGUF gemma-3-12b-it-Q4_K_M.gguf \
-  --local-dir ~/.spendify/models/
+  --local-dir ~/.spendifai/models/
 
 # 3. Lancia server (aperto sulla rete locale)
-llama-server -m ~/.spendify/models/gemma-3-12b-it-Q4_K_M.gguf \
+llama-server -m ~/.spendifai/models/gemma-3-12b-it-Q4_K_M.gguf \
   --host 0.0.0.0 --port 8080 -ngl 99 -c 4096
 
 # 4. Verifica
@@ -619,16 +619,16 @@ I risultati includono `runtime_os`, `runtime_cpu`, `runtime_ram_gb`, `runtime_gp
 | `--threads N` | llama-server | CPU threads (auto-detect) |
 | `--flash-attn` | llama-server | Flash attention (più veloce su M4) |
 
-### Benchmark veloce tok/s (senza Spendify)
+### Benchmark veloce tok/s (senza Spendif.ai)
 
 Per misurare la velocità pura del modello senza overhead pipeline:
 
 ```bash
 # llama-bench (incluso in llama.cpp)
-llama-bench -m ~/.spendify/models/gemma-3-12b-it-Q4_K_M.gguf -ngl 99
+llama-bench -m ~/.spendifai/models/gemma-3-12b-it-Q4_K_M.gguf -ngl 99
 
 # Tutti i modelli
-for m in ~/.spendify/models/*.gguf; do
+for m in ~/.spendifai/models/*.gguf; do
   echo "=== $(basename $m) ==="
   llama-bench -m "$m" -ngl 99
 done
@@ -638,7 +638,7 @@ done
 
 ```bash
 # GGUF (llama.cpp)
-ls -lh ~/.spendify/models/*.gguf
+ls -lh ~/.spendifai/models/*.gguf
 
 # Ollama
 ollama list
@@ -690,18 +690,18 @@ az login
 uv add azure-ai-ml azure-identity
 
 # 3. Creare risorse Azure (una volta sola)
-az group create -n spendify-rg -l westeurope
-az ml workspace create -n spendify-ml -g spendify-rg
-az acr create -n spendifyacr -g spendify-rg --sku Basic
-az ml compute create -n gpu-t4-spot -g spendify-rg -w spendify-ml \
+az group create -n spendifai-rg -l westeurope
+az ml workspace create -n spendifai-ml -g spendifai-rg
+az acr create -n spendifaiacr -g spendifai-rg --sku Basic
+az ml compute create -n gpu-t4-spot -g spendifai-rg -w spendifai-ml \
     --type AmlCompute --size Standard_NC6s_v3 \
     --min-instances 0 --max-instances 5 --tier low_priority
 
 # 4. Esportare variabili (.env o shell)
 export AZURE_SUBSCRIPTION_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-export AZURE_RESOURCE_GROUP=spendify-rg
-export AZURE_ML_WORKSPACE=spendify-ml
-export AZURE_ACR_NAME=spendifyacr
+export AZURE_RESOURCE_GROUP=spendifai-rg
+export AZURE_ML_WORKSPACE=spendifai-ml
+export AZURE_ACR_NAME=spendifaiacr
 ```
 
 **Run completo (build + submit + wait + download + PR):**

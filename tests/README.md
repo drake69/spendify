@@ -1,4 +1,4 @@
-# Spendify — Benchmark
+# Spendif.ai — Benchmark
 
 ## Quick Start (zero-config)
 
@@ -39,7 +39,7 @@ powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -SkipOll
 
 > Su Parallels Desktop con cartella condivisa:
 > ```powershell
-> cd "\\Mac\Home\Documents\Progetti\PERSONALE\Spendify\sw_artifacts"
+> cd "\\Mac\Home\Documents\Progetti\PERSONALE\Spendif.ai\sw_artifacts"
 > powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -SkipOllama -SkipVllm
 > ```
 
@@ -122,7 +122,7 @@ Misura la capacità dell'LLM di:
 
 ```bash
 uv run python tests/benchmark_pipeline.py --runs 1 --backend local_llama_cpp \
-  --model-path ~/.spendify/models/qwen2.5-3b-instruct-q4_k_m.gguf
+  --model-path ~/.spendifai/models/qwen2.5-3b-instruct-q4_k_m.gguf
 ```
 
 ### Categorizer
@@ -131,7 +131,7 @@ Misura la capacità dell'LLM di assegnare le categorie corrette alle transazioni
 
 ```bash
 uv run python tests/benchmark_categorizer.py --runs 1 --backend local_llama_cpp \
-  --model-path ~/.spendify/models/qwen2.5-3b-instruct-q4_k_m.gguf
+  --model-path ~/.spendifai/models/qwen2.5-3b-instruct-q4_k_m.gguf
 ```
 
 ## Metriche
@@ -279,7 +279,7 @@ Il benchmark rileva automaticamente la context window ottimale per ogni modello 
 Per forzare un valore specifico (es. limitare RAM):
 ```bash
 uv run python tests/benchmark_pipeline.py --backend local_llama_cpp \
-  --model-path ~/.spendify/models/gemma-3-12b-it-Q4_K_M.gguf \
+  --model-path ~/.spendifai/models/gemma-3-12b-it-Q4_K_M.gguf \
   --n-ctx 2048
 ```
 
@@ -353,7 +353,7 @@ Ogni esecuzione salva un log completo in `tests/logs/` (gitignored):
 | `run_benchmark_full.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
 | `benchmark_pipeline.py` | `tests/logs/pipeline_YYYYMMDD_HHMMSS.log` |
 | `benchmark_categorizer.py` | `tests/logs/categorizer_YYYYMMDD_HHMMSS.log` |
-| `diagnose.ps1` | `~/spendify_diagnose_YYYYMMDD_HHMMSS.log` |
+| `diagnose.ps1` | `~/spendifai_diagnose_YYYYMMDD_HHMMSS.log` |
 
 L'output va sia su console che su file (tee). I log non vengono sovrascritti — un file per ogni esecuzione con timestamp nel nome. Utili per:
 - Troubleshooting errori su modelli specifici
@@ -366,7 +366,7 @@ L'output va sia su console che su file (tee). I log non vengono sovrascritti —
 
 | Backend | Flag | Requisiti |
 |---------|------|-----------|
-| llama.cpp (locale) | `--backend local_llama_cpp` | File `.gguf` in `~/.spendify/models/` |
+| llama.cpp (locale) | `--backend local_llama_cpp` | File `.gguf` in `~/.spendifai/models/` |
 | vLLM (locale/remoto) | `--backend vllm` | `vllm serve` in esecuzione |
 | Ollama (locale) | `--backend local_ollama` | Ollama in esecuzione |
 | OpenAI | `--backend openai` | `--api-key` o `$OPENAI_API_KEY` |
@@ -452,7 +452,7 @@ Per confrontare con hardware diverso via rete:
 
 ```bash
 # Su Mac remoto: lancia llama-server
-llama-server -m ~/.spendify/models/gemma-3-12b-it-Q4_K_M.gguf \
+llama-server -m ~/.spendifai/models/gemma-3-12b-it-Q4_K_M.gguf \
   --host 0.0.0.0 --port 8080 -ngl 99 -c 4096
 
 # Su Mac locale: punta al remoto

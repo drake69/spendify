@@ -1,4 +1,4 @@
-"""Spendify – Streamlit entrypoint (RF-08).
+"""Spendif.ai – Streamlit entrypoint (RF-08).
 
 Pages:
   📥 Import             – upload + pipeline processing
@@ -27,7 +27,7 @@ from db.models import create_tables, get_engine
 from support.logging import setup_logging
 
 logger = setup_logging()
-logger.info("Starting Spendify")
+logger.info("Starting Spendif.ai")
 
 # ── S-01: Prompt integrity check ─────────────────────────────────────────────
 from core.prompt_guard import verify_prompt_integrity
@@ -42,7 +42,7 @@ if _prompt_errors:
     )
 
 # ── DB bootstrap ──────────────────────────────────────────────────────────────
-DB_URL = os.getenv("SPENDIFY_DB", "sqlite:///ledger.db")
+DB_URL = os.getenv("SPENDIFAI_DB", "sqlite:///ledger.db")
 engine = create_tables(get_engine(DB_URL))
 
 # ── Startup cleanup ───────────────────────────────────────────────────────────
@@ -57,7 +57,7 @@ if "stale_jobs_reset" not in st.session_state:
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Spendify",
+    page_title="Spendif.ai",
     layout="wide",
     page_icon="🏦",
 )

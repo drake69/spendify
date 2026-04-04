@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Spendify Benchmark-as-a-Service on Azure ML (T-09d).
+"""Spendif.ai Benchmark-as-a-Service on Azure ML (T-09d).
 
 Builds and pushes the benchmark Docker image to ACR, submits Azure ML Jobs
 for each model, and downloads results when complete.
@@ -25,7 +25,7 @@ Environment variables (or .env):
     AZURE_SUBSCRIPTION_ID   — Azure subscription
     AZURE_RESOURCE_GROUP    — Resource group with ML workspace
     AZURE_ML_WORKSPACE      — Azure ML workspace name
-    AZURE_ACR_NAME          — Azure Container Registry name (e.g. spendifyacr)
+    AZURE_ACR_NAME          — Azure Container Registry name (e.g. spendifaiacr)
     AZURE_COMPUTE_TARGET    — GPU compute (default: gpu-t4-spot)
 """
 from __future__ import annotations
@@ -46,7 +46,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 PROJECT_ROOT = Path(__file__).parent.parent
 BENCH_CSV = PROJECT_ROOT / "tests" / "generated_files" / "benchmark" / "results_all_runs.csv"
-DOCKER_IMAGE = "spendify-bench"
+DOCKER_IMAGE = "spendifai-bench"
 DOCKERFILE = "docker/Dockerfile.benchmark"
 
 # Azure defaults (overridable via env)
@@ -63,9 +63,9 @@ def _get_subscription_id() -> str:
             pass
     return sub
 
-RESOURCE_GROUP = os.environ.get("AZURE_RESOURCE_GROUP", "spendify-rg")
-WORKSPACE = os.environ.get("AZURE_ML_WORKSPACE", "spendify-ml")
-ACR_NAME = os.environ.get("AZURE_ACR_NAME", "spendifyacr")
+RESOURCE_GROUP = os.environ.get("AZURE_RESOURCE_GROUP", "spendifai-rg")
+WORKSPACE = os.environ.get("AZURE_ML_WORKSPACE", "spendifai-ml")
+ACR_NAME = os.environ.get("AZURE_ACR_NAME", "spendifaiacr")
 COMPUTE_TARGET = os.environ.get("AZURE_COMPUTE_TARGET", "cpu-bench")
 
 
@@ -121,7 +121,7 @@ def _create_conda_env_file() -> Path:
     conda_path = PROJECT_ROOT / "docker" / "conda_benchmark.yml"
     conda_path.parent.mkdir(parents=True, exist_ok=True)
     conda_path.write_text("""\
-name: spendify-bench
+name: spendifai-bench
 channels:
   - conda-forge
   - defaults
@@ -167,10 +167,10 @@ def submit_job(model_id: str, runs: int = 1, compute: str | None = None,
         acr_url = f"{ACR_NAME}.azurecr.io"
         image = f"{acr_url}/{DOCKER_IMAGE}:latest"
         print(f"  Image: {image}")
-        env = Environment(name="spendify-bench-docker", image=image)
+        env = Environment(name="spendifai-bench-docker", image=image)
         job = command(
             name=job_name,
-            display_name=f"Spendify Benchmark — {model_id}",
+            display_name=f"Spendif.ai Benchmark — {model_id}",
             description=f"Classifier + categorizer benchmark for {model_id}",
             environment=env,
             compute=compute_name,
@@ -191,14 +191,14 @@ def submit_job(model_id: str, runs: int = 1, compute: str | None = None,
         # Conda mode — no Docker needed locally
         conda_file = _create_conda_env_file()
         env = Environment(
-            name="spendify-bench-conda",
-            description="Spendify benchmark env (conda, no Docker)",
+            name="spendifai-bench-conda",
+            description="Spendif.ai benchmark env (conda, no Docker)",
             conda_file=str(conda_file),
             image="mcr.microsoft.com/azureml/curated/acft-hf-nlp-gpu:latest",
         )
         job = command(
             name=job_name,
-            display_name=f"Spendify Benchmark — {model_id}",
+            display_name=f"Spendif.ai Benchmark — {model_id}",
             description=f"Classifier + categorizer benchmark for {model_id}",
             environment=env,
             compute=compute_name,
@@ -368,7 +368,7 @@ def _merge_csv(source: Path, target: Path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Spendify Benchmark on Azure ML")
+    parser = argparse.ArgumentParser(description="Spendif.ai Benchmark on Azure ML")
     parser.add_argument("--model", type=str, help="Model ID from registry (e.g. qwen2.5-3b)")
     parser.add_argument("--all-models", action="store_true", help="Run all models from registry")
     parser.add_argument("--runs", type=int, default=1, help="Number of runs per model")

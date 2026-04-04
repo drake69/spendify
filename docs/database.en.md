@@ -1,6 +1,6 @@
-# Spendify — Database management
+# Spendif.ai — Database management
 
-> Spendify's database is a single SQLite file (`ledger.db`).
+> Spendif.ai's database is a single SQLite file (`ledger.db`).
 > This guide covers everything related to data: where it is located, how to back it up, how to restore it, and how to move it to another computer.
 
 ---
@@ -44,13 +44,13 @@ The `ledger.db` file contains **everything** — there are no other data files t
 
 | Installation mode | Path |
 |-------------------|------|
-| **One-liner Docker** (`install.sh` / `install.ps1`) | Docker volume `spendify_data` → `/app/data/ledger.db` inside the container |
-| **Docker Compose from repo** | Docker volume `spendify_data` → `/app/data/ledger.db` inside the container |
+| **One-liner Docker** (`install.sh` / `install.ps1`) | Docker volume `spendifai_data` → `/app/data/ledger.db` inside the container |
+| **Docker Compose from repo** | Docker volume `spendifai_data` → `/app/data/ledger.db` inside the container |
 | **Native (Mac/Linux, uv)** | `./ledger.db` in the project folder |
 
 ### Why is the Docker volume not a normal folder?
 
-The `spendify_data` volume is managed by Docker and is not directly accessible from your computer's filesystem like a normal folder. To read from or write to the volume, a temporary container must be used as a "bridge" — the commands in the following sections do exactly this.
+The `spendifai_data` volume is managed by Docker and is not directly accessible from your computer's filesystem like a normal folder. To read from or write to the volume, a temporary container must be used as a "bridge" — the commands in the following sections do exactly this.
 
 ---
 
@@ -60,10 +60,10 @@ The `spendify_data` volume is managed by Docker and is not directly accessible f
 
 ```bash
 # Create the backup folder (once)
-mkdir -p ~/spendify-backup
+mkdir -p ~/spendifai-backup
 
 # Copy the DB with a name that includes the date
-cp ledger.db ~/spendify-backup/ledger_$(date +%Y%m%d_%H%M%S).db
+cp ledger.db ~/spendifai-backup/ledger_$(date +%Y%m%d_%H%M%S).db
 ```
 
 ### 3.2 — Backup (Docker — container running)
@@ -71,13 +71,13 @@ cp ledger.db ~/spendify-backup/ledger_$(date +%Y%m%d_%H%M%S).db
 Direct method with `docker cp`, no additional containers required:
 
 ```bash
-mkdir -p ~/spendify-backup
+mkdir -p ~/spendifai-backup
 
-docker cp spendify_app:/app/data/ledger.db \
-  ~/spendify-backup/ledger_$(date +%Y%m%d_%H%M%S).db
+docker cp spendifai_app:/app/data/ledger.db \
+  ~/spendifai-backup/ledger_$(date +%Y%m%d_%H%M%S).db
 ```
 
-> `spendify_app` is the container name (defined in `docker-compose.yml`).
+> `spendifai_app` is the container name (defined in `docker-compose.yml`).
 > The container **must be running** to use `docker cp`.
 
 ### 3.3 — Backup (Docker — container stopped)
@@ -85,32 +85,32 @@ docker cp spendify_app:/app/data/ledger.db \
 If the container is stopped, use a temporary Alpine container (lighter than Python):
 
 ```bash
-mkdir -p ~/spendify-backup
+mkdir -p ~/spendifai-backup
 
 docker run --rm \
-  -v spendify_data:/data \
-  -v ~/spendify-backup:/backup \
+  -v spendifai_data:/data \
+  -v ~/spendifai-backup:/backup \
   alpine cp /data/ledger.db /backup/ledger_$(date +%Y%m%d_%H%M%S).db
 ```
 
-> **Windows (PowerShell):** replace `~/spendify-backup` with `$env:USERPROFILE\spendify-backup`
+> **Windows (PowerShell):** replace `~/spendifai-backup` with `$env:USERPROFILE\spendifai-backup`
 > and `$(date +%Y%m%d_%H%M%S)` with the date written manually, e.g. `20260317_120000`.
 
 ### 3.4 — Automatic backup (crontab, Linux/Mac)
 
 ```cron
 # Backup every day at 03:00
-0 3 * * * docker cp spendify_app:/app/data/ledger.db ~/spendify-backup/ledger_$(date +\%Y\%m\%d).db
+0 3 * * * docker cp spendifai_app:/app/data/ledger.db ~/spendifai-backup/ledger_$(date +\%Y\%m\%d).db
 
 # Delete backups older than 30 days
-0 4 * * * find ~/spendify-backup -name "ledger_*.db" -mtime +30 -delete
+0 4 * * * find ~/spendifai-backup -name "ledger_*.db" -mtime +30 -delete
 ```
 
 For native installation:
 
 ```cron
-0 3 * * * cp /path/to/project/ledger.db ~/spendify-backup/ledger_$(date +\%Y\%m\%d).db
-0 4 * * * find ~/spendify-backup -name "ledger_*.db" -mtime +30 -delete
+0 3 * * * cp /path/to/project/ledger.db ~/spendifai-backup/ledger_$(date +\%Y\%m\%d).db
+0 4 * * * find ~/spendifai-backup -name "ledger_*.db" -mtime +30 -delete
 ```
 
 ---
@@ -127,7 +127,7 @@ pkill -f "streamlit run app.py"
 cp ledger.db ledger_before_restore_$(date +%Y%m%d_%H%M%S).db
 
 # 3. Restore the chosen backup
-cp ~/spendify-backup/ledger_20260317_030000.db ledger.db
+cp ~/spendifai-backup/ledger_20260317_030000.db ledger.db
 
 # 4. Restart
 uv run streamlit run app.py
@@ -137,20 +137,20 @@ uv run streamlit run app.py
 
 ```bash
 # 1. Stop the container
-docker compose -C ~/spendify down
+docker compose -C ~/spendifai down
 
 # 2. Copy the backup into the volume
 docker run --rm \
-  -v spendify_data:/data \
-  -v ~/spendify-backup:/backup:ro \
+  -v spendifai_data:/data \
+  -v ~/spendifai-backup:/backup:ro \
   alpine cp /backup/ledger_20260317_030000.db /data/ledger.db
 
 # 3. Restart
-docker compose -C ~/spendify up -d
+docker compose -C ~/spendifai up -d
 ```
 
 > If you installed from the repository rather than with the one-liner, replace
-> `docker compose -C ~/spendify` with `docker compose` from the project folder.
+> `docker compose -C ~/spendifai` with `docker compose` from the project folder.
 
 ### 4.3 — Partial restore (selected tables only)
 
@@ -175,25 +175,25 @@ If you already have a `ledger.db` (for example created with the native installat
 
 ```bash
 # 1. Make sure the container is stopped
-docker compose -C ~/spendify down
+docker compose -C ~/spendifai down
 
 # 2. Copy the DB into the volume
 docker run --rm \
-  -v spendify_data:/data \
+  -v spendifai_data:/data \
   -v "/absolute/path/to/ledger.db":/source/ledger.db:ro \
   alpine cp /source/ledger.db /data/ledger.db
 
 # 3. Verify the file arrived
 docker run --rm \
-  -v spendify_data:/data \
+  -v spendifai_data:/data \
   alpine ls -lh /data/
 
 # 4. Start the app
-docker compose -C ~/spendify up -d
+docker compose -C ~/spendifai up -d
 ```
 
-> **Mac:** the absolute path is `/Users/yourname/spendify/ledger.db`
-> **Linux:** `/home/yourname/spendify/ledger.db`
+> **Mac:** the absolute path is `/Users/yourname/spendifai/ledger.db`
+> **Linux:** `/home/yourname/spendifai/ledger.db`
 
 ---
 
@@ -201,7 +201,7 @@ docker compose -C ~/spendify up -d
 
 1. **Back up** the DB on the source computer (section 3)
 2. **Copy the `.db` file** to the new computer (USB, cloud, scp, etc.)
-3. **Install Spendify** on the new computer with the one-liner (`install.sh` / `install.ps1`)
+3. **Install Spendif.ai** on the new computer with the one-liner (`install.sh` / `install.ps1`)
 4. **Import the DB** into the Docker volume (section 5)
 5. Open the app: all transactions, rules and settings are present
 
@@ -219,7 +219,7 @@ You can open the database with any SQLite client. Examples:
 sqlite3 ledger.db
 
 # Docker — extract the DB first with docker cp
-docker cp spendify_app:/app/data/ledger.db /tmp/ledger_inspect.db
+docker cp spendifai_app:/app/data/ledger.db /tmp/ledger_inspect.db
 sqlite3 /tmp/ledger_inspect.db
 ```
 

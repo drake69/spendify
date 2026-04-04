@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ──────────────────────────────────────────────
-# Spendify — Startup script (macOS / Linux)
+# Spendif.ai — Startup script (macOS / Linux)
 # ──────────────────────────────────────────────
 set -euo pipefail
 

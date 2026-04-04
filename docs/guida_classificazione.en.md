@@ -1,6 +1,6 @@
 # Transaction Classification Guide
 
-> How Spendify turns your bank transactions into categorised data with minimal manual effort.
+> How Spendif.ai turns your bank transactions into categorised data with minimal manual effort.
 
 ---
 
@@ -8,7 +8,7 @@
 
 Upload your transactions file (CSV, XLSX, XLS) by dragging it into the upload area.
 
-- Spendify recognises the file schema automatically and computes a **confidence score** (0-100%).
+- Spendif.ai recognises the file schema automatically and computes a **confidence score** (0-100%).
 - If confidence is >= 80%, import proceeds without user intervention.
 - Transactions are categorised by AI (LLM) and any existing deterministic rules.
 
@@ -20,7 +20,7 @@ Transactions where the AI was not confident are flagged for review.
 
 - Uncertain transactions are marked with a **warning** flag (needs review)
 - For each one you can correct **category**, **subcategory** and **context** from dropdown menus
-- Confirm with **Validated** to tell Spendify "this classification is correct"
+- Confirm with **Validated** to tell Spendif.ai "this classification is correct"
 - You can also create a rule directly from the Review page, just like in the Ledger
 
 ---
@@ -65,19 +65,19 @@ Rules created (from the Ledger, Review or Rules page) are automatically applied 
 Import --> AI categorises --> User reviews --> Create rule --> Next import: 0 interventions
 ```
 
-The more you use Spendify, the less manual work. Every rule you create reduces the number of transactions to review on the next import. Goal: **zero pain**.
+The more you use Spendif.ai, the less manual work. Every rule you create reduces the number of transactions to review on the next import. Goal: **zero pain**.
 
 ---
 
 ## 5b. Auto-learning from history
 
-In addition to rules, Spendify automatically learns from your validations. Every time you validate a transaction (checkbox), the system records the association between the counterpart and the category.
+In addition to rules, Spendif.ai automatically learns from your validations. Every time you validate a transaction (checkbox), the system records the association between the counterpart and the category.
 
 ### How it works
 
-1. **Association table** — Spendify groups all validated transactions by description + category + subcategory and counts occurrences.
+1. **Association table** — Spendif.ai groups all validated transactions by description + category + subcategory and counts occurrences.
 2. **Homogeneity** — For each counterpart, it calculates how "stable" the classification is (from 0 to 1). If ESSELUNGA is *always* Food, homogeneity = 1.00. If AMAZON is spread across Technology, Food, Clothing, homogeneity is low.
-3. **Automatic decision** — On the next import, before calling the AI, Spendify checks history:
+3. **Automatic decision** — On the next import, before calling the AI, Spendif.ai checks history:
    - **Confidence >= 0.90** — assigns directly (source: History), no review needed
    - **Confidence 0.50–0.89** — suggests the category (source: History), but flags it for review
    - **Confidence < 0.50** — calls the AI as usual
@@ -111,7 +111,7 @@ AMAZON with 5 different categories
 
 ## Validation vs. classification source
 
-Spendify tracks two **distinct** pieces of information for each transaction:
+Spendif.ai tracks two **distinct** pieces of information for each transaction:
 
 | Concept | Field | Meaning |
 |---------|-------|---------|

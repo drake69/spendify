@@ -365,7 +365,7 @@ def render_report_page(engine):
     st.download_button(
         t("report.export_btn"),
         xlsx_bytes,
-        f"spendify_report_{period_label}.xlsx",
+        f"spendifai_report_{period_label}.xlsx",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         use_container_width=False,
     )

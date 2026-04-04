@@ -582,6 +582,6 @@ def render_analysis_page(engine):
     st.download_button(
         t("analytics.download_html_report"),
         html_str.encode("utf-8"),
-        "spendify_report.html",
+        "spendifai_report.html",
         "text/html",
     )

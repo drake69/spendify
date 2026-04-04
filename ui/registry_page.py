@@ -571,13 +571,13 @@ def render_registry_page(engine):
     with ec1:
         csv_bytes = tx_svc.export_csv(filters=filters)
         st.download_button(
-            "📥 Esporta CSV", csv_bytes, "spendify_export.csv", "text/csv",
+            "📥 Esporta CSV", csv_bytes, "spendifai_export.csv", "text/csv",
             use_container_width=True,
         )
     with ec2:
         xlsx_bytes = tx_svc.export_xlsx(filters=filters)
         st.download_button(
-            "📥 Esporta XLSX", xlsx_bytes, "spendify_export.xlsx",
+            "📥 Esporta XLSX", xlsx_bytes, "spendifai_export.xlsx",
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True,
         )

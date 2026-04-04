@@ -215,7 +215,7 @@ def _get_fallback(config: ProcessingConfig) -> OllamaBackend | None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Spendify debug pipeline runner",
+        description="Spendif.ai debug pipeline runner",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
@@ -248,7 +248,7 @@ def main() -> None:
     filename = file_path.name
     config = _build_config(args)
 
-    print(f"\nSpendify debug pipeline")
+    print(f"\nSpendif.ai debug pipeline")
     print(f"  file    : {file_path.resolve()}")
     print(f"  step    : {args.step}")
     print(f"  backend : {args.backend}")

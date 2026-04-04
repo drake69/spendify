@@ -1,18 +1,18 @@
-# Spendify — User Guide
+# Spendif.ai — User Guide
 
-> Everything you need to use Spendify in less than 10 minutes.
+> Everything you need to use Spendif.ai in less than 10 minutes.
 
 ---
 
 ## The idea in one sentence
 
-You download your transaction files from the bank, drag them into Spendify, it unifies them, classifies them, and tells you where your money goes. That's it.
+You download your transaction files from the bank, drag them into Spendif.ai, it unifies them, classifies them, and tells you where your money goes. That's it.
 
 ---
 
 ## 1. First launch — onboarding wizard
 
-**Situation:** You've just installed Spendify and are launching it for the first time.
+**Situation:** You've just installed Spendif.ai and are launching it for the first time.
 
 The app automatically shows the **onboarding wizard** (4 steps). No need to look for any menu.
 
@@ -35,34 +35,34 @@ The app automatically shows the **onboarding wizard** (4 steps). No need to look
 4. Click **Avvia elaborazione**.
 5. Wait for the green bar. You can close the browser and reopen it: the work continues in the background.
 
-> **Example:** You have three files — `estratto_unicredit_gen.csv`, `carta_visa_gen.xlsx`, `conto_deposito.csv`. You select all three at once. Spendify automatically figures out what type they are.
+> **Example:** You have three files — `estratto_unicredit_gen.csv`, `carta_visa_gen.xlsx`, `conto_deposito.csv`. You select all three at once. Spendif.ai automatically figures out what type they are.
 
-**What happens behind the scenes:** Spendify assigns each transaction a unique code based on its content. If you import the same file twice nothing bad happens — duplicates are silently discarded.
+**What happens behind the scenes:** Spendif.ai assigns each transaction a unique code based on its content. If you import the same file twice nothing bad happens — duplicates are silently discarded.
 
 > **Import History:** the **Import History** page in the sidebar shows the full history of all imports (date, file, account, number of transactions). You can undo an import by deleting all transactions from that batch at once using the "Cancel import" button. See the dedicated section below.
 
 ### Automatic import and schema review
 
-Spendify analyses the structure of each file and computes a **confidence score** (from 0 to 100%) on how well it understood the format.
+Spendif.ai analyses the structure of each file and computes a **confidence score** (from 0 to 100%) on how well it understood the format.
 
 - **Confidence >= 80%** — import proceeds automatically, with no user interaction needed.
 - **Confidence < 80%** — a review form appears where you can verify the detected columns (date, amount, description, document type) and correct them if needed. After manual confirmation, the confidence is set to 100%.
 
-Once a file's schema is confirmed, all subsequent imports of the same format will be automatic — Spendify remembers the structure.
+Once a file's schema is confirmed, all subsequent imports of the same format will be automatic — Spendif.ai remembers the structure.
 
-> **Auto-selected account:** if the file format matches a schema previously imported for a specific account, Spendify automatically pre-selects that account in the dropdown. No need to choose it every time.
+> **Auto-selected account:** if the file format matches a schema previously imported for a specific account, Spendif.ai automatically pre-selects that account in the dropdown. No need to choose it every time.
 
 > **First upload warning:** when you upload a file with a format never seen before (first upload) and the file contains fewer than 50 rows, a yellow warning appears: *"For optimal recognition, upload the transactions file as downloaded from the bank, without modifications, ideally with 250-300 transactions."* This is because automatic schema detection works better with more data.
 
 ### Rows to skip — when does this field appear?
 
-Some bank files have header rows before the data table (bank name, period, account number…) and summary/total rows at the bottom. Spendify uses density-based analysis to automatically detect where the actual data table starts and ends, removing both preamble rows at the top and totals at the bottom. In most cases no manual configuration is needed.
+Some bank files have header rows before the data table (bank name, period, account number…) and summary/total rows at the bottom. Spendif.ai uses density-based analysis to automatically detect where the actual data table starts and ends, removing both preamble rows at the top and totals at the bottom. In most cases no manual configuration is needed.
 
 If automatic detection **fails** (unusual format, fully numeric, no text headers), a **"Rows to skip"** field will appear next to the filename. Enter how many rows to skip before the table header.
 
 > **Example:** Open the CSV file in a text editor. If the first 3 rows are `Bank XYZ`, `Account 123`, `From 01/01 to 31/01` and row 4 is `Date,Amount,Description`, enter `3`.
 
-Once the file schema is confirmed, you won't see this field on subsequent imports — Spendify remembers it automatically.
+Once the file schema is confirmed, you won't see this field on subsequent imports — Spendif.ai remembers it automatically.
 
 ### Import summary
 
@@ -119,11 +119,11 @@ Go to **Ledger**. You'll find the complete list in chronological order, with fil
 
 **Bulk validation:** select one or more transactions and click **Valida selezionate** to confirm them all at once.
 
-> **What does "Validated" mean?** Validating a transaction tells Spendify: "I have seen this expense and confirm it is correct (not anomalous)". Validation concerns the **expense itself**, not the category. If a rule or the AI reclassifies the transaction later, the validation stays active: the source badge (AI, Rule, Manual, History) changes, but the "Validated" flag is not touched. Only an explicit click on the "Validato" checkbox (unchecking it) can remove the validation.
+> **What does "Validated" mean?** Validating a transaction tells Spendif.ai: "I have seen this expense and confirm it is correct (not anomalous)". Validation concerns the **expense itself**, not the category. If a rule or the AI reclassifies the transaction later, the validation stays active: the source badge (AI, Rule, Manual, History) changes, but the "Validated" flag is not touched. Only an explicit click on the "Validato" checkbox (unchecking it) can remove the validation.
 
 ### Behavioural fan-out (category propagation)
 
-When you validate a transaction in the Ledger (or in Review), Spendify automatically looks for other transactions with the same description that have not yet been categorised. If it finds any, a suggestion appears: **"Apply to N similar transactions?"**
+When you validate a transaction in the Ledger (or in Review), Spendif.ai automatically looks for other transactions with the same description that have not yet been categorised. If it finds any, a suggestion appears: **"Apply to N similar transactions?"**
 
 - Click **Apply to all** to copy the same category/subcategory to all matching transactions (with source "History").
 - Click **No thanks** to dismiss the suggestion.
@@ -142,7 +142,7 @@ For the full workflow, see the [Classification Guide](guida_classificazione.en.m
 
 ## 4. Review: transactions to check
 
-**Situation:** Spendify was not confident about some classifications and has put them on hold.
+**Situation:** Spendif.ai was not confident about some classifications and has put them on hold.
 
 Go to **Review**. You'll find the transactions marked with ⚠️. For each one you can:
 - Change the category/subcategory from the dropdown menu
@@ -158,9 +158,9 @@ Go to **Review**. You'll find the transactions marked with ⚠️. For each one 
 **Fonte column (classification tracking):**
 - Badge showing who assigned the category: 🧠 AI, 📏 Rule, 👤 Manual, 📚 History
 
-**Bulk validation:** select the transactions you are sure about and click **Valida selezionate** to confirm them all at once. When you validate a transaction you are telling Spendify: "I have seen this expense and confirm it is correct". Validation does not change the category, and it is not removed if the category changes later (by rule or AI). Only an explicit click on the checkbox removes it.
+**Bulk validation:** select the transactions you are sure about and click **Valida selezionate** to confirm them all at once. When you validate a transaction you are telling Spendif.ai: "I have seen this expense and confirm it is correct". Validation does not change the category, and it is not removed if the category changes later (by rule or AI). Only an explicit click on the checkbox removes it.
 
-**Behavioural fan-out:** in Review as well, after validating a transaction, Spendify offers to apply the same category to similar uncategorised transactions. See the "Behavioural fan-out" section in the Ledger chapter for details.
+**Behavioural fan-out:** in Review as well, after validating a transaction, Spendif.ai offers to apply the same category to similar uncategorised transactions. See the "Behavioural fan-out" section in the Ledger chapter for details.
 
 > **Example:** "PAGAMENTO POS 00112 FARMACIA CENTRALE" was classified as *Casa* but you know it's *Salute*. You correct it once, and if you saved a rule that correction will be applied automatically to future imports.
 
@@ -201,7 +201,7 @@ Go to **✏️ Bulk Edit**. The page is divided into two main areas.
 ### 6a — Operations on a reference transaction
 
 1. Search and select a transaction from the dropdown menu (you can filter by text or show only those ⚠️ pending review)
-2. Spendify shows how many other transactions have the same or a similar description (Jaccard ≥ 35%)
+2. Spendif.ai shows how many other transactions have the same or a similar description (Jaccard ≥ 35%)
 3. Then choose what to do:
    - **2a Giroconto** — mark/unmark as an internal transfer; with one click it propagates to all transactions with the same description
    - **2b Contesto** — assign a context (e.g. "Vacanza") to the single transaction or to all similar ones
@@ -259,7 +259,7 @@ In the Analytics page (and the Taxonomy page) a **tree filter** is available tha
 
 ### Counterpart associations (auto-learning)
 
-In the Analytics section you will also find the **Counterpart associations** view, which shows how Spendify has learned to associate each counterpart (e.g. ESSELUNGA, AMAZON) with categories over time.
+In the Analytics section you will also find the **Counterpart associations** view, which shows how Spendif.ai has learned to associate each counterpart (e.g. ESSELUNGA, AMAZON) with categories over time.
 
 For each counterpart it shows:
 - **Category/Subcategory** most frequent among validated transactions
@@ -269,7 +269,7 @@ For each counterpart it shows:
   - 🟡 **0.50–0.89** — mixed (e.g. ROSSOPOMODORO: almost always Dining, sometimes Holidays)
   - 🔴 **< 0.50** — heterogeneous (e.g. AMAZON: Technology, Food, Clothing...)
 
-> **How it works:** Spendify only counts transactions you have **validated** (the checkbox in Ledger or Review). The more transactions you validate, the more the system learns. When you import new files, counterparts with high homogeneity are classified automatically from history — without calling the AI.
+> **How it works:** Spendif.ai only counts transactions you have **validated** (the checkbox in Ledger or Review). The more transactions you validate, the more the system learns. When you import new files, counterparts with high homogeneity are classified automatically from history — without calling the AI.
 
 ---
 
@@ -412,7 +412,7 @@ You can download the table as CSV with the **⬇️ Scarica CSV** button.
 
 ---
 
-## 14. Assistant: ask Spendify for help
+## 14. Assistant: ask Spendif.ai for help
 
 **Situation:** You have a question about how a feature works, how to import a file, or how to configure an option.
 
@@ -450,7 +450,7 @@ Go to **⚙️ Settings**:
 - **Model:** specify the model name (e.g. `gpt-4o-mini`, `claude-3-5-haiku-20241022`, `gemma2-9b-it`) or select a `.gguf` file for llama.cpp
 - **API Key:** enter the key if you use a remote service
 
-> **Privacy note:** If you use a remote backend (OpenAI or Claude), Spendify automatically removes IBANs, card numbers, tax identification numbers, and the account holder's name before sending any data.
+> **Privacy note:** If you use a remote backend (OpenAI or Claude), Spendif.ai automatically removes IBANs, card numbers, tax identification numbers, and the account holder's name before sending any data.
 
 For detailed instructions on where to register and how to obtain API keys for each provider, see the **[Configuration Manual](configurazione.en.md)**.
 
@@ -467,11 +467,11 @@ Every account has a mandatory **type** indicating the financial instrument:
 | `savings_account` | Conto risparmio | Savings account |
 | `cash` | Contanti | Cash |
 
-> Only **credit cards** require special treatment (sign inversion: expenses in the CSV are positive but must be recorded as outflows). Debit and prepaid cards have identical sign behaviour but are separate values because the labels are clear and unambiguous for the user. The file format (single column, debit/credit split, etc.) is detected automatically by Spendify — you only need to indicate *what type of instrument it is*.
+> Only **credit cards** require special treatment (sign inversion: expenses in the CSV are positive but must be recorded as outflows). Debit and prepaid cards have identical sign behaviour but are separate values because the labels are clear and unambiguous for the user. The file format (single column, debit/credit split, etc.) is detected automatically by Spendif.ai — you only need to indicate *what type of instrument it is*.
 
 ### Renaming an account
 
-You can rename a bank account at any time from **⚙️ Settings → 🏦 Bank Accounts**. When you rename an account, Spendify automatically recalculates the unique identifier of every associated transaction, because the account name is part of the hash key.
+You can rename a bank account at any time from **⚙️ Settings → 🏦 Bank Accounts**. When you rename an account, Spendif.ai automatically recalculates the unique identifier of every associated transaction, because the account name is part of the hash key.
 
 The operation is **atomic**: if anything goes wrong during recalculation, no data is changed. Your data always remains intact.
 
@@ -486,7 +486,7 @@ If you use llama.cpp as your backend (default for new installations), you can do
 3. Choose a suggested model (e.g. `gemma-4-E2B-it-Q4_K_M`, ~3.1 GB) or paste a direct URL
 4. Click **⬇️ Download**
 
-Models are saved in `~/.spendify/models/`. The **Local models** section shows the available `.gguf` files, with path and size. Selecting a model from the list automatically fills in the path and **context window**.
+Models are saved in `~/.spendifai/models/`. The **Local models** section shows the available `.gguf` files, with path and size. Selecting a model from the list automatically fills in the path and **context window**.
 
 > **Gemma 4 E2B** (`gemma-4-E2B-it-Q4_K_M` or `Q3_K_M`) is the recommended model for machines with 4-6 GB of RAM — excellent quality for Italian, latest-generation architecture.
 
@@ -507,7 +507,7 @@ For any backend (llama.cpp, Ollama, OpenAI, Claude, Compatible):
 1. Configure backend, URL/API key, and model
 2. Click **🧪 Test LLM**
 
-Spendify sends a test prompt ("PAGAMENTO POS FARMACIA") and shows:
+Spendif.ai sends a test prompt ("PAGAMENTO POS FARMACIA") and shows:
 - The model's response (category + confidence level)
 - **📐 Context window** — configured tokens and the model's native maximum (e.g. `📐 configured: 8192 tokens · model max: 131072 tokens`)
 
@@ -517,11 +517,11 @@ The context window is detected automatically when you change model for all backe
 
 ### Clearing saved file schemas
 
-Spendify remembers the structure of each imported file (columns, date format, sign convention) to speed up future imports. If a file was imported with the wrong schema — for example, income rows are missing or columns are swapped — you can reset the cache:
+Spendif.ai remembers the structure of each imported file (columns, date format, sign convention) to speed up future imports. If a file was imported with the wrong schema — for example, income rows are missing or columns are swapped — you can reset the cache:
 
 1. Go to **⚙️ Settings → 📐 Imported File Schemas**
 2. Click **🗑️ Cancella tutti gli schemi salvati**
-3. Re-import the file — Spendify re-analyses it from scratch and asks you to confirm the schema
+3. Re-import the file — Spendif.ai re-analyses it from scratch and asks you to confirm the schema
 
 > **When to use:** if the import summary shows discarded rows with reason "Importo non parsabile" for income (or expense) rows, the saved schema probably uses the wrong sign convention. Clear and re-import.
 
@@ -529,7 +529,7 @@ Spendify remembers the structure of each imported file (columns, date format, si
 
 ## Benchmark tools (for advanced users)
 
-Spendify includes two benchmark scripts in the `tests/` folder:
+Spendif.ai includes two benchmark scripts in the `tests/` folder:
 
 - **`benchmark_pipeline.py`** — measures schema detection quality (header, columns, date format, sign convention).
 - **`benchmark_categorizer.py`** — measures LLM categorisation quality in isolation (no database, no user rules, no history). Metrics: exact accuracy, fuzzy accuracy (top-level category), fallback rate.
@@ -541,13 +541,13 @@ Both support the same CLI arguments: `--runs`, `--files`, `--backend`, `--model`
 ## Frequently asked questions
 
 **Can I import files from different banks together?**
-Yes. Spendify recognises the format automatically. You don't need to tell it what type of file it is.
+Yes. Spendif.ai recognises the format automatically. You don't need to tell it what type of file it is.
 
 **I imported a file twice by mistake. Is that a problem?**
 No. Duplicate transactions are ignored.
 
 **A transaction appears twice — once on the account and once on the card.**
-Spendify handles this automatically (it's called "card-account reconciliation"). If you still see a duplicate, check in Review whether one of them has the 🔄 icon.
+Spendif.ai handles this automatically (it's called "card-account reconciliation"). If you still see a duplicate, check in Review whether one of them has the 🔄 icon.
 
 **I want to export the data.**
 In Analytics you'll find the **Esporta** button which generates HTML, CSV, or XLSX.

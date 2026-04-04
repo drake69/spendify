@@ -1,7 +1,7 @@
 """Model manager — HW detection + automatic model download (T-05).
 
 Detects system hardware, recommends the best GGUF model from the registry,
-and downloads it to ~/.spendify/models/ if not already present.
+and downloads it to ~/.spendifai/models/ if not already present.
 
 Usage:
     from core.model_manager import detect_hw, ensure_model_available
@@ -25,7 +25,7 @@ from support.logging import setup_logging
 
 logger = setup_logging()
 
-MODELS_DIR = Path.home() / ".spendify" / "models"
+MODELS_DIR = Path.home() / ".spendifai" / "models"
 
 
 # ── HW Detection ─────────────────────────────────────────────────────────────
@@ -121,7 +121,7 @@ ProgressCallback = Callable[[float, str], None]  # (pct 0-1, message)
 
 
 def list_local_models() -> list[Path]:
-    """List all GGUF files in ~/.spendify/models/."""
+    """List all GGUF files in ~/.spendifai/models/."""
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
     return sorted(MODELS_DIR.glob("*.gguf"))
 

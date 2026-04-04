@@ -1,5 +1,5 @@
 #!/bin/bash
-# ── Spendify Benchmark Entrypoint ────────────────────────────────────────────
+# ── Spendif.ai Benchmark Entrypoint ────────────────────────────────────────────
 # Downloads model if needed, runs classifier + categorizer benchmarks.
 #
 # Usage (inside container):
@@ -22,7 +22,7 @@ else
 fi
 
 echo "============================================================"
-echo "  Spendify Benchmark (Docker)"
+echo "  Spendif.ai Benchmark (Docker)"
 echo "  $(date '+%Y-%m-%d %H:%M:%S')"
 echo "  GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null || echo 'none')"
 echo "  RAM: $(free -g 2>/dev/null | awk '/Mem:/{print $2}' || echo '?') GB"

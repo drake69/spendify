@@ -29,7 +29,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 PYTHON=".venv/bin/python"
-MODELS_DIR="$HOME/.spendify/models"
+MODELS_DIR="$HOME/.spendifai/models"
 MODELS_CSV="tests/benchmark_models.csv"
 
 # ── Parse arguments ──────────────────────────────────────────────────────

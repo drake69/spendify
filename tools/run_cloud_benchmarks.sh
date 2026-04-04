@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-#  Spendify — Run All Benchmarks on Azure ML
+#  Spendif.ai — Run All Benchmarks on Azure ML
 #
 #  One script to: build Docker, push to ACR, submit N jobs
 #  (one per model), wait for completion, download results,
@@ -13,11 +13,11 @@
 #    4. GitHub CLI: brew install gh && gh auth login
 #
 #  Azure resources needed (one-time setup):
-#    - Resource Group: az group create -n spendify-rg -l westeurope
-#    - ML Workspace:   az ml workspace create -n spendify-ml -g spendify-rg
-#    - ACR:            az acr create -n spendifyacr -g spendify-rg --sku Basic
-#    - GPU Compute:    az ml compute create -n gpu-t4-spot -g spendify-rg \
-#                        -w spendify-ml --type AmlCompute \
+#    - Resource Group: az group create -n spendifai-rg -l westeurope
+#    - ML Workspace:   az ml workspace create -n spendifai-ml -g spendifai-rg
+#    - ACR:            az acr create -n spendifaiacr -g spendifai-rg --sku Basic
+#    - GPU Compute:    az ml compute create -n gpu-t4-spot -g spendifai-rg \
+#                        -w spendifai-ml --type AmlCompute \
 #                        --size Standard_NC6s_v3 --min-instances 0 \
 #                        --max-instances 5 --tier low_priority
 #
@@ -33,9 +33,9 @@
 #
 #  Environment variables (.env or export):
 #    AZURE_SUBSCRIPTION_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-#    AZURE_RESOURCE_GROUP=spendify-rg
-#    AZURE_ML_WORKSPACE=spendify-ml
-#    AZURE_ACR_NAME=spendifyacr
+#    AZURE_RESOURCE_GROUP=spendifai-rg
+#    AZURE_ML_WORKSPACE=spendifai-ml
+#    AZURE_ACR_NAME=spendifaiacr
 #    AZURE_COMPUTE_TARGET=gpu-t4-spot
 # ============================================================
 set -euo pipefail
@@ -60,7 +60,7 @@ done
 
 echo ""
 echo "============================================================"
-echo "  Spendify Cloud Benchmark Suite"
+echo "  Spendif.ai Cloud Benchmark Suite"
 echo "  $(date '+%Y-%m-%d %H:%M:%S')"
 echo "============================================================"
 
@@ -143,8 +143,8 @@ from azure.identity import DefaultAzureCredential
 import os
 ml = MLClient(DefaultAzureCredential(),
     os.environ.get('AZURE_SUBSCRIPTION_ID', ''),
-    os.environ.get('AZURE_RESOURCE_GROUP', 'spendify-rg'),
-    os.environ.get('AZURE_ML_WORKSPACE', 'spendify-ml'))
+    os.environ.get('AZURE_RESOURCE_GROUP', 'spendifai-rg'),
+    os.environ.get('AZURE_ML_WORKSPACE', 'spendifai-ml'))
 n = sum(1 for j in ml.jobs.list(max_results=50)
         if 'bench-' in (j.name or '') and j.status in ('Running', 'Queued', 'Preparing'))
 print(n)
@@ -168,8 +168,8 @@ from azure.identity import DefaultAzureCredential
 import os
 ml = MLClient(DefaultAzureCredential(),
     os.environ.get('AZURE_SUBSCRIPTION_ID', ''),
-    os.environ.get('AZURE_RESOURCE_GROUP', 'spendify-rg'),
-    os.environ.get('AZURE_ML_WORKSPACE', 'spendify-ml'))
+    os.environ.get('AZURE_RESOURCE_GROUP', 'spendifai-rg'),
+    os.environ.get('AZURE_ML_WORKSPACE', 'spendifai-ml'))
 for j in ml.jobs.list(max_results=50):
     if 'bench-' in (j.name or '') and j.status == 'Completed':
         print(j.name)

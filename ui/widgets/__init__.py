@@ -1,4 +1,4 @@
-"""Reusable Streamlit UI widgets for Spendify."""
+"""Reusable Streamlit UI widgets for Spendif.ai."""
 
 from ui.widgets.tree_filter import render_tree_filter
 

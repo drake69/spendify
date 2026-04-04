@@ -1,5 +1,5 @@
 [project]
-name = "spendify"
+name = "spendif-ai"
 version = "3.0.0"
 description = "Unified personal finance ledger with hybrid LLM pipeline"
 readme = "README.md"

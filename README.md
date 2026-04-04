@@ -1,4 +1,4 @@
-# Spendify v3.0
+# Spendif.ai v3.0
 
 [![CI](https://github.com/drake69/spendify/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/drake69/spendify/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/drake69/spendify/graph/badge.svg)](https://codecov.io/gh/drake69/spendify)
@@ -6,8 +6,8 @@
 [![License: PolyForm NC](https://img.shields.io/badge/license-PolyForm%20Noncommercial-orange)](LICENSE)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![Streamlit](https://img.shields.io/badge/UI-Streamlit-ff4b4b?logo=streamlit&logoColor=white)](https://streamlit.io)
-[![Issues](https://img.shields.io/github/issues/drake69/spendify)](https://github.com/drake69/spendify/issues)
-[![Last commit](https://img.shields.io/github/last-commit/drake69/spendify)](https://github.com/drake69/spendify/commits/main)
+[![Issues](https://img.shields.io/github/issues/drake69/spendifai)](https://github.com/drake69/spendify/issues)
+[![Last commit](https://img.shields.io/github/last-commit/drake69/spendifai)](https://github.com/drake69/spendify/commits/main)
 
 > 🇮🇹 [Leggi in italiano](README.it.md)
 
@@ -131,7 +131,7 @@ Aggregates heterogeneous movements files (current accounts, credit cards, debit 
 ## Project structure
 
 ```
-spendify/
+spendifai/
 ├── app.py                  # Streamlit entry point — onboarding gate + 14 pages
 ├── .env.example            # Environment variable template
 ├── pyproject.toml          # Dependencies (uv / pip)
@@ -218,12 +218,12 @@ The only prerequisite is **[Docker Desktop](https://www.docker.com/products/dock
 
 **Mac / Linux:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/drake69/spendifai/main/installer/install.sh | bash
 ```
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/drake69/spendify/main/installer/install.ps1 | iex
+irm https://raw.githubusercontent.com/drake69/spendifai/main/installer/install.ps1 | iex
 ```
 
 The script downloads the pre-built image from GitHub Container Registry, starts the container and opens the browser at **http://localhost:8501** automatically.
@@ -232,10 +232,10 @@ The script downloads the pre-built image from GitHub Container Registry, starts 
 
 > **Update to latest version:**
 > ```bash
-> docker compose --project-directory ~/spendify pull && docker compose --project-directory ~/spendify up -d
+> docker compose --project-directory ~/spendifai pull && docker compose --project-directory ~/spendifai up -d
 > ```
 
-> **Uninstall:** `curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.sh | bash`
+> **Uninstall:** `curl -fsSL https://raw.githubusercontent.com/drake69/spendifai/main/installer/uninstall.sh | bash`
 
 ---
 
@@ -253,7 +253,7 @@ The script downloads the pre-built image from GitHub Container Registry, starts 
 
 ```bash
 git clone https://github.com/drake69/spendify.git
-cd spendify
+cd spendifai
 ```
 
 ### 2. Install dependencies
@@ -285,7 +285,7 @@ The `.env` file contains only infrastructure parameters. Everything else — LLM
 
 ```dotenv
 # Database URI — leave as-is for local use; overridden by docker-compose for Docker installs
-SPENDIFY_DB=sqlite:///ledger.db
+SPENDIFAI_DB=sqlite:///ledger.db
 ```
 
 > **Nothing else belongs in `.env`.** LLM backend, Ollama URL, model name, OpenAI/Anthropic API keys and owner names for PII redaction are all stored in the `user_settings` table and editable live from the UI without restarting the app.
@@ -466,7 +466,7 @@ The ledger's filter bar includes a context selector: *all*, individual context v
 
 ## Support chatbot
 
-An adaptive, in-app support chatbot accessible from the **💬 Assistente** sidebar button. The chatbot answers questions about Spendify features, configuration, and usage based on a multi-language knowledge base.
+An adaptive, in-app support chatbot accessible from the **💬 Assistente** sidebar button. The chatbot answers questions about Spendif.ai features, configuration, and usage based on a multi-language knowledge base.
 
 ### Three modes (auto-selected)
 

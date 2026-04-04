@@ -4,7 +4,7 @@
 # Livelli (cumulativi):
 #   (default)    — salva risultati + pulisce log, .pyc, __pycache__
 #   -Results     — + reset results_all_runs.csv (mantiene solo header)
-#   -Models      — + cancella GGUF da %USERPROFILE%\.spendify\models\ + ollama rm
+#   -Models      — + cancella GGUF da %USERPROFILE%\.spendifai\models\ + ollama rm
 #   -Generated   — + cancella file sintetici (tests\generated_files\)
 #   -Venv        — + cancella .venv
 #   -All         — tutto quanto
@@ -32,11 +32,11 @@ if ($All) { $Results = $true; $Models = $true; $Generated = $true; $Venv = $true
 # ── Working directory (UNC-safe) ──────────────────────────────────────────
 $SourceDir = Split-Path $PSScriptRoot -Parent
 $IsUNC     = $SourceDir -match '^\\\\' -or $SourceDir -match '^//'
-$WorkDir   = if ($IsUNC) { Join-Path $env:USERPROFILE ".spendify\sw_artifacts" } else { $SourceDir }
+$WorkDir   = if ($IsUNC) { Join-Path $env:USERPROFILE ".spendifai\sw_artifacts" } else { $SourceDir }
 Set-Location $WorkDir
 
 $BenchDir  = Join-Path $WorkDir "tests\generated_files\benchmark"
-$ModelsDir = Join-Path $env:USERPROFILE ".spendify\models"
+$ModelsDir = Join-Path $env:USERPROFILE ".spendifai\models"
 $ModelsCsv = Join-Path $WorkDir "tests\benchmark_models.csv"
 $LogDir    = Join-Path $WorkDir "tests\logs"
 

@@ -1,7 +1,7 @@
-# Spendify — Model Registry
+# Spendif.ai — Model Registry
 # Catalog of supported GGUF models with HW tier mapping.
 # Used by model_manager.py to auto-select the best model for the user's hardware.
-# Override via ~/.spendify/models_registry.yaml (deep merge).
+# Override via ~/.spendifai/models_registry.yaml (deep merge).
 
 models:
   - id: qwen2.5-1.5b

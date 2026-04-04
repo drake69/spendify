@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate synthetic Italian movements files for Spendify import testing.
+"""Generate synthetic Italian movements files for Spendif.ai import testing.
 
 Produces ~50 CSV/XLSX files simulating 9 Italian financial instruments
 across 3 sizes (S/M/L) plus format variants. Each file has realistic
@@ -1439,7 +1439,7 @@ def main() -> None:
 
     # Print summary
     print("=" * 60)
-    print("  Spendify — Synthetic Movements File Generator")
+    print("  Spendif.ai — Synthetic Movements File Generator")
     print("=" * 60)
     print(f"  Output directory : {OUTPUT_DIR}")
     print(f"  Files generated  : {len(plans)}")

@@ -1,18 +1,18 @@
 #!/bin/bash
 # ============================================================
-#  Spendify — macOS One-Click Installer
-#  Double-click this file in Finder to install Spendify.
+#  Spendif.ai — macOS One-Click Installer
+#  Double-click this file in Finder to install Spendif.ai.
 # ============================================================
 set -euo pipefail
 
-INSTALL_DIR="$HOME/Applications/Spendify"
-SPENDIFY_HOME="$HOME/.spendify"
+INSTALL_DIR="$HOME/Applications/Spendif.ai"
+SPENDIFAI_HOME="$HOME/.spendifai"
 REPO_URL="https://github.com/drake69/spendify.git"
 MIN_PYTHON="3.11"
 
 echo ""
 echo "============================================================"
-echo "  Spendify — Installazione macOS"
+echo "  Spendif.ai — Installazione macOS"
 echo "============================================================"
 echo ""
 
@@ -48,7 +48,7 @@ fi
 echo "  ✅ uv $(uv --version 2>/dev/null || echo 'installed')"
 
 # ── 3. Clone / Update repo ──────────────────────────────────
-echo "→ Installazione Spendify in $INSTALL_DIR..."
+echo "→ Installazione Spendif.ai in $INSTALL_DIR..."
 if [ -d "$INSTALL_DIR/.git" ]; then
     echo "  Aggiornamento..."
     cd "$INSTALL_DIR"
@@ -64,23 +64,23 @@ fi
 echo "→ Installazione dipendenze..."
 uv sync --quiet 2>/dev/null || uv sync
 
-# ── 5. Create .spendify directory ────────────────────────────
-echo "→ Creazione $SPENDIFY_HOME..."
-mkdir -p "$SPENDIFY_HOME/models"
+# ── 5. Create .spendifai directory ────────────────────────────
+echo "→ Creazione $SPENDIFAI_HOME..."
+mkdir -p "$SPENDIFAI_HOME/models"
 
 # ── 6. Create .env if missing ────────────────────────────────
 if [ ! -f "$INSTALL_DIR/.env" ]; then
-    echo "SPENDIFY_DB=sqlite:///$SPENDIFY_HOME/ledger.db" > "$INSTALL_DIR/.env"
-    echo "  ✅ .env creato (DB in $SPENDIFY_HOME/ledger.db)"
+    echo "SPENDIFAI_DB=sqlite:///$SPENDIFAI_HOME/ledger.db" > "$INSTALL_DIR/.env"
+    echo "  ✅ .env creato (DB in $SPENDIFAI_HOME/ledger.db)"
 fi
 
 # ── 7. Create launcher script ───────────────────────────────
-LAUNCHER="$INSTALL_DIR/packaging/macos/Spendify.command"
+LAUNCHER="$INSTALL_DIR/packaging/macos/Spendif.ai.command"
 chmod +x "$LAUNCHER" 2>/dev/null || true
 
 # Also create a symlink in ~/Applications for easy access
-if [ ! -L "$HOME/Applications/Spendify.command" ]; then
-    ln -sf "$LAUNCHER" "$HOME/Applications/Spendify.command" 2>/dev/null || true
+if [ ! -L "$HOME/Applications/Spendif.ai.command" ]; then
+    ln -sf "$LAUNCHER" "$HOME/Applications/Spendif.ai.command" 2>/dev/null || true
 fi
 
 # ── 8. Detect HW and show recommendation ────────────────────
@@ -116,14 +116,14 @@ echo ""
 echo "============================================================"
 echo "  ✅ Installazione completata!"
 echo ""
-echo "  Per avviare Spendify:"
-echo "    • Double-click Spendify.command in ~/Applications/Spendify/packaging/macos/"
+echo "  Per avviare Spendif.ai:"
+echo "    • Double-click Spendif.ai.command in ~/Applications/Spendif.ai/packaging/macos/"
 echo "    • Oppure da terminale: cd $INSTALL_DIR && uv run streamlit run app.py"
 echo ""
 echo "  Al primo avvio il modello LLM verrà scaricato automaticamente."
 echo "============================================================"
 echo ""
-read -p "Vuoi avviare Spendify ora? (s/N) " LAUNCH
+read -p "Vuoi avviare Spendif.ai ora? (s/N) " LAUNCH
 if [[ "$LAUNCH" =~ ^[sS]$ ]]; then
     cd "$INSTALL_DIR"
     uv run streamlit run app.py

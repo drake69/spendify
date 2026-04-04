@@ -1,18 +1,18 @@
-# Spendify — Guida Utente
+# Spendif.ai — Guida Utente
 
-> Tutto quello che ti serve per usare Spendify in meno di 10 minuti.
+> Tutto quello che ti serve per usare Spendif.ai in meno di 10 minuti.
 
 ---
 
 ## L'idea in una frase
 
-Scarichi i file movimenti dalla banca, li trascini in Spendify, lui li unifica, li classifica e ti dice dove vanno i tuoi soldi. Fine.
+Scarichi i file movimenti dalla banca, li trascini in Spendif.ai, lui li unifica, li classifica e ti dice dove vanno i tuoi soldi. Fine.
 
 ---
 
 ## 1. Primo avvio — wizard di onboarding
 
-**Situazione:** Hai appena installato Spendify e lo avvii per la prima volta.
+**Situazione:** Hai appena installato Spendif.ai e lo avvii per la prima volta.
 
 L'app ti mostra automaticamente il **wizard di configurazione iniziale** (4 step). Non devi cercare nessun menu.
 
@@ -35,34 +35,34 @@ L'app ti mostra automaticamente il **wizard di configurazione iniziale** (4 step
 4. Clicca **Avvia elaborazione**.
 5. Aspetta la barra verde. Puoi chiudere il browser e riaprirlo: il lavoro continua in background.
 
-> **Esempio:** Hai tre file — `estratto_unicredit_gen.csv`, `carta_visa_gen.xlsx`, `conto_deposito.csv`. Li selezioni tutti e tre in una volta sola. Spendify capisce da solo che tipo sono.
+> **Esempio:** Hai tre file — `estratto_unicredit_gen.csv`, `carta_visa_gen.xlsx`, `conto_deposito.csv`. Li selezioni tutti e tre in una volta sola. Spendif.ai capisce da solo che tipo sono.
 
-**Cosa succede dietro le quinte:** Spendify assegna a ogni transazione un codice univoco basato sul contenuto. Se importi lo stesso file due volte non succede nulla di male — i duplicati vengono scartati silenziosamente.
+**Cosa succede dietro le quinte:** Spendif.ai assegna a ogni transazione un codice univoco basato sul contenuto. Se importi lo stesso file due volte non succede nulla di male — i duplicati vengono scartati silenziosamente.
 
 > **Storico import:** la pagina **📜 Storico import** nella sidebar mostra la cronologia di tutte le importazioni eseguite (data, file, conto, numero transazioni). Puoi annullare un'importazione eliminando in blocco tutte le transazioni di quel batch con il pulsante "Annulla import". Vedi la sezione dedicata più avanti.
 
 ### Importazione automatica e revisione schema
 
-Spendify analizza la struttura di ogni file e calcola un **punteggio di confidenza** (da 0 a 100%) su quanto ha capito del formato.
+Spendif.ai analizza la struttura di ogni file e calcola un **punteggio di confidenza** (da 0 a 100%) su quanto ha capito del formato.
 
 - **Confidenza >= 80%** — l'importazione procede in automatico, senza chiederti nulla.
 - **Confidenza < 80%** — compare un form di revisione dove puoi verificare le colonne rilevate (data, importo, descrizione, tipo documento) e correggerle se necessario. Dopo la conferma manuale, la confidenza sale a 100%.
 
-Una volta confermato lo schema di un file, tutte le importazioni successive dello stesso formato saranno automatiche — Spendify ricorda la struttura.
+Una volta confermato lo schema di un file, tutte le importazioni successive dello stesso formato saranno automatiche — Spendif.ai ricorda la struttura.
 
-> **Conto pre-selezionato:** se il formato del file corrisponde a uno schema gia importato in passato per un certo conto, Spendify pre-seleziona automaticamente quel conto nel menu a tendina. Non serve sceglierlo ogni volta.
+> **Conto pre-selezionato:** se il formato del file corrisponde a uno schema gia importato in passato per un certo conto, Spendif.ai pre-seleziona automaticamente quel conto nel menu a tendina. Non serve sceglierlo ogni volta.
 
 > **Avviso primo caricamento:** quando carichi un file con un formato mai visto prima (primo upload) e il file contiene meno di 50 righe, compare un avviso giallo: *"Per un riconoscimento ottimale, carica il file movimenti cosi come scaricato dalla banca, senza modifiche, idealmente con 250-300 transazioni."* Questo perche il rilevamento automatico dello schema funziona meglio con piu dati.
 
 ### Righe da saltare — quando compare questo campo?
 
-Alcuni file di banca hanno righe di intestazione prima della tabella dati (nome della banca, periodo, numero conto…) e righe di riepilogo/totali in fondo. Spendify usa un'analisi basata sulla densità dei dati per individuare automaticamente dove inizia e dove finisce la tabella reale, rimuovendo sia le righe di contorno in alto che i totali in basso. Nella maggior parte dei casi non serve impostare nulla manualmente.
+Alcuni file di banca hanno righe di intestazione prima della tabella dati (nome della banca, periodo, numero conto…) e righe di riepilogo/totali in fondo. Spendif.ai usa un'analisi basata sulla densità dei dati per individuare automaticamente dove inizia e dove finisce la tabella reale, rimuovendo sia le righe di contorno in alto che i totali in basso. Nella maggior parte dei casi non serve impostare nulla manualmente.
 
 Se però il rilevamento automatico **non è riuscito** (file con formato insolito, tutto numerico, senza intestazioni testuali), comparirà il campo **"Righe da saltare"** accanto al nome del file. Inserisci quante righe vuoi saltare prima dell'intestazione della tabella.
 
 > **Esempio:** Apri il file CSV con un editor di testo. Se le prime 3 righe sono `Banca XYZ`, `Conto 123`, `Dal 01/01 al 31/01` e la riga 4 è `Data,Importo,Descrizione`, inserisci `3`.
 
-Una volta confermato lo schema del file, alle importazioni successive non vedrai più questo campo — Spendify lo ricorda automaticamente.
+Una volta confermato lo schema del file, alle importazioni successive non vedrai più questo campo — Spendif.ai lo ricorda automaticamente.
 
 ### Riepilogo importazione
 
@@ -119,11 +119,11 @@ Vai su **Ledger**. Trovi la lista completa in ordine cronologico, con filtri per
 
 **Validazione in blocco:** seleziona una o più transazioni e clicca **Valida selezionate** per confermarle tutte in una volta.
 
-> **Cosa significa "Validato"?** Validare una transazione significa dire a Spendify: "ho visto questa spesa e confermo che è corretta (non è anomala)". La validazione riguarda la **spesa**, non la categoria. Se una regola o l'AI riclassificano la transazione in un secondo momento, la validazione rimane attiva: la fonte (AI, Regola, Manuale, Storico) cambia, ma il flag "Validato" non viene toccato. Solo un click esplicito sulla checkbox "Validato" (deselezionandola) può rimuovere la validazione.
+> **Cosa significa "Validato"?** Validare una transazione significa dire a Spendif.ai: "ho visto questa spesa e confermo che è corretta (non è anomala)". La validazione riguarda la **spesa**, non la categoria. Se una regola o l'AI riclassificano la transazione in un secondo momento, la validazione rimane attiva: la fonte (AI, Regola, Manuale, Storico) cambia, ma il flag "Validato" non viene toccato. Solo un click esplicito sulla checkbox "Validato" (deselezionandola) può rimuovere la validazione.
 
 ### Fan-out comportamentale (propagazione categoria)
 
-Quando validi una transazione nel Ledger (o nella Review), Spendify cerca automaticamente altre transazioni con la stessa descrizione che non sono ancora state categorizzate. Se ne trova, compare un suggerimento: **"Applica a N transazioni simili?"**
+Quando validi una transazione nel Ledger (o nella Review), Spendif.ai cerca automaticamente altre transazioni con la stessa descrizione che non sono ancora state categorizzate. Se ne trova, compare un suggerimento: **"Applica a N transazioni simili?"**
 
 - Clicca **Applica a tutte** per copiare la stessa categoria/sottocategoria a tutte le transazioni corrispondenti (con fonte "Storico").
 - Clicca **No grazie** per ignorare il suggerimento.
@@ -142,7 +142,7 @@ Per il flusso completo, vedi la [Guida alla Classificazione](guida_classificazio
 
 ## 4. Review: le transazioni da controllare
 
-**Situazione:** Spendify non era sicuro di alcune classificazioni e le ha messe in attesa.
+**Situazione:** Spendif.ai non era sicuro di alcune classificazioni e le ha messe in attesa.
 
 Vai su **Review**. Trovi le transazioni con il ⚠️. Per ognuna puoi:
 - Cambiare categoria/sottocategoria dal menu a tendina
@@ -158,9 +158,9 @@ Vai su **Review**. Trovi le transazioni con il ⚠️. Per ognuna puoi:
 **Colonna Fonte (tracking classificazione):**
 - Badge che indica chi ha assegnato la categoria: 🧠 AI, 📏 Regola, 👤 Manuale, 📚 Storico
 
-**Validazione in blocco:** seleziona le transazioni di cui sei sicuro e clicca **Valida selezionate** per confermarle tutte in una volta. Quando validi una transazione stai dicendo a Spendify: "ho visto questa spesa e confermo che va bene". La validazione non cambia la categoria e non viene rimossa se la categoria cambia in seguito (per regola o AI). Solo un click esplicito sulla checkbox la rimuove.
+**Validazione in blocco:** seleziona le transazioni di cui sei sicuro e clicca **Valida selezionate** per confermarle tutte in una volta. Quando validi una transazione stai dicendo a Spendif.ai: "ho visto questa spesa e confermo che va bene". La validazione non cambia la categoria e non viene rimossa se la categoria cambia in seguito (per regola o AI). Solo un click esplicito sulla checkbox la rimuove.
 
-**Fan-out comportamentale:** anche nella Review, dopo la validazione di una transazione, Spendify propone di applicare la stessa categoria alle transazioni simili non ancora categorizzate. Vedi la sezione "Fan-out comportamentale" nel capitolo Ledger per i dettagli.
+**Fan-out comportamentale:** anche nella Review, dopo la validazione di una transazione, Spendif.ai propone di applicare la stessa categoria alle transazioni simili non ancora categorizzate. Vedi la sezione "Fan-out comportamentale" nel capitolo Ledger per i dettagli.
 
 > **Esempio:** "PAGAMENTO POS 00112 FARMACIA CENTRALE" è stato classificato come *Casa* ma tu sai che è *Salute*. Lo correggi una volta, e se hai salvato una regola quella correzione si applicherà automaticamente alle prossime importazioni.
 
@@ -201,7 +201,7 @@ Vai su **✏️ Modifiche massive**. La pagina è divisa in due aree principali.
 ### 6a — Operazioni su transazione di riferimento
 
 1. Cerca e seleziona una transazione dal menu a tendina (puoi filtrare per testo o mostrare solo quelle ⚠️ da rivedere)
-2. Spendify mostra quante altre transazioni hanno la stessa descrizione o una simile (Jaccard ≥ 35%)
+2. Spendif.ai mostra quante altre transazioni hanno la stessa descrizione o una simile (Jaccard ≥ 35%)
 3. Poi scegli cosa fare:
    - **2a Giroconto** — segna/rimuovi come bonifico interno, con un click propaga a tutte le tx con la stessa descrizione
    - **2b Contesto** — assegna un contesto (es. "Vacanza") alla singola tx o a tutte le simili
@@ -259,7 +259,7 @@ Nella pagina Analytics (e nella pagina Tassonomia) è disponibile un **filtro ad
 
 ### Associazioni controparte (auto-apprendimento)
 
-Nella sezione Analytics trovi anche la vista **Associazioni controparte → categoria**, che mostra come Spendify ha imparato ad associare ogni controparte (es. ESSELUNGA, AMAZON) alle categorie nel tempo.
+Nella sezione Analytics trovi anche la vista **Associazioni controparte → categoria**, che mostra come Spendif.ai ha imparato ad associare ogni controparte (es. ESSELUNGA, AMAZON) alle categorie nel tempo.
 
 Per ogni controparte vengono mostrati:
 - **Categoria/Sottocategoria** più frequente tra le transazioni validate
@@ -269,7 +269,7 @@ Per ogni controparte vengono mostrati:
   - 🟡 **0.50–0.89** — mista (es. ROSSOPOMODORO: quasi sempre Ristorazione, a volte Vacanze)
   - 🔴 **< 0.50** — eterogenea (es. AMAZON: Tecnologia, Alimentari, Abbigliamento...)
 
-> **Come funziona:** Spendify conta solo le transazioni che hai **validato** (checkbox ✅ nel Ledger o nella Review). Più transazioni validi, più il sistema impara. Quando importi nuovi file, le controparti con alta omogenità vengono classificate automaticamente dallo storico — senza chiamare l'AI.
+> **Come funziona:** Spendif.ai conta solo le transazioni che hai **validato** (checkbox ✅ nel Ledger o nella Review). Più transazioni validi, più il sistema impara. Quando importi nuovi file, le controparti con alta omogenità vengono classificate automaticamente dallo storico — senza chiamare l'AI.
 
 ---
 
@@ -412,7 +412,7 @@ Puoi scaricare la tabella come CSV con il pulsante **⬇️ Scarica CSV**.
 
 ---
 
-## 14. Assistente: chiedere aiuto a Spendify
+## 14. Assistente: chiedere aiuto a Spendif.ai
 
 **Situazione:** Hai un dubbio su come funziona una funzione, come importare un file o come configurare un'opzione.
 
@@ -450,7 +450,7 @@ Vai su **Impostazioni**:
 - **Modello:** specifica il nome del modello (es. `gpt-4o-mini`, `claude-3-5-haiku-20241022`, `gemma2-9b-it`) oppure seleziona un file `.gguf` per llama.cpp
 - **API Key:** inserisci la chiave se usi un servizio remoto
 
-> **Nota sulla privacy:** Se usi un backend remoto (OpenAI o Claude), Spendify rimuove automaticamente IBAN, numeri carta, codice fiscale e nome del titolare prima di inviare qualsiasi dato.
+> **Nota sulla privacy:** Se usi un backend remoto (OpenAI o Claude), Spendif.ai rimuove automaticamente IBAN, numeri carta, codice fiscale e nome del titolare prima di inviare qualsiasi dato.
 
 Per istruzioni dettagliate su dove registrarsi e come ottenere le API key di ogni provider, consulta il **[Manuale di Configurazione](configurazione.md)**.
 
@@ -467,11 +467,11 @@ Ogni conto ha un **tipo** obbligatorio che indica lo strumento finanziario:
 | `savings_account` | Conto risparmio |
 | `cash` | Contanti |
 
-> Solo la **carta di credito** richiede un trattamento speciale (inversione del segno: le spese nel CSV sono positive ma vanno registrate come uscite). Carta di debito e prepagata hanno comportamento del segno identico, ma sono valori separati perché l'etichetta è chiara per l'utente. Il formato del file (colonna unica, dare/avere, ecc.) viene rilevato automaticamente da Spendify — tu devi solo indicare *che tipo di strumento è*.
+> Solo la **carta di credito** richiede un trattamento speciale (inversione del segno: le spese nel CSV sono positive ma vanno registrate come uscite). Carta di debito e prepagata hanno comportamento del segno identico, ma sono valori separati perché l'etichetta è chiara per l'utente. Il formato del file (colonna unica, dare/avere, ecc.) viene rilevato automaticamente da Spendif.ai — tu devi solo indicare *che tipo di strumento è*.
 
 ### Rinominare un conto
 
-Puoi rinominare un conto bancario in qualsiasi momento da **⚙️ Impostazioni → 🏦 Conti bancari**. Quando rinomini un conto, Spendify ricalcola automaticamente l'identificativo univoco di ogni transazione associata, perche il nome del conto fa parte della chiave di calcolo.
+Puoi rinominare un conto bancario in qualsiasi momento da **⚙️ Impostazioni → 🏦 Conti bancari**. Quando rinomini un conto, Spendif.ai ricalcola automaticamente l'identificativo univoco di ogni transazione associata, perche il nome del conto fa parte della chiave di calcolo.
 
 L'operazione e **atomica**: se qualcosa va storto durante il ricalcolo, nessun dato viene modificato. I tuoi dati restano sempre integri.
 
@@ -486,7 +486,7 @@ Se usi llama.cpp come backend (default per nuove installazioni), puoi scaricare 
 3. Scegli un modello suggerito (es. `gemma-4-E2B-it-Q4_K_M`, ~3.1 GB) oppure incolla un URL diretto
 4. Clicca **⬇️ Scarica**
 
-I modelli vengono salvati in `~/.spendify/models/`. La sezione **Modelli locali** mostra i file `.gguf` disponibili, con percorso e dimensione. Selezionando un modello dalla lista il percorso e la **finestra di contesto** vengono configurati automaticamente.
+I modelli vengono salvati in `~/.spendifai/models/`. La sezione **Modelli locali** mostra i file `.gguf` disponibili, con percorso e dimensione. Selezionando un modello dalla lista il percorso e la **finestra di contesto** vengono configurati automaticamente.
 
 > **Gemma 4 E2B** (`gemma-4-E2B-it-Q4_K_M` o `Q3_K_M`) è il modello consigliato per macchine con 4-6 GB di RAM — ottima qualità per l'italiano, architettura di ultima generazione.
 
@@ -507,7 +507,7 @@ Per qualsiasi backend (llama.cpp, Ollama, OpenAI, Claude, Compatible):
 1. Configura backend, URL/API key e modello
 2. Clicca **🧪 Test LLM**
 
-Spendify invia un prompt di prova ("PAGAMENTO POS FARMACIA") e mostra:
+Spendif.ai invia un prompt di prova ("PAGAMENTO POS FARMACIA") e mostra:
 - La risposta del modello (categoria + livello di confidenza)
 - **📐 Finestra di contesto** — token configurati e massimo nativo del modello (es. `📐 configurato: 8192 token · max modello: 131072 token`)
 
@@ -517,11 +517,11 @@ La finestra di contesto viene rilevata automaticamente al cambio di modello per 
 
 ### Cancellare gli schemi dei file
 
-Spendify memorizza la struttura di ogni file importato (colonne, formato date, convenzione di segno) per velocizzare le importazioni successive. Se un file viene importato con lo schema sbagliato — ad esempio mancano le entrate o le colonne sono invertite — puoi resettare la cache:
+Spendif.ai memorizza la struttura di ogni file importato (colonne, formato date, convenzione di segno) per velocizzare le importazioni successive. Se un file viene importato con lo schema sbagliato — ad esempio mancano le entrate o le colonne sono invertite — puoi resettare la cache:
 
 1. Vai su **⚙️ Impostazioni → 📐 Schema file importati**
 2. Clicca **🗑️ Cancella tutti gli schemi salvati**
-3. Reimporta il file — Spendify lo rianalizza da zero e ti chiede di confermare lo schema
+3. Reimporta il file — Spendif.ai lo rianalizza da zero e ti chiede di confermare lo schema
 
 > **Quando serve:** se il riepilogo import mostra righe scartate con motivo "Importo non parsabile" per le entrate (o le uscite), lo schema salvato probabilmente usa una convenzione di segno sbagliata. Cancella e reimporta.
 
@@ -531,7 +531,7 @@ Spendify memorizza la struttura di ogni file importato (colonne, formato date, c
 
 ## Strumenti di benchmark (per utenti avanzati)
 
-Spendify include due script di benchmark nella cartella `tests/`:
+Spendif.ai include due script di benchmark nella cartella `tests/`:
 
 - **`benchmark_pipeline.py`** — misura la qualita del riconoscimento schema (header, colonne, formato date, convenzione segno).
 - **`benchmark_categorizer.py`** — misura la qualita della categorizzazione LLM in isolamento (senza database, regole o storico). Metriche: accuratezza esatta, accuratezza fuzzy (primo livello), tasso di fallback.
@@ -543,13 +543,13 @@ Entrambi supportano gli stessi argomenti CLI: `--runs`, `--files`, `--backend`, 
 ## Domande frequenti
 
 **Posso importare file di banche diverse insieme?**
-Sì. Spendify riconosce il formato automaticamente. Non devi dirgli che tipo di file è.
+Sì. Spendif.ai riconosce il formato automaticamente. Non devi dirgli che tipo di file è.
 
 **Ho importato un file due volte per sbaglio. Problema?**
 No. Le transazioni duplicate vengono ignorate.
 
 **Una transazione appare due volte — una sul conto e una sulla carta.**
-Spendify gestisce questa cosa automaticamente (si chiama "riconciliazione carta-conto"). Se vedi ancora un duplicato, controlla in Review se una delle due ha l'icona 🔄.
+Spendif.ai gestisce questa cosa automaticamente (si chiama "riconciliazione carta-conto"). Se vedi ancora un duplicato, controlla in Review se una delle due ha l'icona 🔄.
 
 **Voglio esportare i dati.**
 In Analytics trovi il pulsante **Esporta** che genera HTML, CSV o XLSX.

@@ -1,6 +1,6 @@
-# Spendify — Guida al deployment
+# Spendif.ai — Guida al deployment
 
-> Questo documento descrive come installare, configurare e aggiornare Spendify.
+> Questo documento descrive come installare, configurare e aggiornare Spendif.ai.
 > Per backup, ripristino e gestione del database → [database.md](database.md).
 > Per installazione su Mac nativo, Linux con Ollama e Windows con llama.cpp → [installazione.md](installazione.md).
 
@@ -42,21 +42,21 @@ L'unico prerequisito è **[Docker Desktop](https://www.docker.com/products/docke
 
 **Mac / Linux:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/drake69/spendifai/main/installer/install.sh | bash
 ```
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/drake69/spendify/main/installer/install.ps1 | iex
+irm https://raw.githubusercontent.com/drake69/spendifai/main/installer/install.ps1 | iex
 ```
 
-Lo script crea la cartella `~/spendify/`, scarica l'immagine da GitHub Container Registry, avvia il container e apre il browser su **http://localhost:8501** automaticamente.
+Lo script crea la cartella `~/spendifai/`, scarica l'immagine da GitHub Container Registry, avvia il container e apre il browser su **http://localhost:8501** automaticamente.
 
 > **AI locale inclusa (opzionale):** lo script chiede se installare Ollama con il modello `gemma3:12b` — scaricato automaticamente in background al primo avvio (~8 GB, ~10–15 minuti). In alternativa puoi configurare una API key esterna (OpenAI/Anthropic) dalla pagina ⚙️ Impostazioni.
 
-> **Aggiornamento:** `docker compose --project-directory ~/spendify pull && docker compose --project-directory ~/spendify up -d`
+> **Aggiornamento:** `docker compose --project-directory ~/spendifai pull && docker compose --project-directory ~/spendifai up -d`
 
-> **Disinstallazione:** `curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.sh | bash`
+> **Disinstallazione:** `curl -fsSL https://raw.githubusercontent.com/drake69/spendifai/main/installer/uninstall.sh | bash`
 
 ---
 
@@ -67,8 +67,8 @@ Adatta a chi vuole modificare il codice o configurare profili LLM (Ollama, llama
 ### 2.1 — Clona il repository
 
 ```bash
-git clone https://github.com/drake69/spendify.git spendify
-cd spendify
+git clone https://github.com/drake69/spendify.git spendifai
+cd spendifai
 ```
 
 ### 2.2 — Configura l'ambiente
@@ -116,8 +116,8 @@ Per la configurazione completa dei backend LLM → [installazione.md](installazi
 ### Steps
 
 ```bash
-git clone https://github.com/drake69/spendify.git spendify
-cd spendify
+git clone https://github.com/drake69/spendify.git spendifai
+cd spendifai
 uv sync
 cp .env.example .env
 
@@ -155,11 +155,11 @@ cp .env.example .env
 
 | Parametro | Descrizione | Default |
 |-----------|-------------|---------|
-| `SPENDIFY_DB` | URI del database SQLite | `sqlite:///ledger.db` |
+| `SPENDIFAI_DB` | URI del database SQLite | `sqlite:///ledger.db` |
 | `TAXONOMY_PATH` | Percorso del file YAML usato come seed iniziale delle categorie. A runtime la tassonomia vive nel DB (`taxonomy_category` / `taxonomy_subcategory`) ed è gestibile dalla UI. Il YAML viene letto solo al primo avvio o quando si cambia lingua. | `taxonomy.yaml` |
 
 ```dotenv
-SPENDIFY_DB=sqlite:///ledger.db
+SPENDIFAI_DB=sqlite:///ledger.db
 TAXONOMY_PATH=taxonomy.yaml
 
 # Solo per il profilo llama-cpp:
@@ -175,8 +175,8 @@ TAXONOMY_PATH=taxonomy.yaml
 ### One-liner Docker
 
 ```bash
-docker compose --project-directory ~/spendify pull
-docker compose --project-directory ~/spendify up -d
+docker compose --project-directory ~/spendifai pull
+docker compose --project-directory ~/spendifai up -d
 ```
 
 ### Docker Compose da repository
@@ -207,10 +207,10 @@ uv run streamlit run app.py
 docker compose ps
 
 # Log in tempo reale
-docker compose logs -f spendify
+docker compose logs -f spendifai
 
 # Healthcheck
-docker inspect spendify_app --format='{{.State.Health.Status}}'
+docker inspect spendifai_app --format='{{.State.Health.Status}}'
 
 # Stop (dati intatti)
 docker compose down
@@ -222,7 +222,7 @@ docker compose down --remove-orphans
 docker compose down -v
 ```
 
-Per l'installazione one-liner aggiungere `--project-directory ~/spendify` a ogni comando, es. `docker compose --project-directory ~/spendify logs -f`.
+Per l'installazione one-liner aggiungere `--project-directory ~/spendifai` a ogni comando, es. `docker compose --project-directory ~/spendifai logs -f`.
 
 ---
 
@@ -244,7 +244,7 @@ docker compose down && docker compose up -d
 ### Il container Docker si riavvia continuamente
 
 ```bash
-docker compose logs --tail=50 spendify
+docker compose logs --tail=50 spendifai
 ```
 
 Cause comuni:
@@ -270,24 +270,24 @@ Errori tipo `database is locked`, corruzione del file, ripristino da backup → 
 
 ## 8 — Disinstallazione
 
-Gli script di disinstallazione rimuovono interattivamente tutti i componenti Spendify. **Nessun dato viene cancellato senza conferma esplicita.**
+Gli script di disinstallazione rimuovono interattivamente tutti i componenti Spendif.ai. **Nessun dato viene cancellato senza conferma esplicita.**
 
 **Mac / Linux:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.sh | bash
+curl -fsSL https://raw.githubusercontent.com/drake69/spendifai/main/installer/uninstall.sh | bash
 ```
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.ps1 | iex
+irm https://raw.githubusercontent.com/drake69/spendifai/main/installer/uninstall.ps1 | iex
 ```
 
 Lo script chiede separatamente:
 | Cosa | Dettaglio |
 |------|-----------|
-| Database delle transazioni | Volumi `spendify_data` e `spendify_logs` |
+| Database delle transazioni | Volumi `spendifai_data` e `spendifai_logs` |
 | Modelli Ollama | Volume `ollama_models` (~8 GB) |
 | llama.cpp + cartella models/ | Immagine `llama.cpp:server` + file GGUF |
 | Immagini Docker | `ghcr.io/drake69/spendify` + `ollama/ollama` (~500 MB–1 GB) |
-| Cartella di installazione | `~/spendify/` (o `SPENDIFY_INSTALL_DIR`) |
+| Cartella di installazione | `~/spendifai/` (o `SPENDIFAI_INSTALL_DIR`) |
 | Istruzioni rimozione Docker Desktop | Guida testuale per macOS / Linux / Windows |

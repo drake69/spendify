@@ -13,7 +13,7 @@ cd "$(dirname "$0")"
 BENCH="tests/benchmark_pipeline.py"
 CAT_BENCH="tests/benchmark_categorizer.py"
 RUNS=1
-MODELS_DIR="$HOME/.spendify/models"
+MODELS_DIR="$HOME/.spendifai/models"
 OPENAI_KEY="${1:-}"
 
 # ── Environment bootstrap ────────────────────────────────────────────────

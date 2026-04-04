@@ -43,7 +43,7 @@ $IsUNC     = $SourceDir -match '^\\\\' -or $SourceDir -match '^//'
 $WorkDir   = $SourceDir
 
 if ($IsUNC) {
-    $LocalCopy = Join-Path $env:USERPROFILE ".spendify\sw_artifacts"
+    $LocalCopy = Join-Path $env:USERPROFILE ".spendifai\sw_artifacts"
     Write-Host "[setup] UNC path detected: $SourceDir"
     Write-Host "[setup] Copying project to local disk: $LocalCopy"
     robocopy $SourceDir $LocalCopy /MIR /XD .venv __pycache__ .git /XF "*.log" /NFL /NDL /NJH /NP /NS /NC
@@ -53,7 +53,7 @@ if ($IsUNC) {
 Set-Location $WorkDir
 
 $Python    = ".venv\Scripts\python.exe"
-$ModelsDir = Join-Path $env:USERPROFILE ".spendify\models"
+$ModelsDir = Join-Path $env:USERPROFILE ".spendifai\models"
 $ModelsCsv = Join-Path $WorkDir "tests\benchmark_models.csv"
 
 # ── Log file ─────────────────────────────────────────────────────────────

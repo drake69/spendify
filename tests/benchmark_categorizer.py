@@ -228,7 +228,7 @@ def _ensure_llamacpp_model(model_path_override: str | None) -> str | None:
         return model_path_override
 
     # Check if any .gguf already exists in default dir
-    models_dir = Path.home() / ".spendify" / "models"
+    models_dir = Path.home() / ".spendifai" / "models"
     existing = sorted(models_dir.glob("*.gguf")) if models_dir.exists() else []
     if existing:
         chosen = str(existing[0])
@@ -337,7 +337,7 @@ def _collect_llm_metadata(config: ProcessingConfig, backend) -> dict[str, str]:
             meta["quantization"] = "?"
             meta["family"] = "?"
 
-    # ── Runtime HW (where Spendify runs) ────────────────────────────────
+    # ── Runtime HW (where Spendif.ai runs) ────────────────────────────────
     import platform
     meta["runtime_os"] = f"{platform.system()} {platform.release()} {platform.machine()}"
     try:
@@ -991,7 +991,7 @@ def main() -> None:
 
     # Startup
     print(f"\n{'=' * 60}")
-    print(f"  Spendify Categorizer Benchmark")
+    print(f"  Spendif.ai Categorizer Benchmark")
     print(f"  {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"  Log: {log_file}")
     print(f"{'=' * 60}")
@@ -1120,7 +1120,7 @@ def main() -> None:
         _n_ctx_val = 0
     if 0 < _n_ctx_val < _MIN_CTX:
         print(f"\n[SKIP] n_ctx={_n_ctx_val} < minimum={_MIN_CTX}")
-        print(f"       Context window too small for Spendify prompts. Skipping this model.")
+        print(f"       Context window too small for Spendif.ai prompts. Skipping this model.")
         return
 
     # Resume: load already-completed (run_id, filename, git_commit, git_branch, provider, model) tuples

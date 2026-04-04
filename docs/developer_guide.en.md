@@ -1,4 +1,4 @@
-# Spendify — Developer Guide
+# Spendif.ai — Developer Guide
 
 > Version: 3.0 — updated 2026-03-21
 >
@@ -67,7 +67,7 @@ This rule is enforced automatically in CI (see §5).
 
 ```bash
 git clone https://github.com/drake69/spendify.git
-cd spendify
+cd spendifai
 uv sync
 cp .env.example .env
 
@@ -87,7 +87,7 @@ App available at `http://localhost:8501`.
 `.env` contains only:
 
 ```
-SPENDIFY_DB=sqlite:///ledger.db   # SQLite DB path
+SPENDIFAI_DB=sqlite:///ledger.db   # SQLite DB path
 ```
 
 LLM configuration (backend, model, API key) lives in the database and is managed from the UI → Settings page.
@@ -96,9 +96,9 @@ LLM configuration (backend, model, API key) lives in the database and is managed
 
 Internal tuning parameters **not exposed in the UI**. For developers and power users only.
 
-**File:** `config/system_settings.yaml` (repo defaults) + `~/.spendify/system_settings.yaml` (local overrides)
+**File:** `config/system_settings.yaml` (repo defaults) + `~/.spendifai/system_settings.yaml` (local overrides)
 
-The loader (`config/__init__.py`) reads repo defaults, then deep-merges with the local file. Unspecified keys keep their default. Set `SPENDIFY_SYSTEM_SETTINGS` env var for a custom path.
+The loader (`config/__init__.py`) reads repo defaults, then deep-merges with the local file. Unspecified keys keep their default. Set `SPENDIFAI_SYSTEM_SETTINGS` env var for a custom path.
 
 | Section | Key parameters | Defaults |
 |---------|---------------|----------|
@@ -114,7 +114,7 @@ The loader (`config/__init__.py`) reads repo defaults, then deep-merges with the
 ## 3. Project structure
 
 ```
-spendify/
+spendifai/
 ├── app.py                  # Streamlit entry point
 ├── config/                 # system settings (YAML, not UI-exposed)
 │   ├── __init__.py         # loader with deep merge
@@ -202,7 +202,7 @@ The classifier supports a 3-step sequential LLM pipeline where each step's outpu
 | Step | Purpose | Output |
 |------|---------|--------|
 | **Step 1 — Document Identity** | Identify document type and reading parameters | `doc_type`, `encoding`, `delimiter`, `sheet_name`, `skip_rows` |
-| **Step 2 — Column Mapping** | Map file columns to Spendify fields | `date_col`, `amount_col`, `description_col`, `balance_col`, `credit_col`, `debit_col` |
+| **Step 2 — Column Mapping** | Map file columns to Spendif.ai fields | `date_col`, `amount_col`, `description_col`, `balance_col`, `credit_col`, `debit_col` |
 | **Step 3 — Semantic Analysis** | Analyze value semantics (sign, date format, etc.) | `sign_convention`, `invert_sign`, `date_format`, `decimal_separator`, `account_holder` |
 
 Each step receives the output of previous steps as context, allowing the model to focus on one sub-problem at a time.
@@ -277,7 +277,7 @@ The server uses the same `services.*` as the Streamlit UI — no duplicated logi
 
 ## 7b. Support chatbot
 
-The `chat_bot/` module implements an adaptive chatbot that answers questions about Spendify usage. The mode is auto-selected based on the user's LLM backend setting in Settings.
+The `chat_bot/` module implements an adaptive chatbot that answers questions about Spendif.ai usage. The mode is auto-selected based on the user's LLM backend setting in Settings.
 
 ### Architecture
 
@@ -418,7 +418,7 @@ Each run saves a log to `tests/logs/` (gitignored, one timestamped file per run)
 | `run_benchmark_full.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
 | `benchmark_pipeline.py` | `tests/logs/pipeline_YYYYMMDD_HHMMSS.log` |
 | `benchmark_categorizer.py` | `tests/logs/categorizer_YYYYMMDD_HHMMSS.log` |
-| `diagnose.ps1` | `~/spendify_diagnose_YYYYMMDD_HHMMSS.log` |
+| `diagnose.ps1` | `~/spendifai_diagnose_YYYYMMDD_HHMMSS.log` |
 
 Output goes to both console and file simultaneously (tee). On Windows, run `diagnose.ps1` first to check prerequisites including GPU detection (NVIDIA/AMD/Intel).
 

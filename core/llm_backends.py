@@ -550,7 +550,7 @@ class LlamaCppBackend(LLMBackend):
     ):
         """
         Args:
-            model_path: Path to a .gguf file. None = auto-detect from ~/.spendify/models/.
+            model_path: Path to a .gguf file. None = auto-detect from ~/.spendifai/models/.
             n_ctx: Context window size in tokens.
                    0 (default) = auto-detect from GGUF metadata (model's native max),
                    falling back to 4096 if detection fails.
@@ -585,8 +585,8 @@ class LlamaCppBackend(LLMBackend):
 
     @staticmethod
     def _default_model_path() -> str:
-        """Default model storage location (~/.spendify/models/)."""
-        models_dir = Path.home() / ".spendify" / "models"
+        """Default model storage location (~/.spendifai/models/)."""
+        models_dir = Path.home() / ".spendifai" / "models"
         models_dir.mkdir(parents=True, exist_ok=True)
         # Look for any .gguf file, pick the first alphabetically
         gguf_files = sorted(models_dir.glob("*.gguf"))
@@ -600,7 +600,7 @@ class LlamaCppBackend(LLMBackend):
 
         Args:
             url: Direct download URL for the .gguf file.
-            dest: Destination path. Defaults to ~/.spendify/models/<filename>.
+            dest: Destination path. Defaults to ~/.spendifai/models/<filename>.
             progress_callback: Optional callable(bytes_downloaded, total_bytes).
 
         Returns:
@@ -610,7 +610,7 @@ class LlamaCppBackend(LLMBackend):
 
         if dest is None:
             filename = url.rsplit("/", 1)[-1]
-            dest = str(Path.home() / ".spendify" / "models" / filename)
+            dest = str(Path.home() / ".spendifai" / "models" / filename)
         Path(dest).parent.mkdir(parents=True, exist_ok=True)
 
         if progress_callback is not None:
@@ -624,7 +624,7 @@ class LlamaCppBackend(LLMBackend):
     @staticmethod
     def list_local_models() -> list[dict]:
         """Return metadata for all .gguf files in the default models directory."""
-        models_dir = Path.home() / ".spendify" / "models"
+        models_dir = Path.home() / ".spendifai" / "models"
         if not models_dir.exists():
             return []
         results = []

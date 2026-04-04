@@ -26,7 +26,7 @@ jobs:
         run: bash installer/install.sh
         env:
           # Override install dir to a CI temp folder
-          SPENDIFY_INSTALL_DIR: "${{ runner.temp }}/spendify-install-test"
+          SPENDIFY_INSTALL_DIR: "${{ runner.temp }}/spendifai-install-test"
           # Prevent install.sh from trying to open the browser (no display in CI)
           DISPLAY: ""
 
@@ -41,7 +41,7 @@ jobs:
             sleep 2
           done
           echo "❌ App did not become healthy in 60s"
-          docker compose --project-directory "${{ runner.temp }}/spendify-install-test" logs
+          docker compose --project-directory "${{ runner.temp }}/spendifai-install-test" logs
           exit 1
 
       - name: Verify main page responds
@@ -53,7 +53,7 @@ jobs:
       - name: Teardown
         if: always()
         run: |
-          INSTALL_DIR="${{ runner.temp }}/spendify-install-test"
+          INSTALL_DIR="${{ runner.temp }}/spendifai-install-test"
           if [ -f "$INSTALL_DIR/docker-compose.yml" ]; then
             docker compose --project-directory "$INSTALL_DIR" down -v
           fi

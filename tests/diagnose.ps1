@@ -1,4 +1,4 @@
-﻿# Spendify Benchmark — Diagnostic script for Windows
+﻿# Spendif.ai Benchmark — Diagnostic script for Windows
 # Run this FIRST to check all prerequisites before launching the benchmark.
 #
 # Usage:
@@ -9,14 +9,14 @@ $ErrorActionPreference = "Continue"
 # -- Detect UNC / network share (e.g. \\Mac\Home via Parallels) -----------
 $SourceDir  = Split-Path $PSScriptRoot -Parent
 $IsUNC      = $SourceDir -match '^\\\\' -or $SourceDir -match '^//'
-$LocalCopy  = Join-Path $env:USERPROFILE ".spendify\sw_artifacts"
+$LocalCopy  = Join-Path $env:USERPROFILE ".spendifai\sw_artifacts"
 
 # Log file: always on local disk so Start-Transcript never fails on UNC
-$LogFile = Join-Path $env:USERPROFILE "spendify_diagnose_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
+$LogFile = Join-Path $env:USERPROFILE "spendifai_diagnose_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
 Start-Transcript -Path $LogFile -Force | Out-Null
 
 Write-Host "============================================================"
-Write-Host "  Spendify Benchmark — Diagnostics"
+Write-Host "  Spendif.ai Benchmark — Diagnostics"
 Write-Host "  $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 Write-Host "============================================================"
 Write-Host ""
@@ -203,7 +203,7 @@ Write-Host ""
 
 # -- 7. GGUF Models -------------------------------------------------------
 Write-Host "-- [7/9] GGUF Models"
-$modelsDir = Join-Path $env:USERPROFILE ".spendify\models"
+$modelsDir = Join-Path $env:USERPROFILE ".spendifai\models"
 if (Test-Path $modelsDir) {
     $ggufFiles = Get-ChildItem "$modelsDir\*.gguf" -ErrorAction SilentlyContinue
     if ($ggufFiles.Count -gt 0) {

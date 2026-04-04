@@ -1,6 +1,6 @@
 # Guida alla Classificazione delle Transazioni
 
-> Come Spendify trasforma i tuoi movimenti bancari in dati categorizzati con il minimo intervento manuale.
+> Come Spendif.ai trasforma i tuoi movimenti bancari in dati categorizzati con il minimo intervento manuale.
 
 ---
 
@@ -8,7 +8,7 @@
 
 Carica il file movimenti (CSV, XLSX, XLS) trascinandolo nell'area di upload.
 
-- Spendify riconosce lo schema del file automaticamente e calcola un **confidence score** (0-100%).
+- Spendif.ai riconosce lo schema del file automaticamente e calcola un **confidence score** (0-100%).
 - Se la confidenza e >= 80%, l'importazione procede senza intervento.
 - Le transazioni vengono categorizzate dall'AI (LLM) e dalle regole deterministiche gia presenti.
 
@@ -20,7 +20,7 @@ Le transazioni su cui l'AI non era sicura vengono marcate con il flag di warning
 
 - Le transazioni incerte sono marcate con **warning** (da rivedere)
 - Per ciascuna puoi correggere **categoria**, **sottocategoria** e **contesto** dai menu a tendina
-- Conferma con **Validato** per dire a Spendify "questa classificazione e corretta"
+- Conferma con **Validato** per dire a Spendif.ai "questa classificazione e corretta"
 - Puoi anche creare una regola direttamente dalla Review, come nel Ledger
 
 ---
@@ -65,19 +65,19 @@ Le regole create (dal Ledger, dalla Review o dalla pagina Regole) si applicano a
 Import --> AI categorizza --> Utente rivede --> Crea regola --> Prossimo import: 0 interventi
 ```
 
-Piu usi Spendify, meno lavoro manuale. Ogni regola creata riduce il numero di transazioni da rivedere al prossimo import. Obiettivo: **zero pain**.
+Piu usi Spendif.ai, meno lavoro manuale. Ogni regola creata riduce il numero di transazioni da rivedere al prossimo import. Obiettivo: **zero pain**.
 
 ---
 
 ## 5b. Auto-apprendimento dallo storico
 
-Oltre alle regole, Spendify impara automaticamente dalle tue validazioni. Ogni volta che validi una transazione (checkbox ✅), il sistema registra l'associazione tra la controparte e la categoria.
+Oltre alle regole, Spendif.ai impara automaticamente dalle tue validazioni. Ogni volta che validi una transazione (checkbox ✅), il sistema registra l'associazione tra la controparte e la categoria.
 
 ### Come funziona
 
-1. **Tabella associazioni** — Spendify raggruppa tutte le transazioni validate per descrizione + categoria + sottocategoria e conta le ricorrenze.
+1. **Tabella associazioni** — Spendif.ai raggruppa tutte le transazioni validate per descrizione + categoria + sottocategoria e conta le ricorrenze.
 2. **Omogenità** — Per ogni controparte, calcola quanto è "stabile" nella classificazione (da 0 a 1). Se ESSELUNGA è *sempre* Alimentari → omogenità = 1.00. Se AMAZON è sparpagliata tra Tecnologia, Alimentari, Abbigliamento → omogenità bassa.
-3. **Decisione automatica** — Al prossimo import, prima di chiamare l'AI, Spendify consulta lo storico:
+3. **Decisione automatica** — Al prossimo import, prima di chiamare l'AI, Spendif.ai consulta lo storico:
    - **Confidenza ≥ 0.90** → assegna direttamente (fonte: 📚 Storico), nessuna review necessaria
    - **Confidenza 0.50–0.89** → suggerisce la categoria (fonte: 📚 Storico), ma la mette in review
    - **Confidenza < 0.50** → chiama l'AI come al solito
@@ -111,7 +111,7 @@ AMAZON con 5 categorie diverse
 
 ## Validazione vs. fonte classificazione
 
-Spendify gestisce due informazioni **distinte** per ogni transazione:
+Spendif.ai gestisce due informazioni **distinte** per ogni transazione:
 
 | Concetto | Campo | Significato |
 |----------|-------|-------------|
