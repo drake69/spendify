@@ -1,0 +1,114 @@
+
+============================================================
+  Spendify Categorizer Benchmark
+  2026-04-04 10:13:09
+  Log: /Users/lcorsaro/Documents/Progetti/PERSONALE/Spendify/sw_artifacts/tests/logs/categorizer_20260404_101309.log
+============================================================
+
+[check] Backend: local_llama_cpp
+[check] Verifying synthetic files...
+[check] Synthetic files OK
+
+[config] Runs: 3, Files: 9
+[config] File filter: *_S_*
+[config] Taxonomy: 15 expense + 7 income categories (Italian defaults)
+
+[config] Provider: llamacpp
+[config] Model: Phi-3-mini-4k-instruct-Q4_K_M
+[config] Temperature: default
+[config] Timeout: 120s
+[runtime] OS: macOS 26.3.1
+[runtime] CPU: Apple M1 Max
+[runtime] RAM: 64 GB
+[runtime] GPU: Apple M1 Max (32 cores)
+[llm] Host: localhost (in-process)
+[llm] HW: same as runtime
+[inference] n_ctx: 4096, n_batch: 1024, n_threads: ?, n_gpu_layers: ?, flash_attn: ?
+[resume] Found 306 completed steps — skipping them
+  █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  3.7% | Run 1/3 File 1/9 | ETA 00:00 | CC-1_S_000.csv  [Run 1/3] [File 1/9] CC-1_S_000.csv 90.1s exact=37% fuzzy=37% fb=63% r/h/l=11/0/19 [OK]                    
+  ██░░░░░░░░░░░░░░░░░░░░░░░░░░░░  7.4% | Run 1/3 File 2/9 | ETA 18:46 | CC-2_S_003.csv  [Run 1/3] [File 2/9] CC-2_S_003.csv 142.6s exact=0% fuzzy=3% fb=67% r/h/l=0/0/30 [OK]                    
+  ███░░░░░░░░░░░░░░░░░░░░░░░░░░░ 11.1% | Run 1/3 File 3/9 | ETA 31:02 | CC-3_S_006.csv  [Run 1/3] [File 3/9] CC-3_S_006.csv 81.7s exact=7% fuzzy=10% fb=73% r/h/l=1/0/29 [OK]                    
+  ████░░░░░░░░░░░░░░░░░░░░░░░░░░ 14.8% | Run 1/3 File 4/9 | ETA 30:08 | CRED-1_S_009.csv  [Run 1/3] [File 4/9] CRED-1_S_009.csv 65.2s exact=13% fuzzy=17% fb=67% r/h/l=5/0/25 [OK]                    
+  █████░░░░░░░░░░░░░░░░░░░░░░░░░ 18.5% | Run 1/3 File 5/9 | ETA 27:50 | CRED-2_S_012.csv  [Run 1/3] [File 5/9] CRED-2_S_012.csv 127.2s exact=27% fuzzy=27% fb=67% r/h/l=6/0/24 [OK]                    
+  ██████░░░░░░░░░░░░░░░░░░░░░░░░ 22.2% | Run 1/3 File 6/9 | ETA 29:33 | RIC-1_S_015.csv  [Run 1/3] [File 6/9] RIC-1_S_015.csv 87.5s exact=20% fuzzy=27% fb=77% r/h/l=7/0/23 [OK]                    
+  ███████░░░░░░░░░░░░░░░░░░░░░░░ 25.9% | Run 1/3 File 7/9 | ETA 28:17 | RIC-2_S_018.csv  [Run 1/3] [File 7/9] RIC-2_S_018.csv 97.6s exact=33% fuzzy=33% fb=70% r/h/l=6/0/24 [OK]                    
+  ████████░░░░░░░░░░░░░░░░░░░░░░ 29.6% | Run 1/3 File 8/9 | ETA 27:23 | RIC-3_S_021.csv  [Run 1/3] [File 8/9] RIC-3_S_021.csv 106.9s exact=37% fuzzy=43% fb=67% r/h/l=6/0/24 [OK]                    
+  ██████████░░░░░░░░░░░░░░░░░░░░ 33.3% | Run 1/3 File 9/9 | ETA 26:37 | RISP-1_S_024.csv  [Run 1/3] [File 9/9] RISP-1_S_024.csv 115.8s exact=3% fuzzy=13% fb=67% r/h/l=0/0/30 [OK]                    
+  --- Run 1 complete: 915s, 9 OK / 0 errors, exact=20%, fuzzy=23%
+
+  ███████████░░░░░░░░░░░░░░░░░░░ 37.0% | Run 2/3 File 1/9 | ETA 25:54 | CC-1_S_000.csv  [Run 2/3] [File 1/9] CC-1_S_000.csv 90.0s exact=37% fuzzy=37% fb=63% r/h/l=11/0/19 [OK]                    
+  ████████████░░░░░░░░░░░░░░░░░░ 40.7% | Run 2/3 File 2/9 | ETA 24:21 | CC-2_S_003.csv  [Run 2/3] [File 2/9] CC-2_S_003.csv 148.2s exact=0% fuzzy=3% fb=67% r/h/l=0/0/30 [OK]                    
+  █████████████░░░░░░░░░░░░░░░░░ 44.4% | Run 2/3 File 3/9 | ETA 24:01 | CC-3_S_006.csv  [Run 2/3] [File 3/9] CC-3_S_006.csv 82.2s exact=7% fuzzy=10% fb=73% r/h/l=1/0/29 [OK]                    
+  ██████████████░░░░░░░░░░░░░░░░ 48.1% | Run 2/3 File 4/9 | ETA 22:10 | CRED-1_S_009.csv  [Run 2/3] [File 4/9] CRED-1_S_009.csv 72.5s exact=13% fuzzy=17% fb=67% r/h/l=5/0/25 [OK]                    
+  ███████████████░░░░░░░░░░░░░░░ 51.9% | Run 2/3 File 5/9 | ETA 20:14 | CRED-2_S_012.csv  [Run 2/3] [File 5/9] CRED-2_S_012.csv 135.4s exact=27% fuzzy=27% fb=67% r/h/l=6/0/24 [OK]                    
+  ████████████████░░░░░░░░░░░░░░ 55.6% | Run 2/3 File 6/9 | ETA 19:14 | RIC-1_S_015.csv  [Run 2/3] [File 6/9] RIC-1_S_015.csv 87.6s exact=20% fuzzy=27% fb=77% r/h/l=7/0/23 [OK]                    
+  █████████████████░░░░░░░░░░░░░ 59.3% | Run 2/3 File 7/9 | ETA 17:32 | RIC-2_S_018.csv  [Run 2/3] [File 7/9] RIC-2_S_018.csv 106.2s exact=33% fuzzy=33% fb=70% r/h/l=6/0/24 [OK]                    
+  ██████████████████░░░░░░░░░░░░ 63.0% | Run 2/3 File 8/9 | ETA 16:02 | RIC-3_S_021.csvTraceback (most recent call last):
+  File "/Users/lcorsaro/Documents/Progetti/PERSONALE/Spendify/sw_artifacts/tests/benchmark_categorizer.py", line 1238, in <module>
+    # Count errors
+  File "/Users/lcorsaro/Documents/Progetti/PERSONALE/Spendify/sw_artifacts/tests/benchmark_categorizer.py", line 1182, in main
+    filled = int(bar_len * pct)
+                      ^^^^^^^^^
+    bar = "█" * filled + "░" * (bar_len - filled)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lcorsaro/Documents/Progetti/PERSONALE/Spendify/sw_artifacts/tests/benchmark_categorizer.py", line 485, in _evaluate_file
+    schema = classify_document(
+        df_raw=df,
+    ...<5 lines>...
+        classifier_mode="auto",
+    )
+  File "/Users/lcorsaro/Documents/Progetti/PERSONALE/Spendify/sw_artifacts/core/classifier.py", line 438, in classify_document
+    result, _ms_diag = _classify_multi_step(
+                       ~~~~~~~~~~~~~~~~~~~~^
+        sample_json=sample_json,
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+        account_type=account_type,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/lcorsaro/Documents/Progetti/PERSONALE/Spendify/sw_artifacts/core/classifier.py", line 254, in _classify_multi_step
+    step3_result, _ = call_with_fallback(
+                      ~~~~~~~~~~~~~~~~~~^
+        primary=llm_backend,
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+        fallback=fallback_backend,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/lcorsaro/Documents/Progetti/PERSONALE/Spendify/sw_artifacts/core/llm_backends.py", line 863, in call_with_fallback
+    result = backend.complete_structured(
+        system_prompt, user_prompt, json_schema, temperature
+    )
+  File "/Users/lcorsaro/Documents/Progetti/PERSONALE/Spendify/sw_artifacts/core/llm_backends.py", line 787, in complete_structured
+    response = self._llm.create_completion(
+        prompt=prompt,
+    ...<6 lines>...
+        stop=["<|im_end|>", "<end_of_turn>", "</s>", "<|eot_id|>"],
+    )
+  File "/Users/lcorsaro/Documents/Progetti/PERSONALE/Spendify/sw_artifacts/.venv/lib/python3.13/site-packages/llama_cpp/llama.py", line 1851, in create_completion
+    completion: Completion = next(completion_or_chunks)  # type: ignore
+                             ~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lcorsaro/Documents/Progetti/PERSONALE/Spendify/sw_artifacts/.venv/lib/python3.13/site-packages/llama_cpp/llama.py", line 1336, in _create_completion
+    for token in self.generate(
+                 ~~~~~~~~~~~~~^
+        prompt_tokens,
+        ^^^^^^^^^^^^^^
+    ...<14 lines>...
+        grammar=grammar,
+        ^^^^^^^^^^^^^^^^
+    ):
+    ^
+  File "/Users/lcorsaro/Documents/Progetti/PERSONALE/Spendify/sw_artifacts/.venv/lib/python3.13/site-packages/llama_cpp/llama.py", line 929, in generate
+    token = self.sample(
+        top_k=top_k,
+    ...<14 lines>...
+        idx=sample_idx,
+    )
+  File "/Users/lcorsaro/Documents/Progetti/PERSONALE/Spendify/sw_artifacts/.venv/lib/python3.13/site-packages/llama_cpp/llama.py", line 823, in sample
+    token = self._sampler.sample(self._ctx, ridx)
+  File "/Users/lcorsaro/Documents/Progetti/PERSONALE/Spendify/sw_artifacts/.venv/lib/python3.13/site-packages/llama_cpp/_internals.py", line 856, in sample
+    return llama_cpp.llama_sampler_sample(self.sampler, ctx.ctx, idx)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

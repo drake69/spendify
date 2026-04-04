@@ -1,0 +1,97 @@
+
+============================================================
+  Spendify Categorizer Benchmark
+  2026-04-04 10:44:49
+  Log: /Users/lcorsaro/Documents/Progetti/PERSONALE/Spendify/sw_artifacts/tests/logs/categorizer_20260404_104449.log
+============================================================
+
+[check] Backend: local_llama_cpp
+[check] Verifying synthetic files...
+[check] Synthetic files OK
+
+[config] Runs: 3, Files: 9
+[config] File filter: *_S_*
+[config] Taxonomy: 15 expense + 7 income categories (Italian defaults)
+
+[config] Provider: llamacpp
+[config] Model: qwen2.5-1.5b-instruct-q4_k_m
+[config] Temperature: default
+[config] Timeout: 120s
+[runtime] OS: macOS 26.3.1
+[runtime] CPU: Apple M1 Max
+[runtime] RAM: 64 GB
+[runtime] GPU: Apple M1 Max (32 cores)
+[llm] Host: localhost (in-process)
+[llm] HW: same as runtime
+[inference] n_ctx: 32768, n_batch: 1024, n_threads: ?, n_gpu_layers: ?, flash_attn: ?
+[resume] Found 306 completed steps — skipping them
+  █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  3.7% | Run 1/3 File 1/9 | ETA 00:00 | CC-1_S_000.csvTraceback (most recent call last):
+  File "/Users/lcorsaro/Documents/Progetti/PERSONALE/Spendify/sw_artifacts/tests/benchmark_categorizer.py", line 1250, in <module>
+    main()
+    ~~~~^^
+  File "/Users/lcorsaro/Documents/Progetti/PERSONALE/Spendify/sw_artifacts/tests/benchmark_categorizer.py", line 1194, in main
+    result, details = _evaluate_file(entry, gt, backend, taxonomy, run_id,
+                      ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                      cleaner_batch_size=args.cleaner_batch_size)
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lcorsaro/Documents/Progetti/PERSONALE/Spendify/sw_artifacts/tests/benchmark_categorizer.py", line 485, in _evaluate_file
+    schema = classify_document(
+        df_raw=df,
+    ...<5 lines>...
+        classifier_mode="auto",
+    )
+  File "/Users/lcorsaro/Documents/Progetti/PERSONALE/Spendify/sw_artifacts/core/classifier.py", line 438, in classify_document
+    result, _ms_diag = _classify_multi_step(
+                       ~~~~~~~~~~~~~~~~~~~~^
+        sample_json=sample_json,
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+        account_type=account_type,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/lcorsaro/Documents/Progetti/PERSONALE/Spendify/sw_artifacts/core/classifier.py", line 254, in _classify_multi_step
+    step3_result, _ = call_with_fallback(
+                      ~~~~~~~~~~~~~~~~~~^
+        primary=llm_backend,
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+        fallback=fallback_backend,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/lcorsaro/Documents/Progetti/PERSONALE/Spendify/sw_artifacts/core/llm_backends.py", line 863, in call_with_fallback
+    result = backend.complete_structured(
+        system_prompt, user_prompt, json_schema, temperature
+    )
+  File "/Users/lcorsaro/Documents/Progetti/PERSONALE/Spendify/sw_artifacts/core/llm_backends.py", line 787, in complete_structured
+    response = self._llm.create_completion(
+        prompt=prompt,
+    ...<6 lines>...
+        stop=["<|im_end|>", "<end_of_turn>", "</s>", "<|eot_id|>"],
+    )
+  File "/Users/lcorsaro/Documents/Progetti/PERSONALE/Spendify/sw_artifacts/.venv/lib/python3.13/site-packages/llama_cpp/llama.py", line 1851, in create_completion
+    completion: Completion = next(completion_or_chunks)  # type: ignore
+                             ~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lcorsaro/Documents/Progetti/PERSONALE/Spendify/sw_artifacts/.venv/lib/python3.13/site-packages/llama_cpp/llama.py", line 1336, in _create_completion
+    for token in self.generate(
+                 ~~~~~~~~~~~~~^
+        prompt_tokens,
+        ^^^^^^^^^^^^^^
+    ...<14 lines>...
+        grammar=grammar,
+        ^^^^^^^^^^^^^^^^
+    ):
+    ^
+  File "/Users/lcorsaro/Documents/Progetti/PERSONALE/Spendify/sw_artifacts/.venv/lib/python3.13/site-packages/llama_cpp/llama.py", line 929, in generate
+    token = self.sample(
+        top_k=top_k,
+    ...<14 lines>...
+        idx=sample_idx,
+    )
+  File "/Users/lcorsaro/Documents/Progetti/PERSONALE/Spendify/sw_artifacts/.venv/lib/python3.13/site-packages/llama_cpp/llama.py", line 823, in sample
+    token = self._sampler.sample(self._ctx, ridx)
+  File "/Users/lcorsaro/Documents/Progetti/PERSONALE/Spendify/sw_artifacts/.venv/lib/python3.13/site-packages/llama_cpp/_internals.py", line 856, in sample
+    return llama_cpp.llama_sampler_sample(self.sampler, ctx.ctx, idx)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

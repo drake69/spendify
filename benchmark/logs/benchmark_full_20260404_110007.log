@@ -1,0 +1,18 @@
+════════════════════════════════════════════════════════════
+  SPENDIFY FULL BENCHMARK  —  2026-04-04 11:00:07
+  Phases   : both
+  Runs     : 1
+  Models   : tests/benchmark_models.csv
+  Log      : tests/logs/benchmark_full_20260404_110007.log
+════════════════════════════════════════════════════════════
+
+── [1/4] Checking uv...
+[ok] uv uv 0.11.3 (Homebrew 2026-04-01 aarch64-apple-darwin)
+
+── [2/4] Checking Python environment...
+[ok] Python env ready
+
+── [3a/4] llama.cpp setup — checking GGUF models...
+[download] Qwen3.5-2B-Q4_K_M.gguf  (from bartowski/Qwen_Qwen3.5-2B-GGUF)
+URL: https://huggingface.co/bartowski/Qwen_Qwen3.5-2B-GGUF/resolve/main/Qwen3.5-2B-Q4_K_M.gguf
+[90mSet HF_DEBUG=1 as environment variable for full traceback.[0m

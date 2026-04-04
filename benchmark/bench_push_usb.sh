@@ -77,7 +77,11 @@ if [[ $DRY_RUN -eq 0 ]]; then
 fi
 echo ""
 echo "Sul bench esegui:"
-echo "  bash benchmark/run_benchmark_full.sh"
+echo "  Linux / macOS:"
+echo "    bash benchmark/run_benchmark_full.sh"
+echo "  Windows:"
+echo "    powershell -ExecutionPolicy Bypass -File benchmark\run_benchmark_full.ps1"
 echo ""
 echo "Poi raccogli con:"
-echo "  bash benchmark/bench_pull_usb.sh --from $DEST"
+echo "  Linux / macOS : bash benchmark/bench_pull_usb.sh --from $DEST"
+echo "  Windows       : powershell -ExecutionPolicy Bypass -File benchmark\bench_pull_usb.ps1 -From $DEST"
