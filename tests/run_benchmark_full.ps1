@@ -59,14 +59,15 @@ $ModelsCsv = Join-Path $WorkDir "tests\benchmark_models.csv"
 # ── Log file ─────────────────────────────────────────────────────────────
 $LogDir = Join-Path $WorkDir "tests\logs"
 if (-not (Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir -Force | Out-Null }
-$LogFile = Join-Path $LogDir "benchmark_full_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
+$StartTs  = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+$LogFile  = Join-Path $LogDir "benchmark_full_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
 Start-Transcript -Path $LogFile -Force | Out-Null
 
 $env:PYTHONIOENCODING = "utf-8"
 $env:PYTHONUTF8       = "1"
 
 Write-Host "════════════════════════════════════════════════════════════"
-Write-Host "  SPENDIFY FULL BENCHMARK  —  $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+Write-Host "  SPENDIFY FULL BENCHMARK  —  $StartTs"
 Write-Host "  Phases   : $Benchmark"
 Write-Host "  Runs     : $Runs"
 Write-Host "  Models   : $ModelsCsv"
@@ -397,7 +398,8 @@ if ($IsUNC) {
 # ── Done ──────────────────────────────────────────────────────────────────
 Write-Host ""
 Write-Host "════════════════════════════════════════════════════════════"
-Write-Host "  FULL BENCHMARK COMPLETE  —  $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+$EndTs = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+Write-Host "  FULL BENCHMARK COMPLETE  —  $EndTs"
 Write-Host "  Steps completed : $Step"
 Write-Host "════════════════════════════════════════════════════════════"
 Write-Host ""
