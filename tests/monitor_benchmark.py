@@ -15,6 +15,7 @@ Usage:
     --interval N      Refresh interval in seconds (default: 60)
     --runs N          Expected runs per model (default: 1)
     --total N         Override expected files per model (auto from manifest)
+    --models N        Override total model/backend pairs (auto from benchmark_models.csv)
     --once            Print once and exit (no loop)
     --all             Show all historical data (default: current run_id only)
 """
@@ -25,16 +26,18 @@ import csv
 import os
 import sys
 import time
+import urllib.request
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
 # ── Paths ─────────────────────────────────────────────────────────────────
-_TESTS_DIR     = Path(__file__).resolve().parent
-_PROJECT_ROOT  = _TESTS_DIR.parent
-_BENCHMARK_DIR = _TESTS_DIR / "generated_files" / "benchmark"
-_MANIFEST_PATH = _TESTS_DIR / "generated_files" / "manifest.csv"
-_RESULTS_CSV   = _BENCHMARK_DIR / "results_all_runs.csv"
+_TESTS_DIR      = Path(__file__).resolve().parent
+_PROJECT_ROOT   = _TESTS_DIR.parent
+_BENCHMARK_DIR  = _TESTS_DIR / "generated_files" / "benchmark"
+_MANIFEST_PATH  = _TESTS_DIR / "generated_files" / "manifest.csv"
+_RESULTS_CSV    = _BENCHMARK_DIR / "results_all_runs.csv"
+_MODELS_CSV     = _TESTS_DIR / "benchmark_models.csv"
 
 # ── HW monitor (optional — graceful fallback if unavailable) ───────────────
 sys.path.insert(0, str(_PROJECT_ROOT))
@@ -73,6 +76,42 @@ def _fmt_eta(remaining: int, rate_fps: float) -> str:
     return f"~{_fmt_duration(remaining / rate_fps)}"
 
 # ── Data loading ───────────────────────────────────────────────────────────
+def _ollama_running() -> bool:
+    """Quick check — returns True if Ollama is reachable on localhost:11434."""
+    try:
+        urllib.request.urlopen("http://localhost:11434/api/tags", timeout=2)
+        return True
+    except Exception:
+        return False
+
+def _count_expected_models() -> int:
+    """Count enabled model/backend pairs from benchmark_models.csv.
+
+    Rules (same as run_benchmark_full.sh/.ps1):
+    - +1 per row with gguf_file set       → llama.cpp backend
+    - +1 per row with ollama_tag set      → Ollama backend (only if Ollama is reachable)
+    Returns 0 if the CSV is missing or unreadable.
+    """
+    if not _MODELS_CSV.exists():
+        return 0
+    ollama_up: bool | None = None   # lazy-check once
+    count = 0
+    try:
+        with open(_MODELS_CSV, newline="", encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                if (row.get("enabled") or "").strip().lower() != "true":
+                    continue
+                if (row.get("gguf_file") or "").strip():
+                    count += 1
+                if (row.get("ollama_tag") or "").strip():
+                    if ollama_up is None:
+                        ollama_up = _ollama_running()
+                    if ollama_up:
+                        count += 1
+    except Exception:
+        return 0
+    return count
+
 def _load_manifest_count() -> int:
     if not _MANIFEST_PATH.exists():
         return 0
@@ -105,7 +144,7 @@ def _load_results(current_only: bool = True) -> tuple[list[dict], float | None]:
     return rows, mtime
 
 # ── Snapshot ───────────────────────────────────────────────────────────────
-def _snapshot(rows: list[dict], exp_per_model: int) -> dict:
+def _snapshot(rows: list[dict], exp_per_model: int, n_models_total: int = 0) -> dict:
     counts:    dict[tuple, int]  = defaultdict(int)
     durations: list[float]       = []
     cpu_samples: list[float]     = []
@@ -137,10 +176,12 @@ def _snapshot(rows: list[dict], exp_per_model: int) -> dict:
         if bt:
             phases[bt] += 1
 
-    total_done = sum(counts.values())
-    n_models   = len(counts)
-    total_exp  = n_models * exp_per_model if n_models else 0
-    avg_dur    = sum(durations) / len(durations) if durations else 0
+    total_done   = sum(counts.values())
+    n_models     = len(counts)
+    # Use declared total if provided, otherwise fall back to models seen so far
+    n_models_eff = n_models_total if n_models_total > 0 else n_models
+    total_exp    = n_models_eff * exp_per_model if n_models_eff else 0
+    avg_dur      = sum(durations) / len(durations) if durations else 0
     rate_fpm   = (60 / avg_dur) if avg_dur > 0 else 0
 
     # Determine the run_id being displayed
@@ -156,6 +197,7 @@ def _snapshot(rows: list[dict], exp_per_model: int) -> dict:
         "counts":        dict(counts),
         "total_done":    total_done,
         "total_exp":     total_exp,
+        "n_models_eff":  n_models_eff,
         "exp_per_model": exp_per_model,
         "avg_dur_s":     avg_dur,
         "rate_fpm":      rate_fpm,
@@ -189,9 +231,12 @@ def _print_report(snap: dict, elapsed_s: float, interval: int,
     run_label = f"run_id={run_id}" if run_id > 0 else "run_id=?"
     stale_tag = "" if csv_active else "  ⚠ DATI PRECEDENTI"
     print(f"  BENCHMARK MONITOR  —  {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  [{run_label}]{stale_tag}")
+    n_models_eff = snap["n_models_eff"]
     rate_str = f"{rate_fpm:.1f} file/min  ({avg_dur_s:.1f}s/file)" if rate_fpm > 0 else "—"
     eta_str  = _fmt_eta(remaining, rate_fps)
+    models_str = f"{n_models_eff} pair(s)" if n_models_eff else "?"
     print(f"  Elapsed : {_fmt_duration(elapsed_s)}")
+    print(f"  Models  : {models_str}  ×  {exp_per if exp_per else '?'} file  =  {total_exp if total_exp else '?'} totali")
     print(f"  Rate    : {rate_str}")
     print(f"  ETA     : {eta_str}")
     if not csv_active:
@@ -261,6 +306,7 @@ def main() -> None:
     parser.add_argument("--interval", type=int,  default=60,    help="Refresh interval seconds (default: 60)")
     parser.add_argument("--runs",     type=int,  default=1,     help="Expected runs per model (default: 1)")
     parser.add_argument("--total",    type=int,  default=0,     help="Expected files per model (0 = auto from manifest)")
+    parser.add_argument("--models",   type=int,  default=0,     help="Total model/backend pairs expected (0 = auto from benchmark_models.csv)")
     parser.add_argument("--once",     action="store_true",      help="Print once and exit")
     parser.add_argument("--all",      action="store_true",      help="Show all historical data, not just current run_id")
     args = parser.parse_args()
@@ -269,12 +315,15 @@ def main() -> None:
     exp_per_model  = (args.total if args.total > 0 else manifest_count) * args.runs
     current_only   = not args.all
 
+    # Auto-detect expected model/backend pairs if not explicitly declared
+    n_models_total = args.models if args.models > 0 else _count_expected_models()
+
     start_time  = time.monotonic()
     start_mtime = _RESULTS_CSV.stat().st_mtime if _RESULTS_CSV.exists() else None
 
     def _run_once() -> None:
         rows, csv_mtime = _load_results(current_only=current_only)
-        snap     = _snapshot(rows, exp_per_model)
+        snap     = _snapshot(rows, exp_per_model, n_models_total=n_models_total)
         elapsed  = time.monotonic() - start_time
         # CSV è "attivo" se è stato modificato dopo l'avvio del monitor
         csv_active = (csv_mtime is not None and
