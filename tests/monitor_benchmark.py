@@ -2,7 +2,7 @@
 r"""Benchmark progress monitor — cross-platform (Mac / Linux / Windows).
 
 Reads results_all_runs.csv every N seconds and prints a live synopsis:
-elapsed time, per-model progress, overall ETA.
+elapsed time, per-model progress, overall ETA, live CPU/GPU, pipeline phase.
 
 Usage:
     # Mac / Linux
@@ -31,9 +31,20 @@ from pathlib import Path
 
 # ── Paths ─────────────────────────────────────────────────────────────────
 _TESTS_DIR     = Path(__file__).resolve().parent
+_PROJECT_ROOT  = _TESTS_DIR.parent
 _BENCHMARK_DIR = _TESTS_DIR / "generated_files" / "benchmark"
 _MANIFEST_PATH = _TESTS_DIR / "generated_files" / "manifest.csv"
 _RESULTS_CSV   = _BENCHMARK_DIR / "results_all_runs.csv"
+
+# ── HW monitor (optional — graceful fallback if unavailable) ───────────────
+sys.path.insert(0, str(_PROJECT_ROOT))
+try:
+    from tests.hw_monitor import HWMonitor as _HWMonitor
+    _hw = _HWMonitor()
+    _gpu_source: str = getattr(_hw._gpu_sampler, "_source", "?")
+except Exception:
+    _hw = None          # type: ignore[assignment]
+    _gpu_source = "n/a"
 
 # ── Terminal helpers ───────────────────────────────────────────────────────
 _IS_WIN = sys.platform == "win32"
@@ -97,6 +108,9 @@ def _load_results(current_only: bool = True) -> tuple[list[dict], float | None]:
 def _snapshot(rows: list[dict], exp_per_model: int) -> dict:
     counts:    dict[tuple, int]  = defaultdict(int)
     durations: list[float]       = []
+    cpu_samples: list[float]     = []
+    gpu_samples: list[float]     = []
+    phases: dict[str, int]       = defaultdict(int)
 
     for row in rows:
         key = (row.get("provider", "?"), row.get("model", "?"))
@@ -107,6 +121,21 @@ def _snapshot(rows: list[dict], exp_per_model: int) -> dict:
                 durations.append(d)
         except ValueError:
             pass
+        try:
+            c = float(row.get("cpu_load_avg") or 0)
+            if c > 0:
+                cpu_samples.append(c)
+        except ValueError:
+            pass
+        try:
+            g = float(row.get("gpu_utilization_pct") or 0)
+            if g > 0:
+                gpu_samples.append(g)
+        except ValueError:
+            pass
+        bt = (row.get("benchmark_type") or "").strip()
+        if bt:
+            phases[bt] += 1
 
     total_done = sum(counts.values())
     n_models   = len(counts)
@@ -122,10 +151,14 @@ def _snapshot(rows: list[dict], exp_per_model: int) -> dict:
         "avg_dur_s":     avg_dur,
         "rate_fpm":      rate_fpm,
         "rate_fps":      rate_fpm / 60,
+        "cpu_avg_hist":  sum(cpu_samples) / len(cpu_samples) if cpu_samples else 0.0,
+        "gpu_avg_hist":  sum(gpu_samples) / len(gpu_samples) if gpu_samples else 0.0,
+        "phases":        dict(phases),
     }
 
 # ── Report ─────────────────────────────────────────────────────────────────
-def _print_report(snap: dict, elapsed_s: float, interval: int) -> None:
+def _print_report(snap: dict, elapsed_s: float, interval: int,
+                  live_cpu: float = 0.0, live_gpu: float = 0.0) -> None:
     counts       = snap["counts"]
     total_done   = snap["total_done"]
     total_exp    = snap["total_exp"]
@@ -134,6 +167,9 @@ def _print_report(snap: dict, elapsed_s: float, interval: int) -> None:
     rate_fps     = snap["rate_fps"]
     avg_dur_s    = snap["avg_dur_s"]
     remaining    = max(0, total_exp - total_done)
+    cpu_hist     = snap["cpu_avg_hist"]
+    gpu_hist     = snap["gpu_avg_hist"]
+    phases       = snap["phases"]
 
     W = 72
 
@@ -144,6 +180,24 @@ def _print_report(snap: dict, elapsed_s: float, interval: int) -> None:
     print(f"  Elapsed : {_fmt_duration(elapsed_s)}")
     print(f"  Rate    : {rate_str}")
     print(f"  ETA     : {eta_str}")
+
+    # ── Pipeline phase ─────────────────────────────────────────────────────
+    if phases:
+        phase_parts = [f"{k}: {v}" for k, v in sorted(phases.items())]
+        # Highlight the most recent phase (highest count when only one active)
+        active = max(phases, key=lambda k: phases[k]) if phases else "?"
+        print(f"  Phase   : {active}  ({', '.join(phase_parts)} rows)")
+
+    # ── HW stats ───────────────────────────────────────────────────────────
+    if live_cpu > 0 or live_gpu > 0:
+        cpu_bar  = _bar(int(live_cpu), 100, 10)
+        gpu_bar  = _bar(int(live_gpu), 100, 10)
+        live_str = f"CPU {live_cpu:5.1f}%  {cpu_bar}  |  GPU {live_gpu:5.1f}%  {gpu_bar}  [{_gpu_source}]"
+        print(f"  Live HW : {live_str}")
+    if cpu_hist > 0 or gpu_hist > 0:
+        hist_str = f"CPU avg {cpu_hist:.1f}%  |  GPU avg {gpu_hist:.1f}%  (da righe completate)"
+        print(f"  HW avg  : {hist_str}")
+
     print("═" * W)
 
     if not counts:
@@ -203,8 +257,11 @@ def main() -> None:
         rows, _ = _load_results(current_only=current_only)
         snap     = _snapshot(rows, exp_per_model)
         elapsed  = time.monotonic() - start_time
+        # Live HW sample (taken just before printing for freshness)
+        live_cpu, live_gpu = _hw.sample_once() if _hw is not None else (0.0, 0.0)
         _clear()
-        _print_report(snap, elapsed, 0 if args.once else args.interval)
+        _print_report(snap, elapsed, 0 if args.once else args.interval,
+                      live_cpu=live_cpu, live_gpu=live_gpu)
 
     if args.once:
         _run_once()
