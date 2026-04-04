@@ -189,10 +189,12 @@ def _print_report(snap: dict, elapsed_s: float, interval: int,
         print(f"  Phase   : {active}  ({', '.join(phase_parts)} rows)")
 
     # ── HW stats ───────────────────────────────────────────────────────────
-    if live_cpu > 0 or live_gpu > 0:
+    if _hw is not None:
         cpu_bar  = _bar(int(live_cpu), 100, 10)
         gpu_bar  = _bar(int(live_gpu), 100, 10)
-        live_str = f"CPU {live_cpu:5.1f}%  {cpu_bar}  |  GPU {live_gpu:5.1f}%  {gpu_bar}  [{_gpu_source}]"
+        cpu_s    = f"{live_cpu:5.1f}%" if live_cpu > 0 else "  N/A "
+        gpu_s    = f"{live_gpu:5.1f}%" if live_gpu > 0 else "  N/A "
+        live_str = f"CPU {cpu_s}  {cpu_bar}  |  GPU {gpu_s}  {gpu_bar}  [{_gpu_source}]"
         print(f"  Live HW : {live_str}")
     if cpu_hist > 0 or gpu_hist > 0:
         hist_str = f"CPU avg {cpu_hist:.1f}%  |  GPU avg {gpu_hist:.1f}%  (da righe completate)"
