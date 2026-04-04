@@ -4,9 +4,9 @@
 # Esclude: .git, .claude, __pycache__, .venv, *.db, logs, backup, quarantine, ui, ...
 #
 # Uso:
-#   powershell -ExecutionPolicy Bypass -File .\scripts\bench_push_usb.ps1 -Dest E:\BENCH_USB
-#   powershell -ExecutionPolicy Bypass -File .\scripts\bench_push_usb.ps1 -Dest E:\BENCH_USB -Clean
-#   powershell -ExecutionPolicy Bypass -File .\scripts\bench_push_usb.ps1 -Dest E:\BENCH_USB -DryRun
+#   powershell -ExecutionPolicy Bypass -File .\benchmark\bench_push_usb.ps1 -Dest E:\BENCH_USB
+#   powershell -ExecutionPolicy Bypass -File .\benchmark\bench_push_usb.ps1 -Dest E:\BENCH_USB -Clean
+#   powershell -ExecutionPolicy Bypass -File .\benchmark\bench_push_usb.ps1 -Dest E:\BENCH_USB -DryRun
 #
 # Parametri:
 #   -Dest PATH    Destinazione (chiavetta o cartella) [obbligatorio]
@@ -51,6 +51,7 @@ $ExcludeDirs = @(
     ".claude",
     ".venv",
     "venv",
+    ".pytest_cache",
     "__pycache__",
     ".vscode",
     ".idea",
@@ -73,7 +74,7 @@ $ExcludeDirs = @(
     "docker",
     "tests\logs",
     "tests\results_archive",
-    "tests\generated_files\benchmark"
+    "tests\generated_files"
 )
 
 # ── File da escludere ───────────────────────────────────────────────────────
@@ -130,4 +131,4 @@ Write-Host "Sul bench esegui:"
 Write-Host "  powershell -ExecutionPolicy Bypass -File tests\run_benchmark_full.ps1"
 Write-Host ""
 Write-Host "Poi raccogli con:"
-Write-Host "  powershell -ExecutionPolicy Bypass -File scripts\bench_pull_usb.ps1 -From $Dest"
+Write-Host "  powershell -ExecutionPolicy Bypass -File benchmark\bench_pull_usb.ps1 -From $Dest"

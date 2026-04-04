@@ -6,8 +6,8 @@
 #   tests/logs/                   → log per debug
 #
 # Uso:
-#   bash scripts/bench_pull_ssh.sh --from user@bench-host:/home/user/spendif
-#   bash scripts/bench_pull_ssh.sh --from user@192.168.1.50:~/spendif --dry-run
+#   bash benchmark/bench_pull_ssh.sh --from user@bench-host:/home/user/spendif
+#   bash benchmark/bench_pull_ssh.sh --from user@192.168.1.50:~/spendif --dry-run
 #
 # Opzioni:
 #   --from HOST:PATH   Sorgente SSH [obbligatorio]

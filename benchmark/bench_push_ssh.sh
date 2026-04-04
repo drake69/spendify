@@ -4,11 +4,11 @@
 # Identico a bench_push_usb.sh ma via rsync/SSH.
 # Esclude automaticamente tutto ciò che è in .gitignore più:
 #   .claude/, backup/, quarantine/, logs/, *.db, ui/, docker/, installer/, ...
-#   (lista completa in scripts/.rsync-bench-exclude)
+#   (lista completa in benchmark/.rsync-bench-exclude)
 #
 # Uso:
-#   bash scripts/bench_push_ssh.sh --dest user@bench-host:/home/user/spendif
-#   bash scripts/bench_push_ssh.sh --dest user@192.168.1.50:~/spendif --clean
+#   bash benchmark/bench_push_ssh.sh --dest user@bench-host:/home/user/spendif
+#   bash benchmark/bench_push_ssh.sh --dest user@192.168.1.50:~/spendif --clean
 #
 # Opzioni:
 #   --dest HOST:PATH   Destinazione SSH [obbligatorio]
@@ -89,4 +89,4 @@ echo "  cd $PATH_PART"
 echo "  bash tests/run_benchmark_full.sh"
 echo ""
 echo "Poi raccogli con:"
-echo "  bash scripts/bench_pull_ssh.sh --from $DEST"
+echo "  bash benchmark/bench_pull_ssh.sh --from $DEST"

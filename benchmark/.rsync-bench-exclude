@@ -25,6 +25,7 @@ dist/
 build/
 .venv/
 venv/
+.pytest_cache/
 
 # ── OS artifacts ───────────────────────────────────────────────────────────
 .DS_Store
@@ -60,8 +61,7 @@ quarantine/
 
 # ── Output benchmark (rimangono sul bench, si raccolgono con pull) ─────────
 tests/results_archive/
-tests/generated_files/benchmark/
-tests/generated_files/results_deterministic.csv
+tests/generated_files/
 
 # ── Componenti non necessari al benchmark ──────────────────────────────────
 ui/

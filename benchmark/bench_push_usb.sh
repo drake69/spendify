@@ -3,12 +3,12 @@
 #
 # Esclude automaticamente tutto ciò che è in .gitignore più:
 #   .claude/, backup/, quarantine/, logs/, *.db, ui/, docker/, installer/, ...
-#   (lista completa in scripts/.rsync-bench-exclude)
+#   (lista completa in benchmark/.rsync-bench-exclude)
 #
 # Uso:
-#   bash scripts/bench_push_usb.sh --dest /Volumes/BENCH_USB
-#   bash scripts/bench_push_usb.sh --dest /Volumes/BENCH_USB --clean
-#   bash scripts/bench_push_usb.sh --dest /Volumes/BENCH_USB --dry-run
+#   bash benchmark/bench_push_usb.sh --dest /Volumes/BENCH_USB
+#   bash benchmark/bench_push_usb.sh --dest /Volumes/BENCH_USB --clean
+#   bash benchmark/bench_push_usb.sh --dest /Volumes/BENCH_USB --dry-run
 #
 # Opzioni:
 #   --dest PATH   Percorso destinazione [obbligatorio]
@@ -80,4 +80,4 @@ echo "Sul bench esegui:"
 echo "  bash tests/run_benchmark_full.sh"
 echo ""
 echo "Poi raccogli con:"
-echo "  bash scripts/bench_pull_usb.sh --from $DEST"
+echo "  bash benchmark/bench_pull_usb.sh --from $DEST"

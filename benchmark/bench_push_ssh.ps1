@@ -7,9 +7,9 @@
 # Preserva: tests\benchmark_models.csv (escluso da *.csv, reintrodotto esplicitamente)
 #
 # Uso:
-#   powershell -ExecutionPolicy Bypass -File .\scripts\bench_push_ssh.ps1 -Dest user@bench-host:~/spendif
-#   powershell -ExecutionPolicy Bypass -File .\scripts\bench_push_ssh.ps1 -Dest user@192.168.1.50:~/spendif -Clean
-#   powershell -ExecutionPolicy Bypass -File .\scripts\bench_push_ssh.ps1 -Dest user@bench-host:~/spendif -DryRun
+#   powershell -ExecutionPolicy Bypass -File .\benchmark\bench_push_ssh.ps1 -Dest user@bench-host:~/spendif
+#   powershell -ExecutionPolicy Bypass -File .\benchmark\bench_push_ssh.ps1 -Dest user@192.168.1.50:~/spendif -Clean
+#   powershell -ExecutionPolicy Bypass -File .\benchmark\bench_push_ssh.ps1 -Dest user@bench-host:~/spendif -DryRun
 #
 # Parametri:
 #   -Dest HOST:PATH   Destinazione SSH [obbligatorio]   Es. user@bench-pc:~/spendif
@@ -102,13 +102,13 @@ if ($RsyncCmd) {
 
     # ── Stesse esclusioni di bench_push_usb.ps1 ───────────────────────────
     $ExcludeDirs = @(
-        ".git", ".claude", ".venv", "venv", "__pycache__",
+        ".git", ".claude", ".venv", "venv", ".pytest_cache", "__pycache__",
         ".vscode", ".idea", ".eggs", "dist", "build",
         "llm_cache", "backup", "da_cancellare", "logs",
         "quarantine", "ui", "docs", "api", "reports",
         "rsvd_docs", "chat_bot", "installer", "packaging", "docker",
         "tests\logs", "tests\results_archive",
-        "tests\results_archive", "tests\generated_files\benchmark"
+        "tests\generated_files"
     )
     $ExcludeFiles = @(
         "*.db", "*.sqlite", "*.sqlite3", "*.pyc", "*.pyo", "*.pyd",
@@ -175,5 +175,5 @@ Write-Host "  # oppure, se il bench è Linux:"
 Write-Host "  bash tests/run_benchmark_full.sh"
 Write-Host ""
 Write-Host "Poi raccogli con:"
-Write-Host "  powershell -ExecutionPolicy Bypass -File scripts\bench_pull_ssh.ps1 -From $Dest"
+Write-Host "  powershell -ExecutionPolicy Bypass -File benchmark\bench_pull_ssh.ps1 -From $Dest"
 Write-Host ""

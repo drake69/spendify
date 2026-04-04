@@ -114,7 +114,7 @@ tests/
     │   └── summary_variance.csv
     └── *.csv, *.xlsx                  ← file sintetici
 
-scripts/                          ← workflow multi-macchina (nella root del repo)
+benchmark/                          ← workflow multi-macchina (nella root del repo)
 ├── bench_push_usb.sh             ← copia dev → chiavetta USB (pre-run)
 ├── bench_pull_usb.sh             ← raccoglie risultati chiavetta → dev (post-run)
 ├── bench_push_ssh.sh             ← copia dev → host remoto via SSH (pre-run)
@@ -519,7 +519,7 @@ esplicitamente con `bench_pull_usb.sh` / `bench_pull_ssh.sh`.
 ## Workflow multi-macchina (USB e SSH)
 
 Per girare il benchmark su una macchina diversa dalla dev (es. un Mac dedicato al bench,
-un PC Windows, un server Linux), usa gli script in `scripts/`:
+un PC Windows, un server Linux), usa gli script in `benchmark/`:
 
 ### Fasi
 
@@ -540,13 +540,13 @@ un PC Windows, un server Linux), usa gli script in `scripts/`:
 
 ```bash
 # 1. Copia il necessario sulla chiavetta
-bash scripts/bench_push_usb.sh --dest /Volumes/BENCH_USB
+bash benchmark/bench_push_usb.sh --dest /Volumes/BENCH_USB
 
 # 2. Sul bench: esegui il benchmark dalla chiavetta
 bash /Volumes/BENCH_USB/tests/run_benchmark_full.sh
 
 # 3. Raccogli i risultati dalla chiavetta
-bash scripts/bench_pull_usb.sh --from /Volumes/BENCH_USB
+bash benchmark/bench_pull_usb.sh --from /Volumes/BENCH_USB
 ```
 
 Opzioni push: `--clean` (cancella dest prima), `--dry-run`.
@@ -555,13 +555,13 @@ Opzioni push: `--clean` (cancella dest prima), `--dry-run`.
 
 ```bash
 # 1. Copia sul host remoto
-bash scripts/bench_push_ssh.sh --dest user@bench-host:~/spendif
+bash benchmark/bench_push_ssh.sh --dest user@bench-host:~/spendif
 
 # 2. Sul bench (via SSH o console): esegui
 bash tests/run_benchmark_full.sh
 
 # 3. Raccogli i risultati
-bash scripts/bench_pull_ssh.sh --from user@bench-host:~/spendif
+bash benchmark/bench_pull_ssh.sh --from user@bench-host:~/spendif
 ```
 
 Opzioni SSH aggiuntive: `--key PATH` (chiave privata), `--port N` (porta, default 22).

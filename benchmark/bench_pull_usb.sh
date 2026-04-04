@@ -6,8 +6,8 @@
 #   tests/logs/                   → log per debug
 #
 # Uso:
-#   bash scripts/bench_pull_usb.sh --from /Volumes/BENCH_USB
-#   bash scripts/bench_pull_usb.sh --from /Volumes/BENCH_USB --dry-run
+#   bash benchmark/bench_pull_usb.sh --from /Volumes/BENCH_USB
+#   bash benchmark/bench_pull_usb.sh --from /Volumes/BENCH_USB --dry-run
 #
 # Opzioni:
 #   --from PATH   Sorgente (chiavetta) [obbligatorio]

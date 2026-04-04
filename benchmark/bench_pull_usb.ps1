@@ -5,8 +5,8 @@
 #   tests\logs\                   → log per debug
 #
 # Uso:
-#   powershell -ExecutionPolicy Bypass -File .\scripts\bench_pull_usb.ps1 -From E:\BENCH_USB
-#   powershell -ExecutionPolicy Bypass -File .\scripts\bench_pull_usb.ps1 -From E:\BENCH_USB -DryRun
+#   powershell -ExecutionPolicy Bypass -File .\benchmark\bench_pull_usb.ps1 -From E:\BENCH_USB
+#   powershell -ExecutionPolicy Bypass -File .\benchmark\bench_pull_usb.ps1 -From E:\BENCH_USB -DryRun
 #
 # Parametri:
 #   -From PATH    Sorgente (chiavetta o cartella) [obbligatorio]
