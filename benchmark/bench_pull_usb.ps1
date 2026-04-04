@@ -1,8 +1,8 @@
 # bench_pull_usb.ps1 — Raccoglie risultati e log del benchmark dalla chiavetta → dev (Windows)
 #
 # Cosa viene copiato:
-#   tests\results_archive\*.csv   → CSV versionati <version>_<hostname>.csv
-#   tests\logs\                   → log per debug
+#   benchmark\results\*.csv   → CSV versionati <version>_<hostname>.csv
+#   benchmark\logs\           → log per debug
 #
 # Uso:
 #   powershell -ExecutionPolicy Bypass -File .\benchmark\bench_pull_usb.ps1 -From E:\BENCH_USB
@@ -35,10 +35,10 @@ if (-not (Test-Path $From)) {
 }
 
 # ── 1. Risultati versionati ────────────────────────────────────────────────
-$SrcArchive  = Join-Path $From        "tests\results_archive"
-$DestArchive = Join-Path $ProjectRoot "tests\results_archive"
+$SrcArchive  = Join-Path $From        "benchmark\results"
+$DestArchive = Join-Path $ProjectRoot "benchmark\results"
 
-Write-Host "-- results_archive/ --" -ForegroundColor Yellow
+Write-Host "-- results/ --" -ForegroundColor Yellow
 
 if (Test-Path $SrcArchive) {
     if (-not (Test-Path $DestArchive)) { New-Item -ItemType Directory -Path $DestArchive | Out-Null }
@@ -53,7 +53,7 @@ if (Test-Path $SrcArchive) {
                 Write-Host "[DryRun] Copia: $($f.FullName) -> $DestFile"
             } else {
                 Copy-Item -Path $f.FullName -Destination $DestFile -Force
-                Write-Host "  Copiato: tests\results_archive\$($f.Name)" -ForegroundColor Green
+                Write-Host "  Copiato: benchmark\results\$($f.Name)" -ForegroundColor Green
             }
         }
     }
@@ -62,11 +62,11 @@ if (Test-Path $SrcArchive) {
 }
 
 # ── 2. Log per debug ───────────────────────────────────────────────────────
-$SrcLogs  = Join-Path $From        "tests\logs"
-$DestLogs = Join-Path $ProjectRoot "tests\logs"
+$SrcLogs  = Join-Path $From        "benchmark\logs"
+$DestLogs = Join-Path $ProjectRoot "benchmark\logs"
 
 Write-Host ""
-Write-Host "-- tests/logs/ --" -ForegroundColor Yellow
+Write-Host "-- benchmark/logs/ --" -ForegroundColor Yellow
 
 if (Test-Path $SrcLogs) {
     if (-not (Test-Path $DestLogs)) { New-Item -ItemType Directory -Path $DestLogs | Out-Null }
@@ -85,11 +85,11 @@ Write-Host "=== Pull completato ===" -ForegroundColor Green
 if (-not $DryRun) {
     $CsvCount = (Get-ChildItem -Path $DestArchive -Filter "*.csv" -File -ErrorAction SilentlyContinue).Count
     $LogCount = (Get-ChildItem -Path $DestLogs -File -Recurse -ErrorAction SilentlyContinue).Count
-    Write-Host "  CSV in results_archive\ : $CsvCount"
+    Write-Host "  CSV in results\ : $CsvCount"
     Write-Host "  File in logs\           : $LogCount"
 }
 
 Write-Host ""
 Write-Host "Prossimo step:"
-Write-Host "  uv run python tests\aggregate_results.py --predict"
+Write-Host "  uv run python benchmark\aggregate_results.py --predict"
 Write-Host ""

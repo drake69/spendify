@@ -72,9 +72,9 @@ $ExcludeDirs = @(
     "installer",
     "packaging",
     "docker",
-    "tests\logs",
-    "tests\results_archive",
-    "tests\generated_files"
+    "benchmark\logs",
+    "benchmark\results",
+    "benchmark\generated_files"
 )
 
 # ── File da escludere ───────────────────────────────────────────────────────
@@ -111,16 +111,16 @@ Write-Host "Avvio robocopy..." -ForegroundColor Yellow
 & robocopy @RoboArgs
 
 # robocopy /XF *.csv esclude tutti i csv — ricopia manualmente benchmark_models.csv
-$SrcCsv  = Join-Path $ProjectRoot "tests\benchmark_models.csv"
-$DestCsv = Join-Path $Dest        "tests\benchmark_models.csv"
+$SrcCsv  = Join-Path $ProjectRoot "benchmark\benchmark_models.csv"
+$DestCsv = Join-Path $Dest        "benchmark\benchmark_models.csv"
 if (Test-Path $SrcCsv) {
-    $DestTestsDir = Join-Path $Dest "tests"
-    if (-not (Test-Path $DestTestsDir)) { New-Item -ItemType Directory -Path $DestTestsDir | Out-Null }
+    $DestBenchmarkDir = Join-Path $Dest "benchmark"
+    if (-not (Test-Path $DestBenchmarkDir)) { New-Item -ItemType Directory -Path $DestBenchmarkDir | Out-Null }
     if ($DryRun) {
         Write-Host "[DryRun] Copia: $SrcCsv -> $DestCsv"
     } else {
         Copy-Item -Path $SrcCsv -Destination $DestCsv -Force
-        Write-Host "  Copiato: tests\benchmark_models.csv" -ForegroundColor Green
+        Write-Host "  Copiato: benchmark\benchmark_models.csv" -ForegroundColor Green
     }
 }
 
@@ -128,7 +128,7 @@ Write-Host ""
 Write-Host "=== Push completato ===" -ForegroundColor Green
 Write-Host ""
 Write-Host "Sul bench esegui:"
-Write-Host "  powershell -ExecutionPolicy Bypass -File tests\run_benchmark_full.ps1"
+Write-Host "  powershell -ExecutionPolicy Bypass -File benchmark\run_benchmark_full.ps1"
 Write-Host ""
 Write-Host "Poi raccogli con:"
 Write-Host "  powershell -ExecutionPolicy Bypass -File benchmark\bench_pull_usb.ps1 -From $Dest"

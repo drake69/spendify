@@ -1,7 +1,7 @@
 # .rsync-bench-exclude — Esclusioni condivise per bench_push_usb.sh e bench_push_ssh.sh
 #
 # Include PRIMA di questo file le regole include esplicite, es.:
-#   --include='tests/benchmark_models.csv'
+#   --include='benchmark/benchmark_models.csv'
 # perché rsync applica la prima regola che fa match.
 
 # ── Git e IDE ──────────────────────────────────────────────────────────────
@@ -54,14 +54,14 @@ secrets/
 
 # ── Log ───────────────────────────────────────────────────────────────────
 logs/
-tests/logs/
+benchmark/logs/
 
 # ── Quarantena ─────────────────────────────────────────────────────────────
 quarantine/
 
 # ── Output benchmark (rimangono sul bench, si raccolgono con pull) ─────────
-tests/results_archive/
-tests/generated_files/
+benchmark/results/
+benchmark/generated_files/
 
 # ── Componenti non necessari al benchmark ──────────────────────────────────
 ui/

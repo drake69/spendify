@@ -73,7 +73,7 @@ RSYNC_FLAGS=(-av --progress -e "ssh $SSH_OPTS")
 
 # IMPORTANTE: --include prima di --exclude-from, altrimenti *.csv blocca il CSV
 rsync "${RSYNC_FLAGS[@]}" \
-    --include='tests/benchmark_models.csv' \
+    --include='benchmark/benchmark_models.csv' \
     --exclude-from="$EXCLUDE_FILE" \
     "$PROJECT_ROOT/" \
     "$DEST/"
@@ -86,7 +86,7 @@ echo ""
 echo "Connettiti e avvia il benchmark:"
 echo "  ssh $HOST_PART"
 echo "  cd $PATH_PART"
-echo "  bash tests/run_benchmark_full.sh"
+echo "  bash benchmark/run_benchmark_full.sh"
 echo ""
 echo "Poi raccogli con:"
 echo "  bash benchmark/bench_pull_ssh.sh --from $DEST"

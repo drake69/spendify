@@ -81,7 +81,7 @@ if ($RsyncCmd) {
     Write-Host "Avvio rsync..." -ForegroundColor Yellow
     # IMPORTANTE: --include prima di --exclude-from
     & $RsyncCmd @RsyncFlags `
-        "--include=tests/benchmark_models.csv" `
+        "--include=benchmark/benchmark_models.csv" `
         "--exclude-from=$ExcludeFile" `
         "$ProjectRoot/" `
         "$Dest/"
@@ -107,8 +107,8 @@ if ($RsyncCmd) {
         "llm_cache", "backup", "da_cancellare", "logs",
         "quarantine", "ui", "docs", "api", "reports",
         "rsvd_docs", "chat_bot", "installer", "packaging", "docker",
-        "tests\logs", "tests\results_archive",
-        "tests\generated_files"
+        "benchmark\logs", "benchmark\results",
+        "benchmark\generated_files"
     )
     $ExcludeFiles = @(
         "*.db", "*.sqlite", "*.sqlite3", "*.pyc", "*.pyo", "*.pyd",
@@ -129,11 +129,11 @@ if ($RsyncCmd) {
     & robocopy @RoboArgs
 
     # Ricopia benchmark_models.csv escluso da *.csv
-    $SrcCsv  = Join-Path $ProjectRoot "tests\benchmark_models.csv"
-    $DestCsv = Join-Path $TempDir     "tests\benchmark_models.csv"
+    $SrcCsv  = Join-Path $ProjectRoot "benchmark\benchmark_models.csv"
+    $DestCsv = Join-Path $TempDir     "benchmark\benchmark_models.csv"
     if (Test-Path $SrcCsv) {
-        $DestTestsDir = Join-Path $TempDir "tests"
-        if (-not (Test-Path $DestTestsDir)) { New-Item -ItemType Directory -Path $DestTestsDir | Out-Null }
+        $DestBenchmarkDir = Join-Path $TempDir "benchmark"
+        if (-not (Test-Path $DestBenchmarkDir)) { New-Item -ItemType Directory -Path $DestBenchmarkDir | Out-Null }
         if ($DryRun) {
             Write-Host "[DryRun] Copia: $SrcCsv -> $DestCsv"
         } else {
@@ -170,9 +170,9 @@ Write-Host ""
 Write-Host "Connettiti e avvia il benchmark:"
 Write-Host "  ssh $RemoteHost"
 Write-Host "  cd $RemotePath"
-Write-Host "  powershell -ExecutionPolicy Bypass -File tests\run_benchmark_full.ps1"
+Write-Host "  powershell -ExecutionPolicy Bypass -File benchmark\run_benchmark_full.ps1"
 Write-Host "  # oppure, se il bench è Linux:"
-Write-Host "  bash tests/run_benchmark_full.sh"
+Write-Host "  bash benchmark/run_benchmark_full.sh"
 Write-Host ""
 Write-Host "Poi raccogli con:"
 Write-Host "  powershell -ExecutionPolicy Bypass -File benchmark\bench_pull_ssh.ps1 -From $Dest"

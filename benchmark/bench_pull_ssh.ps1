@@ -1,8 +1,8 @@
 # bench_pull_ssh.ps1 — Raccoglie risultati e log dal host remoto → dev via SSH (Windows)
 #
 # Cosa viene copiato:
-#   tests/results_archive/*.csv   → CSV versionati <version>_<hostname>.csv
-#   tests/logs/                   → log per debug
+#   benchmark/results/*.csv   → CSV versionati <version>_<hostname>.csv
+#   benchmark/logs/           → log per debug
 #
 # Requisiti: OpenSSH (incluso in Windows 10/11) o Git for Windows (porta rsync/scp)
 #
@@ -56,8 +56,8 @@ if (Test-Path $GitRsync) {
 $SshOpts = "-p $Port -o StrictHostKeyChecking=accept-new"
 if ($Key -ne "") { $SshOpts += " -i `"$Key`"" }
 
-$ArchiveDir = Join-Path $ProjectRoot "tests\results_archive"
-$LogsDir    = Join-Path $ProjectRoot "tests\logs"
+$ArchiveDir = Join-Path $ProjectRoot "benchmark\results"
+$LogsDir    = Join-Path $ProjectRoot "benchmark\logs"
 
 if (-not (Test-Path $ArchiveDir)) { New-Item -ItemType Directory -Path $ArchiveDir | Out-Null }
 if (-not (Test-Path $LogsDir))    { New-Item -ItemType Directory -Path $LogsDir    | Out-Null }
@@ -71,18 +71,18 @@ if ($RsyncCmd) {
     if ($DryRun) { $RsyncFlags += "--dry-run" }
 
     # 1. results_archive
-    Write-Host "-- results_archive/ --" -ForegroundColor Yellow
+    Write-Host "-- results/ --" -ForegroundColor Yellow
     & $RsyncCmd @RsyncFlags `
         "--include=*.csv" `
         "--exclude=*" `
-        "${From}/tests/results_archive/" `
+        "${From}/benchmark/results/" `
         "$ArchiveDir/"
 
     # 2. logs
     Write-Host ""
-    Write-Host "-- tests/logs/ --" -ForegroundColor Yellow
+    Write-Host "-- benchmark/logs/ --" -ForegroundColor Yellow
     & $RsyncCmd @RsyncFlags `
-        "${From}/tests/logs/" `
+        "${From}/benchmark/logs/" `
         "$LogsDir/"
 
 } else {
@@ -97,20 +97,20 @@ if ($RsyncCmd) {
     # 1. results_archive (solo *.csv)
     Write-Host "-- results_archive/ --" -ForegroundColor Yellow
     if (-not $DryRun) {
-        $ScpSrc = "${RemoteHost}:${RemotePath}/tests/results_archive/*.csv"
+        $ScpSrc = "${RemoteHost}:${RemotePath}/benchmark/results/*.csv"
         & scp $ScpOpts.Split(" ") $ScpSrc "$ArchiveDir\"
     } else {
-        Write-Host "[DryRun] scp $ScpOpts ${RemoteHost}:${RemotePath}/tests/results_archive/*.csv -> $ArchiveDir\"
+        Write-Host "[DryRun] scp $ScpOpts ${RemoteHost}:${RemotePath}/benchmark/results/*.csv -> $ArchiveDir\"
     }
 
     # 2. logs (ricorsivo)
     Write-Host ""
-    Write-Host "-- tests/logs/ --" -ForegroundColor Yellow
+    Write-Host "-- benchmark/logs/ --" -ForegroundColor Yellow
     if (-not $DryRun) {
-        $ScpSrc = "${RemoteHost}:${RemotePath}/tests/logs/"
+        $ScpSrc = "${RemoteHost}:${RemotePath}/benchmark/logs/"
         & scp -r $ScpOpts.Split(" ") $ScpSrc "$LogsDir\"
     } else {
-        Write-Host "[DryRun] scp -r $ScpOpts ${RemoteHost}:${RemotePath}/tests/logs/ -> $LogsDir\"
+        Write-Host "[DryRun] scp -r $ScpOpts ${RemoteHost}:${RemotePath}/benchmark/logs/ -> $LogsDir\"
     }
 }
 
@@ -120,11 +120,11 @@ Write-Host "=== Pull SSH completato ===" -ForegroundColor Green
 if (-not $DryRun) {
     $CsvCount = (Get-ChildItem -Path $ArchiveDir -Filter "*.csv" -File -ErrorAction SilentlyContinue).Count
     $LogCount = (Get-ChildItem -Path $LogsDir -File -Recurse -ErrorAction SilentlyContinue).Count
-    Write-Host "  CSV in results_archive\ : $CsvCount"
+    Write-Host "  CSV in results\ : $CsvCount"
     Write-Host "  File in logs\           : $LogCount"
 }
 
 Write-Host ""
 Write-Host "Prossimo step:"
-Write-Host "  uv run python tests\aggregate_results.py --predict"
+Write-Host "  uv run python benchmark\aggregate_results.py --predict"
 Write-Host ""

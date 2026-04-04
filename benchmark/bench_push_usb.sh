@@ -64,7 +64,7 @@ RSYNC_FLAGS=(-av --progress)
 
 # IMPORTANTE: --include prima di --exclude-from, altrimenti *.csv blocca il CSV
 rsync "${RSYNC_FLAGS[@]}" \
-    --include='tests/benchmark_models.csv' \
+    --include='benchmark/benchmark_models.csv' \
     --exclude-from="$EXCLUDE_FILE" \
     "$PROJECT_ROOT/" \
     "$DEST/"
@@ -77,7 +77,7 @@ if [[ $DRY_RUN -eq 0 ]]; then
 fi
 echo ""
 echo "Sul bench esegui:"
-echo "  bash tests/run_benchmark_full.sh"
+echo "  bash benchmark/run_benchmark_full.sh"
 echo ""
 echo "Poi raccogli con:"
 echo "  bash benchmark/bench_pull_usb.sh --from $DEST"

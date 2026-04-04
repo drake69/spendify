@@ -2,8 +2,8 @@
 # bench_pull_ssh.sh — Raccoglie risultati e log dal host remoto → dev via SSH
 #
 # Cosa viene copiato:
-#   tests/results_archive/*.csv   → CSV versionati <version>_<hostname>.csv
-#   tests/logs/                   → log per debug
+#   benchmark/results/*.csv   → CSV versionati <version>_<hostname>.csv
+#   benchmark/logs/           → log per debug
 #
 # Uso:
 #   bash benchmark/bench_pull_ssh.sh --from user@bench-host:/home/user/spendif
@@ -44,8 +44,8 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-ARCHIVE_DIR="$PROJECT_ROOT/tests/results_archive"
-LOGS_DIR="$PROJECT_ROOT/tests/logs"
+ARCHIVE_DIR="$PROJECT_ROOT/benchmark/results"
+LOGS_DIR="$PROJECT_ROOT/benchmark/logs"
 
 echo "=== bench_pull_ssh ==="
 echo "  From  : $FROM"
@@ -62,18 +62,18 @@ RSYNC_FLAGS=(-av --progress -e "ssh $SSH_OPTS")
 mkdir -p "$ARCHIVE_DIR" "$LOGS_DIR"
 
 # ── 1. Risultati versionati ────────────────────────────────────────────────
-echo "-- results_archive/ --"
+echo "-- results/ --"
 rsync "${RSYNC_FLAGS[@]}" \
     --include='*.csv' \
     --exclude='*' \
-    "$FROM/tests/results_archive/" \
-    "$ARCHIVE_DIR/" || echo "  WARN: results_archive non trovata sul remote"
+    "$FROM/benchmark/results/" \
+    "$ARCHIVE_DIR/" || echo "  WARN: results non trovata sul remote"
 
 # ── 2. Log per debug ───────────────────────────────────────────────────────
 echo ""
-echo "-- tests/logs/ --"
+echo "-- benchmark/logs/ --"
 rsync "${RSYNC_FLAGS[@]}" \
-    "$FROM/tests/logs/" \
+    "$FROM/benchmark/logs/" \
     "$LOGS_DIR/" || echo "  WARN: logs/ non trovata sul remote"
 
 echo ""
@@ -82,10 +82,10 @@ echo "=== Pull SSH completato ==="
 if [[ $DRY_RUN -eq 0 ]]; then
     CSV_COUNT=$(find "$ARCHIVE_DIR" -name "*.csv" 2>/dev/null | wc -l | tr -d ' ')
     LOG_COUNT=$(find "$LOGS_DIR" -type f 2>/dev/null | wc -l | tr -d ' ')
-    echo "  CSV in results_archive/ : $CSV_COUNT"
+    echo "  CSV in results/ : $CSV_COUNT"
     echo "  File in logs/           : $LOG_COUNT"
 fi
 
 echo ""
 echo "Prossimo step:"
-echo "  uv run python tests/aggregate_results.py --predict"
+echo "  uv run python benchmark/aggregate_results.py --predict"
