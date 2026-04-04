@@ -7,12 +7,12 @@
 # Preserva: tests\benchmark_models.csv (escluso da *.csv, reintrodotto esplicitamente)
 #
 # Uso:
-#   powershell -ExecutionPolicy Bypass -File .\benchmark\bench_push_ssh.ps1 -Dest user@bench-host:~/spendif
-#   powershell -ExecutionPolicy Bypass -File .\benchmark\bench_push_ssh.ps1 -Dest user@192.168.1.50:~/spendif -Clean
-#   powershell -ExecutionPolicy Bypass -File .\benchmark\bench_push_ssh.ps1 -Dest user@bench-host:~/spendif -DryRun
+#   powershell -ExecutionPolicy Bypass -File .\benchmark\bench_push_ssh.ps1 -Dest user@bench-host:~/Desktop/spendif-ai
+#   powershell -ExecutionPolicy Bypass -File .\benchmark\bench_push_ssh.ps1 -Dest user@192.168.1.50:~/Desktop/spendif-ai -Clean
+#   powershell -ExecutionPolicy Bypass -File .\benchmark\bench_push_ssh.ps1 -Dest user@bench-host:~/Desktop/spendif-ai -DryRun
 #
 # Parametri:
-#   -Dest HOST:PATH   Destinazione SSH [obbligatorio]   Es. user@bench-pc:~/spendif
+#   -Dest HOST:PATH   Destinazione SSH [obbligatorio]   Es. user@bench-pc:~/Desktop/spendif-ai
 #   -Clean            Cancella dest prima di copiare (rsync --delete / robocopy /PURGE + scp)
 #   -DryRun           Mostra cosa verrebbe copiato senza farlo
 #   -Key PATH         Chiave SSH privata                Es. C:\Users\me\.ssh\id_rsa

@@ -8,25 +8,25 @@
 # Flusso completo USB:
 #   [dev]   bash benchmark/bench_push_usb.sh --dest /Volumes/BENCH_USB
 #   [bench] bash /Volumes/BENCH_USB/benchmark/bench_load_usb.sh --from /Volumes/BENCH_USB
-#   [bench] cd ~/spendif && bash benchmark/run_benchmark_full.sh
+#   [bench] cd ~/Desktop/spendif-ai && bash benchmark/run_benchmark_full.sh
 #   [bench] bash benchmark/bench_save_usb.sh --dest /Volumes/BENCH_USB
 #   [dev]   bash benchmark/bench_pull_usb.sh --from /Volumes/BENCH_USB
 #
 # Uso:
 #   bash /MOUNT/benchmark/bench_load_usb.sh --from /Volumes/BENCH_USB
-#   bash /MOUNT/benchmark/bench_load_usb.sh --from /Volumes/BENCH_USB --local ~/spendif
+#   bash /MOUNT/benchmark/bench_load_usb.sh --from /Volumes/BENCH_USB --local ~/Desktop/spendif-ai
 #   bash /MOUNT/benchmark/bench_load_usb.sh --from /Volumes/BENCH_USB --dry-run
 #
 # Opzioni:
 #   --from PATH    Sorgente (chiavetta montata) [obbligatorio]
-#   --local PATH   Cartella locale destinazione  (default: ~/spendif)
+#   --local PATH   Cartella locale destinazione  (default: ~/Desktop/spendif-ai)
 #   --dry-run      Mostra cosa verrebbe copiato senza farlo
 
 set -euo pipefail
 [ -z "${BASH_VERSION:-}" ] && exec bash "$0" "$@"
 
 FROM=""
-LOCAL_DIR="$HOME/spendif"
+LOCAL_DIR="$HOME/Desktop/spendif-ai"
 DRY_RUN=0
 
 while [[ $# -gt 0 ]]; do
@@ -42,7 +42,7 @@ if [[ -z "$FROM" ]]; then
     echo "Uso: $0 --from PATH [--local PATH] [--dry-run]"
     echo ""
     echo "  --from PATH    Chiavetta montata (es. /Volumes/BENCH_USB, /media/usb)"
-    echo "  --local PATH   Cartella locale bench  (default: ~/spendif)"
+    echo "  --local PATH   Cartella locale bench  (default: ~/Desktop/spendif-ai)"
     echo "  --dry-run      Mostra cosa verrebbe copiato"
     exit 1
 fi

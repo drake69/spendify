@@ -18,13 +18,13 @@
 #
 # Parametri:
 #   -From PATH    Sorgente (chiavetta montata) [obbligatorio]
-#   -Local PATH   Cartella locale destinazione  (default: %USERPROFILE%\spendif)
+#   -Local PATH   Cartella locale destinazione  (default: %USERPROFILE%\Desktop\spendif-ai)
 #   -DryRun       Mostra cosa verrebbe copiato senza farlo
 
 param(
     [Parameter(Mandatory=$true)]
     [string]$From,
-    [string]$Local = (Join-Path $env:USERPROFILE "spendif"),
+    [string]$Local = (Join-Path $env:USERPROFILE "Desktop\spendif-ai"),
     [switch]$DryRun
 )
 

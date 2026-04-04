@@ -7,11 +7,11 @@
 # Requisiti: OpenSSH (incluso in Windows 10/11) o Git for Windows (porta rsync/scp)
 #
 # Uso:
-#   powershell -ExecutionPolicy Bypass -File .\benchmark\bench_pull_ssh.ps1 -From user@bench-host:~/spendif
-#   powershell -ExecutionPolicy Bypass -File .\benchmark\bench_pull_ssh.ps1 -From user@192.168.1.50:~/spendif -DryRun
+#   powershell -ExecutionPolicy Bypass -File .\benchmark\bench_pull_ssh.ps1 -From user@bench-host:~/Desktop/spendif-ai
+#   powershell -ExecutionPolicy Bypass -File .\benchmark\bench_pull_ssh.ps1 -From user@192.168.1.50:~/Desktop/spendif-ai -DryRun
 #
 # Parametri:
-#   -From HOST:PATH   Sorgente SSH [obbligatorio]   Es. user@bench-pc:~/spendif
+#   -From HOST:PATH   Sorgente SSH [obbligatorio]   Es. user@bench-pc:~/Desktop/spendif-ai
 #   -DryRun           Mostra cosa verrebbe copiato
 #   -Key PATH         Chiave SSH privata             Es. C:\Users\me\.ssh\id_rsa
 #   -Port N           Porta SSH (default: 22)

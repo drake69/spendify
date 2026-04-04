@@ -7,7 +7,7 @@
 #
 # Uso:
 #   bash benchmark/bench_pull_ssh.sh --from user@bench-host:/home/user/spendif
-#   bash benchmark/bench_pull_ssh.sh --from user@192.168.1.50:~/spendif --dry-run
+#   bash benchmark/bench_pull_ssh.sh --from user@192.168.1.50:~/Desktop/spendif-ai --dry-run
 #
 # Opzioni:
 #   --from HOST:PATH   Sorgente SSH [obbligatorio]
@@ -35,7 +35,7 @@ done
 if [[ -z "$FROM" ]]; then
     echo "Uso: $0 --from user@host:path [--dry-run] [--key PATH] [--port N]"
     echo ""
-    echo "  --from HOST:PATH   Es. user@bench-pc:~/spendif"
+    echo "  --from HOST:PATH   Es. user@bench-pc:~/Desktop/spendif-ai"
     echo "  --dry-run          Mostra cosa verrebbe copiato"
     echo "  --key PATH         Chiave SSH"
     echo "  --port N           Porta SSH (default: 22)"

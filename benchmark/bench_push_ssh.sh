@@ -8,7 +8,7 @@
 #
 # Uso:
 #   bash benchmark/bench_push_ssh.sh --dest user@bench-host:/home/user/spendif
-#   bash benchmark/bench_push_ssh.sh --dest user@192.168.1.50:~/spendif --clean
+#   bash benchmark/bench_push_ssh.sh --dest user@192.168.1.50:~/Desktop/spendif-ai --clean
 #
 # Opzioni:
 #   --dest HOST:PATH   Destinazione SSH [obbligatorio]
@@ -39,7 +39,7 @@ done
 if [[ -z "$DEST" ]]; then
     echo "Uso: $0 --dest user@host:path [--clean] [--dry-run] [--key PATH] [--port N]"
     echo ""
-    echo "  --dest HOST:PATH   Es. user@bench-pc:~/spendif"
+    echo "  --dest HOST:PATH   Es. user@bench-pc:~/Desktop/spendif-ai"
     echo "  --clean            Cancella dest prima di copiare"
     echo "  --dry-run          Mostra cosa verrebbe copiato"
     echo "  --key PATH         Chiave SSH"
