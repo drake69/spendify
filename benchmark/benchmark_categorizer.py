@@ -56,7 +56,6 @@ _TESTS_DIR = Path(__file__).resolve().parent
 _GENERATED_DIR = _TESTS_DIR / "generated_files"
 _MANIFEST_PATH = _GENERATED_DIR / "manifest.csv"
 _BENCHMARK_DIR = _GENERATED_DIR / "benchmark"
-_GENERATOR_SCRIPT = _TESTS_DIR / "generate_synthetic_files.py"
 # Shared results file in documents repo (cross-HW, pushed/pulled via git)
 _DOCS_BENCHMARK_DIR = PROJECT_ROOT.parent / "documents" / "04_software_engineering" / "benchmark"
 _RESULTS_ARCHIVE_DIR = _TESTS_DIR / "results"
@@ -206,19 +205,31 @@ def _load_ground_truth(filename: str) -> list[GroundTruthRow]:
 
 
 def _ensure_generated_files() -> None:
-    """Generate synthetic files if they do not exist yet."""
+    """Verifica che i file sintetici esistano — NON li genera automaticamente.
+
+    I file sintetici devono essere generati esplicitamente dall'utente prima
+    di avviare il benchmark. Generarli a ogni run comprometterebbe il
+    determinismo: variazioni nei risultati non sarebbero attribuibili solo a
+    HW / runtime / modello, ma anche a differenze nell'input.
+
+    Per generare i file sintetici:
+        uv run python benchmark/generate_synthetic_files.py
+    """
     if _MANIFEST_PATH.exists():
         return
-    import subprocess
-    print(f"\n[setup] Generating synthetic files via {_GENERATOR_SCRIPT} ...")
-    result = subprocess.run(
-        [sys.executable, str(_GENERATOR_SCRIPT)],
-        capture_output=True, text=True,
-    )
-    if result.returncode != 0:
-        print(f"ERROR: Synthetic file generation failed (rc={result.returncode})")
-        print(f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}")
-        sys.exit(1)
+    print()
+    print("ERROR: File sintetici non trovati.")
+    print(f"       Manifest atteso: {_MANIFEST_PATH}")
+    print()
+    print("  I file sintetici devono essere generati PRIMA del benchmark")
+    print("  e restare IMMUTATI tra le run per garantire il determinismo")
+    print("  (le differenze nei risultati devono dipendere solo da HW /")
+    print("  runtime / modello, non dall'input).")
+    print()
+    print("  Generali con:")
+    print("    uv run python benchmark/generate_synthetic_files.py")
+    print()
+    sys.exit(1)
 
 
 def _ensure_llamacpp_model(model_path_override: str | None) -> str | None:
@@ -1143,12 +1154,9 @@ def main() -> None:
     else:
         print(f"\n[check] Backend: {backend_override} (skipping Ollama check)")
 
-    print("[check] Verifying synthetic files...")
+    print("[check] Verifica file sintetici (devono essere pre-generati)...")
     _ensure_generated_files()
-    if not _MANIFEST_PATH.exists():
-        print(f"ERROR: Manifest not found at {_MANIFEST_PATH}")
-        sys.exit(1)
-    print("[check] Synthetic files OK")
+    print(f"[check] File sintetici OK  ({_MANIFEST_PATH})")
 
     # Load manifest and ground truth
     manifest = _load_manifest(file_pattern)
