@@ -7,6 +7,8 @@ venv
 /logs
 tests/logs/
 *.csv
+# Exception: config CSVs that are part of the codebase
+!tests/benchmark_models.csv
 *.xls
 *.xlsx
 *.tmp
