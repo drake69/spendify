@@ -124,10 +124,22 @@ if ($RsyncCmd) {
         + @("/XD") + $ExcludeDirs `
         + @("/XF") + $ExcludeFiles
 
-    Write-Host "Avvio robocopy verso temp..." -ForegroundColor Yellow
+    Write-Host "Avvio robocopy verso temp (codice + config)..." -ForegroundColor Yellow
     & robocopy @RoboArgs
 
-    # Ricopia benchmark_models.csv escluso da *.csv
+    # ── File sintetici: robocopy separato senza filtri *.csv/*.xlsx ──────────
+    $SrcGenerated  = Join-Path $ProjectRoot "benchmark\generated_files"
+    $DestGenerated = Join-Path $TempDir     "benchmark\generated_files"
+    if (Test-Path $SrcGenerated) {
+        $RoboSynth = @("/E", "/NP", "/NFL", "/NDL")
+        if ($DryRun) { $RoboSynth += "/L" }
+        & robocopy $SrcGenerated $DestGenerated @RoboSynth
+    } else {
+        Write-Host "  WARN: generated_files/ non trovata — esegui prima:" -ForegroundColor Yellow
+        Write-Host "    uv run python benchmark\generate_synthetic_files.py"
+    }
+
+    # benchmark_models.csv
     $SrcCsv  = Join-Path $ProjectRoot "benchmark\benchmark_models.csv"
     $DestCsv = Join-Path $TempDir     "benchmark\benchmark_models.csv"
     if (Test-Path $SrcCsv) {

@@ -106,10 +106,27 @@ $RoboArgs = @($ProjectRoot, $Dest) + $RoboFlags `
     + @("/XD") + $ExcludeDirs `
     + @("/XF") + $ExcludeFiles
 
-Write-Host "Avvio robocopy..." -ForegroundColor Yellow
+Write-Host "Avvio robocopy (codice + config)..." -ForegroundColor Yellow
 & robocopy @RoboArgs
 
-# robocopy /XF *.csv esclude tutti i csv — ricopia manualmente benchmark_models.csv
+# ── Copia esplicita file sintetici ──────────────────────────────────────────
+# robocopy /XF *.csv *.xlsx esclude tutti i csv/xlsx dal passo principale.
+# benchmark_models.csv e generated_files/ vengono copiati separatamente,
+# senza filtri di estensione, in modo da includere i file sintetici di input.
+$SrcGenerated  = Join-Path $ProjectRoot "benchmark\generated_files"
+$DestGenerated = Join-Path $Dest        "benchmark\generated_files"
+
+if (Test-Path $SrcGenerated) {
+    Write-Host "Copia file sintetici (generated_files/)..." -ForegroundColor Yellow
+    $RoboSynth = @("/E", "/NP", "/NFL", "/NDL")
+    if ($DryRun) { $RoboSynth += "/L" }
+    & robocopy $SrcGenerated $DestGenerated @RoboSynth
+} else {
+    Write-Host "  WARN: $SrcGenerated non trovata — genera prima i file sintetici:" -ForegroundColor Yellow
+    Write-Host "    uv run python benchmark\generate_synthetic_files.py"
+}
+
+# benchmark_models.csv (nella root di benchmark/)
 $SrcCsv  = Join-Path $ProjectRoot "benchmark\benchmark_models.csv"
 $DestCsv = Join-Path $Dest        "benchmark\benchmark_models.csv"
 if (Test-Path $SrcCsv) {
