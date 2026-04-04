@@ -97,6 +97,10 @@ benchmark/                        ← tutto il materiale di benchmark (root del 
 ├── hw_monitor.py                 ← monitoraggio HW background (CPU + GPU)
 ├── monitor_benchmark.py          ← monitor avanzamento — Python cross-platform
 │
+│  ── SCRIPT AZURE ML ────────────────────────────────────────────────────────
+├── azure_benchmark.py            ← benchmark su Azure ML (job remoto)
+├── azure_run_cloud.sh            ← lancia azure_benchmark.py su cluster AML
+│
 │  ── SCRIPT OPERATIVI ──────────────────────────────────────────────────────
 ├── benchmark_models.csv          ← catalogo modelli (gguf + ollama)
 ├── .version                      ← versione YYYYMMDDHHMMSS-SHA7 (aggiornata da git hook)
@@ -233,9 +237,11 @@ name,gguf_file,gguf_repo,gguf_hf_url,ollama_tag,enabled
 | Gemma4-E2B Q4 | `gemma-4-E2B-it-Q4_K_M.gguf` | `gemma4:e2b` | true |
 | Llama3.2-3B | `Llama-3.2-3B-Instruct-Q4_K_M.gguf` | `llama3.2:3b` | true |
 | Qwen2.5-3B | `qwen2.5-3b-instruct-q4_k_m.gguf` | `qwen2.5:3b-instruct` | true |
-| Phi3-mini | `Phi-3-mini-4k-instruct-Q4_K_M.gguf` | `phi3:3.8b` | true |
+| Phi3-mini-4k | `Phi-3-mini-4k-instruct-Q4_K_M.gguf` | `phi3:3.8b` | **false** |
 | Qwen2.5-7B | `Qwen2.5-7B-Instruct-Q4_K_M.gguf` | `qwen2.5:7b-instruct` | true |
 | Gemma3-12B | `gemma-3-12b-it-Q4_K_M.gguf` | `gemma3:12b` | true |
+
+> **Phi3-mini-4k** ha `enabled=false`: context window 4096 potrebbe essere insufficiente su file sintetici lunghi. Il modello rimane nel CSV per riabilitazione futura.
 
 ### Come abilitare/disabilitare un modello
 
@@ -251,7 +257,10 @@ Per aggiungere un nuovo modello, aggiungi una riga con `enabled=true`. Se `gguf_
 
 ## Setup modelli
 
-Il setup è automatico: `run_benchmark_full.sh` scarica i modelli GGUF mancanti e fa `ollama pull` per i modelli Ollama. La lista modelli è in `benchmark/benchmark_models.csv`.
+Il setup è automatico: `run_benchmark_full.sh` / `run_benchmark_full.ps1` gestiscono tutto in autonomia:
+- Scaricano i modelli GGUF mancanti da HuggingFace
+- Eseguono `ollama pull` per i modelli Ollama
+- **Rilevano la GPU** e installano il wheel corretto di `llama-cpp-python`
 
 Per solo setup senza benchmark:
 ```bash
@@ -260,28 +269,25 @@ bash benchmark/run_benchmark_full.sh --setup-only
 
 ---
 
-## Installazione llama-cpp-python per GPU
+## Installazione llama-cpp-python per GPU (automatica)
 
-Il build default installato da `uv sync` usa CPU. Per sfruttare la GPU:
+Lo step 2 di `run_benchmark_full.sh` / `run_benchmark_full.ps1` rileva la GPU **prima** di installare `llama-cpp-python` e installa automaticamente il wheel corretto:
 
-### NVIDIA (CUDA)
-```bash
-CMAKE_ARGS="-DGGML_CUDA=on" uv pip install llama-cpp-python --upgrade
-```
+| Piattaforma | Rilevamento | Wheel installato |
+|-------------|-------------|-----------------|
+| Apple Silicon (arm64 macOS) | `uname -m` == `arm64` | Standard PyPI wheel (Metal built-in) |
+| NVIDIA + CUDA X.Y | `nvidia-smi` | `abetlen` pre-built wheel `cu121`..`cu125` (mappato alla versione ≤ rilevata) |
+| AMD ROCm | `rocminfo` | Build from source (`CMAKE_ARGS=-DGGML_HIPBLAS=on`) |
+| CPU / fallback | — | `abetlen` CPU-only wheel |
 
-### AMD (ROCm)
-```bash
-# Prerequisito: ROCm installato (sudo apt install rocm-dev hipblas-dev)
-CMAKE_ARGS="-DGGML_HIPBLAS=on" uv pip install llama-cpp-python --upgrade
-```
+Il **limite dimensione modelli** usa la memoria GPU disponibile:
+- **Metal** (Apple Silicon): 75% della RAM unificata
+- **NVIDIA**: VRAM rilevata da `nvidia-smi`
+- **CPU / ROCm**: RAM / 2 (invariato)
 
-### Apple Silicon (Metal) — default su macOS
-```bash
-# Già abilitato automaticamente su Mac con chip Apple Silicon
-uv pip install llama-cpp-python --upgrade
-```
+Il **SETUP SUMMARY** mostrato a fine setup include una riga `GPU: <descrizione>`.
 
-### Verificare il supporto GPU
+Per verificare il supporto GPU a posteriori:
 ```bash
 .venv/bin/python -c "from llama_cpp import llama_supports_gpu_offload; print(llama_supports_gpu_offload())"
 ```
@@ -296,6 +302,8 @@ Il benchmark rileva automaticamente la context window ottimale per ogni modello 
 - **Ollama** — interroga `/api/show` e legge il context del modello caricato
 - **OpenAI / Claude** — lookup statico su `_KNOWN_CONTEXT` (es. gpt-4o=128k, claude-3-5=200k)
 - **vLLM** — interroga `/v1/models`
+
+**MIN_CTX = 4096**: i modelli con context window inferiore a 4096 token vengono saltati automaticamente. Il limite era 8000 — abbassato a 4096 per includere modelli come Phi3-mini-4k (che però è attualmente `enabled=false`).
 
 Per forzare un valore specifico (es. limitare RAM):
 ```bash
@@ -708,17 +716,26 @@ uv run python benchmark/aggregate_results.py --predict --output report.txt
 uv run python benchmark/aggregate_results.py --list
 ```
 
+### Output dual-write
+
+`aggregate_results.py` scrive il CSV aggregato su **due path in parallelo**:
+
+| Path | Scopo |
+|------|-------|
+| `benchmark/results_all_runs.csv` | **Primario** — tracciato in `sw_artifacts`, verificato da `verify_bench_csv.py` in CI |
+| `documents/04_software_engineering/benchmark/results_all_runs.csv` | Mirror per consultazione senza aprire il repo codice |
+
 ### Priorità sorgente dati
 
 1. `--csv PATH` (override esplicito)
 2. `benchmark/results/*.csv` (tutti i file versionati, ordinati per mtime)
-3. `benchmark/generated_files/benchmark/results_all_runs.csv` (legacy fallback)
+3. `benchmark/results_all_runs.csv` (fallback CSV aggregato primario)
 
 ---
 
 ## Riferimenti
 
 - Documentazione completa: `docs/developer_guide.md` § 10
-- Azure ML benchmark: `tools/azure_benchmark.py`
+- Azure ML benchmark: `benchmark/azure_benchmark.py`, `benchmark/azure_run_cloud.sh`
 - Catalogo modelli: `benchmark/benchmark_models.csv`
 - Strategia benchmark (architettura, OLS, workflow): `documents/04_software_engineering/09_benchmark_strategy.tex`
