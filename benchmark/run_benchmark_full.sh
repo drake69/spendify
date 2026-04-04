@@ -120,15 +120,30 @@ if [ "$SKIP_LLAMA" = false ]; then
     echo "── [3a/4] llama.cpp setup — checking GGUF models..."
     mkdir -p "$MODELS_DIR"
 
-    # Resolve HF download command
+    # Resolve HF download command.
+    # Ordine di ricerca:
+    #   1. hf (HF CLI standalone)
+    #   2. huggingface-cli nel PATH di sistema
+    #   3. huggingface-cli nel venv locale (.venv/bin/)
+    #   4. installa huggingface_hub[cli] via uv e usa .venv/bin/huggingface-cli
+    # NON usiamo "python -m huggingface_hub.commands.huggingface_cli" perché
+    # il percorso del modulo è cambiato nelle versioni recenti (>= 0.21).
     HF_CMD=""
-    if   command -v hf &>/dev/null;                         then HF_CMD="hf download"
-    elif command -v huggingface-cli &>/dev/null;            then HF_CMD="huggingface-cli download"
-    elif $PYTHON -c "import huggingface_hub" 2>/dev/null;   then HF_CMD="$PYTHON -m huggingface_hub.commands.huggingface_cli download"
+    if   command -v hf &>/dev/null; then
+        HF_CMD="hf download"
+    elif command -v huggingface-cli &>/dev/null; then
+        HF_CMD="huggingface-cli download"
+    elif [ -x ".venv/bin/huggingface-cli" ]; then
+        HF_CMD=".venv/bin/huggingface-cli download"
     else
-        echo "[setup] Installing huggingface-cli..."
-        uv pip install huggingface_hub --quiet
-        HF_CMD="$PYTHON -m huggingface_hub.commands.huggingface_cli download"
+        echo "[setup] huggingface-cli non trovato — installo huggingface_hub[cli]..."
+        uv pip install "huggingface_hub[cli]" --quiet
+        if [ -x ".venv/bin/huggingface-cli" ]; then
+            HF_CMD=".venv/bin/huggingface-cli download"
+        else
+            echo "ERROR: impossibile installare huggingface-cli" >&2
+            exit 1
+        fi
     fi
 
     # Detect available RAM (MB) for size filtering
