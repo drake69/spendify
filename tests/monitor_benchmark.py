@@ -143,6 +143,15 @@ def _snapshot(rows: list[dict], exp_per_model: int) -> dict:
     avg_dur    = sum(durations) / len(durations) if durations else 0
     rate_fpm   = (60 / avg_dur) if avg_dur > 0 else 0
 
+    # Determine the run_id being displayed
+    run_ids: set[int] = set()
+    for row in rows:
+        try:
+            run_ids.add(int(row.get("run_id", 0) or 0))
+        except (ValueError, TypeError):
+            pass
+    current_run_id = max(run_ids) if run_ids else 0
+
     return {
         "counts":        dict(counts),
         "total_done":    total_done,
@@ -154,11 +163,13 @@ def _snapshot(rows: list[dict], exp_per_model: int) -> dict:
         "cpu_avg_hist":  sum(cpu_samples) / len(cpu_samples) if cpu_samples else 0.0,
         "gpu_avg_hist":  sum(gpu_samples) / len(gpu_samples) if gpu_samples else 0.0,
         "phases":        dict(phases),
+        "run_id":        current_run_id,
     }
 
 # ── Report ─────────────────────────────────────────────────────────────────
 def _print_report(snap: dict, elapsed_s: float, interval: int,
-                  live_cpu: float = 0.0, live_gpu: float = 0.0) -> None:
+                  live_cpu: float = 0.0, live_gpu: float = 0.0,
+                  csv_active: bool = True) -> None:
     counts       = snap["counts"]
     total_done   = snap["total_done"]
     total_exp    = snap["total_exp"]
@@ -170,16 +181,21 @@ def _print_report(snap: dict, elapsed_s: float, interval: int,
     cpu_hist     = snap["cpu_avg_hist"]
     gpu_hist     = snap["gpu_avg_hist"]
     phases       = snap["phases"]
+    run_id       = snap["run_id"]
 
     W = 72
 
     print("═" * W)
-    print(f"  BENCHMARK MONITOR  —  {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    run_label = f"run_id={run_id}" if run_id > 0 else "run_id=?"
+    stale_tag = "" if csv_active else "  ⚠ DATI PRECEDENTI"
+    print(f"  BENCHMARK MONITOR  —  {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  [{run_label}]{stale_tag}")
     rate_str = f"{rate_fpm:.1f} file/min  ({avg_dur_s:.1f}s/file)" if rate_fpm > 0 else "—"
     eta_str  = _fmt_eta(remaining, rate_fps)
     print(f"  Elapsed : {_fmt_duration(elapsed_s)}")
     print(f"  Rate    : {rate_str}")
     print(f"  ETA     : {eta_str}")
+    if not csv_active:
+        print(f"  !! CSV non aggiornato dal avvio monitor — benchmark non ancora attivo")
 
     # ── Pipeline phase ─────────────────────────────────────────────────────
     if phases:
@@ -253,17 +269,22 @@ def main() -> None:
     exp_per_model  = (args.total if args.total > 0 else manifest_count) * args.runs
     current_only   = not args.all
 
-    start_time = time.monotonic()
+    start_time  = time.monotonic()
+    start_mtime = _RESULTS_CSV.stat().st_mtime if _RESULTS_CSV.exists() else None
 
     def _run_once() -> None:
-        rows, _ = _load_results(current_only=current_only)
+        rows, csv_mtime = _load_results(current_only=current_only)
         snap     = _snapshot(rows, exp_per_model)
         elapsed  = time.monotonic() - start_time
+        # CSV è "attivo" se è stato modificato dopo l'avvio del monitor
+        csv_active = (csv_mtime is not None and
+                      (start_mtime is None or csv_mtime > start_mtime))
         # Live HW sample (taken just before printing for freshness)
         live_cpu, live_gpu = _hw.sample_once() if _hw is not None else (0.0, 0.0)
         _clear()
         _print_report(snap, elapsed, 0 if args.once else args.interval,
-                      live_cpu=live_cpu, live_gpu=live_gpu)
+                      live_cpu=live_cpu, live_gpu=live_gpu,
+                      csv_active=csv_active)
 
     if args.once:
         _run_once()
