@@ -37,6 +37,7 @@ _PROJECT_ROOT   = _TESTS_DIR.parent
 _BENCHMARK_DIR  = _TESTS_DIR / "generated_files" / "benchmark"
 _MANIFEST_PATH  = _TESTS_DIR / "generated_files" / "manifest.csv"
 _RESULTS_CSV    = _BENCHMARK_DIR / "results_all_runs.csv"
+_RESULTS_ARCHIVE_DIR = _TESTS_DIR / "results_archive"
 _MODELS_CSV     = _TESTS_DIR / "benchmark_models.csv"
 
 # ── HW monitor (optional — graceful fallback if unavailable) ───────────────
@@ -118,20 +119,36 @@ def _load_manifest_count() -> int:
     with open(_MANIFEST_PATH, newline="", encoding="utf-8") as f:
         return sum(1 for _ in csv.DictReader(f))
 
-def _load_results(current_only: bool = True) -> tuple[list[dict], float | None]:
+def _find_latest_csv(csv_override: Path | None = None) -> Path | None:
+    """Return the CSV to monitor.
+    Priority: 1) explicit override  2) results_all_runs.csv  3) latest in results_archive/"""
+    if csv_override and csv_override.exists():
+        return csv_override
+    if _RESULTS_CSV.exists():
+        return _RESULTS_CSV
+    # Fallback: most recent file in results_archive/
+    if _RESULTS_ARCHIVE_DIR.exists():
+        csvs = sorted(_RESULTS_ARCHIVE_DIR.glob("*.csv"), key=lambda p: p.stat().st_mtime, reverse=True)
+        if csvs:
+            return csvs[0]
+    return None
+
+
+def _load_results(current_only: bool = True, path: Path | None = None) -> tuple[list[dict], float | None]:
     """Return (rows, csv_mtime). If current_only, keep only rows with the latest run_id."""
-    if not _RESULTS_CSV.exists():
+    target = path or _find_latest_csv()
+    if target is None or not target.exists():
         return [], None
 
     rows: list[dict] = []
     try:
-        with open(_RESULTS_CSV, newline="", encoding="utf-8") as f:
+        with open(target, newline="", encoding="utf-8") as f:
             for row in csv.DictReader(f):
                 rows.append(row)
     except Exception:
         return [], None
 
-    mtime = _RESULTS_CSV.stat().st_mtime
+    mtime = target.stat().st_mtime
 
     if current_only and rows:
         # Find the max run_id present in the file
@@ -309,6 +326,8 @@ def main() -> None:
     parser.add_argument("--models",   type=int,  default=0,     help="Total model/backend pairs expected (0 = auto from benchmark_models.csv)")
     parser.add_argument("--once",     action="store_true",      help="Print once and exit")
     parser.add_argument("--all",      action="store_true",      help="Show all historical data, not just current run_id")
+    parser.add_argument("--csv",      type=Path, default=None,
+                        help="Path CSV da monitorare (default: auto-detect da results_archive/)")
     args = parser.parse_args()
 
     manifest_count = _load_manifest_count()
@@ -319,10 +338,16 @@ def main() -> None:
     n_models_total = args.models if args.models > 0 else _count_expected_models()
 
     start_time  = time.monotonic()
-    start_mtime = _RESULTS_CSV.stat().st_mtime if _RESULTS_CSV.exists() else None
+    csv_path    = args.csv or _find_latest_csv()
+    start_mtime = csv_path.stat().st_mtime if csv_path and csv_path.exists() else None
+
+    if csv_path:
+        print(f"  Monitoring: {csv_path}")
+    else:
+        print("  Waiting for benchmark to start...")
 
     def _run_once() -> None:
-        rows, csv_mtime = _load_results(current_only=current_only)
+        rows, csv_mtime = _load_results(current_only=current_only, path=csv_path)
         snap     = _snapshot(rows, exp_per_model, n_models_total=n_models_total)
         elapsed  = time.monotonic() - start_time
         # CSV è "attivo" se è stato modificato dopo l'avvio del monitor

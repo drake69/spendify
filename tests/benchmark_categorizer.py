@@ -59,6 +59,8 @@ _BENCHMARK_DIR = _GENERATED_DIR / "benchmark"
 _GENERATOR_SCRIPT = _TESTS_DIR / "generate_synthetic_files.py"
 # Shared results file in documents repo (cross-HW, pushed/pulled via git)
 _DOCS_BENCHMARK_DIR = PROJECT_ROOT.parent / "documents" / "04_software_engineering" / "benchmark"
+_RESULTS_ARCHIVE_DIR = _TESTS_DIR / "results_archive"
+_ARCHIVE_CSV_PATH: Path | None = None  # Set by main() before run loop
 
 N_RUNS_DEFAULT = 10
 _FILES_DEFAULT = "*_S_*"
@@ -278,15 +280,77 @@ def _category_fuzzy_match(result: CategorizationResult, expected: str) -> bool:
 
 # ── LLM & hardware metadata ──────────────────────────────────────────────
 
-def _collect_llm_metadata(config: ProcessingConfig, backend) -> dict[str, str]:
-    """Collect LLM provider, model, and parameters for benchmark metadata."""
-    # Git commit info
-    _git_sha = "unknown"
-    _git_branch = "unknown"
+def _read_version() -> str:
+    """Read version from tests/.version (portable, no git needed).
+    Format: YYYYMMDDHHMMSS-sha7  e.g. 20260404143022-09e24c2
+    Falls back to git rev-parse if .version missing."""
+    version_file = _TESTS_DIR / ".version"
+    if version_file.exists():
+        return version_file.read_text().strip()
     try:
-        _git_sha = subprocess.check_output(
+        sha = subprocess.check_output(
             ["git", "rev-parse", "--short", "HEAD"], cwd=PROJECT_ROOT, text=True
         ).strip()
+        ts = datetime.now().strftime("%Y%m%d%H%M%S")
+        return f"{ts}-{sha}"
+    except Exception:
+        return datetime.now().strftime("%Y%m%d%H%M%S") + "-unknown"
+
+
+def _detect_gpu_ram_gb(cpu_str: str = "", ram_gb_str: str = "0") -> str:
+    """Detect GPU/VRAM in GB. Cross-platform.
+    - Apple Silicon: unified memory → returns runtime_ram_gb (shared pool)
+    - NVIDIA: nvidia-smi
+    - Windows discrete/integrated: wmic
+    - Fallback: '0'
+    """
+    import platform
+    # Apple Silicon: unified memory shared between CPU and GPU
+    if "apple" in cpu_str.lower() or platform.processor() == "arm":
+        return ram_gb_str  # same as system RAM
+    # NVIDIA
+    try:
+        out = subprocess.check_output(
+            ["nvidia-smi", "--query-gpu=memory.total", "--format=csv,noheader,nounits"],
+            text=True, timeout=5
+        )
+        mb = int(out.strip().split("\n")[0])
+        return str(round(mb / 1024, 1))
+    except Exception:
+        pass
+    # Windows: wmic
+    try:
+        out = subprocess.check_output(
+            ["wmic", "path", "Win32_VideoController", "get", "AdapterRAM", "/value"],
+            text=True, timeout=5
+        )
+        for line in out.splitlines():
+            if "=" in line:
+                val = line.split("=", 1)[1].strip()
+                if val.isdigit() and int(val) > 0:
+                    return str(round(int(val) / (1024 ** 3), 1))
+    except Exception:
+        pass
+    # Linux: /sys
+    try:
+        import glob
+        for path in glob.glob("/sys/class/drm/card*/device/mem_info_vram_total"):
+            with open(path) as f:
+                val = int(f.read().strip())
+                if val > 0:
+                    return str(round(val / (1024 ** 3), 1))
+    except Exception:
+        pass
+    return "0"
+
+
+def _collect_llm_metadata(config: ProcessingConfig, backend) -> dict[str, str]:
+    """Collect LLM provider, model, and parameters for benchmark metadata."""
+    # Version info — read from .version first (portable, no git needed on bench machines)
+    _version = _read_version()
+    _git_sha = _version.split("-")[-1] if "-" in _version else _version
+    _git_branch = "unknown"
+    try:
         _git_branch = subprocess.check_output(
             ["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=PROJECT_ROOT, text=True
         ).strip()
@@ -297,6 +361,7 @@ def _collect_llm_metadata(config: ProcessingConfig, backend) -> dict[str, str]:
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "git_commit": _git_sha,
         "git_branch": _git_branch,
+        "version": _version,
         "provider": "unknown",
         "model": "unknown",
         "temperature": "default",
@@ -340,6 +405,8 @@ def _collect_llm_metadata(config: ProcessingConfig, backend) -> dict[str, str]:
     # ── Runtime HW (where Spendif.ai runs) ────────────────────────────────
     import platform
     meta["runtime_os"] = f"{platform.system()} {platform.release()} {platform.machine()}"
+    meta["runtime_hostname"] = __import__("socket").gethostname()
+    meta["runtime_gpu_ram_gb"] = ""  # filled after ram and gpu are detected
     try:
         import subprocess as _sp
         ver = _sp.check_output(["sw_vers", "-productVersion"], text=True).strip()
@@ -376,6 +443,10 @@ def _collect_llm_metadata(config: ProcessingConfig, backend) -> dict[str, str]:
     except Exception:
         meta["runtime_gpu"] = "?"
         meta["runtime_gpu_cores"] = "?"
+    meta["runtime_gpu_ram_gb"] = _detect_gpu_ram_gb(
+        meta.get("runtime_cpu", ""),
+        meta.get("runtime_ram_gb", "0")
+    )
 
     # ── LLM HW (where the model runs) ────────────────────────────────
     if "ollama" in meta["provider"].lower():
@@ -632,12 +703,14 @@ def _evaluate_file(
 _CSV_HEADER = [
     "benchmark_type",  # "classifier" or "categorizer"
     "run_id", "filename",
-    "git_commit", "git_branch",
+    "git_commit", "git_branch", "version",
     "provider", "model", "temperature", "parameter_size", "quantization",
     # Inference parameters (for reproducibility & performance analysis)
     "n_ctx", "n_batch", "n_threads", "n_gpu_layers", "flash_attn",
     # Runtime HW
-    "runtime_os", "runtime_cpu", "runtime_ram_gb", "runtime_gpu",
+    "runtime_os", "runtime_cpu", "runtime_ram_gb", "runtime_gpu", "runtime_gpu_cores",
+    "runtime_hostname",
+    "runtime_gpu_ram_gb",
     # Classifier results (empty for categorizer rows)
     "header_detected", "header_expected", "header_match",
     "rows_detected", "rows_expected", "rows_match",
@@ -657,6 +730,8 @@ _CSV_HEADER = [
     "duration_seconds",
     # HW stress (sampled during file processing)
     "cpu_load_avg", "gpu_utilization_pct",
+    # Token usage
+    "tokens_per_second",
     # Categorizer parameters
     "cleaner_batch_size",
     # Multi-step classifier diagnostics (empty for categorizer rows)
@@ -684,6 +759,7 @@ def _result_to_row(r: CatRunResult) -> list:
         r.run_id, r.filename,
         _LLM_META.get("git_commit", ""),
         _LLM_META.get("git_branch", ""),
+        _LLM_META.get("version", ""),
         _LLM_META.get("provider", ""),
         _LLM_META.get("model", ""),
         _LLM_META.get("temperature", ""),
@@ -700,6 +776,9 @@ def _result_to_row(r: CatRunResult) -> list:
         _LLM_META.get("runtime_cpu", ""),
         _LLM_META.get("runtime_ram_gb", ""),
         _LLM_META.get("runtime_gpu", ""),
+        _LLM_META.get("runtime_gpu_cores", ""),
+        _LLM_META.get("runtime_hostname", ""),
+        _LLM_META.get("runtime_gpu_ram_gb", ""),
         # Classifier columns (empty for categorizer rows)
         "", "", "",  # header_detected, header_expected, header_match
         "", "", "",  # rows_detected, rows_expected, rows_match
@@ -718,6 +797,8 @@ def _result_to_row(r: CatRunResult) -> list:
         # Common
         f"{r.duration_seconds:.2f}",
         f"{r.cpu_load_avg:.2f}", f"{r.gpu_utilization_pct:.1f}",
+        # Token usage
+        "0",
         # Categorizer parameters
         r.cleaner_batch_size,
         # Multi-step classifier diagnostics (empty for categorizer rows)
@@ -739,6 +820,26 @@ def _detail_to_row(d: CatDetailRow) -> list:
     ]
 
 
+def _init_archive_path() -> Path:
+    """Return a fresh (non-existing) path for this run's archive CSV.
+    Format: results_archive/<version>_<hostname>.csv
+    Adds _2, _3 suffix if file already exists."""
+    version = _read_version()
+    hostname = __import__("socket").gethostname()
+    # sanitize hostname for filesystem
+    safe_host = hostname.replace(" ", "_").replace("/", "_")
+    _RESULTS_ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
+    base = _RESULTS_ARCHIVE_DIR / f"{version}_{safe_host}.csv"
+    if not base.exists():
+        return base
+    i = 2
+    while True:
+        candidate = _RESULTS_ARCHIVE_DIR / f"{version}_{safe_host}_{i}.csv"
+        if not candidate.exists():
+            return candidate
+        i += 1
+
+
 def _write_all_runs_csv(all_results: list[CatRunResult]) -> None:
     """Append new results to shared all-runs CSV in both local and documents repo."""
     for target_dir in (_BENCHMARK_DIR, _DOCS_BENCHMARK_DIR):
@@ -755,6 +856,15 @@ def _write_all_runs_csv(all_results: list[CatRunResult]) -> None:
             for r in all_results:
                 writer.writerow(_result_to_row(r))
     print(f"[output] All runs (shared): {_DOCS_BENCHMARK_DIR / 'results_all_runs.csv'}")
+
+    # Write to archive (this invocation only — fresh file, not cumulative)
+    if _ARCHIVE_CSV_PATH is not None:
+        with open(_ARCHIVE_CSV_PATH, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(_CSV_HEADER)
+            for r in all_results:
+                writer.writerow(_result_to_row(r))
+        print(f"[output] Archive: {_ARCHIVE_CSV_PATH}")
 
 
 def _migrate_csv_header(path: Path) -> None:
@@ -1096,6 +1206,10 @@ def main() -> None:
     # ── Collect LLM metadata ─────────────────────────────────────────────
     llm_meta = _collect_llm_metadata(config, backend)
     _LLM_META.update(llm_meta)
+
+    global _ARCHIVE_CSV_PATH
+    _ARCHIVE_CSV_PATH = _init_archive_path()
+    print(f"[archive] {_ARCHIVE_CSV_PATH.name}")
 
     print(f"\n[config] Provider: {llm_meta['provider']}")
     print(f"[config] Model: {llm_meta['model']}")
