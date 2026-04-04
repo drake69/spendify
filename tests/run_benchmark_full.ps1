@@ -403,11 +403,12 @@ Write-Host "  FULL BENCHMARK COMPLETE  —  $EndTs"
 Write-Host "  Steps completed : $Step"
 Write-Host "════════════════════════════════════════════════════════════"
 Write-Host ""
+Write-Host "  Archive : tests\results_archive\  (versioned per-run CSV)"
 if ($IsUNC) {
-    Write-Host "  Results (network): $SourceDir\tests\generated_files\benchmark\"
-    Write-Host "  Results (local):   $WorkDir\tests\generated_files\benchmark\"
+    Write-Host "  Legacy (network): $SourceDir\tests\generated_files\benchmark\"
+    Write-Host "  Legacy (local):   $WorkDir\tests\generated_files\benchmark\"
 } else {
-    Write-Host "  Results : tests\generated_files\benchmark\"
+    Write-Host "  Legacy  : tests\generated_files\benchmark\"
 }
 Write-Host "  Log     : $LogFile"
 
