@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Guard: se invocato con sh invece di bash (es. su Ubuntu dove sh=dash),
+# si ri-esegue automaticamente con bash.
+[ -z "${BASH_VERSION:-}" ] && exec bash "$0" "$@"
 # Full benchmark: classifier (pipeline) + categorizer × all active backends.
 #
 # Model catalogue: benchmark/benchmark_models.csv
