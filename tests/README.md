@@ -28,8 +28,8 @@ Entrambi fanno tutto in automatico:
 1. Installano `uv` (se assente) — su Windows via `irm https://astral.sh/uv/install.ps1 | iex`
 2. `uv` installa Python se non presente nel sistema
 3. Creano `.venv` e sincronizzano le dipendenze (`uv sync`)
-4. Scaricano i modelli GGUF piccoli (≤3B) da HuggingFace (se mancano)
-5. Lanciano il benchmark su tutti i modelli piccoli con `llama.cpp`
+4. Scaricano i modelli GGUF da HuggingFace (se mancano)
+5. Lanciano il benchmark su tutti i modelli GGUF con `llama.cpp`
 
 ### Opzioni
 
@@ -63,7 +63,13 @@ tests/
 ├── cleanup_benchmark.sh          ← pulizia file generati
 ├── benchmark_pipeline.py         ← benchmark classifier (schema + parsing)
 ├── benchmark_categorizer.py      ← benchmark categorizer (categorie)
+├── hw_monitor.py                 ← monitoraggio HW background (CPU + GPU cross-platform)
+├── diagnose.ps1                  ← diagnostica ambiente Windows (include GPU)
 ├── generate_synthetic_files.py   ← genera i file sintetici di test
+├── logs/                         ← LOG di ogni esecuzione benchmark (gitignored)
+│   ├── benchmark_YYYYMMDD_HHMMSS.log   ← log run_benchmark.sh
+│   ├── pipeline_YYYYMMDD_HHMMSS.log    ← log benchmark_pipeline.py
+│   └── categorizer_YYYYMMDD_HHMMSS.log ← log benchmark_categorizer.py
 └── generated_files/
     ├── manifest.csv              ← elenco file sintetici + ground truth
     ├── benchmark/
@@ -204,6 +210,41 @@ uv run python tests/benchmark_pipeline.py --backend local_llama_cpp \
 
 ---
 
+## Monitoraggio HW (CPU + GPU)
+
+Il modulo `tests/hw_monitor.py` (`HWMonitor`) campiona CPU e GPU **in background** ogni 0.5 s durante l'intero benchmark, restituendo medie più accurate rispetto ai vecchi campioni point-in-time (`_sample_cpu_load()` / `_sample_gpu_utilization()`, ora rimossi).
+
+| Piattaforma | Metodo GPU | Note |
+|-------------|-----------|------|
+| macOS Apple Silicon | `ioreg` / AGXAccelerator → Device Utilization % | Nessun sudo richiesto |
+| Linux NVIDIA | `nvidia-smi` → utilization % + power watts | Richiede driver NVIDIA |
+| Linux AMD | `rocm-smi` → utilization % | Richiede ROCm |
+| Fallback | — | GPU utilization = 0.0 |
+
+`benchmark_pipeline.py` e `benchmark_categorizer.py` istanziano `HWMonitor` all'inizio del run e chiamano `stop()` alla fine per ottenere le medie.
+
+### Diagnostica GPU (Windows)
+
+`tests/diagnose.ps1` include un passo di rilevamento GPU (step 8/9): NVIDIA (`nvidia-smi` + CUDA), AMD (WMI), Intel Arc (oneAPI), Intel iGPU.
+
+### Logging
+
+Ogni esecuzione salva un log completo in `tests/logs/` (gitignored):
+
+| Script | Log file |
+|--------|----------|
+| `run_benchmark.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
+| `benchmark_pipeline.py` | `tests/logs/pipeline_YYYYMMDD_HHMMSS.log` |
+| `benchmark_categorizer.py` | `tests/logs/categorizer_YYYYMMDD_HHMMSS.log` |
+| `diagnose.ps1` | `~/spendify_diagnose_YYYYMMDD_HHMMSS.log` |
+
+L'output va sia su console che su file (tee). I log non vengono sovrascritti — un file per ogni esecuzione con timestamp nel nome. Utili per:
+- Troubleshooting errori su modelli specifici
+- Confronto tra run diversi
+- Audit tempi e warning
+
+---
+
 ## Backend supportati
 
 | Backend | Flag | Requisiti |
@@ -258,7 +299,7 @@ Vantaggi di vLLM rispetto a llama.cpp:
 | Gemma 4 E2B IT | ~2.7 GB | Q3_K_M | `gemma-4-E2B-it-Q3_K_M.gguf` |
 | Gemma 4 E2B IT | ~3.1 GB | Q4_K_M | `gemma-4-E2B-it-Q4_K_M.gguf` |
 
-Scaricati automaticamente da `run_benchmark.sh` / `run_benchmark.ps1` (filtro ≤3.5 GB).
+Scaricati automaticamente da `run_benchmark.sh` / `run_benchmark.ps1`.
 Fonte GGUF: `unsloth/gemma-4-E2B-it-GGUF` (HuggingFace). Richiede llama.cpp ≥ build con supporto architettura `gemma4`.
 
 ## Resume e deduplicazione

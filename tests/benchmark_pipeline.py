@@ -161,96 +161,9 @@ class RunFileResult:
     error: str = ""
 
 
-# ── HW stress sampler ────────────────────────────────────────────────────
+# ── HW stress sampler (delegated to hw_monitor.py) ──────────────────────
 
-def _sample_cpu_load() -> float:
-    """Return 1-minute load average (cross-platform)."""
-    try:
-        return os.getloadavg()[0]
-    except (OSError, AttributeError):
-        return 0.0
-
-
-def _sample_gpu_utilization() -> float:
-    """Return GPU utilization % (0-100). Cross-platform:
-    - macOS: Apple GPU via ioreg (power proxy)
-    - Linux/Windows: NVIDIA via nvidia-smi
-    Returns 0.0 if unavailable."""
-    import platform as _pf
-    import re
-
-    system = _pf.system()
-
-    # macOS — Apple Silicon GPU power via ioreg
-    if system == "Darwin":
-        try:
-            result = subprocess.run(
-                ["ioreg", "-r", "-d", "1", "-c", "AppleARMIODevice", "-n", "gpu"],
-                capture_output=True, text=True, timeout=2,
-            )
-            for line in result.stdout.splitlines():
-                if "gpu-power" in line.lower() or "power" in line.lower():
-                    nums = re.findall(r"(\d+\.?\d*)", line)
-                    if nums:
-                        return float(nums[-1])
-        except Exception:
-            pass
-
-    # Linux/Windows — NVIDIA GPU via nvidia-smi
-    if system in ("Linux", "Windows"):
-        try:
-            result = subprocess.run(
-                ["nvidia-smi", "--query-gpu=utilization.gpu",
-                 "--format=csv,noheader,nounits"],
-                capture_output=True, text=True, timeout=5,
-            )
-            if result.returncode == 0:
-                vals = [float(v.strip()) for v in result.stdout.strip().split("\n") if v.strip()]
-                return sum(vals) / len(vals) if vals else 0.0
-        except FileNotFoundError:
-            pass  # no nvidia-smi → no NVIDIA GPU
-        except Exception:
-            pass
-
-    # Linux — AMD GPU via ROCm (rocm-smi)
-    if system == "Linux":
-        try:
-            result = subprocess.run(
-                ["rocm-smi", "--showuse", "--csv"],
-                capture_output=True, text=True, timeout=5,
-            )
-            if result.returncode == 0:
-                for line in result.stdout.strip().split("\n")[1:]:  # skip header
-                    parts = line.split(",")
-                    for p in parts:
-                        p = p.strip().rstrip("%")
-                        try:
-                            return float(p)
-                        except ValueError:
-                            continue
-        except FileNotFoundError:
-            pass  # no rocm-smi → no AMD GPU
-        except Exception:
-            pass
-
-    # Linux — Intel GPU via intel_gpu_top (optional)
-    if system == "Linux":
-        try:
-            result = subprocess.run(
-                ["intel_gpu_top", "-J", "-s", "100"],
-                capture_output=True, text=True, timeout=2,
-            )
-            if result.returncode == 0:
-                import json as _json
-                data = _json.loads(result.stdout)
-                engines = data.get("engines", {})
-                if engines:
-                    busy_vals = [e.get("busy", 0) for e in engines.values()]
-                    return sum(busy_vals) / len(busy_vals) if busy_vals else 0.0
-        except (FileNotFoundError, Exception):
-            pass
-
-    return 0.0
+from tests.hw_monitor import HWMonitor
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────
@@ -565,8 +478,8 @@ def _evaluate_file(
     """Run the full pipeline on a single file and compare to ground truth."""
     filepath = _GENERATED_DIR / entry.filename
     t_start = time.time()
-    cpu_samples: list[float] = [_sample_cpu_load()]
-    gpu_samples: list[float] = [_sample_gpu_utilization()]
+    hw = HWMonitor(interval=0.5)
+    hw.start()
 
     convention_expected = _AMOUNT_FORMAT_TO_SIGN_CONVENTION.get(
         entry.amount_format, entry.amount_format
@@ -614,8 +527,7 @@ def _evaluate_file(
             classifier_mode="auto",
         )
         # Sample HW stress after LLM call
-        cpu_samples.append(_sample_cpu_load())
-        gpu_samples.append(_sample_gpu_utilization())
+        # HW sampling handled by background HWMonitor thread
 
         # Extract multi-step diagnostics (attached by classify_document)
         _diag = getattr(schema, "_classifier_diagnostics", None) if schema else None
@@ -628,6 +540,7 @@ def _evaluate_file(
             error_result.doc_type_detected = "NONE"
             error_result.convention_detected = "NONE"
             error_result.duration_seconds = time.time() - t_start
+            hw.stop()
             error_result.error = "classify_document returned None"
             return error_result
 
@@ -696,6 +609,7 @@ def _evaluate_file(
         category_accuracy = category_correct / category_total if category_total > 0 else 0.0
 
         duration = time.time() - t_start
+        hw_stats = hw.stop()
 
         return RunFileResult(
             run_id=run_id,
@@ -739,8 +653,8 @@ def _evaluate_file(
             category_total=category_total,
             category_accuracy=category_accuracy,
             duration_seconds=duration,
-            cpu_load_avg=sum(cpu_samples) / len(cpu_samples) if cpu_samples else 0.0,
-            gpu_power_watts=sum(gpu_samples) / len(gpu_samples) if gpu_samples else 0.0,
+            cpu_load_avg=hw_stats.cpu_avg,
+            gpu_power_watts=hw_stats.gpu_avg,
             # Multi-step diagnostics
             classifier_mode=_diag.classifier_mode if _diag else "",
             step1_time_s=_diag.step1_time_s if _diag else 0.0,
@@ -766,6 +680,7 @@ def _evaluate_file(
 
     except Exception as e:
         error_result.duration_seconds = time.time() - t_start
+        hw.stop()
         error_result.error = f"{type(e).__name__}: {e}"
         return error_result
 
@@ -1114,6 +1029,25 @@ def _print_summary(global_rows: list[dict], n_runs: int, n_files: int, total_tim
     print()
 
 
+# ── Tee writer: duplicate stdout to console + log file ───────────────────
+
+class _TeeWriter:
+    """Write to both console and a log file simultaneously."""
+
+    def __init__(self, log_path: Path):
+        self._file = open(log_path, "w", encoding="utf-8")
+        self._console = sys.__stdout__
+
+    def write(self, text: str) -> int:
+        self._console.write(text)
+        self._file.write(text)
+        return len(text)
+
+    def flush(self) -> None:
+        self._console.flush()
+        self._file.flush()
+
+
 # ── Main ──────────────────────────────────────────────────────────────────
 
 def main() -> None:
@@ -1143,10 +1077,19 @@ def main() -> None:
     if file_pattern and not ("*" in file_pattern or "?" in file_pattern):
         file_pattern = f"*{file_pattern}*"
 
+    # ── Log file: tee stdout+stderr to file ──────────────────────
+    log_dir = Path(__file__).resolve().parent / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_file = log_dir / f"pipeline_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+    _tee = _TeeWriter(log_file)
+    sys.stdout = _tee
+    sys.stderr = _tee
+
     # Startup checks
     print(f"\n{'=' * 60}")
     print(f"  Spendify Pipeline Benchmark")
     print(f"  {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"  Log: {log_file}")
     print(f"{'=' * 60}")
 
     backend_override = args.backend
@@ -1260,6 +1203,18 @@ def main() -> None:
     print(f"[llm] Host: {llm_meta.get('llm_host', '?')}")
     print(f"[llm] HW: {llm_meta.get('llm_hw', '?')}")
     print(f"[inference] n_ctx: {llm_meta.get('n_ctx', '?')}, n_batch: {llm_meta.get('n_batch', '?')}, n_threads: {llm_meta.get('n_threads', '?')}, n_gpu_layers: {llm_meta.get('n_gpu_layers', '?')}, flash_attn: {llm_meta.get('flash_attn', '?')}")
+
+    # ── Context window check ─────────────────────────────────────────
+    _MIN_CTX = 8000
+    _n_ctx_str = llm_meta.get("n_ctx", "0")
+    try:
+        _n_ctx_val = int(_n_ctx_str)
+    except (ValueError, TypeError):
+        _n_ctx_val = 0
+    if 0 < _n_ctx_val < _MIN_CTX:
+        print(f"\n[SKIP] n_ctx={_n_ctx_val} < minimum={_MIN_CTX}")
+        print(f"       Context window too small for Spendify prompts. Skipping this model.")
+        return
 
     # Resume: load already-completed tuples from documents repo (cross-HW source of truth)
     # Falls back to local benchmark dir if documents not available

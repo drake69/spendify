@@ -153,6 +153,12 @@ spendify/
 │   ├── models.py           # tabelle SQLAlchemy + migrazioni idempotenti
 │   ├── repository.py       # query CRUD per servizi
 │   └── taxonomy_defaults.py # template tassonomia per 5 lingue
+├── chat_bot/               # chatbot di supporto adattivo
+│   ├── engine.py           # ChatBotEngine (auto-detect modalità)
+│   ├── rag.py              # RAG: retrieval TF-IDF + generazione LLM
+│   ├── faq_classifier.py   # match deterministico TF-IDF
+│   ├── faq_store.py        # caricamento FAQ e documenti
+│   └── knowledge/<lang>/   # FAQ e doc per lingua
 ├── api/                    # REST API FastAPI (opzionale)
 │   ├── main.py
 │   └── routers/
@@ -290,6 +296,60 @@ Il server usa gli stessi `services.*` dell'UI Streamlit — nessuna logica dupli
 
 ---
 
+## 7b. Chatbot di supporto
+
+Il modulo `chat_bot/` implementa un chatbot adattivo che risponde a domande sull'uso di Spendify. La modalità viene scelta automaticamente in base al backend LLM configurato dall'utente in Impostazioni.
+
+### Architettura
+
+```
+chat_bot/
+├── engine.py           # ChatBotEngine — orchestratore, auto-detect modalità
+├── rag.py              # RAGEngine — TF-IDF retrieval + generazione LLM
+├── faq_classifier.py   # FAQClassifier — match deterministico TF-IDF (zero LLM)
+├── faq_store.py        # Caricamento FAQ (JSON/MD) e chunk documenti
+├── prompts.json        # System prompt + messaggi no-answer multilingua
+└── knowledge/<lang>/   # FAQ e documenti per lingua (it, en, de, es, fr, pt)
+    ├── faq.json        # [{"q": "...", "a": "..."}]
+    └── docs/           # File .md/.txt chunked per RAG
+```
+
+### Tre modalità
+
+| Modalità | Condizione (da user settings) | Funzionamento |
+|----------|-------------------------------|---------------|
+| `rag_cloud` | Backend = `openai` / `claude` / `openai_compatible` con API key | Retrieval TF-IDF → LLM cloud genera risposta |
+| `rag_local` | Backend = `local_ollama` / `vllm` | Retrieval TF-IDF → LLM locale genera risposta |
+| `faq_match` | Backend = `local_llama_cpp` o nessuno | Cosine similarity su FAQ, risposta preconfezionata |
+
+### Integrazione con il progetto
+
+- **Backend LLM:** Usa `BackendFactory` da `core/llm_backends.py` — stesso backend dell'utente
+- **Settings:** Legge `llm_backend` e API key da `user_settings` (DB) via `get_all_user_settings()`
+- **UI:** `ui/chat_page.py` segue il pattern `render_X_page(engine)`, con `st.chat_message`
+- **i18n:** Chiavi `chat.*` e `nav.chat*` in `ui/i18n/{it,en}.json`
+- **Sidebar:** Voce `("chat", "chat")` in `_NAV_KEYS`
+
+### Utilizzo programmatico
+
+```python
+from chat_bot.engine import ChatBotEngine
+
+bot = ChatBotEngine(db_engine=engine, lang="it")
+print(bot.mode)       # ChatMode.FAQ_MATCH | RAG_LOCAL | RAG_CLOUD
+response = bot.ask("Come importo un file?")
+print(response.text)  # Risposta
+print(response.sources)  # ["faq.json"] (opzionale)
+```
+
+### Popolare la knowledge base
+
+1. **FAQ:** Aggiungere file `.json` o `.md` in `chat_bot/knowledge/<lang>/`
+2. **Documenti RAG:** Aggiungere file `.md` o `.txt` in `chat_bot/knowledge/<lang>/docs/`
+3. Non indicizzare mai dati sensibili (credenziali, dati personali, strategie di business)
+
+---
+
 ## 8. Test
 
 ```bash
@@ -372,7 +432,7 @@ powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1
 powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1 both -Runs 3
 ```
 
-`run_benchmark.sh` / `run_benchmark.ps1` gestiscono automaticamente: installazione `uv`, creazione `.venv`, `uv sync`, download modelli GGUF mancanti (≤3.5 GB), esecuzione benchmark.
+`run_benchmark.sh` / `run_benchmark.ps1` gestiscono automaticamente: installazione `uv`, creazione `.venv`, `uv sync`, download modelli GGUF mancanti, esecuzione benchmark. `run_benchmark.sh` esegue **tutti** i modelli GGUF presenti (nessun filtro per dimensione).
 
 ### Setup modelli + Dual benchmark (llama.cpp + Ollama)
 
@@ -444,6 +504,19 @@ Il benchmark rileva automaticamente la context window ottimale per ogni modello:
 
 `--n-ctx 0` (default) = auto-detect. Imposta un valore esplicito per limitare l'uso di RAM.
 
+### Monitoraggio HW (CPU + GPU)
+
+Il modulo `tests/hw_monitor.py` (`HWMonitor`) campiona CPU e GPU in background ogni 0.5 s durante l'intero run di benchmark, producendo medie più accurate rispetto ai vecchi campioni point-in-time.
+
+| Piattaforma | Metodo GPU | Note |
+|-------------|-----------|------|
+| macOS Apple Silicon | `ioreg` / AGXAccelerator → Device Utilization % | Nessun sudo richiesto |
+| Linux NVIDIA | `nvidia-smi` → utilization % + power watts | Richiede driver NVIDIA |
+| Linux AMD | `rocm-smi` → utilization % | Richiede ROCm |
+| Fallback | — | GPU utilization = 0.0 |
+
+`benchmark_pipeline.py` e `benchmark_categorizer.py` usano `HWMonitor` al posto delle vecchie funzioni inline `_sample_cpu_load()` / `_sample_gpu_utilization()`.
+
 ### Script disponibili
 
 | Script | Scopo |
@@ -454,6 +527,20 @@ Il benchmark rileva automaticamente la context window ottimale per ogni modello:
 | `tests/run_benchmark_dual.sh` | 9 modelli su entrambi i backend (llama.cpp + Ollama) |
 | `tests/setup_benchmark_models.sh` | Download modelli (Ollama pull + GGUF) senza lanciare benchmark |
 | `tests/cleanup_benchmark.sh` | Pulizia file generati |
+| `tests/hw_monitor.py` | Monitoraggio HW in background (CPU + GPU cross-platform) |
+| `tests/diagnose.ps1` | Diagnostica ambiente Windows (include rilevamento GPU: NVIDIA/AMD/Intel) |
+
+### Logging
+
+Ogni esecuzione salva un log in `tests/logs/` (gitignored, un file per run con timestamp):
+
+| Script | Log |
+|--------|-----|
+| `run_benchmark.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
+| `benchmark_pipeline.py` | `tests/logs/pipeline_YYYYMMDD_HHMMSS.log` |
+| `benchmark_categorizer.py` | `tests/logs/categorizer_YYYYMMDD_HHMMSS.log` |
+
+Output su console e file simultaneamente (tee). Utile per troubleshooting e confronto tra run.
 
 ### Metriche registrate
 

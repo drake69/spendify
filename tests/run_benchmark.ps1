@@ -219,8 +219,15 @@ Write-Host ""
 $env:PYTHONIOENCODING = "utf-8"
 $env:PYTHONUTF8 = "1"
 
+# -- Log file: tee all output to console + file ----------------------------
+$LogDir = Join-Path $WorkDir "tests\logs"
+if (-not (Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir -Force | Out-Null }
+$LogFile = Join-Path $LogDir "benchmark_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
+Start-Transcript -Path $LogFile -Force | Out-Null
+
 Write-Host "============================================================"
 Write-Host "  Starting benchmarks..."
+Write-Host "  Log: $LogFile"
 Write-Host "============================================================"
 
 function Run-Bench {
@@ -252,17 +259,37 @@ function Run-Bench {
 }
 
 if ($Backend -eq "local_llama_cpp") {
-    $smallGgufs = Get-ChildItem "$ModelsDir\*.gguf" -ErrorAction SilentlyContinue |
-        Where-Object { $_.Length -le 3758096384 } |
-        Sort-Object Length |
-        Select-Object -First 7
+    # Minimum context window required by Spendify prompts (tokens)
+    $MinCtx = 8000
 
-    if ($smallGgufs.Count -eq 0) {
-        Write-Host "ERROR: No small GGUF models found in $ModelsDir"
+    $allGgufs = Get-ChildItem "$ModelsDir\*.gguf" -ErrorAction SilentlyContinue |
+        Sort-Object Length
+
+    if ($allGgufs.Count -eq 0) {
+        Write-Host "ERROR: No GGUF models found in $ModelsDir"
         exit 1
     }
 
-    foreach ($gguf in $smallGgufs) {
+    foreach ($gguf in $allGgufs) {
+        # Pre-flight: read n_ctx from GGUF metadata without loading the model
+        $nCtx = 0
+        try {
+            $nCtx = [int](& $Python -c "
+from core.llm_backends import LlamaCppBackend
+ctx = LlamaCppBackend.read_gguf_context_length('$($gguf.FullName -replace '\\','/')')
+print(ctx or 0)
+" 2>$null)
+        } catch { $nCtx = 0 }
+
+        if ($nCtx -gt 0 -and $nCtx -lt $MinCtx) {
+            Write-Host ""
+            Write-Host "----------------------------------------------------------"
+            Write-Host "  [SKIP] $($gguf.Name) -- n_ctx=$nCtx < min=$MinCtx"
+            Write-Host "  Context window too small for Spendify prompts."
+            Write-Host "----------------------------------------------------------"
+            continue
+        }
+
         if ($Benchmark -eq "pipeline" -or $Benchmark -eq "both") {
             Run-Bench -Script "tests/benchmark_pipeline.py" -Label "pipeline" -GgufPath $gguf.FullName
         }
@@ -291,7 +318,14 @@ if ($IsUNC) {
         New-Item -ItemType Directory -Path $remoteResults -Force | Out-Null
     }
     robocopy $localResults $remoteResults /MIR /NFL /NDL /NJH /NP /NS /NC
-    Write-Host "[ok] Results synced to source"
+    # Also sync logs
+    $localLogs = Join-Path $WorkDir "tests\logs"
+    $remoteLogs = Join-Path $SourceDir "tests\logs"
+    if (Test-Path $localLogs) {
+        if (-not (Test-Path $remoteLogs)) { New-Item -ItemType Directory -Path $remoteLogs -Force | Out-Null }
+        robocopy $localLogs $remoteLogs /MIR /NFL /NDL /NJH /NP /NS /NC
+    }
+    Write-Host "[ok] Results and logs synced to source"
 }
 
 Write-Host ""
@@ -306,3 +340,6 @@ if ($IsUNC) {
 } else {
     Write-Host "  Results: tests\generated_files\benchmark\"
 }
+Write-Host "  Log:     $LogFile"
+
+Stop-Transcript | Out-Null

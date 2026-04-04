@@ -16,6 +16,7 @@
 5. [Multi-step classifier](#5-multi-step-classifier)
 6. [Coupling gate (CI)](#6-coupling-gate-ci)
 7. [REST API](#7-rest-api)
+7b. [Support chatbot](#7b-support-chatbot)
 8. [Tests](#8-tests)
 9. [Key design decisions](#9-key-design-decisions)
 10. [Technical reference documentation](#10-technical-reference-documentation)
@@ -274,6 +275,60 @@ The server uses the same `services.*` as the Streamlit UI — no duplicated logi
 
 ---
 
+## 7b. Support chatbot
+
+The `chat_bot/` module implements an adaptive chatbot that answers questions about Spendify usage. The mode is auto-selected based on the user's LLM backend setting in Settings.
+
+### Architecture
+
+```
+chat_bot/
+├── engine.py           # ChatBotEngine — orchestrator, auto-detect mode
+├── rag.py              # RAGEngine — TF-IDF retrieval + LLM generation
+├── faq_classifier.py   # FAQClassifier — deterministic TF-IDF match (zero LLM)
+├── faq_store.py        # Loads FAQ (JSON/MD) and doc chunks
+├── prompts.json        # System prompts + multi-language no-answer messages
+└── knowledge/<lang>/   # FAQ and docs per language (it, en, de, es, fr, pt)
+    ├── faq.json        # [{"q": "...", "a": "..."}]
+    └── docs/           # .md/.txt files chunked for RAG
+```
+
+### Three modes
+
+| Mode | Condition (from user settings) | Behaviour |
+|------|-------------------------------|-----------|
+| `rag_cloud` | Backend = `openai` / `claude` / `openai_compatible` with API key | TF-IDF retrieval → cloud LLM generates answer |
+| `rag_local` | Backend = `local_ollama` / `vllm` | TF-IDF retrieval → local LLM generates answer |
+| `faq_match` | Backend = `local_llama_cpp` or none | Cosine similarity on FAQ, pre-built answer |
+
+### Project integration
+
+- **LLM Backend:** Uses `BackendFactory` from `core/llm_backends.py` — same backend as the user's
+- **Settings:** Reads `llm_backend` and API keys from `user_settings` (DB) via `get_all_user_settings()`
+- **UI:** `ui/chat_page.py` follows the `render_X_page(engine)` pattern, with `st.chat_message`
+- **i18n:** Keys `chat.*` and `nav.chat*` in `ui/i18n/{it,en}.json`
+- **Sidebar:** Entry `("chat", "chat")` in `_NAV_KEYS`
+
+### Programmatic usage
+
+```python
+from chat_bot.engine import ChatBotEngine
+
+bot = ChatBotEngine(db_engine=engine, lang="en")
+print(bot.mode)       # ChatMode.FAQ_MATCH | RAG_LOCAL | RAG_CLOUD
+response = bot.ask("How do I import a file?")
+print(response.text)
+print(response.sources)  # ["faq.json"] (optional)
+```
+
+### Populating the knowledge base
+
+1. **FAQ:** Add `.json` or `.md` files to `chat_bot/knowledge/<lang>/`
+2. **RAG documents:** Add `.md` or `.txt` files to `chat_bot/knowledge/<lang>/docs/`
+3. Never index sensitive data (credentials, personal data, business strategies)
+
+---
+
 ## 8. Tests
 
 ```bash
@@ -297,6 +352,34 @@ uv run pytest tests/test_normalizer.py -v
 | All others | ≥ 80% |
 
 Tests use SQLite in-memory (`create_engine("sqlite://")`) — no DB mocks.
+
+### LLM Benchmark — HW monitoring
+
+The benchmark suite (`tests/benchmark_pipeline.py`, `tests/benchmark_categorizer.py`) includes cross-platform GPU monitoring via `tests/hw_monitor.py`. A background thread (`HWMonitor`) samples CPU and GPU utilization every 0.5 s for the duration of each run, replacing the old point-in-time sampling functions.
+
+| Platform | GPU method |
+|----------|-----------|
+| macOS Apple Silicon | `ioreg` / AGXAccelerator (no sudo) |
+| Linux NVIDIA | `nvidia-smi` (utilization + power) |
+| Linux AMD | `rocm-smi` (utilization) |
+| Fallback | 0.0 |
+
+All GGUF models are now benchmarked regardless of file size (the previous 3 GB filter has been removed).
+
+### Logging
+
+Each run saves a log to `tests/logs/` (gitignored, one timestamped file per run):
+
+| Script | Log |
+|--------|-----|
+| `run_benchmark.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
+| `benchmark_pipeline.py` | `tests/logs/pipeline_YYYYMMDD_HHMMSS.log` |
+| `benchmark_categorizer.py` | `tests/logs/categorizer_YYYYMMDD_HHMMSS.log` |
+| `diagnose.ps1` | `~/spendify_diagnose_YYYYMMDD_HHMMSS.log` |
+
+Output goes to both console and file simultaneously (tee). On Windows, run `diagnose.ps1` first to check prerequisites including GPU detection (NVIDIA/AMD/Intel).
+
+See [`tests/README.md`](../tests/README.md) for full benchmark documentation.
 
 ---
 

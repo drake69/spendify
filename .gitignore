@@ -5,6 +5,7 @@ venv
 /backup
 /da_cancellare
 /logs
+tests/logs/
 *.csv
 *.xls
 *.xlsx

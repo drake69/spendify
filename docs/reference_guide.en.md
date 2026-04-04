@@ -17,6 +17,7 @@
 | **Taxonomy** | Customizable category/subcategory structure |
 | **Settings** | LLM backend, API keys, date/amount formats, language |
 | **Checklist** | Month × account pivot table: presence and quantity of transactions |
+| **Assistant** | Adaptive support chatbot (RAG cloud/local or deterministic FAQ) |
 
 ---
 
@@ -133,6 +134,20 @@ An internal transfer is a transfer between two of your own accounts (e.g., "Tran
 | **Claude** | Remote | PII redacted before sending | API key in Settings |
 
 **Circuit breaker:** if the configured backend does not respond, Spendify automatically falls back to local Ollama. If Ollama is also offline, the transaction is imported with `to_review=True` and raw description.
+
+---
+
+## Support chatbot
+
+Built-in chatbot on the **💬 Assistant** page. Three modes auto-selected from the configured LLM backend:
+
+| Mode | Required backend | How it works |
+|------|-----------------|--------------|
+| **RAG Cloud** | OpenAI / Claude / Compatible (with API key) | Semantic retrieval + cloud LLM generates answer |
+| **RAG Local** | Ollama / vLLM | Semantic retrieval + local LLM generates answer |
+| **FAQ Match** | llama.cpp or none | Deterministic TF-IDF match against pre-built FAQ |
+
+The knowledge base is in `chat_bot/knowledge/<lang>/` with FAQ (JSON/Markdown) and documents for RAG.
 
 ---
 

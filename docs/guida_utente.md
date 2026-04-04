@@ -412,7 +412,36 @@ Puoi scaricare la tabella come CSV con il pulsante **⬇️ Scarica CSV**.
 
 ---
 
-## 14. Impostazioni: cambiare il modello AI
+## 14. Assistente: chiedere aiuto a Spendify
+
+**Situazione:** Hai un dubbio su come funziona una funzione, come importare un file o come configurare un'opzione.
+
+Clicca su **💬 Assistente** nella sidebar. Si apre una chat dove puoi scrivere la tua domanda in linguaggio naturale.
+
+### Come funziona
+
+Il chatbot si adatta automaticamente al backend LLM che hai configurato nelle Impostazioni:
+
+- **Se usi un servizio cloud** (OpenAI, Claude, ecc.) — il chatbot cerca nelle FAQ e nella documentazione, poi genera una risposta con l'AI. Le risposte sono più naturali e flessibili.
+- **Se usi Ollama o vLLM** — stesso comportamento, ma il modello gira sul tuo computer.
+- **Se usi llama.cpp o non hai configurato nessun LLM** — il chatbot usa un sistema deterministico che cerca la domanda più simile nelle FAQ preconfezionate. Nessun LLM coinvolto, funziona su qualsiasi hardware.
+
+### Domande suggerite
+
+Alla prima apertura, il chatbot mostra alcune domande suggerite cliccabili per iniziare. Esempi:
+- "Come importo un file?"
+- "Quali formati sono supportati?"
+- "Come cambio una categoria?"
+
+### Fonti
+
+Quando il chatbot risponde, puoi espandere la sezione **Fonti** per vedere da quale documento o FAQ è stata tratta la risposta. Se il chatbot non trova informazioni sufficienti, lo dice esplicitamente.
+
+> **Esempio pratico:** Non ricordi come cambiare il backend LLM. Apri l'Assistente e scrivi "come cambio il modello AI?". Il chatbot cerca nella documentazione e ti risponde con le istruzioni passo-passo.
+
+---
+
+## 15. Impostazioni: cambiare il modello AI
 
 **Situazione:** Vuoi usare un modello diverso per la classificazione (es. Claude invece di Ollama locale).
 

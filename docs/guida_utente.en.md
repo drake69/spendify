@@ -412,7 +412,36 @@ You can download the table as CSV with the **⬇️ Scarica CSV** button.
 
 ---
 
-## 14. Settings: changing the AI model
+## 14. Assistant: ask Spendify for help
+
+**Situation:** You have a question about how a feature works, how to import a file, or how to configure an option.
+
+Click **💬 Assistant** in the sidebar. A chat opens where you can type your question in natural language.
+
+### How it works
+
+The chatbot adapts automatically to the LLM backend you configured in Settings:
+
+- **If you use a cloud service** (OpenAI, Claude, etc.) — the chatbot searches FAQ and documentation, then generates an answer with AI. Answers are more natural and flexible.
+- **If you use Ollama or vLLM** — same behaviour, but the model runs on your computer.
+- **If you use llama.cpp or haven't configured any LLM** — the chatbot uses a deterministic system that finds the most similar question in pre-built FAQ. No LLM involved, works on any hardware.
+
+### Suggested questions
+
+On first open, the chatbot shows clickable suggested questions to get started. Examples:
+- "How do I import a file?"
+- "What formats are supported?"
+- "How do I change a category?"
+
+### Sources
+
+When the chatbot answers, you can expand the **Sources** section to see which document or FAQ the answer was drawn from. If the chatbot doesn't find enough information, it says so explicitly.
+
+> **Practical example:** You can't remember how to change the LLM backend. Open the Assistant and type "how do I change the AI model?". The chatbot searches the documentation and replies with step-by-step instructions.
+
+---
+
+## 15. Settings: changing the AI model
 
 **Situation:** You want to use a different model for classification (e.g. Claude instead of local Ollama).
 

@@ -17,6 +17,7 @@
 | **Tassonomia** | Struttura categorie/sottocategorie personalizzabile |
 | **Impostazioni** | Backend LLM, API key, formati data/importo, lingua |
 | **Check List** | Tabella pivot mese × conto: presenza e quantità delle transazioni |
+| **Assistente** | Chatbot di supporto adattivo (RAG cloud/locale o FAQ deterministico) |
 
 ---
 
@@ -129,6 +130,20 @@ Un giroconto è un trasferimento tra due conti tuoi (es. "Bonifico a Conto Depos
 | **Claude** | Remoto | PII redatte prima dell'invio | API key in Impostazioni |
 
 **Circuit breaker:** se il backend configurato non risponde, Spendify fa fallback automatico su Ollama locale. Se anche Ollama è offline, la transazione viene importata con `to_review=True` e descrizione grezza.
+
+---
+
+## Chatbot di supporto
+
+Chatbot integrato nella pagina **💬 Assistente**. Tre modalità auto-selezionate in base al backend LLM configurato:
+
+| Modalità | Backend richiesto | Come funziona |
+|----------|-------------------|---------------|
+| **RAG Cloud** | OpenAI / Claude / Compatible (con API key) | Retrieval semantico + risposta generata dal LLM cloud |
+| **RAG Local** | Ollama / vLLM | Retrieval semantico + risposta generata dal LLM locale |
+| **FAQ Match** | llama.cpp o nessuno | Match deterministico TF-IDF su FAQ preconfezionate |
+
+La knowledge base è in `chat_bot/knowledge/<lang>/` con FAQ (JSON/Markdown) e documenti per RAG.
 
 ---
 

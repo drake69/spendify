@@ -61,9 +61,10 @@ Aggregates heterogeneous movements files (current accounts, credit cards, debit 
 | **SQLAlchemy persistence** | 11 ORM tables; idempotent CRUD; automatic migrations on startup |
 | **Cross-session import progress** | Import job state stored in DB; all browser sessions see live progress |
 | **Report export** | Standalone HTML (Plotly), CSV, XLSX |
-| **13-page Streamlit UI** | Import → Import History → Ledger → Bulk Edit → Analytics → Report → Budget → Budget vs Actual → Review → Rules → Taxonomy → Settings → Checklist |
-| **Full i18n (EN + IT)** | 753 translation keys, all 15 UI pages internationalized; JSON-based with `t(key)` and Italian fallback |
+| **14-page Streamlit UI** | Import → Import History → Ledger → Bulk Edit → Analytics → Report → Budget → Budget vs Actual → Review → Rules → Taxonomy → Settings → Checklist → Chat |
+| **Full i18n (EN + IT)** | 760+ translation keys, all UI pages internationalized; JSON-based with `t(key)` and Italian fallback |
 | **Monthly coverage checklist** | Pivot table (month × account) showing transaction counts; highlights missing months at a glance |
+| **Adaptive support chatbot** | Three modes auto-selected from user LLM settings: RAG Cloud (Claude/OpenAI), RAG Local (Ollama/vLLM), or deterministic FAQ match (TF-IDF, no LLM). Multi-language knowledge base (IT/EN/DE/ES/FR/PT). |
 
 ---
 
@@ -73,7 +74,7 @@ Aggregates heterogeneous movements files (current accounts, credit cards, debit 
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                            app.py  (Streamlit)                           │
 │  [onboarding gate] → sidebar → upload │ ledger │ bulk-edit │ analytics  │
-│                               review │ rules │ taxonomy │ settings       │
+│                               review │ rules │ taxonomy │ settings │ chat │
 └──────────────────────────┬───────────────────────────────────────────────┘
                            │ services.*  (facade layer)
                core/orchestrator.py
@@ -108,6 +109,12 @@ Aggregates heterogeneous movements files (current accounts, credit cards, debit 
         │
     reports/generator.py
     └─ HTML (Jinja2+Plotly) · CSV · XLSX
+
+ chat_bot/engine.py  ←── adaptive support chatbot
+ ├─ RAG Cloud (Claude/OpenAI API)
+ ├─ RAG Local (Ollama/vLLM)
+ └─ FAQ Match (TF-IDF classifier, no LLM)
+     knowledge/<lang>/faq.json · docs/
 ```
 
 ### Flow 1 vs Flow 2
@@ -125,7 +132,7 @@ Aggregates heterogeneous movements files (current accounts, credit cards, debit 
 
 ```
 spendify/
-├── app.py                  # Streamlit entry point — onboarding gate + 9 pages
+├── app.py                  # Streamlit entry point — onboarding gate + 14 pages
 ├── .env.example            # Environment variable template
 ├── pyproject.toml          # Dependencies (uv / pip)
 │
@@ -169,12 +176,21 @@ spendify/
 │   ├── rules_page.py       # Full CRUD for CategoryRule + "Run all rules" bulk re-categorization
 │   ├── taxonomy_page.py    # DB-backed CRUD for categories and subcategories
 │   ├── settings_page.py    # Locale, language, LLM config, taxonomy reset expander
-│   └── checklist_page.py   # Month × account pivot: transaction presence checklist
+│   ├── checklist_page.py   # Month × account pivot: transaction presence checklist
+│   └── chat_page.py        # Adaptive support chatbot (FAQ + RAG)
 │
 ├── tools/
 │   ├── coupling_check.py   # Architectural coupling validator (UI → services.* only)
 │   │                       #   --strict: enforces baseline, used in CI
 │   └── coupling_baseline.json  # Per-file max violation thresholds (currently all zero)
+│
+├── chat_bot/
+│   ├── engine.py           # ChatBotEngine: auto-selects RAG cloud/local or FAQ match
+│   ├── rag.py              # RAG engine: TF-IDF retrieval + LLM generation
+│   ├── faq_classifier.py   # Deterministic TF-IDF FAQ matcher (no LLM needed)
+│   ├── faq_store.py        # Loads FAQ (JSON/MD) and doc chunks from knowledge/
+│   ├── prompts.json        # System prompts + multi-language no-answer messages
+│   └── knowledge/          # FAQ and docs per language (it/, en/, de/, es/, fr/, pt/)
 │
 ├── prompts/
 │   ├── classifier.json     # System+user prompts for Flow 2 schema detection (invert_sign hint)
@@ -448,6 +464,42 @@ The ledger's filter bar includes a context selector: *all*, individual context v
 
 ---
 
+## Support chatbot
+
+An adaptive, in-app support chatbot accessible from the **💬 Assistente** sidebar button. The chatbot answers questions about Spendify features, configuration, and usage based on a multi-language knowledge base.
+
+### Three modes (auto-selected)
+
+| Mode | Trigger | How it works |
+|---|---|---|
+| **RAG Cloud** | User configured a cloud API (OpenAI, Claude, OpenAI-compatible) with a valid key | TF-IDF retrieval over FAQ + docs → LLM generates the answer |
+| **RAG Local** | User configured Ollama or vLLM as LLM backend | TF-IDF retrieval over FAQ + docs → local LLM generates the answer |
+| **FAQ Match** | llama.cpp backend or no LLM configured | Deterministic TF-IDF cosine similarity matching to known FAQ entries — zero LLM calls, works on any hardware |
+
+The mode is determined by the user's **LLM backend setting** (configured in Settings page), not by hardware probing.
+
+### Knowledge base
+
+```
+chat_bot/knowledge/
+├── it/           # Italian FAQ + docs
+│   ├── faq.json  # Q&A pairs
+│   └── docs/     # Markdown/text documents for RAG
+├── en/           # English
+├── de/           # German
+├── es/           # Spanish
+├── fr/           # French
+└── pt/           # Portuguese
+```
+
+FAQ files support JSON (`[{"q": "...", "a": "..."}]`) and Markdown (`## Question` + body) formats.
+
+### Security
+
+The chatbot answers **only** from the provided knowledge base context. The system prompt instructs the LLM to never invent information and to reply "contact support" when context is insufficient.
+
+---
+
 ## Tests
 
 ```bash
@@ -473,7 +525,11 @@ bash tests/run_benchmark.sh
 powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1
 ```
 
-Results are appended to `tests/generated_files/benchmark/results_all_runs.csv` (resume-safe). See [`tests/README.md`](tests/README.md) for full documentation (backends, GPU setup, model list, context auto-detect, collaborative workflow).
+GPU utilization is tracked cross-platform during benchmark runs via a background-thread HW monitor (`tests/hw_monitor.py`): macOS Apple Silicon (`ioreg`), Linux NVIDIA (`nvidia-smi`), Linux AMD (`rocm-smi`). All GGUF models are now included (no size filter).
+
+Results are appended to `tests/generated_files/benchmark/results_all_runs.csv` (resume-safe). Logs are saved to `tests/logs/` (timestamped, one per run). See [`tests/README.md`](tests/README.md) for full documentation (backends, GPU setup, model list, context auto-detect, collaborative workflow).
+
+On Windows, run `diagnose.ps1` first to verify prerequisites (Python, uv, VC++ Redistributable, GPU, GGUF models, network).
 
 ### Test files
 

@@ -435,42 +435,7 @@ def _write_config_json(meta: dict[str, str], n_runs: int, n_files: int) -> None:
 
 # ── Main evaluation ──────────────────────────────────────────────────────
 
-def _sample_cpu_load() -> float:
-    """Return 1-minute load average (cross-platform)."""
-    try:
-        return os.getloadavg()[0]
-    except (OSError, AttributeError):
-        return 0.0
-
-
-def _sample_gpu_utilization() -> float:
-    """Return GPU utilization % (0-100). macOS: Apple GPU power; Linux: nvidia-smi."""
-    import platform as _pf
-    system = _pf.system()
-    if system == "Darwin":
-        try:
-            result = subprocess.run(
-                ["ioreg", "-r", "-d", "1", "-c", "AppleARMIODevice", "-n", "gpu"],
-                capture_output=True, text=True, timeout=2,
-            )
-            import re as _re
-            for line in result.stdout.splitlines():
-                if "power" in line.lower():
-                    nums = _re.findall(r"(\d+\.?\d*)", line)
-                    if nums:
-                        return float(nums[-1])
-        except Exception:
-            pass
-    if system in ("Linux", "Windows"):
-        try:
-            result = subprocess.run(
-                ["nvidia-smi", "--query-gpu=utilization.gpu", "--format=csv,noheader,nounits"],
-                capture_output=True, text=True, timeout=3,
-            )
-            return float(result.stdout.strip().split("\n")[0])
-        except Exception:
-            pass
-    return 0.0
+from tests.hw_monitor import HWMonitor
 
 
 def _evaluate_file(
@@ -484,8 +449,8 @@ def _evaluate_file(
     """Normalize a file with its ground truth schema, then categorize and compare."""
     filepath = _GENERATED_DIR / entry.filename
     t_start = time.time()
-    cpu_samples: list[float] = [_sample_cpu_load()]
-    gpu_samples: list[float] = [_sample_gpu_utilization()]
+    hw = HWMonitor(interval=0.5)
+    hw.start()
 
     error_result = CatRunResult(
         run_id=run_id,
@@ -529,6 +494,7 @@ def _evaluate_file(
 
         if schema is None:
             error_result.duration_seconds = time.time() - t_start
+            hw.stop()
             error_result.error = "classify_document returned None (no schema)"
             return error_result, []
 
@@ -539,6 +505,7 @@ def _evaluate_file(
 
         if not transactions:
             error_result.duration_seconds = time.time() - t_start
+            hw.stop()
             error_result.error = f"No transactions after normalization (skipped={len(skipped_rows)})"
             return error_result, []
 
@@ -556,8 +523,7 @@ def _evaluate_file(
         )
 
         # Sample HW after cleaner
-        cpu_samples.append(_sample_cpu_load())
-        gpu_samples.append(_sample_gpu_utilization())
+        # HW sampling handled by background HWMonitor thread
 
         # 4. Categorize using LLM
         cat_results = categorize_batch(
@@ -574,8 +540,7 @@ def _evaluate_file(
         )
 
         # Sample HW after categorization
-        cpu_samples.append(_sample_cpu_load())
-        gpu_samples.append(_sample_gpu_utilization())
+        # HW sampling handled by background HWMonitor thread
 
         # 5. Compare with ground truth
         n_compare = min(n_tx, len(ground_truth))
@@ -632,6 +597,7 @@ def _evaluate_file(
             ))
 
         duration = time.time() - t_start
+        hw_stats = hw.stop()
 
         return CatRunResult(
             run_id=run_id,
@@ -648,13 +614,14 @@ def _evaluate_file(
             fuzzy_accuracy=n_correct_fuzzy / n_compare if n_compare > 0 else 0.0,
             fallback_rate=n_fallback / n_compare if n_compare > 0 else 0.0,
             duration_seconds=duration,
-            cpu_load_avg=sum(cpu_samples) / len(cpu_samples) if cpu_samples else 0.0,
-            gpu_utilization_pct=sum(gpu_samples) / len(gpu_samples) if gpu_samples else 0.0,
+            cpu_load_avg=hw_stats.cpu_avg,
+            gpu_utilization_pct=hw_stats.gpu_avg,
             cleaner_batch_size=cleaner_batch_size,
         ), detail_rows
 
     except Exception as e:
         error_result.duration_seconds = time.time() - t_start
+        hw.stop()
         error_result.error = f"{type(e).__name__}: {e}"
         return error_result, []
 
@@ -964,6 +931,25 @@ def _print_summary(
     print()
 
 
+# ── Tee writer: duplicate stdout to console + log file ───────────────────
+
+class _TeeWriter:
+    """Write to both console and a log file simultaneously."""
+
+    def __init__(self, log_path: Path):
+        self._file = open(log_path, "w", encoding="utf-8")
+        self._console = sys.__stdout__
+
+    def write(self, text: str) -> int:
+        self._console.write(text)
+        self._file.write(text)
+        return len(text)
+
+    def flush(self) -> None:
+        self._console.flush()
+        self._file.flush()
+
+
 # ── Main ──────────────────────────────────────────────────────────────────
 
 def main() -> None:
@@ -995,10 +981,19 @@ def main() -> None:
     if file_pattern and not ("*" in file_pattern or "?" in file_pattern):
         file_pattern = f"*{file_pattern}*"
 
+    # ── Log file: tee stdout+stderr to file ──────────────────────
+    log_dir = Path(__file__).resolve().parent / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_file = log_dir / f"categorizer_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+    _tee = _TeeWriter(log_file)
+    sys.stdout = _tee
+    sys.stderr = _tee
+
     # Startup
     print(f"\n{'=' * 60}")
     print(f"  Spendify Categorizer Benchmark")
     print(f"  {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"  Log: {log_file}")
     print(f"{'=' * 60}")
 
     backend_override = args.backend
@@ -1115,6 +1110,18 @@ def main() -> None:
     print(f"[llm] Host: {llm_meta.get('llm_host', '?')}")
     print(f"[llm] HW: {llm_meta.get('llm_hw', '?')}")
     print(f"[inference] n_ctx: {llm_meta.get('n_ctx', '?')}, n_batch: {llm_meta.get('n_batch', '?')}, n_threads: {llm_meta.get('n_threads', '?')}, n_gpu_layers: {llm_meta.get('n_gpu_layers', '?')}, flash_attn: {llm_meta.get('flash_attn', '?')}")
+
+    # ── Context window check ─────────────────────────────────────────
+    _MIN_CTX = 8000
+    _n_ctx_str = llm_meta.get("n_ctx", "0")
+    try:
+        _n_ctx_val = int(_n_ctx_str)
+    except (ValueError, TypeError):
+        _n_ctx_val = 0
+    if 0 < _n_ctx_val < _MIN_CTX:
+        print(f"\n[SKIP] n_ctx={_n_ctx_val} < minimum={_MIN_CTX}")
+        print(f"       Context window too small for Spendify prompts. Skipping this model.")
+        return
 
     # Resume: load already-completed (run_id, filename, git_commit, git_branch, provider, model) tuples
     # Reads from shared results_all_runs.csv, filtering for benchmark_type=categorizer
