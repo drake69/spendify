@@ -120,33 +120,19 @@ if [ "$SKIP_LLAMA" = false ]; then
     echo "── [3a/4] llama.cpp setup — checking GGUF models..."
     mkdir -p "$MODELS_DIR"
 
-    # Resolve HF download command.
-    # Strategia: usa sempre "uv run huggingface-cli" se uv è disponibile —
-    # garantisce che il comando venga eseguito nella venv del progetto
-    # indipendentemente dal PATH e dalla versione di huggingface_hub installata.
-    # Fallback a hf/huggingface-cli di sistema solo se uv non è presente.
-    HF_CMD=""
-    if command -v uv &>/dev/null; then
-        # uv run usa la venv del progetto; se huggingface_hub non è installato
-        # o manca il CLI, lo aggiunge prima di eseguire.
-        if ! uv run huggingface-cli --help &>/dev/null 2>&1; then
-            echo "[setup] Aggiungo huggingface_hub al progetto..."
-            uv add huggingface_hub --quiet 2>/dev/null || \
-                uv pip install "huggingface_hub[cli]" --quiet
-        fi
-        HF_CMD="uv run huggingface-cli download"
-    elif command -v hf &>/dev/null; then
-        HF_CMD="hf download"
-    elif command -v huggingface-cli &>/dev/null; then
-        HF_CMD="huggingface-cli download"
-    elif [ -x ".venv/bin/huggingface-cli" ]; then
-        HF_CMD=".venv/bin/huggingface-cli download"
-    else
-        echo "ERROR: huggingface-cli non trovato e uv non disponibile." >&2
-        echo "       Installa uv (https://astral.sh/uv) oppure:" >&2
-        echo "       pip install 'huggingface_hub[cli]'" >&2
-        exit 1
-    fi
+    # _hf_download <repo_id> <filename> --local-dir <dir>
+    # Usa direttamente l'API Python di huggingface_hub — non dipende da
+    # entry point CLI (huggingface-cli) che può mancare o cambiare path.
+    _hf_download() {
+        local repo_id="$1" filename="$2" local_dir="$4"
+        uv run python - "$repo_id" "$filename" "$local_dir" <<'PYEOF'
+import sys
+from huggingface_hub import hf_hub_download
+repo_id, filename, local_dir = sys.argv[1], sys.argv[2], sys.argv[3]
+path = hf_hub_download(repo_id=repo_id, filename=filename, local_dir=local_dir)
+print(f"  → {path}")
+PYEOF
+    }
 
     # Detect available RAM (MB) for size filtering
     SYSTEM_RAM_MB=0
@@ -181,7 +167,7 @@ if [ "$SKIP_LLAMA" = false ]; then
             GGUF_SKIPPED=$((GGUF_SKIPPED + 1))
         else
             echo "[download] $gguf_file  (from $gguf_repo)"
-            $HF_CMD "$gguf_repo" "$gguf_file" --local-dir "$MODELS_DIR" 2>&1 | tail -2
+            _hf_download "$gguf_repo" "$gguf_file" --local-dir "$MODELS_DIR"
             GGUF_DOWNLOADED=$((GGUF_DOWNLOADED + 1))
         fi
     done < <(_read_models_csv)
