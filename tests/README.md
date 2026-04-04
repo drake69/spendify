@@ -84,31 +84,41 @@ powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -OllamaU
 
 ```
 tests/
-├── run_benchmark_full.sh         ← ENTRY POINT full benchmark (tutti i backend × pipeline + categorizer) — macOS/Linux
-├── run_benchmark_full.ps1        ← ENTRY POINT full benchmark (tutti i backend × pipeline + categorizer) — Windows
-├── cleanup_benchmark.sh          ← pulizia file generati
-├── benchmark_models.csv          ← catalogo modelli (sostituisce array hardcoded negli script)
+├── run_benchmark_full.sh         ← ENTRY POINT full benchmark — macOS/Linux
+├── run_benchmark_full.ps1        ← ENTRY POINT full benchmark — Windows
 ├── benchmark_pipeline.py         ← benchmark classifier (schema + parsing)
 ├── benchmark_categorizer.py      ← benchmark categorizer (categorie)
+├── aggregate_results.py          ← aggregatore statistico + modello OLS predittivo
+├── benchmark_models.csv          ← catalogo modelli (gguf + ollama)
+├── .version                      ← versione portabile YYYYMMDDHHMMSS-SHA7 (git hook)
 ├── hw_monitor.py                 ← monitoraggio HW background (CPU + GPU cross-platform)
-├── monitor_benchmark.sh          ← monitor avanzamento benchmark (macOS/Linux)
-├── monitor_benchmark.ps1         ← monitor avanzamento benchmark (Windows)
-├── monitor_benchmark.py          ← monitor avanzamento benchmark (cross-platform Python)
+├── monitor_benchmark.sh          ← monitor avanzamento — macOS/Linux
+├── monitor_benchmark.ps1         ← monitor avanzamento — Windows
+├── monitor_benchmark.py          ← monitor avanzamento — Python cross-platform
+├── cleanup_benchmark.sh          ← pulizia file generati
 ├── diagnose.ps1                  ← diagnostica ambiente Windows (include GPU)
 ├── generate_synthetic_files.py   ← genera i file sintetici di test
-├── logs/                         ← LOG di ogni esecuzione benchmark (gitignored)
-│   ├── benchmark_YYYYMMDD_HHMMSS.log      ← log run_benchmark_full.sh
-│   ├── pipeline_YYYYMMDD_HHMMSS.log       ← log benchmark_pipeline.py
-│   └── categorizer_YYYYMMDD_HHMMSS.log    ← log benchmark_categorizer.py
+├── results_archive/              ← CSV versionati per run (gitignored)
+│   └── <version>_<hostname>.csv  ← es. 20260404120000-a1b2c3d_bench-mac.csv
+├── logs/                         ← LOG esecuzioni (gitignored)
+│   ├── benchmark_YYYYMMDD_HHMMSS.log
+│   ├── pipeline_YYYYMMDD_HHMMSS.log
+│   └── categorizer_YYYYMMDD_HHMMSS.log
 └── generated_files/
-    ├── manifest.csv              ← elenco file sintetici + ground truth
+    ├── manifest.csv
     ├── benchmark/
-    │   ├── benchmark_config.json      ← config ultimo run pipeline
-    │   ├── cat_benchmark_config.json  ← config ultimo run categorizer
-    │   ├── results_all_runs.csv       ← RISULTATI CUMULATIVI (append-only)
-    │   ├── summary_global.csv         ← aggregati per modello
-    │   └── summary_variance.csv       ← analisi varianza tra run
+    │   ├── results_all_runs.csv       ← RISULTATI CUMULATIVI legacy (append-only)
+    │   ├── benchmark_config.json
+    │   ├── cat_benchmark_config.json
+    │   ├── summary_global.csv
+    │   └── summary_variance.csv
     └── *.csv, *.xlsx                  ← file sintetici
+
+scripts/                          ← workflow multi-macchina (nella root del repo)
+├── bench_push_usb.sh             ← copia dev → chiavetta USB (pre-run)
+├── bench_pull_usb.sh             ← raccoglie risultati chiavetta → dev (post-run)
+├── bench_push_ssh.sh             ← copia dev → host remoto via SSH (pre-run)
+└── bench_pull_ssh.sh             ← raccoglie risultati host remoto → dev (post-run)
 ```
 
 ## Tipi di benchmark
@@ -462,8 +472,182 @@ uv run python tests/benchmark_pipeline.py --runs 1 \
   --model gemma-3-12b-it
 ```
 
+---
+
+## Versionamento risultati
+
+Ogni run produce un CSV versionato in `tests/results_archive/` con nome:
+
+```
+<YYYYMMDDHHMMSS>-<SHA7>_<hostname>.csv
+```
+
+Esempio: `20260404120000-a1b2c3d_bench-mac.csv`
+
+La versione viene letta da `tests/.version`, un file di testo committato nel repo e
+aggiornato automaticamente dal **post-commit hook** a ogni commit:
+
+```sh
+# .git/hooks/post-commit
+TS=$(date +%Y%m%d%H%M%S)
+SHA=$(git rev-parse --short HEAD)
+printf '%s-%s\n' "$TS" "$SHA" > tests/.version
+```
+
+**Perché `.version` e non `git describe`?**
+Su macchine bench senza git (chiavetta USB, host remoti senza repo clonato) non è
+possibile eseguire `git rev-parse`. Il file `.version` viaggia con il codice e
+garantisce la tracciabilità anche in assenza di git.
+
+Se il file non esiste, lo script fa fallback a `git rev-parse --short HEAD`
+(oppure `unknown` se nemmeno git è disponibile).
+
+### Colonne aggiuntive nei CSV versionati
+
+| Colonna | Descrizione |
+|---------|-------------|
+| `version` | Stringa da `.version` (es. `20260404120000-a1b2c3d`) |
+| `runtime_hostname` | Hostname della macchina bench |
+| `runtime_gpu_ram_gb` | VRAM GPU in GB (Apple: RAM unificata; NVIDIA: nvidia-smi) |
+| `tokens_per_second` | Token/s = `total_tokens / duration_seconds` |
+
+`results_archive/` è in `.gitignore` — i CSV rimangono locali e vengono raccolti
+esplicitamente con `bench_pull_usb.sh` / `bench_pull_ssh.sh`.
+
+---
+
+## Workflow multi-macchina (USB e SSH)
+
+Per girare il benchmark su una macchina diversa dalla dev (es. un Mac dedicato al bench,
+un PC Windows, un server Linux), usa gli script in `scripts/`:
+
+### Fasi
+
+```
+[dev]                          [bench]
+  │                               │
+  ├─ bench_push_usb/ssh ─────────►│  copia codice + modelli
+  │                               │
+  │                          run_benchmark_full.sh
+  │                               │  produce results_archive/*.csv
+  │                               │
+  ◄── bench_pull_usb/ssh ─────────┤  raccoglie CSV
+  │
+  aggregate_results.py            ← aggrega + modello predittivo
+```
+
+### USB
+
+```bash
+# 1. Copia il necessario sulla chiavetta
+bash scripts/bench_push_usb.sh --dest /Volumes/BENCH_USB
+
+# 2. Sul bench: esegui il benchmark dalla chiavetta
+bash /Volumes/BENCH_USB/tests/run_benchmark_full.sh
+
+# 3. Raccogli i risultati dalla chiavetta
+bash scripts/bench_pull_usb.sh --from /Volumes/BENCH_USB
+```
+
+Opzioni push: `--clean` (cancella dest prima), `--dry-run`.
+
+### SSH
+
+```bash
+# 1. Copia sul host remoto
+bash scripts/bench_push_ssh.sh --dest user@bench-host:~/spendif
+
+# 2. Sul bench (via SSH o console): esegui
+bash tests/run_benchmark_full.sh
+
+# 3. Raccogli i risultati
+bash scripts/bench_pull_ssh.sh --from user@bench-host:~/spendif
+```
+
+Opzioni SSH aggiuntive: `--key PATH` (chiave privata), `--port N` (porta, default 22).
+
+### Cosa viene copiato (push)
+
+| Incluso | Escluso |
+|---------|---------|
+| `tests/benchmark_*.py`, `run_benchmark_full.*` | `tests/results_archive/` |
+| `tests/benchmark_models.csv`, `tests/.version` | `tests/generated_files/benchmark/` |
+| `tests/generated_files/` (file sintetici) | `ui/`, `docs/`, `api/` |
+| `core/`, `services/`, `db/`, `support/` | `.git/`, `.venv/`, `__pycache__/` |
+| `pyproject.toml`, `uv.lock` | `reports/`, `.vscode/` |
+
+### Cosa viene raccolto (pull)
+
+| File | Destinazione locale |
+|------|---------------------|
+| `results_archive/*.csv` | `tests/results_archive/` |
+| `generated_files/benchmark/results_all_runs.csv` | `tests/generated_files/benchmark/` |
+| `tests/.version` | `tests/.version` |
+
+---
+
+## Aggregazione risultati e modello predittivo
+
+`tests/aggregate_results.py` legge tutti i CSV in `results_archive/` (o un file
+specificato) e produce:
+
+1. **Tabella aggregata** per modello × macchina: `mean`, `median`, `std` delle metriche
+   chiave (`duration_seconds`, `tokens_per_second`, `parse_rate`, `amount_accuracy`,
+   `cat_fuzzy_accuracy`, …)
+
+2. **Modello regressivo OLS** per stimare la durata a partire dalle caratteristiche
+   HW/modello — separato per classifier (s/file) e categorizer (s/10 transazioni):
+
+   ```
+   duration = β0
+             + β1 × param_B          (dimensione modello in miliardi di param)
+             + β2 × quant_bits        (2.5 per Q2_K … 16 per F16)
+             + β3 × gpu_offload       (1 se n_gpu_layers > 0)
+             + β4 × cpu_ram_gb
+             + β5 × gpu_ram_gb
+             + β6 × n_threads
+             + β7 × apple_silicon     (1 se CPU Apple)
+   ```
+
+   Con `statsmodels` (se installato): R², coefficienti, p-value, CI 95%.
+   Fallback `numpy` (pinv robusto su matrici rank-deficient): CI 95% via t-critico.
+
+3. **Previsioni esemplificative** (con `--predict`): stima della durata per
+   configurazioni HW tipiche (Mac M3 Pro 36 GB, Linux RTX 3090, …).
+
+### Uso
+
+```bash
+# Aggrega tutti i CSV in results_archive/ (auto-discovery)
+uv run python tests/aggregate_results.py
+
+# Con previsioni esemplificative
+uv run python tests/aggregate_results.py --predict
+
+# Solo classifier o solo categorizer
+uv run python tests/aggregate_results.py --type classifier
+
+# CSV specifico
+uv run python tests/aggregate_results.py --csv tests/results_archive/20260404-a1b2c3d_bench-mac.csv
+
+# Salva report su file
+uv run python tests/aggregate_results.py --predict --output report.txt
+
+# Elenca i CSV disponibili
+uv run python tests/aggregate_results.py --list
+```
+
+### Priorità sorgente dati
+
+1. `--csv PATH` (override esplicito)
+2. `tests/results_archive/*.csv` (tutti i file versionati, ordinati per mtime)
+3. `tests/generated_files/benchmark/results_all_runs.csv` (legacy fallback)
+
+---
+
 ## Riferimenti
 
 - Documentazione completa: `docs/developer_guide.md` § 10
 - Azure ML benchmark: `tools/azure_benchmark.py`
 - Catalogo modelli: `tests/benchmark_models.csv`
+- Strategia benchmark (architettura, OLS, workflow): `documents/04_software_engineering/09_benchmark_strategy.tex`
