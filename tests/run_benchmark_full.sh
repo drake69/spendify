@@ -128,12 +128,34 @@ if [ "$SKIP_LLAMA" = false ]; then
         HF_CMD="$PYTHON -m huggingface_hub.commands.huggingface_cli download"
     fi
 
+    # Detect available RAM (MB) for size filtering
+    SYSTEM_RAM_MB=0
+    if [ "$(uname)" = "Darwin" ]; then
+        SYSTEM_RAM_MB=$(( $(sysctl -n hw.memsize) / 1048576 ))
+    elif [ -f /proc/meminfo ]; then
+        SYSTEM_RAM_MB=$(awk '/MemTotal/ {printf "%d", $2/1024}' /proc/meminfo)
+    fi
+    # Rule of thumb: model needs ~2x file size in RAM (weights + KV cache)
+    MAX_MODEL_MB=$(( SYSTEM_RAM_MB / 2 ))
+    if [ "$SYSTEM_RAM_MB" -gt 0 ]; then
+        echo "[check] System RAM: $((SYSTEM_RAM_MB / 1024)) GB → max model size: $((MAX_MODEL_MB / 1024)) GB"
+    fi
+
     GGUF_DOWNLOADED=0
     GGUF_SKIPPED=0
     while IFS= read -r row; do
         gguf_file=$(_csv_field "$row" "$CSV_HEADER" "gguf_file")
         gguf_repo=$(_csv_field "$row" "$CSV_HEADER" "gguf_repo")
+        name=$(_csv_field "$row" "$CSV_HEADER" "name")
+        size_mb=$(_csv_field "$row" "$CSV_HEADER" "size_mb")
         [ -z "$gguf_file" ] && continue   # no GGUF for this model
+
+        # Skip models too large for available RAM
+        if [ -n "$size_mb" ] && [ "$MAX_MODEL_MB" -gt 0 ] && [ "$size_mb" -gt "$MAX_MODEL_MB" ]; then
+            echo "[SKIP] $name ($gguf_file, ${size_mb}MB) — exceeds RAM limit (${MAX_MODEL_MB}MB)"
+            continue
+        fi
+
         dest="$MODELS_DIR/$gguf_file"
         if [ -f "$dest" ]; then
             GGUF_SKIPPED=$((GGUF_SKIPPED + 1))
@@ -283,9 +305,16 @@ if [ "$USE_LLAMA" = true ]; then
     while IFS= read -r row; do
         gguf_file=$(_csv_field "$row" "$CSV_HEADER" "gguf_file")
         name=$(_csv_field "$row" "$CSV_HEADER" "name")
+        size_mb=$(_csv_field "$row" "$CSV_HEADER" "size_mb")
         [ -z "$gguf_file" ] && continue
         gguf="$MODELS_DIR/$gguf_file"
         [ ! -f "$gguf" ] && { echo "  [SKIP] $name — file not found: $gguf_file"; continue; }
+
+        # Skip models too large for available RAM
+        if [ -n "$size_mb" ] && [ "$MAX_MODEL_MB" -gt 0 ] && [ "$size_mb" -gt "$MAX_MODEL_MB" ]; then
+            echo "  [SKIP] $name — model ${size_mb}MB exceeds RAM limit (${MAX_MODEL_MB}MB)"
+            continue
+        fi
 
         n_ctx=$($PYTHON -c "
 from core.llm_backends import LlamaCppBackend

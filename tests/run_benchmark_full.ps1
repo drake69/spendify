@@ -149,12 +149,28 @@ if (-not $SkipLlama) {
     $models     = Get-CsvModels
     $downloaded = 0; $skipped = 0
 
+    # Detect system RAM for size filtering
+    $SystemRamMB = [math]::Round((Get-CimInstance Win32_OperatingSystem).TotalVisibleMemorySize / 1024)
+    $MaxModelMB  = [math]::Round($SystemRamMB / 2)
+    Write-Host "[check] System RAM: $([math]::Round($SystemRamMB / 1024)) GB → max model size: $([math]::Round($MaxModelMB / 1024)) GB"
+
     foreach ($m in $models) {
         if ([string]::IsNullOrWhiteSpace($m.gguf_file)) { continue }
+
+        # Skip models too large for available RAM
+        $sizeMB = 0
+        if ($m.PSObject.Properties.Name -contains 'size_mb' -and $m.size_mb) {
+            $sizeMB = [int]$m.size_mb
+        }
+        if ($sizeMB -gt 0 -and $sizeMB -gt $MaxModelMB) {
+            Write-Host "[SKIP] $($m.name) ($($m.gguf_file), ${sizeMB}MB) — exceeds RAM limit (${MaxModelMB}MB)"
+            continue
+        }
+
         $dest = Join-Path $ModelsDir $m.gguf_file
         if (Test-Path $dest) {
-            $sizeMB = [math]::Round((Get-Item $dest).Length / 1MB)
-            Write-Host "[ok]       $($m.name)  ($sizeMB MB) — already present"
+            $localSizeMB = [math]::Round((Get-Item $dest).Length / 1MB)
+            Write-Host "[ok]       $($m.name)  ($localSizeMB MB) — already present"
             $skipped++
             continue
         }
@@ -306,6 +322,14 @@ if ($UseLlama) {
         if ([string]::IsNullOrWhiteSpace($m.gguf_file)) { continue }
         $gguf = Join-Path $ModelsDir $m.gguf_file
         if (-not (Test-Path $gguf)) { Write-Host "  [SKIP] $($m.name) — file not found"; continue }
+
+        # Skip models too large for available RAM
+        $mSizeMB = 0
+        if ($m.PSObject.Properties.Name -contains 'size_mb' -and $m.size_mb) { $mSizeMB = [int]$m.size_mb }
+        if ($mSizeMB -gt 0 -and $mSizeMB -gt $MaxModelMB) {
+            Write-Host "  [SKIP] $($m.name) — model ${mSizeMB}MB exceeds RAM limit (${MaxModelMB}MB)"
+            continue
+        }
 
         $nCtx = 0
         try {

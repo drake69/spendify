@@ -368,12 +368,8 @@ bash tests/run_benchmark_full.sh --setup-only                # download models o
 powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1
 powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -Benchmark both -Runs 3
 
-# Single backend (llama.cpp) — macOS / Linux
-bash tests/run_benchmark.sh
-bash tests/run_benchmark.sh both --runs 3
-
-# Single backend — Windows
-powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1 both -Runs 3
+# llama.cpp only (skip Ollama and vLLM)
+bash tests/run_benchmark_full.sh --skip-ollama --skip-vllm
 ```
 
 `run_benchmark_full.sh` / `run_benchmark_full.ps1` perform full setup (download missing GGUF models, `ollama pull` missing Ollama models, detect vLLM), then run **pipeline (classifier)** and **categorizer** benchmarks for every active backend. The model list is read from `tests/benchmark_models.csv`. Flags: `--benchmark pipeline|categorizer|both`, `--runs N`, `--setup-only`, `--skip-llama/ollama/vllm`, `--vllm-url`, `--ollama-url` (PS1 equivalents: `-Benchmark`, `-Runs`, `-SetupOnly`, `-SkipLlama`, `-SkipOllama`, `-SkipVllm`, `-VllmUrl`, `-OllamaUrl`).
@@ -405,8 +401,6 @@ All GGUF models are now benchmarked regardless of file size (the previous 3 GB f
 |--------|---------|
 | `tests/run_benchmark_full.sh` | **ENTRY POINT** (macOS/Linux): all backends × pipeline + categorizer |
 | `tests/run_benchmark_full.ps1` | **ENTRY POINT** (Windows): all backends × pipeline + categorizer |
-| `tests/run_benchmark.sh` | Zero-config single backend (macOS/Linux) |
-| `tests/run_benchmark.ps1` | Zero-config single backend (Windows) |
 | `tests/benchmark_models.csv` | Model catalogue (replaces hardcoded arrays in scripts) |
 | `tests/monitor_benchmark.sh` | Benchmark progress monitor (macOS/Linux) |
 | `tests/monitor_benchmark.ps1` | Benchmark progress monitor (Windows) |
@@ -420,7 +414,7 @@ Each run saves a log to `tests/logs/` (gitignored, one timestamped file per run)
 
 | Script | Log |
 |--------|-----|
-| `run_benchmark.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
+| `run_benchmark_full.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
 | `run_benchmark_full.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
 | `benchmark_pipeline.py` | `tests/logs/pipeline_YYYYMMDD_HHMMSS.log` |
 | `benchmark_categorizer.py` | `tests/logs/categorizer_YYYYMMDD_HHMMSS.log` |

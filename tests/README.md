@@ -27,24 +27,20 @@ powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1
 4. La lista modelli viene letta da `tests/benchmark_models.csv`
 5. `--runs N` si applica a entrambe le fasi
 
-### Benchmark singolo backend
+### Solo llama.cpp (skip altri backend)
 
-Per eseguire un singolo backend (llama.cpp) con meno opzioni:
-
-**macOS / Linux:**
 ```bash
-bash tests/run_benchmark.sh
+bash tests/run_benchmark_full.sh --skip-ollama --skip-vllm
 ```
 
-**Windows (PowerShell):**
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1
+powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -SkipOllama -SkipVllm
 ```
 
 > Su Parallels Desktop con cartella condivisa:
 > ```powershell
 > cd "\\Mac\Home\Documents\Progetti\PERSONALE\Spendify\sw_artifacts"
-> powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1
+> powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -SkipOllama -SkipVllm
 > ```
 
 Entrambi fanno tutto in automatico:
@@ -83,23 +79,6 @@ powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -VllmUrl
 powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -OllamaUrl http://host:11434
 ```
 
-**`run_benchmark.sh` (macOS / Linux — singolo backend):**
-```bash
-bash tests/run_benchmark.sh                         # pipeline, 1 run
-bash tests/run_benchmark.sh categorizer              # solo categorizer
-bash tests/run_benchmark.sh both                     # entrambi
-bash tests/run_benchmark.sh both --runs 3            # 3 run ciascuno
-bash tests/run_benchmark.sh pipeline --files 'CC-1*' # con filtro file
-```
-
-**`run_benchmark.ps1` (Windows — singolo backend):**
-```powershell
-powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1                                        # pipeline, 1 run
-powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1 categorizer                            # solo categorizer
-powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1 both -Runs 3                           # 3 run ciascuno
-powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1 -Backend vllm                          # vLLM
-powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1 pipeline -ExtraArgs '--files','CC-1*'  # con filtro
-```
 
 ## Architettura
 
@@ -107,8 +86,6 @@ powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1 pipeline -Ext
 tests/
 ├── run_benchmark_full.sh         ← ENTRY POINT full benchmark (tutti i backend × pipeline + categorizer) — macOS/Linux
 ├── run_benchmark_full.ps1        ← ENTRY POINT full benchmark (tutti i backend × pipeline + categorizer) — Windows
-├── run_benchmark.sh              ← zero-config singolo backend (macOS/Linux)
-├── run_benchmark.ps1             ← zero-config singolo backend (Windows)
 ├── cleanup_benchmark.sh          ← pulizia file generati
 ├── benchmark_models.csv          ← catalogo modelli (sostituisce array hardcoded negli script)
 ├── benchmark_pipeline.py         ← benchmark classifier (schema + parsing)
@@ -120,7 +97,7 @@ tests/
 ├── diagnose.ps1                  ← diagnostica ambiente Windows (include GPU)
 ├── generate_synthetic_files.py   ← genera i file sintetici di test
 ├── logs/                         ← LOG di ogni esecuzione benchmark (gitignored)
-│   ├── benchmark_YYYYMMDD_HHMMSS.log      ← log run_benchmark.sh / run_benchmark_full.sh
+│   ├── benchmark_YYYYMMDD_HHMMSS.log      ← log run_benchmark_full.sh
 │   ├── pipeline_YYYYMMDD_HHMMSS.log       ← log benchmark_pipeline.py
 │   └── categorizer_YYYYMMDD_HHMMSS.log    ← log benchmark_categorizer.py
 └── generated_files/
@@ -372,7 +349,7 @@ Ogni esecuzione salva un log completo in `tests/logs/` (gitignored):
 
 | Script | Log file |
 |--------|----------|
-| `run_benchmark.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
+| `run_benchmark_full.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
 | `run_benchmark_full.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
 | `benchmark_pipeline.py` | `tests/logs/pipeline_YYYYMMDD_HHMMSS.log` |
 | `benchmark_categorizer.py` | `tests/logs/categorizer_YYYYMMDD_HHMMSS.log` |
@@ -439,7 +416,7 @@ Vantaggi di vLLM rispetto a llama.cpp:
 | Gemma 4 E2B IT | ~2.7 GB | Q3_K_M | `gemma-4-E2B-it-Q3_K_M.gguf` |
 | Gemma 4 E2B IT | ~3.1 GB | Q4_K_M | `gemma-4-E2B-it-Q4_K_M.gguf` |
 
-Scaricati automaticamente da `run_benchmark.sh` / `run_benchmark.ps1` / `run_benchmark_full.sh` / `run_benchmark_full.ps1`.
+Scaricati automaticamente da `run_benchmark_full.sh` / `run_benchmark_full.ps1`.
 Fonte GGUF: `unsloth/gemma-4-E2B-it-GGUF` (HuggingFace). Richiede llama.cpp ≥ build con supporto architettura `gemma4`.
 
 ## Resume e deduplicazione

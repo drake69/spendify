@@ -515,17 +515,15 @@ uv run python -m pytest tests/ --cov=core --cov=db --cov-report=term-missing
 End-to-end benchmark against real LLM backends. Measures classifier accuracy (schema detection, parsing) and categorizer accuracy across all supported backends and models.
 
 ```bash
-# Full benchmark: all backends (llama.cpp + Ollama + vLLM), macOS/Linux
+# macOS / Linux
 bash tests/run_benchmark_full.sh
 
-# Full benchmark, Windows
+# Windows (PowerShell)
 powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1
 
-# Single backend (llama.cpp only), macOS/Linux
-bash tests/run_benchmark.sh
-
-# Single backend (llama.cpp only), Windows
-powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1
+# With options
+bash tests/run_benchmark_full.sh --benchmark both --runs 3
+bash tests/run_benchmark_full.sh --skip-ollama --skip-vllm   # llama.cpp only
 ```
 
 GPU utilization is tracked cross-platform during benchmark runs via a background-thread HW monitor (`tests/hw_monitor.py`): macOS Apple Silicon (`ioreg`), Linux NVIDIA (`nvidia-smi`), Linux AMD (`rocm-smi`). All GGUF models are now included (no size filter).

@@ -431,20 +431,11 @@ bash tests/run_benchmark_full.sh --setup-only                # solo download mod
 powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1
 powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -Benchmark both -Runs 3
 
-# Singolo backend (llama.cpp) — macOS / Linux
-bash tests/run_benchmark.sh                         # pipeline, 1 run, tutti i modelli piccoli
-bash tests/run_benchmark.sh categorizer              # solo categorizer
-bash tests/run_benchmark.sh both --runs 3            # entrambi, 3 run ciascuno
-bash tests/run_benchmark.sh pipeline --files 'CC-1*' # pipeline con filtro file
-
-# Singolo backend — Windows (PowerShell)
-powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1
-powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1 both -Runs 3
+# Solo llama.cpp (skip Ollama e vLLM)
+bash tests/run_benchmark_full.sh --skip-ollama --skip-vllm
 ```
 
 `run_benchmark_full.sh` / `run_benchmark_full.ps1` gestiscono: setup completo (GGUF + Ollama pull + rilevamento vLLM), poi eseguono pipeline e categorizer per ogni backend attivo. La lista modelli è letta da `tests/benchmark_models.csv`.
-
-`run_benchmark.sh` / `run_benchmark.ps1` gestiscono automaticamente: installazione `uv`, creazione `.venv`, `uv sync`, download modelli GGUF mancanti, esecuzione benchmark su llama.cpp. `run_benchmark.sh` esegue **tutti** i modelli GGUF presenti (nessun filtro per dimensione).
 
 ### Setup modelli + Dual benchmark (llama.cpp + Ollama)
 
@@ -541,8 +532,6 @@ Il modulo `tests/hw_monitor.py` (`HWMonitor`) campiona CPU e GPU in background o
 |--------|-------|
 | `tests/run_benchmark_full.sh` | **ENTRY POINT** (macOS/Linux): tutti i backend × pipeline + categorizer |
 | `tests/run_benchmark_full.ps1` | **ENTRY POINT** (Windows): tutti i backend × pipeline + categorizer |
-| `tests/run_benchmark.sh` | **Zero-config** (macOS/Linux): env + modelli + benchmark llama.cpp in un comando |
-| `tests/run_benchmark.ps1` | **Zero-config** (Windows): equivalente PowerShell, include download modelli |
 | `tests/cleanup_benchmark.sh` | Pulizia file generati |
 | `tests/benchmark_models.csv` | Catalogo modelli (sostituisce array hardcoded negli script) |
 | `tests/hw_monitor.py` | Monitoraggio HW in background (CPU + GPU cross-platform) |
@@ -557,7 +546,7 @@ Ogni esecuzione salva un log in `tests/logs/` (gitignored, un file per run con t
 
 | Script | Log |
 |--------|-----|
-| `run_benchmark.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
+| `run_benchmark_full.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
 | `run_benchmark_full.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
 | `benchmark_pipeline.py` | `tests/logs/pipeline_YYYYMMDD_HHMMSS.log` |
 | `benchmark_categorizer.py` | `tests/logs/categorizer_YYYYMMDD_HHMMSS.log` |
