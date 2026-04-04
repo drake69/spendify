@@ -566,48 +566,38 @@ un PC Windows, un server Linux), usa gli script in `benchmark/`.
          └── aggrega → documents/04_software_engineering/benchmark/results_all_runs.csv
 ```
 
-**Linux / macOS:**
 ```bash
 # Passo 1 [dev] — copia codice + file sintetici sulla chiavetta
+# Linux/macOS:
 bash benchmark/bench_push_usb.sh --dest /Volumes/BENCH_USB
+# Windows:
+# powershell -ExecutionPolicy Bypass -File benchmark\bench_push_usb.ps1 -Dest E:\BENCH_USB
 
-# Passo 2 [bench] — copia USB → disco locale
-bash benchmark/bench_load_usb.sh --from /Volumes/BENCH_USB
-# (default: ~/Desktop/spendif-ai)
+# Passo 2 [bench] — copia USB → disco locale  (lo script è SULLA chiavetta)
+# Linux/macOS:
+bash /Volumes/BENCH_USB/benchmark/bench_load_usb.sh --from /Volumes/BENCH_USB
+# Windows:
+# powershell -ExecutionPolicy Bypass -File E:\BENCH_USB\benchmark\bench_load_usb.ps1 -From E:\BENCH_USB
 
-# Passo 3 [bench] — esegui il benchmark su disco locale
-cd ~/Desktop/spendif-ai
-bash benchmark/run_benchmark_full.sh
+# Passo 3 [bench] — entra nella cartella e avvia il benchmark
+# Linux/macOS:
+cd ~/Desktop/spendif-ai && bash benchmark/run_benchmark_full.sh
+# Windows:
+# Set-Location $env:USERPROFILE\Desktop\spendif-ai; powershell -ExecutionPolicy Bypass -File benchmark\run_benchmark_full.ps1
 
 # Passo 4 [bench] — salva risultati sulla chiavetta
+# Linux/macOS:
 bash benchmark/bench_save_usb.sh --dest /Volumes/BENCH_USB
+# Windows:
+# powershell -ExecutionPolicy Bypass -File benchmark\bench_save_usb.ps1 -Dest E:\BENCH_USB
 
 # Passo 5 [dev] — raccoglie risultati dalla chiavetta
+# Linux/macOS:
 bash benchmark/bench_pull_usb.sh --from /Volumes/BENCH_USB
+# Windows:
+# powershell -ExecutionPolicy Bypass -File benchmark\bench_pull_usb.ps1 -From E:\BENCH_USB
 
 # Passo 6 [dev] — aggrega
-uv run python benchmark/aggregate_results.py --predict
-```
-
-**Windows (PowerShell):**
-```powershell
-# Passo 1 [dev]
-powershell -ExecutionPolicy Bypass -File benchmark\bench_push_usb.ps1 -Dest E:\BENCH_USB
-
-# Passo 2 [bench]
-powershell -ExecutionPolicy Bypass -File benchmark\bench_load_usb.ps1 -From E:\BENCH_USB
-
-# Passo 3 [bench]
-cd $env:USERPROFILE\Desktop\spendif-ai
-powershell -ExecutionPolicy Bypass -File benchmark\run_benchmark_full.ps1
-
-# Passo 4 [bench]
-powershell -ExecutionPolicy Bypass -File benchmark\bench_save_usb.ps1 -Dest E:\BENCH_USB
-
-# Passo 5 [dev]
-powershell -ExecutionPolicy Bypass -File benchmark\bench_pull_usb.ps1 -From E:\BENCH_USB
-
-# Passo 6 [dev]
 uv run python benchmark/aggregate_results.py --predict
 ```
 

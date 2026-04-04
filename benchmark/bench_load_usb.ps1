@@ -72,10 +72,9 @@ if (-not $DryRun) {
     Write-Host "  Dimensione locale: $SizeMB MB"
 }
 Write-Host ""
-Write-Host "Ora avvia il benchmark:"
-Write-Host "  cd $Local"
-Write-Host "  Windows     : powershell -ExecutionPolicy Bypass -File benchmark\run_benchmark_full.ps1"
-Write-Host "  Linux/macOS : bash benchmark/run_benchmark_full.sh"
+Write-Host "Ora avvia il benchmark (entra prima nella cartella):"
+Write-Host "  Windows     : Set-Location '$Local'; powershell -ExecutionPolicy Bypass -File benchmark\run_benchmark_full.ps1"
+Write-Host "  Linux/macOS : cd $Local && bash benchmark/run_benchmark_full.sh"
 Write-Host ""
 Write-Host "Al termine salva i risultati sulla chiavetta:"
 Write-Host "  Windows     : powershell -ExecutionPolicy Bypass -File benchmark\bench_save_usb.ps1 -Dest $From"

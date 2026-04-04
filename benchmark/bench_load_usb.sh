@@ -82,10 +82,9 @@ if [[ $DRY_RUN -eq 0 ]]; then
     du -sh "$LOCAL_DIR" 2>/dev/null | awk '{print "    " $1 "  " $2}'
 fi
 echo ""
-echo "Ora avvia il benchmark:"
-echo "  cd $LOCAL_DIR"
-echo "  Linux/macOS : bash benchmark/run_benchmark_full.sh"
-echo "  Windows     : powershell -ExecutionPolicy Bypass -File benchmark\run_benchmark_full.ps1"
+echo "Ora avvia il benchmark (entra prima nella cartella):"
+echo "  Linux/macOS : cd $LOCAL_DIR && bash benchmark/run_benchmark_full.sh"
+echo "  Windows     : Set-Location '$LOCAL_DIR'; powershell -ExecutionPolicy Bypass -File benchmark\run_benchmark_full.ps1"
 echo ""
 echo "Al termine salva i risultati sulla chiavetta:"
 echo "  Linux/macOS : bash benchmark/bench_save_usb.sh --dest $FROM"
