@@ -470,3 +470,4 @@ uv run python tests/benchmark_pipeline.py --runs 1 \
 - Catalogo modelli: `tests/benchmark_models.csv`
 # test
 test
+hook test
