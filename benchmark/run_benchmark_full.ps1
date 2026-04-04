@@ -345,7 +345,7 @@ if (-not $UseLlama -and -not $UseOllama -and -not $UseVllm) {
 }
 
 # ── Run helper ────────────────────────────────────────────────────────────
-$MinCtx = 8000
+$MinCtx = 4096
 $Step   = 0
 
 function Invoke-Phase {
@@ -443,8 +443,8 @@ if ($UseVllm) {
 
 # ── Copy results back if UNC ──────────────────────────────────────────────
 if ($IsUNC) {
-    $localRes  = Join-Path $WorkDir "benchmark\generated_files\benchmark"
-    $remoteRes = Join-Path $SourceDir "benchmark\generated_files\benchmark"
+    $localRes  = Join-Path $WorkDir "benchmark\results"
+    $remoteRes = Join-Path $SourceDir "benchmark\results"
     Write-Host ""
     Write-Host "[sync] Copying results back to network share..."
     if (-not (Test-Path $remoteRes)) { New-Item -ItemType Directory -Path $remoteRes -Force | Out-Null }

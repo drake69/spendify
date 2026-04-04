@@ -355,7 +355,7 @@ if [ "$USE_LLAMA" = false ] && [ "$USE_OLLAMA" = false ] && [ "$USE_VLLM" = fals
 fi
 
 # ── Run helper ────────────────────────────────────────────────────────────
-MIN_CTX=8000
+MIN_CTX=4096
 STEP=0
 
 run_phase() {
