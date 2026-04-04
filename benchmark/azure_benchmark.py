@@ -45,7 +45,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 # ── Config ───────────────────────────────────────────────────────────────────
 
 PROJECT_ROOT = Path(__file__).parent.parent
-BENCH_CSV = PROJECT_ROOT / "tests" / "generated_files" / "benchmark" / "results_all_runs.csv"
+BENCH_CSV = PROJECT_ROOT / "benchmark" / "results_all_runs.csv"
 DOCKER_IMAGE = "spendifai-bench"
 DOCKERFILE = "docker/Dockerfile.benchmark"
 

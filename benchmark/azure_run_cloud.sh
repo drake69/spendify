@@ -45,7 +45,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$PROJECT_ROOT"
 
 PYTHON="uv run python"
-BENCH_CSV="tests/generated_files/benchmark/results_all_runs.csv"
+BENCH_CSV="benchmark/results_all_runs.csv"
 SKIP_BUILD=false
 SINGLE_MODEL=""
 
@@ -105,7 +105,7 @@ echo "  ✅ azure-ai-ml SDK: installed"
 if [ "$SKIP_BUILD" = false ]; then
     echo ""
     echo "→ Step 1: Building and pushing Docker image..."
-    $PYTHON tools/azure_benchmark.py --build
+    $PYTHON benchmark/azure_benchmark.py --build
 else
     echo ""
     echo "→ Step 1: SKIPPED (--skip-build)"
@@ -117,22 +117,22 @@ echo "→ Step 2: Submitting benchmark jobs..."
 
 if [ -n "$SINGLE_MODEL" ]; then
     echo "  Single model: $SINGLE_MODEL"
-    $PYTHON tools/azure_benchmark.py --model "$SINGLE_MODEL" --skip-build
+    $PYTHON benchmark/azure_benchmark.py --model "$SINGLE_MODEL" --skip-build
 else
     echo "  All models from registry"
-    $PYTHON tools/azure_benchmark.py --all-models --skip-build
+    $PYTHON benchmark/azure_benchmark.py --all-models --skip-build
 fi
 
 # ── Step 3: Wait for completion ──────────────────────────────────────────────
 echo ""
 echo "→ Step 3: Waiting for jobs to complete..."
 echo "  Monitor progress:"
-echo "    python tools/azure_benchmark.py --list"
+echo "    python benchmark/azure_benchmark.py --list"
 echo "    Or: Azure ML Studio → Jobs"
 echo ""
 echo "  Press Ctrl+C to stop waiting (jobs continue on Azure)."
 echo "  When ready, download manually with:"
-echo "    python tools/azure_benchmark.py --download --job-name <name>"
+echo "    python benchmark/azure_benchmark.py --download --job-name <name>"
 echo ""
 
 # Poll every 60s until all bench- jobs are complete
@@ -177,7 +177,7 @@ for j in ml.jobs.list(max_results=50):
 
 for job in $JOB_NAMES; do
     echo "  Downloading: $job"
-    $PYTHON tools/azure_benchmark.py --download --job-name "$job" || true
+    $PYTHON benchmark/azure_benchmark.py --download --job-name "$job" || true
 done
 
 # ── Step 5: Open PR ──────────────────────────────────────────────────────────
