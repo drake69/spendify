@@ -192,8 +192,8 @@ def _print_report(snap: dict, elapsed_s: float, interval: int,
     if _hw is not None:
         cpu_bar  = _bar(int(live_cpu), 100, 10)
         gpu_bar  = _bar(int(live_gpu), 100, 10)
-        cpu_s    = f"{live_cpu:5.1f}%" if live_cpu > 0 else "  N/A "
-        gpu_s    = f"{live_gpu:5.1f}%" if live_gpu > 0 else "  N/A "
+        cpu_s    = f"{live_cpu:5.1f}%" if _gpu_source != "n/a" or live_cpu > 0 else "  N/A "
+        gpu_s    = f"{live_gpu:5.1f}%" if "none" not in _gpu_source else "  N/A "
         live_str = f"CPU {cpu_s}  {cpu_bar}  |  GPU {gpu_s}  {gpu_bar}  [{_gpu_source}]"
         print(f"  Live HW : {live_str}")
     if cpu_hist > 0 or gpu_hist > 0:
