@@ -646,6 +646,102 @@ powershell -ExecutionPolicy Bypass -File benchmark\bench_pull_ssh.ps1 -From user
 
 Opzioni SSH aggiuntive: `--key`/`-Key PATH` (chiave privata), `--port`/`-Port N` (porta, default 22).
 
+---
+
+## Workflow C — Azure ML (cloud GPU)
+
+Per eseguire il benchmark su cluster GPU Azure ML senza macchine locali dedicate.
+Nessuna copia manuale (USB/SSH): i risultati vengono scaricati direttamente dal datastore AML.
+
+### Prerequisiti one-time (setup risorse Azure)
+
+```bash
+az group create -n spendifai-rg -l westeurope
+az ml workspace create -n spendifai-ml -g spendifai-rg
+az acr create -n spendifaiacr -g spendifai-rg --sku Basic
+az ml compute create -n gpu-t4-spot -g spendifai-rg \
+  -w spendifai-ml --type AmlCompute \
+  --size Standard_NC6s_v3 --min-instances 0 --max-instances 5 --tier low_priority
+```
+
+### Variabili d'ambiente (`.env` o shell)
+
+| Variabile | Default | Descrizione |
+|-----------|---------|-------------|
+| `AZURE_SUBSCRIPTION_ID` | — | ID subscription Azure (obbligatorio) |
+| `AZURE_RESOURCE_GROUP` | `spendifai-rg` | Resource group |
+| `AZURE_ML_WORKSPACE` | `spendifai-ml` | Workspace Azure ML |
+| `AZURE_ACR_NAME` | `spendifaiacr` | Azure Container Registry |
+| `AZURE_COMPUTE_TARGET` | `cpu-bench` | Nome compute target AML |
+
+### Flusso a 4 passi
+
+```
+[dev] azure_run_cloud.sh (o azure_benchmark.py)
+  → (opzionale) build Docker image → push ACR
+  → submit AML Job per ogni modello (conda o docker mode)
+  → poll ogni 60 s fino a Completed
+  → download results/ da AML datastore
+      (azureml://datastores/workspaceblobdefault/paths/benchmarks/<job>/)
+  → merge in benchmark/results_all_runs.csv (append-only, dedup per chiave)
+  → git commit + PR automatica (verify_bench_csv.py in CI)
+  → aggregate_results.py → dual-write
+```
+
+### Modalità di esecuzione
+
+**Modalità `conda` (default, consigliata)** — nessun Docker locale richiesto; Azure ML costruisce l'ambiente da `docker/conda_benchmark.yml` sopra l'immagine curata `mcr.microsoft.com/azureml/curated/acft-hf-nlp-gpu:latest`.
+
+**Modalità `docker`** — usa un'immagine pre-buildata su ACR (`spendifaiacr.azurecr.io/spendifai-bench:latest`). Richiede `--build` prima del primo run o dopo modifiche alle dipendenze.
+
+### Comandi principali (`azure_benchmark.py`)
+
+```bash
+# Singolo modello, attende completamento
+uv run python benchmark/azure_benchmark.py --model qwen2.5-3b
+
+# Tutti i modelli dal registry (modalità conda — default)
+uv run python benchmark/azure_benchmark.py --all-models
+
+# Esplicitamente modalità conda
+uv run python benchmark/azure_benchmark.py --all-models --mode conda
+
+# Submit senza attendere il completamento
+uv run python benchmark/azure_benchmark.py --model qwen2.5-3b --no-wait
+
+# Lista job recenti (prefisso bench-)
+uv run python benchmark/azure_benchmark.py --list
+
+# Download e merge risultati da job completato
+uv run python benchmark/azure_benchmark.py --download --job-name bench-qwen253b-202604041200
+
+# Solo build + push Docker su ACR (modalità docker)
+uv run python benchmark/azure_benchmark.py --build
+
+# Modalità docker: build + submit
+uv run python benchmark/azure_benchmark.py --build --all-models --mode docker
+```
+
+### Script orchestratore end-to-end (`azure_run_cloud.sh`)
+
+`azure_run_cloud.sh` esegue i 5 step in sequenza: verifica prerequisiti (Azure CLI, Docker, GitHub CLI, `azure-ai-ml` SDK) → build & push Docker → submit job(s) → poll → download + PR.
+
+```bash
+bash benchmark/azure_run_cloud.sh                    # run completo (tutti i modelli)
+bash benchmark/azure_run_cloud.sh --skip-build       # salta Docker build
+bash benchmark/azure_run_cloud.sh --model qwen2.5-3b # singolo modello
+```
+
+### Note
+
+- **Nessuna copia manuale**: a differenza di USB/SSH, i risultati vengono scaricati automaticamente dal datastore AML dopo il completamento del job.
+- **Jobs paralleli**: ogni modello viene sottomesso come job separato su AML; più modelli girano in parallelo sul cluster.
+- **GPU T4 spot**: il compute target `gpu-t4-spot` usa istanze low-priority (`Standard_NC6s_v3`) — costo ridotto, possibile prelazione.
+- **Dedup append-only**: il merge in `results_all_runs.csv` usa la chiave `run_id + filename + git_commit + git_branch + provider + model + benchmark_type` — i duplicati vengono ignorati.
+- **`verify_bench_csv.py` come guardrail CI**: la PR creata automaticamente da `azure_run_cloud.sh` triggerà il check CI che valida la struttura e la consistenza del CSV aggregato prima del merge.
+
+---
+
 ### Cosa viene copiato (push USB/SSH)
 
 | Incluso | Escluso |
@@ -658,10 +754,11 @@ Opzioni SSH aggiuntive: `--key`/`-Key PATH` (chiave privata), `--port`/`-Port N`
 
 ### Cosa viene raccolto (pull)
 
-| File | Destinazione locale |
-|------|---------------------|
-| `benchmark/results/*.csv` | `benchmark/results/` |
-| `benchmark/logs/` | `benchmark/logs/` |
+| Workflow | File | Destinazione locale |
+|----------|------|---------------------|
+| USB / SSH | `benchmark/results/*.csv` | `benchmark/results/` |
+| USB / SSH | `benchmark/logs/` | `benchmark/logs/` |
+| Azure ML | `results/` dal datastore AML (`azureml://datastores/workspaceblobdefault/paths/benchmarks/<job>/`) | `benchmark/results/` (download diretto, no USB/SSH) |
 
 ---
 
