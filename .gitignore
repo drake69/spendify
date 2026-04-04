@@ -9,6 +9,7 @@ tests/logs/
 *.csv
 # Exception: config CSVs that are part of the codebase
 !benchmark/benchmark_models.csv
+!benchmark/results_all_runs.csv
 *.xls
 *.xlsx
 *.tmp

@@ -26,7 +26,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-BENCH_CSV = "tests/generated_files/benchmark/results_all_runs.csv"
+BENCH_CSV = "benchmark/results_all_runs.csv"
 REQUIRED_FIELDS = ["benchmark_type", "filename", "git_commit", "provider", "model"]
 VALID_BENCHMARK_TYPES = {"classifier", "categorizer"}
 

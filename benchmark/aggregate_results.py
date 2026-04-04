@@ -29,11 +29,14 @@ import pandas as pd
 _BENCHMARK_DIR = Path(__file__).resolve().parent          # benchmark/
 _PROJECT_ROOT  = _BENCHMARK_DIR.parent                    # sw_artifacts/
 _RESULTS_DIR   = _BENCHMARK_DIR / "results"               # benchmark/results/
+# Primary: dentro sw_artifacts → tracciato da git, verificabile da verify_bench_csv.py
+_BENCH_OUT     = _BENCHMARK_DIR / "results_all_runs.csv"
+# Mirror: repo documents → consultabile senza aprire il repo codice
 _DOCS_OUT      = (_PROJECT_ROOT.parent                    # Spendify/
                   / "documents"
                   / "04_software_engineering"
                   / "benchmark"
-                  / "results_all_runs.csv")               # output aggregato
+                  / "results_all_runs.csv")
 
 # ── Quantization ordinal mapping ──────────────────────────────────────────
 _QUANT_BITS: dict[str, float] = {
@@ -477,7 +480,7 @@ def main() -> None:
     print(f"Righe valide: {len(df)}  |  Tipi: {df['benchmark_type'].value_counts().to_dict()}",
           file=sys.stderr)
 
-    # ── Salva CSV aggregato in documents/ (merge + deduplica) ────────────────
+    # ── Salva CSV aggregato (merge + deduplica) ───────────────────────────────
     # Chiave di unicità: identifica univocamente ogni singola transazione testata
     # su una specifica macchina in una specifica run.
     _DEDUP_KEYS = [
@@ -485,9 +488,10 @@ def main() -> None:
         "provider", "model", "quantization", "run_id", "file_id",
     ]
     try:
-        _DOCS_OUT.parent.mkdir(parents=True, exist_ok=True)
-        if _DOCS_OUT.exists():
-            existing = pd.read_csv(_DOCS_OUT, low_memory=False)
+        # Legge l'esistente da _BENCH_OUT (primario in sw_artifacts) se presente
+        _ref = _BENCH_OUT if _BENCH_OUT.exists() else _DOCS_OUT
+        if _ref.exists():
+            existing = pd.read_csv(_ref, low_memory=False)
             merged = pd.concat([existing, raw], ignore_index=True)
         else:
             merged = raw.copy()
@@ -498,10 +502,19 @@ def main() -> None:
         merged = merged.sort_values(
             [c for c in ["version", "runtime_hostname", "run_id"] if c in merged.columns]
         ).reset_index(drop=True)
-        merged.to_csv(_DOCS_OUT, index=False)
-        print(f"CSV aggregato → {_DOCS_OUT}  ({len(merged)} righe, {len(raw)} nuove)")
+        # Scrivi primario (benchmark/results_all_runs.csv — tracciato in sw_artifacts)
+        _BENCH_OUT.parent.mkdir(parents=True, exist_ok=True)
+        merged.to_csv(_BENCH_OUT, index=False)
+        print(f"CSV aggregato → {_BENCH_OUT}  ({len(merged)} righe, {len(raw)} nuove)")
+        # Copia mirror in documents/ (per consultazione senza repo codice)
+        try:
+            _DOCS_OUT.parent.mkdir(parents=True, exist_ok=True)
+            merged.to_csv(_DOCS_OUT, index=False)
+            print(f"               → {_DOCS_OUT}  (mirror)")
+        except Exception as e_docs:
+            print(f"WARN: impossibile scrivere mirror documents/: {e_docs}", file=sys.stderr)
     except Exception as e:
-        print(f"WARN: impossibile scrivere {_DOCS_OUT}: {e}", file=sys.stderr)
+        print(f"WARN: impossibile scrivere {_BENCH_OUT}: {e}", file=sys.stderr)
 
     report = build_report(df, args.bench_type, args.predict)
 
