@@ -71,9 +71,11 @@ RSYNC_FLAGS=(-av --progress -e "ssh $SSH_OPTS")
 [[ $CLEAN -eq 1 ]]   && RSYNC_FLAGS+=(--delete --delete-excluded)
 [[ $DRY_RUN -eq 1 ]] && RSYNC_FLAGS+=(--dry-run)
 
-# IMPORTANTE: --include prima di --exclude-from, altrimenti *.csv blocca il CSV
+# IMPORTANTE: --include prima di --exclude-from (rsync: prima regola che fa match vince)
 rsync "${RSYNC_FLAGS[@]}" \
     --include='benchmark/benchmark_models.csv' \
+    --include='benchmark/generated_files/' \
+    --include='benchmark/generated_files/**' \
     --exclude-from="$EXCLUDE_FILE" \
     "$PROJECT_ROOT/" \
     "$DEST/"

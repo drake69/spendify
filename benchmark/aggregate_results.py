@@ -26,9 +26,14 @@ import numpy as np
 import pandas as pd
 
 # ── Paths ─────────────────────────────────────────────────────────────────
-_TESTS_DIR = Path(__file__).resolve().parent
-_RESULTS_ARCHIVE_DIR = _TESTS_DIR / "results"
-_LEGACY_CSV = _TESTS_DIR / "generated_files" / "benchmark" / "results_all_runs.csv"
+_BENCHMARK_DIR = Path(__file__).resolve().parent          # benchmark/
+_PROJECT_ROOT  = _BENCHMARK_DIR.parent                    # sw_artifacts/
+_RESULTS_DIR   = _BENCHMARK_DIR / "results"               # benchmark/results/
+_DOCS_OUT      = (_PROJECT_ROOT.parent                    # Spendify/
+                  / "documents"
+                  / "04_software_engineering"
+                  / "benchmark"
+                  / "results_all_runs.csv")               # output aggregato
 
 # ── Quantization ordinal mapping ──────────────────────────────────────────
 _QUANT_BITS: dict[str, float] = {
@@ -68,12 +73,9 @@ def _find_csvs(csv_override: Optional[str] = None) -> list[Path]:
             sys.exit(1)
         return [p]
 
-    archive_csvs: list[Path] = sorted(_RESULTS_ARCHIVE_DIR.glob("*.csv")) if _RESULTS_ARCHIVE_DIR.exists() else []
+    archive_csvs: list[Path] = sorted(_RESULTS_DIR.glob("*.csv")) if _RESULTS_DIR.exists() else []
     if archive_csvs:
         return archive_csvs
-
-    if _LEGACY_CSV.exists():
-        return [_LEGACY_CSV]
 
     print("ERROR: nessun CSV trovato. Esegui prima un benchmark.", file=sys.stderr)
     sys.exit(1)
@@ -457,11 +459,11 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.list:
-        if not _RESULTS_ARCHIVE_DIR.exists() or not list(_RESULTS_ARCHIVE_DIR.glob("*.csv")):
+        if not _RESULTS_DIR.exists() or not list(_RESULTS_DIR.glob("*.csv")):
             print("Nessun CSV in results/. Esegui prima un benchmark.")
             sys.exit(0)
         print("CSV disponibili in results/:")
-        for p in sorted(_RESULTS_ARCHIVE_DIR.glob("*.csv")):
+        for p in sorted(_RESULTS_DIR.glob("*.csv")):
             size_kb = p.stat().st_size // 1024
             print(f"  {p.name}  ({size_kb} KB)")
         sys.exit(0)
@@ -474,6 +476,32 @@ def main() -> None:
 
     print(f"Righe valide: {len(df)}  |  Tipi: {df['benchmark_type'].value_counts().to_dict()}",
           file=sys.stderr)
+
+    # ── Salva CSV aggregato in documents/ (merge + deduplica) ────────────────
+    # Chiave di unicità: identifica univocamente ogni singola transazione testata
+    # su una specifica macchina in una specifica run.
+    _DEDUP_KEYS = [
+        "version", "runtime_hostname", "benchmark_type",
+        "provider", "model", "quantization", "run_id", "file_id",
+    ]
+    try:
+        _DOCS_OUT.parent.mkdir(parents=True, exist_ok=True)
+        if _DOCS_OUT.exists():
+            existing = pd.read_csv(_DOCS_OUT, low_memory=False)
+            merged = pd.concat([existing, raw], ignore_index=True)
+        else:
+            merged = raw.copy()
+        # Deduplica: se stessa chiave compare più volte, tieni l'ultima
+        dedup_cols = [c for c in _DEDUP_KEYS if c in merged.columns]
+        if dedup_cols:
+            merged = merged.drop_duplicates(subset=dedup_cols, keep="last")
+        merged = merged.sort_values(
+            [c for c in ["version", "runtime_hostname", "run_id"] if c in merged.columns]
+        ).reset_index(drop=True)
+        merged.to_csv(_DOCS_OUT, index=False)
+        print(f"CSV aggregato → {_DOCS_OUT}  ({len(merged)} righe, {len(raw)} nuove)")
+    except Exception as e:
+        print(f"WARN: impossibile scrivere {_DOCS_OUT}: {e}", file=sys.stderr)
 
     report = build_report(df, args.bench_type, args.predict)
 

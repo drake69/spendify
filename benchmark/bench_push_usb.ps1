@@ -73,8 +73,7 @@ $ExcludeDirs = @(
     "packaging",
     "docker",
     "benchmark\logs",
-    "benchmark\results",
-    "benchmark\generated_files"
+    "benchmark\results"
 )
 
 # ── File da escludere ───────────────────────────────────────────────────────

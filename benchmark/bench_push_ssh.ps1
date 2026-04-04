@@ -107,8 +107,7 @@ if ($RsyncCmd) {
         "llm_cache", "backup", "da_cancellare", "logs",
         "quarantine", "ui", "docs", "api", "reports",
         "rsvd_docs", "chat_bot", "installer", "packaging", "docker",
-        "benchmark\logs", "benchmark\results",
-        "benchmark\generated_files"
+        "benchmark\logs", "benchmark\results"
     )
     $ExcludeFiles = @(
         "*.db", "*.sqlite", "*.sqlite3", "*.pyc", "*.pyo", "*.pyd",

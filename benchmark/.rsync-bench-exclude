@@ -60,8 +60,8 @@ benchmark/logs/
 quarantine/
 
 # ── Output benchmark (rimangono sul bench, si raccolgono con pull) ─────────
+# benchmark/results/ contiene sia i CSV per-macchina che gli output aggregati
 benchmark/results/
-benchmark/generated_files/
 
 # ── Componenti non necessari al benchmark ──────────────────────────────────
 ui/

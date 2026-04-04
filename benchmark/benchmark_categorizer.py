@@ -55,7 +55,7 @@ from db.taxonomy_defaults import TAXONOMY_DEFAULTS
 _TESTS_DIR = Path(__file__).resolve().parent
 _GENERATED_DIR = _TESTS_DIR / "generated_files"
 _MANIFEST_PATH = _GENERATED_DIR / "manifest.csv"
-_BENCHMARK_DIR = _GENERATED_DIR / "benchmark"
+_BENCHMARK_DIR = _TESTS_DIR / "results"
 # Shared results file in documents repo (cross-HW, pushed/pulled via git)
 _DOCS_BENCHMARK_DIR = PROJECT_ROOT.parent / "documents" / "04_software_engineering" / "benchmark"
 _RESULTS_ARCHIVE_DIR = _TESTS_DIR / "results"

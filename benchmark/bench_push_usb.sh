@@ -62,9 +62,15 @@ RSYNC_FLAGS=(-av --progress)
 [[ $CLEAN -eq 1 ]]   && RSYNC_FLAGS+=(--delete --delete-excluded)
 [[ $DRY_RUN -eq 1 ]] && RSYNC_FLAGS+=(--dry-run)
 
-# IMPORTANTE: --include prima di --exclude-from, altrimenti *.csv blocca il CSV
+# IMPORTANTE: --include prima di --exclude-from (rsync: prima regola che fa match vince)
+# - benchmark_models.csv    : incluso esplicitamente (escluso da *.csv globale)
+# - generated_files/        : inclusa la cartella e tutto il contenuto diretto
+# - generated_files/**      : inclusi tutti i file sintetici (*.csv, *.xlsx, manifest)
+# - generated_files/benchmark/ e results_*.csv esclusi nel file esclusioni
 rsync "${RSYNC_FLAGS[@]}" \
     --include='benchmark/benchmark_models.csv' \
+    --include='benchmark/generated_files/' \
+    --include='benchmark/generated_files/**' \
     --exclude-from="$EXCLUDE_FILE" \
     "$PROJECT_ROOT/" \
     "$DEST/"
