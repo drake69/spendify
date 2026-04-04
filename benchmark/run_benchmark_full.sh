@@ -121,29 +121,31 @@ if [ "$SKIP_LLAMA" = false ]; then
     mkdir -p "$MODELS_DIR"
 
     # Resolve HF download command.
-    # Ordine di ricerca:
-    #   1. hf (HF CLI standalone)
-    #   2. huggingface-cli nel PATH di sistema
-    #   3. huggingface-cli nel venv locale (.venv/bin/)
-    #   4. installa huggingface_hub[cli] via uv e usa .venv/bin/huggingface-cli
-    # NON usiamo "python -m huggingface_hub.commands.huggingface_cli" perché
-    # il percorso del modulo è cambiato nelle versioni recenti (>= 0.21).
+    # Strategia: usa sempre "uv run huggingface-cli" se uv è disponibile —
+    # garantisce che il comando venga eseguito nella venv del progetto
+    # indipendentemente dal PATH e dalla versione di huggingface_hub installata.
+    # Fallback a hf/huggingface-cli di sistema solo se uv non è presente.
     HF_CMD=""
-    if   command -v hf &>/dev/null; then
+    if command -v uv &>/dev/null; then
+        # uv run usa la venv del progetto; se huggingface_hub non è installato
+        # o manca il CLI, lo aggiunge prima di eseguire.
+        if ! uv run huggingface-cli --help &>/dev/null 2>&1; then
+            echo "[setup] Aggiungo huggingface_hub al progetto..."
+            uv add huggingface_hub --quiet 2>/dev/null || \
+                uv pip install "huggingface_hub[cli]" --quiet
+        fi
+        HF_CMD="uv run huggingface-cli download"
+    elif command -v hf &>/dev/null; then
         HF_CMD="hf download"
     elif command -v huggingface-cli &>/dev/null; then
         HF_CMD="huggingface-cli download"
     elif [ -x ".venv/bin/huggingface-cli" ]; then
         HF_CMD=".venv/bin/huggingface-cli download"
     else
-        echo "[setup] huggingface-cli non trovato — installo huggingface_hub[cli]..."
-        uv pip install "huggingface_hub[cli]" --quiet
-        if [ -x ".venv/bin/huggingface-cli" ]; then
-            HF_CMD=".venv/bin/huggingface-cli download"
-        else
-            echo "ERROR: impossibile installare huggingface-cli" >&2
-            exit 1
-        fi
+        echo "ERROR: huggingface-cli non trovato e uv non disponibile." >&2
+        echo "       Installa uv (https://astral.sh/uv) oppure:" >&2
+        echo "       pip install 'huggingface_hub[cli]'" >&2
+        exit 1
     fi
 
     # Detect available RAM (MB) for size filtering
