@@ -467,7 +467,3 @@ uv run python tests/benchmark_pipeline.py --runs 1 \
 - Documentazione completa: `docs/developer_guide.md` § 10
 - Azure ML benchmark: `tools/azure_benchmark.py`
 - Catalogo modelli: `tests/benchmark_models.csv`
-- Catalogo modelli: `tests/benchmark_models.csv`
-# test
-test
-hook test
