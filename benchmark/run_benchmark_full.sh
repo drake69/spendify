@@ -66,8 +66,11 @@ mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/benchmark_full_$(date '+%Y%m%d_%H%M%S').log"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
+SW_VERSION=$(cat "benchmark/.version" 2>/dev/null || git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+
 echo "════════════════════════════════════════════════════════════"
 echo "  SPENDIFY FULL BENCHMARK  —  $(date '+%Y-%m-%d %H:%M:%S')"
+echo "  Version  : $SW_VERSION"
 echo "  Phases   : $BENCHMARK"
 echo "  Runs     : $RUNS"
 echo "  Models   : $MODELS_CSV"

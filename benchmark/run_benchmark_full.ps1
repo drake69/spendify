@@ -66,8 +66,16 @@ Start-Transcript -Path $LogFile -Force | Out-Null
 $env:PYTHONIOENCODING = "utf-8"
 $env:PYTHONUTF8       = "1"
 
+$VersionFile = Join-Path $WorkDir "benchmark\.version"
+$SwVersion = if (Test-Path $VersionFile) {
+    (Get-Content $VersionFile -Raw).Trim()
+} else {
+    try { (git rev-parse --short HEAD 2>$null).Trim() } catch { "unknown" }
+}
+
 Write-Host "════════════════════════════════════════════════════════════"
 Write-Host "  SPENDIFY FULL BENCHMARK  —  $StartTs"
+Write-Host "  Version  : $SwVersion"
 Write-Host "  Phases   : $Benchmark"
 Write-Host "  Runs     : $Runs"
 Write-Host "  Models   : $ModelsCsv"
