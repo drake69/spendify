@@ -1,0 +1,83 @@
+# .rsync-bench-exclude — Esclusioni condivise per bench_push_usb.sh e bench_push_ssh.sh
+#
+# Include PRIMA di questo file le regole include esplicite, es.:
+#   --include='tests/benchmark_models.csv'
+# perché rsync applica la prima regola che fa match.
+
+# ── Git e IDE ──────────────────────────────────────────────────────────────
+.git/
+.gitignore
+.gitattributes
+.github/
+.vscode/
+.idea/
+.claude/
+
+# ── Python runtime ─────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+.eggs/
+dist/
+build/
+.venv/
+venv/
+
+# ── OS artifacts ───────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Database e dati locali ─────────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+llm_cache/
+
+# ── File temporanei e backup ───────────────────────────────────────────────
+*.tmp
+*.bak
+*.swp
+*.orig
+backup/
+da_cancellare/
+
+# ── Secrets ────────────────────────────────────────────────────────────────
+my_secrets.py
+.env
+*.env
+secrets/
+
+# ── Log ───────────────────────────────────────────────────────────────────
+logs/
+tests/logs/
+
+# ── Quarantena ─────────────────────────────────────────────────────────────
+quarantine/
+
+# ── Output benchmark (rimangono sul bench, si raccolgono con pull) ─────────
+tests/results_archive/
+tests/generated_files/benchmark/
+tests/generated_files/results_deterministic.csv
+
+# ── Componenti non necessari al benchmark ──────────────────────────────────
+ui/
+docs/
+api/
+reports/
+rsvd_docs/
+chat_bot/
+installer/
+packaging/
+docker/
+index.html
+index.*.html
+
+# ── Dati / fogli di calcolo (mai sul bench) ────────────────────────────────
+*.xls
+*.xlsx
+*.csv
+# Eccezione: benchmark_models.csv è necessario → usare --include prima di questo file

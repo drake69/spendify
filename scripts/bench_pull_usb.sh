@@ -1,20 +1,16 @@
 #!/usr/bin/env bash
-# bench_pull_usb.sh — Raccoglie i risultati del benchmark dalla chiavetta USB → dev
+# bench_pull_usb.sh — Raccoglie risultati e log del benchmark dalla chiavetta → dev
 #
-# Cosa viene copiato (solo i risultati prodotti dal benchmark):
-#   tests/results_archive/*.csv   → file versionati <version>_<hostname>.csv
-#   tests/.version                → versione aggiornata dal bench (se cambiata)
-#   tests/generated_files/benchmark/results_all_runs.csv  → legacy, se esiste
-#
-# Dopo il pull, esegui:
-#   python tests/aggregate_results.py
+# Cosa viene copiato:
+#   tests/results_archive/*.csv   → CSV versionati <version>_<hostname>.csv
+#   tests/logs/                   → log per debug
 #
 # Uso:
 #   bash scripts/bench_pull_usb.sh --from /Volumes/BENCH_USB
 #   bash scripts/bench_pull_usb.sh --from /Volumes/BENCH_USB --dry-run
 #
 # Opzioni:
-#   --from PATH   Percorso sorgente (chiavetta) [obbligatorio]
+#   --from PATH   Sorgente (chiavetta) [obbligatorio]
 #   --dry-run     Mostra cosa verrebbe copiato senza farlo
 
 set -euo pipefail
@@ -22,7 +18,6 @@ set -euo pipefail
 FROM=""
 DRY_RUN=0
 
-# ── Argomenti ─────────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --from)    FROM="$2"; shift 2 ;;
@@ -34,8 +29,8 @@ done
 if [[ -z "$FROM" ]]; then
     echo "Uso: $0 --from PATH [--dry-run]"
     echo ""
-    echo "  --from PATH    Sorgente (es. /Volumes/BENCH_USB)"
-    echo "  --dry-run      Mostra cosa verrebbe copiato"
+    echo "  --from PATH   Sorgente (es. /Volumes/BENCH_USB)"
+    echo "  --dry-run     Mostra cosa verrebbe copiato"
     exit 1
 fi
 
@@ -44,73 +39,57 @@ if [[ ! -d "$FROM" ]]; then
     exit 1
 fi
 
-# ── Risolvi root progetto ──────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 ARCHIVE_DIR="$PROJECT_ROOT/tests/results_archive"
-BENCH_DIR="$PROJECT_ROOT/tests/generated_files/benchmark"
+LOGS_DIR="$PROJECT_ROOT/tests/logs"
 
 echo "=== bench_pull_usb ==="
-echo "  From   : $FROM"
-echo "  Dest   : $PROJECT_ROOT"
-[[ $DRY_RUN -eq 1 ]] && echo "  Mode   : --dry-run"
+echo "  From  : $FROM"
+echo "  Dest  : $PROJECT_ROOT"
+[[ $DRY_RUN -eq 1 ]] && echo "  Mode  : --dry-run"
 echo ""
 
 RSYNC_FLAGS=(-av --progress)
 [[ $DRY_RUN -eq 1 ]] && RSYNC_FLAGS+=(--dry-run)
 
-mkdir -p "$ARCHIVE_DIR" "$BENCH_DIR"
+mkdir -p "$ARCHIVE_DIR" "$LOGS_DIR"
 
-# ── 1. Risultati versionati (results_archive/) ─────────────────────────────
+# ── 1. Risultati versionati ────────────────────────────────────────────────
 SRC_ARCHIVE="$FROM/tests/results_archive/"
+echo "-- results_archive/ --"
 if [[ -d "$SRC_ARCHIVE" ]]; then
-    echo "-- Raccolta results_archive/ --"
     rsync "${RSYNC_FLAGS[@]}" \
         --include='*.csv' \
         --exclude='*' \
         "$SRC_ARCHIVE" \
         "$ARCHIVE_DIR/"
 else
-    echo "WARN: $SRC_ARCHIVE non trovata (nessun risultato versionato)"
+    echo "  WARN: $SRC_ARCHIVE non trovata"
 fi
 
-# ── 2. Legacy results_all_runs.csv ─────────────────────────────────────────
-SRC_LEGACY="$FROM/tests/generated_files/benchmark/results_all_runs.csv"
-if [[ -f "$SRC_LEGACY" ]]; then
-    echo ""
-    echo "-- Raccolta results_all_runs.csv (legacy) --"
+# ── 2. Log per debug ───────────────────────────────────────────────────────
+SRC_LOGS="$FROM/tests/logs/"
+echo ""
+echo "-- tests/logs/ --"
+if [[ -d "$SRC_LOGS" ]]; then
     rsync "${RSYNC_FLAGS[@]}" \
-        "$SRC_LEGACY" \
-        "$BENCH_DIR/"
-fi
-
-# ── 3. .version aggiornato sul bench ──────────────────────────────────────
-SRC_VERSION="$FROM/tests/.version"
-if [[ -f "$SRC_VERSION" ]]; then
-    echo ""
-    echo "-- Aggiornamento .version --"
-    rsync "${RSYNC_FLAGS[@]}" \
-        "$SRC_VERSION" \
-        "$PROJECT_ROOT/tests/.version"
+        "$SRC_LOGS" \
+        "$LOGS_DIR/"
+else
+    echo "  WARN: $SRC_LOGS non trovata"
 fi
 
 echo ""
 echo "=== Pull completato ==="
 
-# Mostra i file raccolti
-NEW_CSVS=()
-while IFS= read -r -d '' f; do
-    NEW_CSVS+=("$f")
-done < <(find "$ARCHIVE_DIR" -name "*.csv" -print0 2>/dev/null | sort -z)
-
-if [[ ${#NEW_CSVS[@]} -gt 0 ]]; then
-    echo "  CSV in results_archive/ (${#NEW_CSVS[@]} totali):"
-    for f in "${NEW_CSVS[@]}"; do
-        sz="$(du -sh "$f" 2>/dev/null | cut -f1)"
-        printf "    %-8s %s\n" "$sz" "$(basename "$f")"
-    done
+if [[ $DRY_RUN -eq 0 ]]; then
+    CSV_COUNT=$(find "$ARCHIVE_DIR" -name "*.csv" 2>/dev/null | wc -l | tr -d ' ')
+    LOG_COUNT=$(find "$LOGS_DIR" -type f 2>/dev/null | wc -l | tr -d ' ')
+    echo "  CSV in results_archive/ : $CSV_COUNT"
+    echo "  File in logs/           : $LOG_COUNT"
 fi
 
 echo ""
-echo "Prossimo step: aggrega i risultati con:"
-echo "  python tests/aggregate_results.py --predict"
+echo "Prossimo step:"
+echo "  uv run python tests/aggregate_results.py --predict"
