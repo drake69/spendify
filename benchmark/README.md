@@ -106,10 +106,12 @@ benchmark/                        ← tutto il materiale di benchmark (root del 
 ├── diagnose.ps1                  ← diagnostica ambiente Windows (include GPU)
 │
 │  ── WORKFLOW MULTI-MACCHINA ────────────────────────────────────────────────
-├── bench_push_usb.sh / .ps1      ← copia dev → chiavetta USB (pre-run)
-├── bench_pull_usb.sh / .ps1      ← raccoglie risultati chiavetta → dev (post-run)
-├── bench_push_ssh.sh / .ps1      ← copia dev → host remoto via SSH (pre-run)
-├── bench_pull_ssh.sh / .ps1      ← raccoglie risultati host remoto → dev (post-run)
+├── bench_push_usb.sh / .ps1      ← [dev]   copia codice + file sintetici → chiavetta USB
+├── bench_load_usb.sh / .ps1      ← [bench] copia USB → ~/Desktop/spendif-ai (locale)
+├── bench_save_usb.sh / .ps1      ← [bench] copia risultati + log locale → chiavetta USB
+├── bench_pull_usb.sh / .ps1      ← [dev]   raccoglie CSV + log dalla chiavetta → dev
+├── bench_push_ssh.sh / .ps1      ← [dev]   copia dev → host remoto via SSH (pre-run)
+├── bench_pull_ssh.sh / .ps1      ← [dev]   raccoglie risultati host remoto → dev (post-run)
 ├── .rsync-bench-exclude          ← esclusioni condivise per gli script rsync
 │
 │  ── OUTPUT (gitignored) ────────────────────────────────────────────────────
@@ -119,16 +121,16 @@ benchmark/                        ← tutto il materiale di benchmark (root del 
 │   ├── benchmark_YYYYMMDD_HHMMSS.log
 │   ├── pipeline_YYYYMMDD_HHMMSS.log
 │   └── categorizer_YYYYMMDD_HHMMSS.log
-└── generated_files/              ← file sintetici e risultati locali
+└── generated_files/              ← file sintetici input (generati PRIMA del bench)
     ├── manifest.csv
-    ├── *.csv, *.xlsx              ← file sintetici generati
-    └── benchmark/                ← output locali (non versionati per macchina)
-        ├── results_all_runs.csv  ← risultati cumulativi append-only (locale)
-        ├── benchmark_config.json
-        ├── cat_benchmark_config.json
-        ├── summary_global.csv
-        └── summary_variance.csv
+    └── *.csv, *.xlsx              ← file sintetici — generati con generate_synthetic_files.py
 ```
+
+> **File sintetici**: devono essere generati esplicitamente PRIMA di eseguire il benchmark.
+> NON vengono rigenerati automaticamente (per garantire determinismo tra run diversi):
+> ```bash
+> uv run python benchmark/generate_synthetic_files.py
+> ```
 
 ## Tipi di benchmark
 
@@ -528,93 +530,133 @@ raccolti esplicitamente con `bench_pull_usb.sh` / `bench_pull_ssh.sh` (o `.ps1`)
 ## Workflow multi-macchina (USB e SSH)
 
 Per girare il benchmark su una macchina diversa dalla dev (es. un Mac dedicato al bench,
-un PC Windows, un server Linux), usa gli script in `benchmark/`:
+un PC Windows, un server Linux), usa gli script in `benchmark/`.
 
-### Fasi
+> **Prerequisito**: generare i file sintetici PRIMA del push, se non già presenti:
+> ```bash
+> uv run python benchmark/generate_synthetic_files.py
+> ```
+> I file sintetici **non vengono rigenerati automaticamente** — questo garantisce
+> che ogni macchina esegua esattamente gli stessi input (determinismo).
+
+### USB — flusso completo (6 passi)
 
 ```
-[dev]                              [bench — Linux / macOS / Windows]
-  │                                    │
-  ├─ bench_push_usb/ssh (.sh/.ps1) ───►│  copia codice + modelli
-  │                                    │
-  │                           Linux/macOS: bash benchmark/run_benchmark_full.sh
-  │                           Windows:     benchmark\run_benchmark_full.ps1
-  │                                    │  produce benchmark/results/<ver>_<host>.csv
-  │                                    │
-  ◄── bench_pull_usb/ssh (.sh/.ps1) ───┤  raccoglie CSV + log
-  │
-  aggregate_results.py                 ← aggrega + modello predittivo
-  → documents/04_software_engineering/benchmark/results_all_runs.csv
+[dev]  bench_push_usb.sh --dest /Volumes/BENCH_USB
+         └── copia codice + file sintetici (generated_files/) sulla chiavetta
+              │
+              ▼ (porta chiavetta alla macchina bench)
+[bench] bench_load_usb.sh --from /Volumes/BENCH_USB
+         └── copia USB → ~/Desktop/spendif-ai (disco locale)
+              │
+              ▼
+[bench] run_benchmark_full.sh     ← gira su disco locale, NON su USB
+         └── produce benchmark/results/<ver>_<host>.csv
+              │
+              ▼
+[bench] bench_save_usb.sh --dest /Volumes/BENCH_USB
+         └── copia risultati + log locale → chiavetta
+              │
+              ▼ (porta chiavetta al dev)
+[dev]  bench_pull_usb.sh --from /Volumes/BENCH_USB
+         └── raccoglie CSV + log dalla chiavetta → benchmark/results/ e benchmark/logs/
+              │
+              ▼
+[dev]  aggregate_results.py --predict
+         └── aggrega → documents/04_software_engineering/benchmark/results_all_runs.csv
 ```
-
-### USB
 
 **Linux / macOS:**
 ```bash
-# 1. Copia il necessario sulla chiavetta
+# Passo 1 [dev] — copia codice + file sintetici sulla chiavetta
 bash benchmark/bench_push_usb.sh --dest /Volumes/BENCH_USB
 
-# 2. Sul bench: esegui il benchmark (adatta il path alla chiavetta montata)
-bash /Volumes/BENCH_USB/benchmark/run_benchmark_full.sh        # Linux/macOS bench
-# oppure su Windows bench:
-# powershell -ExecutionPolicy Bypass -File E:\BENCH_USB\benchmark\run_benchmark_full.ps1
+# Passo 2 [bench] — copia USB → disco locale
+bash benchmark/bench_load_usb.sh --from /Volumes/BENCH_USB
+# (default: ~/Desktop/spendif-ai)
 
-# 3. Raccogli i risultati dalla chiavetta
+# Passo 3 [bench] — esegui il benchmark su disco locale
+cd ~/Desktop/spendif-ai
+bash benchmark/run_benchmark_full.sh
+
+# Passo 4 [bench] — salva risultati sulla chiavetta
+bash benchmark/bench_save_usb.sh --dest /Volumes/BENCH_USB
+
+# Passo 5 [dev] — raccoglie risultati dalla chiavetta
 bash benchmark/bench_pull_usb.sh --from /Volumes/BENCH_USB
+
+# Passo 6 [dev] — aggrega
+uv run python benchmark/aggregate_results.py --predict
 ```
 
 **Windows (PowerShell):**
 ```powershell
-# 1. Copia sulla chiavetta
+# Passo 1 [dev]
 powershell -ExecutionPolicy Bypass -File benchmark\bench_push_usb.ps1 -Dest E:\BENCH_USB
 
-# 2. Sul bench Windows
-powershell -ExecutionPolicy Bypass -File E:\BENCH_USB\benchmark\run_benchmark_full.ps1
+# Passo 2 [bench]
+powershell -ExecutionPolicy Bypass -File benchmark\bench_load_usb.ps1 -From E:\BENCH_USB
 
-# 3. Raccogli
+# Passo 3 [bench]
+cd $env:USERPROFILE\Desktop\spendif-ai
+powershell -ExecutionPolicy Bypass -File benchmark\run_benchmark_full.ps1
+
+# Passo 4 [bench]
+powershell -ExecutionPolicy Bypass -File benchmark\bench_save_usb.ps1 -Dest E:\BENCH_USB
+
+# Passo 5 [dev]
 powershell -ExecutionPolicy Bypass -File benchmark\bench_pull_usb.ps1 -From E:\BENCH_USB
+
+# Passo 6 [dev]
+uv run python benchmark/aggregate_results.py --predict
 ```
 
 Opzioni push: `--clean` / `-Clean` (cancella dest prima), `--dry-run` / `-DryRun`.
 
-### SSH
+### SSH — flusso (3 passi, invariato)
+
+```
+[dev]  bench_push_ssh.sh --dest user@host:~/Desktop/spendif-ai
+[bench] run_benchmark_full.sh  (già in loco, gira su disco locale)
+[dev]  bench_pull_ssh.sh --from user@host:~/Desktop/spendif-ai
+```
 
 **Linux / macOS:**
 ```bash
 # 1. Copia sul host remoto
-bash benchmark/bench_push_ssh.sh --dest user@bench-host:~/spendif
+bash benchmark/bench_push_ssh.sh --dest user@bench-host:~/Desktop/spendif-ai
 
 # 2. Sul bench: esegui
-#    Linux/macOS bench:
-ssh user@bench-host "bash ~/spendif/benchmark/run_benchmark_full.sh"
-#    Windows bench:
-ssh user@bench-host "powershell -ExecutionPolicy Bypass -File benchmark\run_benchmark_full.ps1"
+ssh user@bench-host "bash ~/Desktop/spendif-ai/benchmark/run_benchmark_full.sh"
+# Windows bench:
+# ssh user@bench-host "powershell -ExecutionPolicy Bypass -File benchmark\run_benchmark_full.ps1"
 
 # 3. Raccogli i risultati
-bash benchmark/bench_pull_ssh.sh --from user@bench-host:~/spendif
+bash benchmark/bench_pull_ssh.sh --from user@bench-host:~/Desktop/spendif-ai
 ```
 
 **Windows (PowerShell):**
 ```powershell
 # 1. Copia sul host remoto
-powershell -ExecutionPolicy Bypass -File benchmark\bench_push_ssh.ps1 -Dest user@bench-host:~/spendif
+powershell -ExecutionPolicy Bypass -File benchmark\bench_push_ssh.ps1 -Dest user@bench-host:~/Desktop/spendif-ai
 
-# 2. Sul bench (come sopra, via SSH)
+# 2. Sul bench (via SSH — come sopra)
 
 # 3. Raccogli
-powershell -ExecutionPolicy Bypass -File benchmark\bench_pull_ssh.ps1 -From user@bench-host:~/spendif
+powershell -ExecutionPolicy Bypass -File benchmark\bench_pull_ssh.ps1 -From user@bench-host:~/Desktop/spendif-ai
 ```
 
 Opzioni SSH aggiuntive: `--key`/`-Key PATH` (chiave privata), `--port`/`-Port N` (porta, default 22).
 
-### Cosa viene copiato (push)
+### Cosa viene copiato (push USB/SSH)
 
 | Incluso | Escluso |
 |---------|---------|
 | `benchmark/benchmark_*.py`, `run_benchmark_full.*` | `benchmark/results/` |
-| `benchmark/benchmark_models.csv`, `benchmark/.version` | `benchmark/generated_files/` |
+| `benchmark/benchmark_models.csv`, `benchmark/.version` | `benchmark/logs/` |
+| `benchmark/generated_files/` (file sintetici) | `.git/`, `.venv/`, `.pytest_cache/`, `__pycache__/` |
 | `core/`, `services/`, `db/`, `support/` | `ui/`, `docs/`, `api/`, `reports/` |
-| `pyproject.toml`, `uv.lock` | `.git/`, `.venv/`, `.pytest_cache/`, `__pycache__/` |
+| `pyproject.toml`, `uv.lock` | |
 
 ### Cosa viene raccolto (pull)
 
