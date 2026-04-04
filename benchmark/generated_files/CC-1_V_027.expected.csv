@@ -1,0 +1,81 @@
+row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_category
+1,2026-01-01,-94.70,"Pagam. POS - PAGAMENTO POS 94,70 EUR DEL 01.01.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
+2,2026-01-01,-5.40,AMAZON.IT MARKETPLACE - ORDINE 402-210585896,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+3,2026-01-02,-713.16,"Pagam. POS - PAGAMENTO POS 713,16 EUR DEL 02.01.2026 A (ITA) LIBRERIA FELTRINELLI",expense,false,Istruzione/Rette scolastiche
+4,2026-01-02,-340.83,Addebito SDD - MENSA SCOLASTICA COMUNE DI MILANO,expense,false,Istruzione/Rette scolastiche
+5,2026-01-05,-110.93,Disposizione - RIF:213374365 BEN. CONDOMINIO RESIDENZA MARE,expense,false,Casa/Energia elettrica
+6,2026-01-05,210.44,Bonif. v/fav. - RIF:218539788 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
+7,2026-01-05,-387.41,Disposizione - RIF:214218201 BEN. VERDI ROSA AIUTO NIPOTE,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+8,2026-01-07,-730.00,GIROCONTO DA CC 0123456 A CC 0075849,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+9,2026-01-09,-71.80,Disposizione - RIF:211820677 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
+10,2026-01-13,-139.14,Disposizione - RIF:218856244 BEN. RICARICA POSTEPAY SOFIA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+11,2026-01-14,-105.06,PAGAMENTO CONTACTLESS CARTA **** 4084 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
+12,2026-01-14,-105.04,"Pagam. POS - PAGAMENTO POS 105,04 EUR DEL 14.01.2026 A (ITA) MACELLERIA BONI",expense,false,Alimentari/Spesa supermercato
+13,2026-01-17,-193.10,RICARICA HYPE DA CONTO 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+14,2026-01-19,309.28,Bonif. v/fav. - RIF:214341333 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
+15,2026-01-19,-199.72,Disposizione - RIF:216792445 BEN. RICARICA REVOLUT LAURA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+16,2026-01-21,-76.83,PAGAMENTO CONTACTLESS CARTA **** 7473 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
+17,2026-01-21,-10.64,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+18,2026-01-25,-86.00,"Pagam. POS - PAGAMENTO POS 86,00 EUR DEL 25.01.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
+19,2026-01-26,-534.84,Disposizione - RIF:218166533 BEN. CONTO ARANCIO ACCANTONAMENTO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
+20,2026-01-27,2101.05,Bonif. v/fav. - RIF:212702473 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
+21,2026-01-27,2068.04,Bonif. v/fav. - RIF:218553014 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
+22,2026-01-27,2055.91,ACCREDITO STIPENDIO MESE DI GENNAIO 2026,income,false,Lavoro dipendente/Stipendio
+23,2026-01-27,2073.82,ACCREDITO STIPENDIO MESE DI GENNAIO 2026,income,false,Lavoro dipendente/Stipendio
+24,2026-01-27,2076.63,Bonif. v/fav. - RIF:216341872 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
+25,2026-01-27,2085.54,Bonif. v/fav. - RIF:218694087 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
+26,2026-01-27,2120.72,Bonif. v/fav. - RIF:211728484 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
+27,2026-01-27,2147.06,ACCREDITO STIPENDIO MESE DI GENNAIO 2026,income,false,Lavoro dipendente/Stipendio
+28,2026-01-27,2125.94,Bonif. v/fav. - RIF:217186119 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
+29,2026-01-27,2135.41,ACCREDITO STIPENDIO MESE DI GENNAIO 2026,income,false,Lavoro dipendente/Stipendio
+30,2026-01-27,2081.68,Bonif. v/fav. - RIF:218899743 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
+31,2026-01-27,2130.41,Bonif. v/fav. - RIF:217784414 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
+32,2026-01-27,2121.53,Bonif. v/fav. - RIF:214210028 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
+33,2026-01-27,2118.45,Bonif. v/fav. - RIF:217878309 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
+34,2026-01-27,2141.80,ACCREDITO STIPENDIO MESE DI GENNAIO 2026,income,false,Lavoro dipendente/Stipendio
+35,2026-01-27,2136.70,Bonif. v/fav. - RIF:215847154 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
+36,2026-01-27,2139.05,Bonif. v/fav. - RIF:213769135 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
+37,2026-01-27,2107.66,Bonif. v/fav. - RIF:217371274 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
+38,2026-01-27,2089.29,ACCREDITO STIPENDIO MESE DI GENNAIO 2026,income,false,Lavoro dipendente/Stipendio
+39,2026-01-27,2102.42,Bonif. v/fav. - RIF:215134282 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
+40,2026-01-27,2094.22,Bonif. v/fav. - RIF:218575042 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
+41,2026-01-27,2091.64,Bonif. v/fav. - RIF:219132635 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
+42,2026-01-27,2137.49,Bonif. v/fav. - RIF:213547699 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
+43,2026-01-27,2096.09,ACCREDITO STIPENDIO MESE DI GENNAIO 2026,income,false,Lavoro dipendente/Stipendio
+44,2026-01-27,2149.05,ACCREDITO STIPENDIO MESE DI GENNAIO 2026,income,false,Lavoro dipendente/Stipendio
+45,2026-01-27,2067.07,ACCREDITO STIPENDIO MESE DI GENNAIO 2026,income,false,Lavoro dipendente/Stipendio
+46,2026-01-27,2077.86,ACCREDITO STIPENDIO MESE DI GENNAIO 2026,income,false,Lavoro dipendente/Stipendio
+47,2026-01-27,2098.63,Bonif. v/fav. - RIF:214021642 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
+48,2026-01-27,2098.18,Bonif. v/fav. - RIF:214309910 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
+49,2026-01-29,-31.36,"Pagam. POS - PAGAMENTO POS 31,36 EUR DEL 29.01.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
+50,2026-01-29,-46.45,PAGAMENTO CONTACTLESS CARTA **** 9245 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
+51,2026-01-29,-104.78,RICARICA POSTEPAY DA CONTO 0123456 BEN. SOFIA ROSSI,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+52,2026-01-31,-39.93,Addebito SDD - ENI PLENITUDE GAS E LUCE,expense,false,Casa/Energia elettrica
+53,2026-02-03,-145.69,PAGAMENTO CONTACTLESS CARTA **** 9745 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
+54,2026-02-03,-20.52,"Pagam. POS - PAGAMENTO POS 20,52 EUR DEL 03.02.2026 A (ITA) FARMACIA DR ROSSI",expense,false,Salute/Farmaci
+55,2026-02-05,51.61,Bonif. v/fav. - RIF:217216069 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
+56,2026-02-05,390.88,Bonif. v/fav. - RIF:213770923 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
+57,2026-02-07,-508.71,Addebito SDD - MENSA SCOLASTICA COMUNE DI MILANO,expense,false,Istruzione/Rette scolastiche
+58,2026-02-08,-7.99,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+59,2026-02-10,-14.68,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+60,2026-02-11,-637.47,"Pagam. POS - PAGAMENTO POS 637,47 EUR DEL 11.02.2026 A (ITA) LIBRERIA FELTRINELLI",expense,false,Istruzione/Rette scolastiche
+61,2026-02-12,139.64,Bonif. v/fav. - RIF:211351890 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
+62,2026-02-15,150.16,Bonif. v/fav. - RIF:211594125 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
+63,2026-02-17,-172.54,"Pagam. POS - PAGAMENTO POS 172,54 EUR DEL 17.02.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
+64,2026-02-18,-165.03,"Pagam. POS - PAGAMENTO POS 165,03 EUR DEL 18.02.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
+65,2026-02-21,-21.73,Disposizione - RIF:212143790 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
+66,2026-02-24,-115.83,RICARICA HYPE DA CONTO 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+67,2026-02-27,2061.72,ACCREDITO STIPENDIO MESE DI FEBBRAIO 2026,income,false,Lavoro dipendente/Stipendio
+68,2026-02-27,2134.22,Bonif. v/fav. - RIF:219947474 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
+69,2026-02-27,2057.46,Bonif. v/fav. - RIF:214812530 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
+70,2026-02-27,2086.81,ACCREDITO STIPENDIO MESE DI FEBBRAIO 2026,income,false,Lavoro dipendente/Stipendio
+71,2026-02-27,2116.77,ACCREDITO STIPENDIO MESE DI FEBBRAIO 2026,income,false,Lavoro dipendente/Stipendio
+72,2026-02-27,2115.42,ACCREDITO STIPENDIO MESE DI FEBBRAIO 2026,income,false,Lavoro dipendente/Stipendio
+73,2026-02-27,2088.59,ACCREDITO STIPENDIO MESE DI FEBBRAIO 2026,income,false,Lavoro dipendente/Stipendio
+74,2026-02-27,2065.77,Bonif. v/fav. - RIF:218625997 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
+75,2026-02-27,2128.29,Bonif. v/fav. - RIF:219579172 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
+76,2026-02-27,2065.23,Bonif. v/fav. - RIF:211746373 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
+77,2026-02-27,2123.11,Bonif. v/fav. - RIF:211008884 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
+78,2026-02-27,2115.54,ACCREDITO STIPENDIO MESE DI FEBBRAIO 2026,income,false,Lavoro dipendente/Stipendio
+79,2026-02-27,2116.08,Bonif. v/fav. - RIF:215284035 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
+80,2026-02-28,-144.95,Addebito SDD - ENEL SERVIZIO ELETTRICO NAZ.,expense,false,Casa/Energia elettrica

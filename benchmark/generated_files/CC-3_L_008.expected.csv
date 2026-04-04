@@ -1,0 +1,301 @@
+row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_category
+1,2026-01-01,1224.46,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+2,2026-01-01,1234.71,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+3,2026-01-01,1224.71,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+4,2026-01-01,1234.98,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+5,2026-01-01,1223.53,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+6,2026-01-01,1242.60,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+7,2026-01-01,1212.70,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+8,2026-01-01,1215.28,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+9,2026-01-01,1161.66,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+10,2026-01-01,1229.43,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+11,2026-01-01,1190.53,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+12,2026-01-01,1225.35,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+13,2026-01-01,1207.51,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+14,2026-01-01,1192.31,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+15,2026-01-01,1204.98,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+16,2026-01-01,1181.64,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+17,2026-01-01,1187.86,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+18,2026-01-01,1244.49,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+19,2026-01-01,1197.97,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+20,2026-01-01,1179.01,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+21,2026-01-01,1150.52,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+22,2026-01-01,1191.07,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+23,2026-01-01,1166.03,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+24,2026-01-01,1226.74,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+25,2026-01-01,1172.94,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+26,2026-01-01,1188.04,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+27,2026-01-01,1216.89,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+28,2026-01-01,1208.43,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+29,2026-01-01,1220.47,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+30,2026-01-01,1162.78,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+31,2026-01-01,1150.36,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+32,2026-01-01,1223.05,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+33,2026-01-01,1168.89,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+34,2026-01-01,1164.35,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+35,2026-01-01,1210.33,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+36,2026-01-01,1176.77,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+37,2026-01-01,1232.49,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+38,2026-01-01,1239.31,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+39,2026-01-01,1228.89,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+40,2026-01-01,1188.46,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+41,2026-01-01,1216.27,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+42,2026-01-01,1206.92,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+43,2026-01-01,1189.64,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+44,2026-01-01,1231.66,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+45,2026-01-01,1156.53,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+46,2026-01-01,1206.37,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+47,2026-01-01,1152.37,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+48,2026-01-01,1245.28,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+49,2026-01-01,1199.89,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+50,2026-01-01,1167.92,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+51,2026-01-01,1182.37,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+52,2026-01-01,1248.82,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+53,2026-01-01,1210.09,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+54,2026-01-01,1240.02,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+55,2026-01-01,1200.43,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+56,2026-01-01,1152.78,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+57,2026-01-01,1179.69,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+58,2026-01-01,1161.09,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+59,2026-01-01,1189.08,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+60,2026-01-01,1161.72,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+61,2026-01-01,1169.28,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+62,2026-01-01,1152.95,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+63,2026-01-01,1245.81,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+64,2026-01-01,1150.96,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+65,2026-01-01,1241.16,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+66,2026-01-01,1189.33,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+67,2026-01-01,1160.51,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+68,2026-01-01,1242.49,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+69,2026-01-01,1202.18,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+70,2026-01-01,1224.50,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+71,2026-01-01,1203.21,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+72,2026-01-01,1184.76,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+73,2026-01-01,1167.02,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+74,2026-01-01,1167.75,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+75,2026-01-01,1197.26,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+76,2026-01-01,1227.53,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+77,2026-01-01,1164.79,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+78,2026-01-01,1154.99,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+79,2026-01-01,1249.59,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+80,2026-01-01,1201.98,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+81,2026-01-01,1179.99,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+82,2026-01-01,1193.24,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+83,2026-01-01,1184.88,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+84,2026-01-01,1235.20,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+85,2026-01-01,1160.54,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+86,2026-01-01,1194.15,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+87,2026-01-01,1158.60,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+88,2026-01-01,1184.07,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+89,2026-01-01,1184.58,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+90,2026-01-01,1215.03,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+91,2026-01-01,1161.56,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+92,2026-01-01,1172.71,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+93,2026-01-01,1202.68,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+94,2026-01-01,1153.59,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+95,2026-01-01,1170.57,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+96,2026-01-01,1230.74,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+97,2026-01-01,1190.86,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+98,2026-01-01,1184.97,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+99,2026-01-01,1230.80,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+100,2026-01-01,1245.86,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+101,2026-01-01,1210.71,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+102,2026-01-01,1207.60,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+103,2026-01-01,1249.41,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+104,2026-01-01,1223.34,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+105,2026-01-01,1193.05,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+106,2026-01-01,1238.53,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+107,2026-01-01,1152.74,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+108,2026-01-01,1249.31,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+109,2026-01-01,1220.68,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+110,2026-01-01,1244.92,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+111,2026-01-01,1198.45,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+112,2026-01-01,1193.43,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+113,2026-01-01,1213.77,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+114,2026-01-01,1152.90,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+115,2026-01-02,-20.22,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
+116,2026-01-02,152.00,Bonif. v/fav. - RIF:215927556 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
+117,2026-01-02,213.08,Bonif. v/fav. - RIF:211848116 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
+118,2026-01-02,-819.86,Disposizione - RIF:219088183 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+119,2026-01-02,-809.29,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+120,2026-01-03,-782.30,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+121,2026-01-07,273.38,Bonif. v/fav. - RIF:218445004 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
+122,2026-01-07,-445.38,Disposizione - RIF:218217672 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+123,2026-01-08,-41.56,"Pagam. POS - PAGAMENTO POS 41,56 EUR DEL 08.01.2026 A (ITA) COOP LOMBARDIA",expense,false,Altro/Spese non classificate
+124,2026-01-08,-24.18,Disposizione - RIF:213371228 BEN. GIARDINIERE COLOMBO LUIGI,expense,false,Alimentari/Altro alimentari
+125,2026-01-10,291.16,Bonif. v/fav. - RIF:213231751 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
+126,2026-01-10,259.84,Bonif. v/fav. - RIF:214861731 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
+127,2026-01-10,-731.54,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+128,2026-01-11,-606.32,Disposizione - RIF:211906975 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+129,2026-01-14,-33.18,Disposizione - RIF:215514500 BEN. GIARDINIERE COLOMBO LUIGI,expense,false,Alimentari/Altro alimentari
+130,2026-01-14,-48.65,"Pagam. POS - PAGAMENTO POS 48,65 EUR DEL 14.01.2026 A (ITA) CONAD CITY ROMA",expense,false,Alimentari/Spesa supermercato
+131,2026-01-14,-46.71,"Pagam. POS - PAGAMENTO POS 46,71 EUR DEL 14.01.2026 A (ITA) EDICOLA PIAZZA DUOMO",expense,false,Alimentari/Altro alimentari
+132,2026-01-15,-578.14,Disposizione - RIF:213894252 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+133,2026-01-16,-17.25,PRELIEVO ATM BANCOMAT FIL. 01234 BANCO BPM,expense,false,Alimentari/Altro alimentari
+134,2026-01-16,-25.46,"Pagam. POS - PAGAMENTO POS 25,46 EUR DEL 16.01.2026 A (ITA) CONAD SUPERSTORE",expense,false,Alimentari/Altro alimentari
+135,2026-01-16,349.85,Bonif. v/fav. - RIF:217950602 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
+136,2026-01-17,225.69,Bonif. v/fav. - RIF:212648501 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
+137,2026-01-17,-563.61,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+138,2026-01-18,487.91,Bonif. v/fav. - RIF:213554492 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
+139,2026-01-19,-937.46,Disposizione - RIF:215561682 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+140,2026-01-20,-26.53,"Pagam. POS - PAGAMENTO POS 26,53 EUR DEL 20.01.2026 A (ITA) EDICOLA PIAZZA DUOMO",expense,false,Alimentari/Altro alimentari
+141,2026-01-20,-586.87,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+142,2026-01-20,-461.00,Disposizione - RIF:214149152 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+143,2026-01-22,-53.23,PRELIEVO ATM BANCOMAT FIL. 01234 BANCO BPM,expense,false,Cura personale/Parrucchiere / barbiere
+144,2026-01-22,251.37,Bonif. v/fav. - RIF:214879512 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
+145,2026-01-24,-176.54,"Pagam. POS - PAGAMENTO POS 176,54 EUR DEL 24.01.2026 A (ITA) CENTRO MEDICO SANTAGOSTINO",expense,false,Salute/Farmaci
+146,2026-01-24,261.81,Bonif. v/fav. - RIF:212689602 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
+147,2026-01-27,-119.46,PAGAMENTO CONTACTLESS CARTA **** 1388 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
+148,2026-01-27,-189.85,"Pagam. POS - PAGAMENTO POS 189,85 EUR DEL 27.01.2026 A (ITA) MERCERIA LA BOTTEGA",expense,false,Cura personale/Parrucchiere / barbiere
+149,2026-01-27,356.96,Bonif. v/fav. - RIF:215370746 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
+150,2026-01-27,103.67,Bonif. v/fav. - RIF:215484048 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
+151,2026-01-27,-866.32,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+152,2026-01-27,-638.34,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+153,2026-01-28,-115.90,"Pagam. POS - PAGAMENTO POS 115,90 EUR DEL 28.01.2026 A (ITA) EDICOLA PIAZZA DUOMO",expense,false,Cura personale/Parrucchiere / barbiere
+154,2026-01-28,-562.98,Disposizione - RIF:210228581 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+155,2026-01-29,494.30,Bonif. v/fav. - RIF:215852648 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
+156,2026-01-31,-98.75,Disposizione - RIF:216456854 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
+157,2026-01-31,-67.95,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
+158,2026-01-31,-749.97,Disposizione - RIF:215577341 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+159,2026-02-01,-6.29,Disposizione - RIF:212374513 BEN. GIARDINIERE COLOMBO LUIGI,expense,false,Alimentari/Altro alimentari
+160,2026-02-01,1150.92,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+161,2026-02-01,1179.15,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+162,2026-02-01,1179.91,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+163,2026-02-01,1157.18,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+164,2026-02-01,1219.51,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+165,2026-02-01,1235.61,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+166,2026-02-01,1156.60,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+167,2026-02-01,1205.15,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+168,2026-02-01,1197.69,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+169,2026-02-01,1155.29,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+170,2026-02-01,1202.06,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+171,2026-02-01,1174.42,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+172,2026-02-01,1245.25,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+173,2026-02-01,1242.91,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+174,2026-02-01,1239.22,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+175,2026-02-01,1238.36,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+176,2026-02-01,1225.11,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+177,2026-02-01,1158.26,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+178,2026-02-01,1161.01,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+179,2026-02-01,1171.20,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+180,2026-02-01,1202.38,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+181,2026-02-01,1199.50,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+182,2026-02-01,1220.83,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+183,2026-02-01,1242.72,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+184,2026-02-01,1182.46,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+185,2026-02-01,1244.57,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+186,2026-02-01,1165.56,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+187,2026-02-01,1231.55,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+188,2026-02-01,1242.33,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+189,2026-02-01,1164.47,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+190,2026-02-01,1210.17,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+191,2026-02-01,1174.25,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+192,2026-02-01,1194.40,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+193,2026-02-01,1169.47,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+194,2026-02-01,1173.91,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+195,2026-02-01,1235.90,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+196,2026-02-01,1200.59,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+197,2026-02-01,1235.38,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+198,2026-02-01,1160.91,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+199,2026-02-01,1171.26,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+200,2026-02-01,1206.82,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+201,2026-02-01,1237.13,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+202,2026-02-01,1198.16,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+203,2026-02-01,1200.21,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+204,2026-02-01,1161.34,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+205,2026-02-01,1234.51,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+206,2026-02-01,1205.16,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+207,2026-02-01,1150.76,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+208,2026-02-01,1167.04,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+209,2026-02-01,1162.89,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+210,2026-02-01,1213.36,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+211,2026-02-01,1196.70,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+212,2026-02-01,1246.19,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+213,2026-02-01,1212.29,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+214,2026-02-01,1192.94,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+215,2026-02-01,1210.18,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+216,2026-02-01,1159.51,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+217,2026-02-01,1221.14,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+218,2026-02-01,1231.85,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+219,2026-02-01,1220.85,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+220,2026-02-01,1168.80,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+221,2026-02-01,1161.83,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+222,2026-02-01,1177.26,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+223,2026-02-01,1201.86,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+224,2026-02-01,1186.43,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+225,2026-02-01,1185.94,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+226,2026-02-01,1233.42,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+227,2026-02-01,1151.56,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+228,2026-02-01,1192.26,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+229,2026-02-01,1204.58,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+230,2026-02-01,1185.42,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+231,2026-02-01,1228.66,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+232,2026-02-01,1230.75,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+233,2026-02-01,1206.54,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+234,2026-02-01,1163.64,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+235,2026-02-01,1178.94,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+236,2026-02-01,1164.82,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+237,2026-02-01,1154.26,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+238,2026-02-01,1221.52,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+239,2026-02-01,1160.09,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+240,2026-02-01,1170.05,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+241,2026-02-01,1218.19,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+242,2026-02-01,1184.97,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+243,2026-02-01,1243.84,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+244,2026-02-01,175.90,Bonif. v/fav. - RIF:218740844 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
+245,2026-02-01,1232.72,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+246,2026-02-01,1196.73,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+247,2026-02-01,1153.86,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+248,2026-02-01,1233.60,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+249,2026-02-01,1162.72,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+250,2026-02-01,1207.99,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+251,2026-02-01,1157.14,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+252,2026-02-01,1173.09,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+253,2026-02-01,1215.33,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+254,2026-02-01,1217.41,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+255,2026-02-01,1224.29,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+256,2026-02-01,1167.67,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+257,2026-02-01,1223.21,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+258,2026-02-01,1209.78,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+259,2026-02-01,1161.58,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
+260,2026-02-01,-738.32,Disposizione - RIF:218801144 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+261,2026-02-02,137.70,Bonif. v/fav. - RIF:212172932 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
+262,2026-02-02,190.51,Bonif. v/fav. - RIF:211860164 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
+263,2026-02-02,-853.94,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+264,2026-02-02,-511.51,Disposizione - RIF:217699159 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+265,2026-02-04,-161.32,"Pagam. POS - PAGAMENTO POS 161,32 EUR DEL 04.02.2026 A (ITA) CENTRO DIAGNOSTICO SAN DONATO",expense,false,Salute/Farmaci
+266,2026-02-04,-989.65,Disposizione - RIF:218987534 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+267,2026-02-05,-183.85,Disposizione - RIF:217778776 BEN. DR VERDI ODONTOIATRA,expense,false,Salute/Farmaci
+268,2026-02-05,-958.01,Disposizione - RIF:210605237 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+269,2026-02-06,300.41,Bonif. v/fav. - RIF:218239341 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
+270,2026-02-07,278.70,Bonif. v/fav. - RIF:215415686 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
+271,2026-02-08,346.54,Bonif. v/fav. - RIF:215437103 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
+272,2026-02-11,-43.79,"Pagam. POS - PAGAMENTO POS 43,79 EUR DEL 11.02.2026 A (ITA) OTTICA AVANZI",expense,false,Salute/Farmaci
+273,2026-02-11,-79.02,"Pagam. POS - PAGAMENTO POS 79,02 EUR DEL 11.02.2026 A (ITA) EDICOLA PIAZZA DUOMO",expense,false,Cura personale/Parrucchiere / barbiere
+274,2026-02-11,-525.29,Disposizione - RIF:218103333 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+275,2026-02-12,-98.90,Disposizione - RIF:216400271 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
+276,2026-02-12,-218.50,"Pagam. POS - PAGAMENTO POS 218,50 EUR DEL 12.02.2026 A (ITA) OTTICA AVANZI",expense,false,Salute/Farmaci
+277,2026-02-13,240.31,Bonif. v/fav. - RIF:211402429 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
+278,2026-02-14,-98.31,"Pagam. POS - PAGAMENTO POS 98,31 EUR DEL 14.02.2026 A (ITA) PARRUCCHIERA SONIA",expense,false,Cura personale/Parrucchiere / barbiere
+279,2026-02-14,-828.53,Disposizione - RIF:218199476 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+280,2026-02-15,-94.80,"Pagam. POS - PAGAMENTO POS 94,80 EUR DEL 15.02.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
+281,2026-02-15,-156.30,"Pagam. POS - PAGAMENTO POS 156,30 EUR DEL 15.02.2026 A (ITA) EDICOLA PIAZZA DUOMO",expense,false,Cura personale/Parrucchiere / barbiere
+282,2026-02-16,-861.69,Disposizione - RIF:211514189 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+283,2026-02-17,-869.10,Disposizione - RIF:216339384 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+284,2026-02-17,-436.00,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+285,2026-02-19,-7.34,"Pagam. POS - PAGAMENTO POS 7,34 EUR DEL 19.02.2026 A (ITA) EDICOLA PIAZZA DUOMO",expense,false,Alimentari/Altro alimentari
+286,2026-02-19,-963.51,Disposizione - RIF:215531182 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+287,2026-02-19,-758.45,Disposizione - RIF:218701486 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+288,2026-02-19,-476.42,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+289,2026-02-20,-3.34,Disposizione - RIF:217939511 BEN. ASSISTENTE FAMILIARE MOLDOVEANU,expense,false,Alimentari/Altro alimentari
+290,2026-02-21,-134.56,"Pagam. POS - PAGAMENTO POS 134,56 EUR DEL 21.02.2026 A (ITA) MACELLERIA BONI",expense,false,Alimentari/Spesa supermercato
+291,2026-02-21,310.18,Bonif. v/fav. - RIF:212276513 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
+292,2026-02-22,-27.76,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
+293,2026-02-22,455.73,Bonif. v/fav. - RIF:211847769 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
+294,2026-02-22,-903.39,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+295,2026-02-24,112.04,Bonif. v/fav. - RIF:217172456 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
+296,2026-02-25,73.62,Bonif. v/fav. - RIF:210805363 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
+297,2026-02-27,240.06,Bonif. v/fav. - RIF:219343915 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
+298,2026-02-28,-136.15,"Pagam. POS - PAGAMENTO POS 136,15 EUR DEL 28.02.2026 A (ITA) PARRUCCHIERA SONIA",expense,false,Cura personale/Parrucchiere / barbiere
+299,2026-02-28,323.93,Bonif. v/fav. - RIF:219914640 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
+300,2026-02-28,-487.82,Disposizione - RIF:213673341 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata

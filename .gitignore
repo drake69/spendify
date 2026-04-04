@@ -10,8 +10,11 @@ tests/logs/
 # Exception: config CSVs that are part of the codebase
 !benchmark/benchmark_models.csv
 !benchmark/results_all_runs.csv
+# Exception: synthetic test files (needed on bench machines via USB/git)
+!benchmark/generated_files/*.csv
 *.xls
 *.xlsx
+!benchmark/generated_files/*.xlsx
 *.tmp
 my_secrets.py
 # Local databases (runtime data, never commit)

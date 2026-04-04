@@ -365,9 +365,15 @@ function Invoke-Phase {
     Write-Host "  [step $($script:Step)] [$Phase] $Label"
     Write-Host "────────────────────────────────────────────────────────────"
     $allArgs = @($script, "--runs", $Runs) + $BenchArgs + $ExtraArgs
+    # PS 5.1: $ErrorActionPreference="Stop" turns stderr of native commands into
+    # NativeCommandError and kills the script. Lower to Continue for this call only.
+    $savedEAP = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
     & $Python @allArgs 2>&1 | ForEach-Object { Write-Host $_ }
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "  [WARN] $Label [$Phase] failed (exit $LASTEXITCODE) — skipping"
+    $exitCode = $LASTEXITCODE
+    $ErrorActionPreference = $savedEAP
+    if ($exitCode -ne 0) {
+        Write-Host "  [WARN] $Label [$Phase] failed (exit $exitCode) — skipping"
     }
 }
 
