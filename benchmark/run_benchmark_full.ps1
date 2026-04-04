@@ -114,7 +114,37 @@ if (-not (Test-Path ".venv")) {
     uv venv --python 3.13
 }
 
-# Visual C++ check (needed by llama-cpp-python)
+# GPU detection — determines which llama-cpp-python wheel to install
+$GpuBackend = "cpu"
+$GpuLabel   = "CPU-only"
+$CuTag      = ""
+if (-not $SkipLlama) {
+    if (Get-Command nvidia-smi -ErrorAction SilentlyContinue) {
+        $nvsmiOut = nvidia-smi 2>$null
+        $cudaMatch = [regex]::Match(($nvsmiOut -join "`n"), 'CUDA Version:\s*([0-9]+\.[0-9]+)')
+        $gpuName   = (nvidia-smi --query-gpu=name --format=csv,noheader 2>$null | Select-Object -First 1).Trim()
+        if ($cudaMatch.Success) {
+            $cudaVer = $cudaMatch.Groups[1].Value        # e.g. "12.4"
+            $cuNum   = ($cudaVer -replace '\.', '')      # e.g. "124"
+            # Map to closest supported wheel tag (≤ detected CUDA version)
+            $CuTag = "cu121"
+            foreach ($v in @(125, 124, 123, 122, 121)) {
+                if ([int]$cuNum -ge $v) { $CuTag = "cu$v"; break }
+            }
+            $GpuBackend = "cuda"
+            $GpuLabel   = "NVIDIA $gpuName (CUDA $cudaVer → wheel: $CuTag)"
+        } else {
+            $GpuBackend = "cuda"; $CuTag = "cu121"
+            $GpuLabel   = "NVIDIA $gpuName (CUDA unknown → wheel: $CuTag)"
+        }
+    } elseif (Get-Command rocm-smi -ErrorAction SilentlyContinue) {
+        $GpuBackend = "rocm"
+        $GpuLabel   = "AMD ROCm (build from source)"
+    }
+    Write-Host "[gpu] $GpuLabel"
+}
+
+# Visual C++ check (needed by llama-cpp-python on Windows)
 if (-not $SkipLlama) {
     $vcInstalled = Test-Path "HKLM:\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\X64"
     if (-not $vcInstalled) {
@@ -127,10 +157,26 @@ if (-not $SkipLlama) {
     }
     Write-Host "[setup] Syncing deps (excluding llama-cpp-python)..."
     uv sync --no-install-package llama-cpp-python --quiet
-    Write-Host "[setup] Installing llama-cpp-python (pre-built CPU wheel)..."
-    $env:UV_EXTRA_INDEX_URL = "https://abetlen.github.io/llama-cpp-python/whl/cpu"
-    uv pip install "llama-cpp-python>=0.3.0" --quiet
-    $env:UV_EXTRA_INDEX_URL = ""
+    switch ($GpuBackend) {
+        "cuda" {
+            Write-Host "[setup] Installing llama-cpp-python ($CuTag GPU wheel)..."
+            $env:UV_EXTRA_INDEX_URL = "https://abetlen.github.io/llama-cpp-python/whl/$CuTag"
+            uv pip install "llama-cpp-python>=0.3.0" --quiet
+            $env:UV_EXTRA_INDEX_URL = ""
+        }
+        "rocm" {
+            Write-Host "[setup] Building llama-cpp-python from source (HIPBLAS/ROCm)..."
+            $env:CMAKE_ARGS = "-DGGML_HIPBLAS=on"
+            uv pip install "llama-cpp-python>=0.3.0" --no-binary llama-cpp-python --quiet
+            $env:CMAKE_ARGS = ""
+        }
+        default {
+            Write-Host "[setup] Installing llama-cpp-python (CPU wheel)..."
+            $env:UV_EXTRA_INDEX_URL = "https://abetlen.github.io/llama-cpp-python/whl/cpu"
+            uv pip install "llama-cpp-python>=0.3.0" --quiet
+            $env:UV_EXTRA_INDEX_URL = ""
+        }
+    }
 } else {
     uv sync --no-install-package llama-cpp-python --quiet
 }
@@ -152,8 +198,24 @@ if (-not $SkipLlama) {
 
     # Detect system RAM for size filtering
     $SystemRamMB = [math]::Round((Get-CimInstance Win32_OperatingSystem).TotalVisibleMemorySize / 1024)
-    $MaxModelMB  = [math]::Round($SystemRamMB / 2)
-    Write-Host "[check] System RAM: $([math]::Round($SystemRamMB / 1024)) GB → max model size: $([math]::Round($MaxModelMB / 1024)) GB"
+    # Size limit: VRAM for NVIDIA, RAM/2 for CPU/ROCm
+    if ($GpuBackend -eq "cuda") {
+        $vramMB = 0
+        try {
+            $vramMB = [int](nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>$null |
+                           Select-Object -First 1).Trim()
+        } catch { }
+        if ($vramMB -gt 0) {
+            $MaxModelMB = $vramMB
+            Write-Host "[check] System RAM: $([math]::Round($SystemRamMB / 1024)) GB, GPU VRAM: $([math]::Round($vramMB / 1024)) GB → max model: $([math]::Round($MaxModelMB / 1024)) GB"
+        } else {
+            $MaxModelMB = [math]::Round($SystemRamMB / 2)
+            Write-Host "[check] System RAM: $([math]::Round($SystemRamMB / 1024)) GB → max model: $([math]::Round($MaxModelMB / 1024)) GB (VRAM unknown)"
+        }
+    } else {
+        $MaxModelMB = [math]::Round($SystemRamMB / 2)
+        Write-Host "[check] System RAM: $([math]::Round($SystemRamMB / 1024)) GB → max model: $([math]::Round($MaxModelMB / 1024)) GB"
+    }
 
     foreach ($m in $models) {
         if ([string]::IsNullOrWhiteSpace($m.gguf_file)) { continue }
@@ -268,6 +330,7 @@ Write-Host "  SETUP SUMMARY"
 Write-Host "  llama.cpp  : $(if ($UseLlama)  { 'enabled' } else { 'DISABLED' })"
 Write-Host "  Ollama     : $(if ($UseOllama) { 'enabled' } else { 'DISABLED' })"
 Write-Host "  vLLM       : $(if ($UseVllm)   { "enabled ($VllmModel)" } else { 'DISABLED' })"
+Write-Host "  GPU        : $GpuLabel"
 Write-Host "════════════════════════════════════════════════════════════"
 
 if ($SetupOnly) {
