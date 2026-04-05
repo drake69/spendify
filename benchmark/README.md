@@ -611,6 +611,153 @@ raccolti esplicitamente con `bench_pull_usb.sh` / `bench_pull_ssh.sh` (o `.ps1`)
 
 ---
 
+## Output files e colonne CSV
+
+### File prodotti
+
+| File | Prodotto da | Descrizione |
+|------|-------------|-------------|
+| `benchmark/results_all_runs.csv` | `benchmark_classifier.py`, `benchmark_categorizer.py` | Append-only. Una riga per file × run. Righe classifier e categorizer affiancate nella stessa colonna `benchmark_type`. |
+| `benchmark/results/<version>_<host>.csv` | `benchmark_classifier.py`, `benchmark_categorizer.py` | CSV di archivio della singola sessione bench (stessa struttura di `results_all_runs.csv`). |
+| `benchmark/results_merged.csv` | `aggregate_results.py` | **Generato da aggregazione.** Una riga per `(run_id, filename, commit, model, host)` con colonne classifier e categorizer affiancate. Non presente sul bench durante i run. |
+| `benchmark/results_variance.csv` | `aggregate_results.py` | Varianza per-file sulle metriche principali (deviazione standard, min/max). |
+| `benchmark/results_global.csv` | `aggregate_results.py` | Statistiche globali aggregate per modello. |
+
+---
+
+### Colonne di `results_all_runs.csv`
+
+Il campo `benchmark_type` distingue le righe: `"classifier"` o `"categorizer"`. Le colonne specifiche dell'altra fase sono vuote.
+
+#### Identità run
+
+| Colonna | Tipo | Descrizione |
+|---------|------|-------------|
+| `benchmark_type` | str | `"classifier"` o `"categorizer"` |
+| `run_id` | int | Numero del run (1-N) |
+| `filename` | str | Nome del file sintetico processato |
+| `git_commit` | str | SHA7 del commit |
+| `git_branch` | str | Branch git |
+| `version` | str | Stringa da `.version` (es. `20260404120000-a1b2c3d`) |
+
+#### Modello LLM
+
+| Colonna | Tipo | Descrizione |
+|---------|------|-------------|
+| `provider` | str | Backend (`local_llama_cpp`, `local_ollama`, `openai`, `claude`, `vllm`, …) |
+| `model` | str | Nome o path del modello |
+| `temperature` | float | Temperatura inferenza |
+| `parameter_size` | str | Es. `7B`, `12B` |
+| `quantization` | str | Es. `Q4_K_M`, `fp16` |
+| `n_ctx` | int | Context window usata |
+| `n_batch` | int | Batch size (llama.cpp) |
+| `n_threads` | int | Thread CPU (llama.cpp) |
+| `n_gpu_layers` | int | Layer su GPU (llama.cpp) |
+| `flash_attn` | bool | Flash attention attiva |
+
+#### Hardware runtime
+
+| Colonna | Descrizione |
+|---------|-------------|
+| `runtime_os` | Sistema operativo (`macOS`, `Linux`, `Windows`) |
+| `runtime_cpu` | Stringa CPU (es. `Apple M4 Pro`) |
+| `runtime_ram_gb` | RAM totale in GB |
+| `runtime_gpu` | GPU (es. `Apple M4 Pro`, `NVIDIA RTX 4090`) |
+| `runtime_gpu_cores` | Core GPU |
+| `runtime_gpu_ram_gb` | VRAM GPU in GB |
+| `runtime_hostname` | Hostname macchina bench |
+
+#### Caratteristiche file sintetico
+
+Colonne prefissate `file_*`, copiate dal manifest (auto-contenute nella riga):
+
+| Colonna | Descrizione |
+|---------|-------------|
+| `file_doc_type` | Tipo documento (`conto_corrente`, `carta_credito`, …) |
+| `file_format` | `csv` / `xlsx` |
+| `file_amount_format` | Convenzione importo (`single_column`, `debit_credit_split`) |
+| `file_n_header_rows` | Righe di header nel file |
+| `file_n_data_rows` | Righe dati |
+| `file_n_footer_rows` | Righe footer |
+| `file_has_debit_credit_split` | Bool — importi separati dare/avere |
+| `file_has_borders` | Bool — celle con bordi (XLSX) |
+| `file_n_income_rows` | Righe entrate |
+| `file_n_expense_rows` | Righe uscite |
+| `file_n_internal_transfers` | Righe bonifici interni |
+
+#### Risultati classifier (vuote nelle righe categorizer)
+
+| Colonna | Descrizione |
+|---------|-------------|
+| `header_detected` / `header_expected` / `header_match` | Riga header rilevata vs attesa |
+| `rows_detected` / `rows_expected` / `rows_match` | Numero righe dati |
+| `doc_type_detected` / `doc_type_expected` / `doc_type_match` | Tipo documento |
+| `convention_detected` / `convention_expected` / `convention_match` | Convenzione segno |
+| `confidence_score` | Confidenza del classifier (0-1) |
+| `n_parsed` / `n_expected` / `parse_rate` | Transazioni parsate correttamente |
+| `amount_correct` / `amount_total` / `amount_accuracy` | Accuracy importi |
+| `date_correct` / `date_total` / `date_accuracy` | Accuracy date |
+| `category_correct` / `category_total` / `category_accuracy` | Accuracy categorie (fase 1) |
+| `classifier_duration_s` | Durata fase classifier in secondi |
+| `classifier_mode` | Modalità (`single_step`, `multi_step`) |
+| `step1_time_s` / `step2_time_s` / `step3_time_s` | Tempi sub-step multi-step |
+| `step1_doc_type_match` / `step2_date_col_match` / `step2_amount_col_match` | Diagnostica sub-step |
+| `phase0_sign_convention` | Convenzione rilevata da Phase 0 (euristica) |
+| `phase0_debit_col` / `phase0_credit_col` | Colonne dare/avere Phase 0 |
+| `llm_debit_col` / `llm_credit_col` / `llm_invert_sign` | Output LLM grezzo |
+| `final_debit_col` / `final_credit_col` / `final_invert_sign` | Valore finale dopo merge |
+
+#### Risultati categorizer (vuote nelle righe classifier)
+
+| Colonna | Descrizione |
+|---------|-------------|
+| `n_transactions` | Transazioni totali processate |
+| `n_categorized` | Transazioni categorizzate (non fallback) |
+| `n_correct_category` | Categoria esatta corretta |
+| `n_correct_fuzzy` | Categoria corretta al primo livello |
+| `n_fallback` / `n_history` / `n_rule` / `n_llm` | Transazioni per fonte (fallback / storico / regola / LLM) |
+| `cat_exact_accuracy` | Accuratezza categoria esatta (0-1) |
+| `cat_fuzzy_accuracy` | Accuratezza fuzzy primo livello (0-1) |
+| `cat_fallback_rate` | Tasso fallback (0-1) |
+| `cat_duration_s` | Durata fase categorizer in secondi |
+| `cleaner_batch_size` | Dimensione batch cleaner usata |
+
+#### Metriche comuni
+
+| Colonna | Descrizione |
+|---------|-------------|
+| `duration_seconds` | Durata totale run (alias di `classifier_duration_s` o `cat_duration_s`) |
+| `cpu_load_avg` | Carico CPU medio durante il run (%) |
+| `gpu_utilization_pct` | Utilizzo GPU medio durante il run (%) |
+| `prompt_tokens` / `completion_tokens` / `total_tokens` | Token usati (API remote) |
+| `tokens_per_second` | Throughput = `total_tokens / duration_seconds` |
+| `error` | Messaggio di errore se il run è fallito |
+
+---
+
+### Colonne di `results_merged.csv`
+
+Prodotto da `aggregate_results.py` (`--merge`). Una riga per chiave:
+
+```
+(run_id, filename, git_commit, git_branch, provider, model, runtime_hostname)
+```
+
+Le colonne `duration_seconds`, `prompt_tokens`, `completion_tokens`, `total_tokens`,
+`tokens_per_second` vengono **rinominate con suffisso**:
+
+| Nome in `results_merged.csv` | Fonte |
+|------------------------------|-------|
+| `classifier_duration_s` | Classifier |
+| `cat_duration_s` | Categorizer |
+| `prompt_tokens_clf` / `completion_tokens_clf` / `total_tokens_clf` / `tokens_per_second_clf` | Classifier |
+| `prompt_tokens_cat` / `completion_tokens_cat` / `total_tokens_cat` / `tokens_per_second_cat` | Categorizer |
+
+Le colonne `file_*`, `runtime_*`, `n_ctx`, ecc. sono prese dalla riga classifier come fonte primaria.
+Righe senza controparte (es. solo classifier, categorizer non ancora girato) sono incluse con NaN sulle colonne mancanti.
+
+---
+
 ## Workflow multi-macchina (USB e SSH)
 
 Per girare il benchmark su una macchina diversa dalla dev (es. un Mac dedicato al bench,

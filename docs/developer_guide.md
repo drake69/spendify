@@ -206,6 +206,15 @@ svc.set_onboarding_done()
 svc.apply_default_taxonomy(language)   # 'it' | 'en' | 'fr' | 'de' | 'es'
 ```
 
+**Campi principali in `DEFAULT_USER_SETTINGS`:**
+
+| Chiave | Default | Descrizione |
+|--------|---------|-------------|
+| `language` | `"it"` | Lingua UI (`it`, `en`, `fr`, `de`, `es`) |
+| `country` | `"IT"` | Paese utente ISO 3166-1 alpha-2 (es. `IT`, `CH`, `DE`). Usato da `nsi_lookup.py` per disambiguare brand multinazionali (es. Migros CH vs Migros TR). Migrazione Alembic pendente (C-08-country). |
+| `llm_backend` | `"local_ollama"` | Backend LLM attivo |
+| `giroconto_mode` | `"neutral"` | Visibilità giroconti (`neutral` / `exclude`) |
+
 ### Onboarding
 
 Alla prima esecuzione su un DB vuoto, `app.py` mostra il wizard di onboarding (4 step: lingua, nomi titolari, conti, conferma). Dopo aver completato il wizard, `set_onboarding_done()` è chiamato e l'app ricarica normalmente.
@@ -542,14 +551,13 @@ Il modulo `tests/hw_monitor.py` (`HWMonitor`) campiona CPU e GPU in background o
 
 ### Logging
 
-Ogni esecuzione salva un log in `tests/logs/` (gitignored, un file per run con timestamp):
+Ogni esecuzione salva un log in `benchmark/logs/` (gitignored, un file per run con timestamp):
 
 | Script | Log |
 |--------|-----|
-| `run_benchmark_full.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
-| `run_benchmark_full.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
-| `benchmark_classifier.py` | `tests/logs/classifier_YYYYMMDD_HHMMSS.log` |
-| `benchmark_categorizer.py` | `tests/logs/categorizer_YYYYMMDD_HHMMSS.log` |
+| `run_benchmark_full.sh` | `benchmark/logs/benchmark_YYYYMMDD_HHMMSS.log` |
+| `benchmark_classifier.py` | `benchmark/logs/classifier_YYYYMMDD_HHMMSS.log` |
+| `benchmark_categorizer.py` | `benchmark/logs/categorizer_YYYYMMDD_HHMMSS.log` |
 
 Output su console e file simultaneamente (tee). Utile per troubleshooting e confronto tra run.
 

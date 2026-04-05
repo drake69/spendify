@@ -531,7 +531,7 @@ Spendif.ai memorizza la struttura di ogni file importato (colonne, formato date,
 
 ## Strumenti di benchmark (per utenti avanzati)
 
-Spendif.ai include due script di benchmark nella cartella `tests/`:
+Spendif.ai include due script di benchmark nella cartella `benchmark/`:
 
 - **`benchmark_classifier.py`** — misura la qualita del riconoscimento schema (header, colonne, formato date, convenzione segno).
 - **`benchmark_categorizer.py`** — misura la qualita della categorizzazione LLM in isolamento (senza database, regole o storico). Metriche: accuratezza esatta, accuratezza fuzzy (primo livello), tasso di fallback.

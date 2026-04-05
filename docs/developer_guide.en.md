@@ -410,14 +410,13 @@ All GGUF models are now benchmarked regardless of file size (the previous 3 GB f
 
 ### Logging
 
-Each run saves a log to `tests/logs/` (gitignored, one timestamped file per run):
+Each run saves a log to `benchmark/logs/` (gitignored, one timestamped file per run):
 
 | Script | Log |
 |--------|-----|
-| `run_benchmark_full.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
-| `run_benchmark_full.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
-| `benchmark_classifier.py` | `tests/logs/classifier_YYYYMMDD_HHMMSS.log` |
-| `benchmark_categorizer.py` | `tests/logs/categorizer_YYYYMMDD_HHMMSS.log` |
+| `run_benchmark_full.sh` | `benchmark/logs/benchmark_YYYYMMDD_HHMMSS.log` |
+| `benchmark_classifier.py` | `benchmark/logs/classifier_YYYYMMDD_HHMMSS.log` |
+| `benchmark_categorizer.py` | `benchmark/logs/categorizer_YYYYMMDD_HHMMSS.log` |
 | `diagnose.ps1` | `~/spendifai_diagnose_YYYYMMDD_HHMMSS.log` |
 
 Output goes to both console and file simultaneously (tee). On Windows, run `diagnose.ps1` first to check prerequisites including GPU detection (NVIDIA/AMD/Intel).
