@@ -1,28 +1,28 @@
 #!/usr/bin/env bash
 # Cleanup benchmark artifacts, models, venv and generated files.
-# Reads model list from tests/benchmark_models.csv (no hardcoded names).
+# Reads model list from benchmark/benchmark_models.csv (no hardcoded names).
 #
 # Livelli (cumulativi):
 #   (default)    — salva risultati + pulisce log, .pyc, __pycache__
 #   --results    — + reset results_all_runs.csv (mantiene solo header)
 #   --models     — + cancella GGUF da ~/.spendifai/models/ + ollama rm
-#   --generated  — + cancella file sintetici (tests/generated_files/)
+#   --generated  — + cancella file sintetici (benchmark/generated_files/)
 #   --venv       — + cancella .venv
 #   --all        — tutto quanto (equiv. a tutti i flag sopra)
 #   --dry-run    — mostra cosa verrebbe fatto senza eseguire
 #
 # Usage:
-#   bash tests/cleanup_benchmark.sh                # soft cleanup
-#   bash tests/cleanup_benchmark.sh --models       # + rimuovi modelli
-#   bash tests/cleanup_benchmark.sh --all          # full reset
-#   bash tests/cleanup_benchmark.sh --all --dry-run
+#   bash benchmark/cleanup_benchmark.sh                # soft cleanup
+#   bash benchmark/cleanup_benchmark.sh --models       # + rimuovi modelli
+#   bash benchmark/cleanup_benchmark.sh --all          # full reset
+#   bash benchmark/cleanup_benchmark.sh --all --dry-run
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-BENCHMARK_DIR="tests/generated_files/benchmark"
+BENCHMARK_DIR="benchmark/results"
 MODELS_DIR="$HOME/.spendifai/models"
-MODELS_CSV="tests/benchmark_models.csv"
+MODELS_CSV="benchmark/benchmark_models.csv"
 DOCS_BENCHMARK_DIR="../documents/04_software_engineering/benchmark"
 
 CLEAN_RESULTS=false
@@ -105,10 +105,10 @@ echo ""
 echo "── [2] Cleaning logs and caches..."
 
 # Logs
-n_logs=$(find tests/logs -name "*.log" 2>/dev/null | wc -l | tr -d ' ')
+n_logs=$(find benchmark/logs -name "*.log" 2>/dev/null | wc -l | tr -d ' ')
 if [ "$n_logs" -gt 0 ]; then
-    _run rm -f tests/logs/*.log
-    echo "  Deleted $n_logs log file(s) from tests/logs/"
+    _run rm -f benchmark/logs/*.log
+    echo "  Deleted $n_logs log file(s) from benchmark/logs/"
 fi
 n_blogs=$(find "$BENCHMARK_DIR" -name "*.log" 2>/dev/null | wc -l | tr -d ' ')
 n_bak=$(find "$BENCHMARK_DIR" -name "*.bak" 2>/dev/null | wc -l | tr -d ' ')
@@ -195,9 +195,9 @@ fi
 # ── Step 5: file sintetici ────────────────────────────────────────────────
 if [ "$CLEAN_GENERATED" = true ]; then
     echo ""
-    echo "── [5] Deleting generated files (tests/generated_files/)..."
-    n_csv=$(find tests/generated_files -maxdepth 1 -name "*.csv" -o -name "*.xlsx" 2>/dev/null | wc -l | tr -d ' ')
-    _run rm -f tests/generated_files/*.csv tests/generated_files/*.xlsx
+    echo "── [5] Deleting generated files (benchmark/generated_files/)..."
+    n_csv=$(find benchmark/generated_files -maxdepth 1 -name "*.csv" -o -name "*.xlsx" 2>/dev/null | wc -l | tr -d ' ')
+    _run rm -f benchmark/generated_files/*.csv benchmark/generated_files/*.xlsx
     _run rm -f "$BENCHMARK_DIR"/*.json
     echo "  Deleted $n_csv synthetic file(s) + benchmark JSON configs"
 fi
@@ -223,5 +223,5 @@ echo "  Cleanup complete  —  $(date '+%Y-%m-%d %H:%M:%S')"
 echo "════════════════════════════════════════════════════════════"
 echo ""
 if [ "$CLEAN_VENV" = true ] && [ "$DRY_RUN" = false ]; then
-    echo "  Per rieseguire il benchmark: bash tests/run_benchmark_full.sh"
+    echo "  Per rieseguire il benchmark: bash benchmark/run_benchmark_full.sh"
 fi

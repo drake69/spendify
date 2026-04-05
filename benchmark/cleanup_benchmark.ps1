@@ -1,20 +1,20 @@
 ﻿# Cleanup benchmark artifacts, models, venv and generated files.
-# Reads model list from tests\benchmark_models.csv (no hardcoded names).
+# Reads model list from benchmark\benchmark_models.csv (no hardcoded names).
 #
 # Livelli (cumulativi):
 #   (default)    — salva risultati + pulisce log, .pyc, __pycache__
 #   -Results     — + reset results_all_runs.csv (mantiene solo header)
 #   -Models      — + cancella GGUF da %USERPROFILE%\.spendifai\models\ + ollama rm
-#   -Generated   — + cancella file sintetici (tests\generated_files\)
+#   -Generated   — + cancella file sintetici (benchmark\generated_files\)
 #   -Venv        — + cancella .venv
 #   -All         — tutto quanto
 #   -DryRun      — mostra cosa verrebbe fatto senza eseguire
 #
 # Usage:
-#   .\tests\cleanup_benchmark.ps1
-#   .\tests\cleanup_benchmark.ps1 -Models
-#   .\tests\cleanup_benchmark.ps1 -All
-#   .\tests\cleanup_benchmark.ps1 -All -DryRun
+#   .\benchmark\cleanup_benchmark.ps1
+#   .\benchmark\cleanup_benchmark.ps1 -Models
+#   .\benchmark\cleanup_benchmark.ps1 -All
+#   .\benchmark\cleanup_benchmark.ps1 -All -DryRun
 
 param(
     [switch]$Results,
@@ -35,10 +35,10 @@ $IsUNC     = $SourceDir -match '^\\\\' -or $SourceDir -match '^//'
 $WorkDir   = if ($IsUNC) { Join-Path $env:USERPROFILE ".spendifai\sw_artifacts" } else { $SourceDir }
 Set-Location $WorkDir
 
-$BenchDir  = Join-Path $WorkDir "tests\generated_files\benchmark"
+$BenchDir  = Join-Path $WorkDir "benchmark\results"
 $ModelsDir = Join-Path $env:USERPROFILE ".spendifai\models"
-$ModelsCsv = Join-Path $WorkDir "tests\benchmark_models.csv"
-$LogDir    = Join-Path $WorkDir "tests\logs"
+$ModelsCsv = Join-Path $WorkDir "benchmark\benchmark_models.csv"
+$LogDir    = Join-Path $WorkDir "benchmark\logs"
 
 function Do-Run {
     param([scriptblock]$Action, [string]$Label)
@@ -112,7 +112,7 @@ Write-Host "-- [2] Cleaning logs and caches..."
 $logFiles = @(Get-ChildItem $LogDir -Filter "*.log" -ErrorAction SilentlyContinue)
 if ($logFiles.Count -gt 0) {
     Do-Run { Remove-Item (Join-Path $LogDir "*.log") -Force } "Remove $($logFiles.Count) log file(s)"
-    Write-Host "  Deleted $($logFiles.Count) log file(s) from tests\logs\"
+    Write-Host "  Deleted $($logFiles.Count) log file(s) from benchmark\logs\"
 }
 $benchLogs = @(Get-ChildItem $BenchDir -Filter "*.log" -ErrorAction SilentlyContinue)
 $benchBaks  = @(Get-ChildItem $BenchDir -Filter "*.bak" -ErrorAction SilentlyContinue)
@@ -209,8 +209,8 @@ if ($Models) {
 # ── Step 5: file sintetici ────────────────────────────────────────────────
 if ($Generated) {
     Write-Host ""
-    Write-Host "-- [5] Deleting generated files (tests\generated_files\)..."
-    $genDir = Join-Path $WorkDir "tests\generated_files"
+    Write-Host "-- [5] Deleting generated files (benchmark\generated_files\)..."
+    $genDir = Join-Path $WorkDir "benchmark\generated_files"
     $synth = @(Get-ChildItem $genDir -Maxdepth 1 -Include "*.csv","*.xlsx" -ErrorAction SilentlyContinue)
     if ($synth.Count -gt 0) {
         Do-Run { $synth | Remove-Item -Force } "Remove $($synth.Count) synthetic file(s)"
@@ -243,8 +243,8 @@ if ($IsUNC -and -not $DryRun) {
     Write-Host ""
     Write-Host "  [sync] Propagating cleanup to network share..."
     # Solo i risultati (non i modelli che stanno sul disco locale)
-    $localBench  = Join-Path $WorkDir "tests\generated_files\benchmark"
-    $remoteBench = Join-Path $SourceDir "tests\generated_files\benchmark"
+    $localBench  = Join-Path $WorkDir "benchmark\results"
+    $remoteBench = Join-Path $SourceDir "benchmark\results"
     if (Test-Path $localBench) {
         if (-not (Test-Path $remoteBench)) { New-Item -ItemType Directory $remoteBench -Force | Out-Null }
         robocopy $localBench $remoteBench /MIR /NFL /NDL /NJH /NP /NS /NC
@@ -261,5 +261,5 @@ Write-Host "══════════════════════�
 if ($Venv -and -not $DryRun) {
     Write-Host ""
     Write-Host "  Per rieseguire il benchmark:"
-    Write-Host "  .\tests\run_benchmark_full.ps1"
+    Write-Host "  .\benchmark\run_benchmark_full.ps1"
 }

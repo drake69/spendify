@@ -2,7 +2,7 @@
 # Run this FIRST to check all prerequisites before launching the benchmark.
 #
 # Usage:
-#   powershell -ExecutionPolicy Bypass -File .\tests\diagnose.ps1
+#   powershell -ExecutionPolicy Bypass -File .\benchmark\diagnose.ps1
 
 $ErrorActionPreference = "Continue"
 
@@ -316,7 +316,7 @@ Write-Host ""
 Write-Host "============================================================"
 if ($AllOk) {
     Write-Host "  ALL CHECKS PASSED"
-    Write-Host "  Ready to run: powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1"
+    Write-Host "  Ready to run: powershell -ExecutionPolicy Bypass -File .\benchmark\run_benchmark_full.ps1"
 } else {
     Write-Host "  SOME CHECKS FAILED -- fix the issues above before running the benchmark"
 }
@@ -326,7 +326,7 @@ Write-Host "  Log saved to: $LogFile"
 if ($IsUNC) {
     Write-Host ""
     Write-Host "  [INFO] To run the benchmark from this UNC path:"
-    Write-Host "         powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark.ps1"
+    Write-Host "         powershell -ExecutionPolicy Bypass -File .\benchmark\run_benchmark_full.ps1"
     Write-Host "         (the script copies the project to $LocalCopy automatically)"
 }
 

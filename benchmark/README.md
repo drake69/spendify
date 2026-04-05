@@ -17,7 +17,7 @@ bash benchmark/run_benchmark_full.sh
 **Windows (PowerShell):**
 ```powershell
 cd D:\sw_artifacts
-powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1
+powershell -ExecutionPolicy Bypass -File .\benchmark\run_benchmark_full.ps1
 ```
 
 `run_benchmark_full.sh` / `run_benchmark_full.ps1` eseguono automaticamente:
@@ -34,13 +34,13 @@ bash benchmark/run_benchmark_full.sh --skip-ollama --skip-vllm
 ```
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -SkipOllama -SkipVllm
+powershell -ExecutionPolicy Bypass -File .\benchmark\run_benchmark_full.ps1 -SkipOllama -SkipVllm
 ```
 
 > Su Parallels Desktop con cartella condivisa:
 > ```powershell
 > cd "\\Mac\Home\Documents\Progetti\PERSONALE\Spendif.ai\sw_artifacts"
-> powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -SkipOllama -SkipVllm
+> powershell -ExecutionPolicy Bypass -File .\benchmark\run_benchmark_full.ps1 -SkipOllama -SkipVllm
 > ```
 
 Entrambi fanno tutto in automatico:
@@ -68,15 +68,15 @@ bash benchmark/run_benchmark_full.sh --ollama-url http://host:11434   # URL Olla
 
 **`run_benchmark_full.ps1` (Windows PowerShell):**
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1                            # default
-powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -Benchmark pipeline        # solo pipeline
-powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -Benchmark both -Runs 3    # entrambi, 3 run
-powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -SetupOnly                 # solo setup
-powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -SkipOllama               # salta Ollama
-powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -SkipVllm                 # salta vLLM
-powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -SkipLlama                # salta llama.cpp
-powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -VllmUrl http://host:8000/v1
-powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -OllamaUrl http://host:11434
+powershell -ExecutionPolicy Bypass -File .\benchmark\run_benchmark_full.ps1                            # default
+powershell -ExecutionPolicy Bypass -File .\benchmark\run_benchmark_full.ps1 -Benchmark pipeline        # solo pipeline
+powershell -ExecutionPolicy Bypass -File .\benchmark\run_benchmark_full.ps1 -Benchmark both -Runs 3    # entrambi, 3 run
+powershell -ExecutionPolicy Bypass -File .\benchmark\run_benchmark_full.ps1 -SetupOnly                 # solo setup
+powershell -ExecutionPolicy Bypass -File .\benchmark\run_benchmark_full.ps1 -SkipOllama               # salta Ollama
+powershell -ExecutionPolicy Bypass -File .\benchmark\run_benchmark_full.ps1 -SkipVllm                 # salta vLLM
+powershell -ExecutionPolicy Bypass -File .\benchmark\run_benchmark_full.ps1 -SkipLlama                # salta llama.cpp
+powershell -ExecutionPolicy Bypass -File .\benchmark\run_benchmark_full.ps1 -VllmUrl http://host:8000/v1
+powershell -ExecutionPolicy Bypass -File .\benchmark\run_benchmark_full.ps1 -OllamaUrl http://host:11434
 ```
 
 
@@ -341,10 +341,10 @@ bash benchmark/monitor_benchmark.sh --all            # mostra anche modelli comp
 
 **Windows (`monitor_benchmark.ps1`):**
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tests\monitor_benchmark.ps1
-powershell -ExecutionPolicy Bypass -File .\tests\monitor_benchmark.ps1 -Interval 10
-powershell -ExecutionPolicy Bypass -File .\tests\monitor_benchmark.ps1 -Runs 3
-powershell -ExecutionPolicy Bypass -File .\tests\monitor_benchmark.ps1 -Once
+powershell -ExecutionPolicy Bypass -File .\benchmark\monitor_benchmark.ps1
+powershell -ExecutionPolicy Bypass -File .\benchmark\monitor_benchmark.ps1 -Interval 10
+powershell -ExecutionPolicy Bypass -File .\benchmark\monitor_benchmark.ps1 -Runs 3
+powershell -ExecutionPolicy Bypass -File .\benchmark\monitor_benchmark.ps1 -Once
 ```
 
 **Python cross-platform (`monitor_benchmark.py`):**

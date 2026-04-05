@@ -6,7 +6,7 @@ across 3 sizes (S/M/L) plus format variants. Each file has realistic
 Italian banking transaction descriptions, preheader rows, and footers.
 
 Usage:
-    python tests/generate_synthetic_files.py
+    python benchmark/generate_synthetic_files.py
 """
 from __future__ import annotations
 

@@ -250,7 +250,7 @@ def _ensure_generated_files() -> None:
 
 
 def _read_version() -> str:
-    """Read version from tests/.version (portable, no git needed).
+    """Read version from benchmark/.version (portable, no git needed).
     Format: YYYYMMDDHHMMSS-sha7  e.g. 20260404143022-09e24c2
     Falls back to git rev-parse if .version missing."""
     version_file = _TESTS_DIR / ".version"

@@ -4,7 +4,7 @@
 # Fallback: robocopy in una cartella temp + scp ricorsivo.
 #
 # Esclude: .git, .claude, __pycache__, .venv, *.db, logs, backup, quarantine, ui, ...
-# Preserva: tests\benchmark_models.csv (escluso da *.csv, reintrodotto esplicitamente)
+# Preserva: benchmark\benchmark_models.csv (escluso da *.csv, reintrodotto esplicitamente)
 #
 # Uso:
 #   powershell -ExecutionPolicy Bypass -File .\benchmark\bench_push_ssh.ps1 -Dest user@bench-host:~/Desktop/spendif-ai
