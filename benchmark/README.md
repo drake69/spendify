@@ -163,7 +163,7 @@ uv run python benchmark/benchmark_pipeline.py --runs 1 --backend local_llama_cpp
 
 ### Categorizer
 
-Misura la capacità dell'LLM di assegnare le categorie corrette alle transazioni. Il classifier viene bypassato (usa ground truth) per isolare la performance di categorizzazione.
+Misura la capacità dell'LLM di assegnare le categorie corrette alle transazioni. Il benchmark esegue la pipeline completa: il classifier viene invocato internamente per classificare il documento, poi il categorizer assegna categoria e sottocategoria a ogni transazione. Le metriche di categorizzazione riflettono quindi l'effetto combinato di entrambe le fasi.
 
 ```bash
 uv run python benchmark/benchmark_categorizer.py --runs 1 --backend local_llama_cpp \
@@ -180,11 +180,44 @@ uv run python benchmark/benchmark_categorizer.py --runs 1 --backend local_llama_
 | parse_rate | x | | % righe parsate |
 | amount_accuracy | x | | Precisione importi |
 | date_accuracy | x | | Precisione date |
-| category_accuracy | | x | Categoria esatta |
-| cat_fuzzy_accuracy | | x | Categoria fuzzy match |
-| cat_fallback_rate | | x | % fallback (categoria default) |
+| category_accuracy | | x | Categoria esatta (exact match con ground truth) |
+| cat_fuzzy_accuracy | | x | Categoria fuzzy match (top-level corretto) |
+| cat_fallback_rate | | x | % fallback (categoria default, to_review=True) |
+| n_rule | | x | # transazioni categorizzate da regole (user rules DB + static country rules JSON) |
+| n_history | | x | # transazioni categorizzate da history lookup |
+| n_llm | | x | # transazioni categorizzate dall'LLM |
+| n_fallback | | x | # transazioni non categorizzate (fallback) |
 | duration_seconds | x | x | Tempo di esecuzione |
 | automation_score | x | x | Score composito |
+
+### Breakdown sorgente categorizzazione (n_rule / n_history / n_llm)
+
+Il CSV del categorizer riporta per ogni file quante transazioni sono state risolte da ciascuna sorgente:
+
+```
+categorize_batch [CC-1_S_000.csv]: 30 transactions — 8 by rules, 0 by history, 22 by LLM
+```
+
+**Considerazioni importanti per l'interpretazione dei risultati:**
+
+- `n_rule` **non distingue** tra user rules (tabella `category_rule` nel DB) e static country rules
+  (`core/static_rules/<language>.json`). Nel bench il DB è vuoto → tutti gli `n_rule` provengono
+  esclusivamente dalle static rules del JSON.
+
+- Le static rules **influenzano `cat_exact_accuracy`**: transazioni con keyword note (es. "ESSELUNGA",
+  "stipendio", "farmacia") vengono categorizzate correttamente al 100% indipendentemente dal modello LLM.
+  Un modello che riceve più file con queste keyword appare più accurato senza merito.
+
+- Per confrontare modelli in modo puro, considera `n_llm / n_categorized` (quante transazioni ha
+  effettivamente gestito l'LLM) e la `category_accuracy` calcolata **solo sulle righe LLM**
+  (oggi non disponibile direttamente, ma ricavabile da `cat_results_detail.csv`).
+
+- Le static rules sono in git (`core/static_rules/it.json`) → **riproducibili**: bench diversi
+  sulla stessa codebase producono sempre lo stesso `n_rule`. Se le regole vengono modificate,
+  i risultati cambiano e i run non sono più comparabili direttamente.
+
+- Per un benchmark "LLM puro" (zero static rules): rinomina o svuota il file
+  `core/static_rules/it.json` prima di girare il bench.
 
 ## Full benchmark (tutti i backend × classifier + categorizer)
 
