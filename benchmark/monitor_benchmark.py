@@ -126,28 +126,27 @@ _SKIP_CSV_NAMES = {
 }
 
 def _find_archive_csvs(csv_override: Path | None = None) -> list[Path]:
-    """Return all per-run archive CSVs to read.
+    """Return all per-run archive CSVs to aggregate.
 
-    Each benchmark_categorizer.py / benchmark_classifier.py invocation writes
-    only its own results to a timestamped archive file (YYYYMMDD*_hostname_N.csv).
-    results_all_runs.csv is written only by the offline aggregator — excluded here.
+    Reads every archive file in the results directory; session isolation is
+    handled by the current_only / version filter in _load_results(), not here.
+    After the offline aggregator runs it deletes old archive files, so only
+    the current session's files survive — keeping the list naturally short.
 
-    Returns the list sorted by mtime ascending (oldest first) so rows from
-    multiple files are aggregated in chronological order.
+    Returns files sorted by mtime ascending (oldest first).
     Priority: explicit --csv override (single file) > all archive CSVs.
     """
     if csv_override and csv_override.exists():
         return [csv_override]
 
-    if _RESULTS_ARCHIVE_DIR.exists():
-        candidates = [
-            p for p in _RESULTS_ARCHIVE_DIR.glob("*.csv")
-            if p.name not in _SKIP_CSV_NAMES
-        ]
-        if candidates:
-            return sorted(candidates, key=lambda p: p.stat().st_mtime)
+    if not _RESULTS_ARCHIVE_DIR.exists():
+        return []
 
-    return []
+    candidates = [
+        p for p in _RESULTS_ARCHIVE_DIR.glob("*.csv")
+        if p.name not in _SKIP_CSV_NAMES
+    ]
+    return sorted(candidates, key=lambda p: p.stat().st_mtime)
 
 
 def _load_results(current_only: bool = True, paths: list[Path] | None = None) -> tuple[list[dict], float | None]:
