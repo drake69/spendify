@@ -167,6 +167,8 @@ def _snapshot(rows: list[dict], exp_per_model: int, n_models_total: int = 0) -> 
     cpu_samples: list[float]     = []
     gpu_samples: list[float]     = []
     phases: dict[str, int]       = defaultdict(int)
+    # Inference params: one sample per model key (constant across files)
+    infer_params: dict[tuple, dict] = {}
 
     for row in rows:
         key = (row.get("provider", "?"), row.get("model", "?"))
@@ -192,6 +194,15 @@ def _snapshot(rows: list[dict], exp_per_model: int, n_models_total: int = 0) -> 
         bt = (row.get("benchmark_type") or "").strip()
         if bt:
             phases[bt] += 1
+        # Capture inference params once per model key (values are constant)
+        if key not in infer_params:
+            p: dict[str, str] = {}
+            for field in ("n_gpu_layers", "n_threads", "flash_attn"):
+                v = (row.get(field) or "").strip()
+                if v:
+                    p[field] = v
+            if p:
+                infer_params[key] = p
 
     total_done   = sum(counts.values())
     n_models     = len(counts)
@@ -223,6 +234,7 @@ def _snapshot(rows: list[dict], exp_per_model: int, n_models_total: int = 0) -> 
         "gpu_avg_hist":  sum(gpu_samples) / len(gpu_samples) if gpu_samples else 0.0,
         "phases":        dict(phases),
         "run_id":        current_run_id,
+        "infer_params":  infer_params,
     }
 
 # ── Report ─────────────────────────────────────────────────────────────────
@@ -241,6 +253,7 @@ def _print_report(snap: dict, elapsed_s: float, interval: int,
     gpu_hist     = snap["gpu_avg_hist"]
     phases       = snap["phases"]
     run_id       = snap["run_id"]
+    infer_params = snap.get("infer_params", {})
 
     W = 72
 
@@ -305,6 +318,21 @@ def _print_report(snap: dict, elapsed_s: float, interval: int,
         if exp_per > 0:
             if 0 < cnt < exp_per: tag = " ← in corso"
             elif cnt == 0:        tag = " ○ in attesa"
+        # Append inference params if available
+        ip = infer_params.get((prov, mdl), {})
+        if ip:
+            parts = []
+            gl = ip.get("n_gpu_layers", "")
+            if gl:
+                parts.append(f"gpu={gl}")
+            nt = ip.get("n_threads", "")
+            if nt:
+                parts.append(f"thr={nt}")
+            fa = ip.get("flash_attn", "")
+            if fa and fa.lower() not in ("", "false", "0"):
+                parts.append("flash")
+            if parts:
+                tag += f"  [{', '.join(parts)}]"
         print(f"  {prov:<{col_b}}{mdl:<{col_m}}{cnt:>{col_d}}   {bar} {pct}{tag}")
 
     print("  " + "─" * (W - 2))
