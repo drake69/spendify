@@ -56,7 +56,7 @@ Write-Host ""
 Write-Host "-- [0] Stopping running benchmarks..."
 $procs = Get-Process -ErrorAction SilentlyContinue | Where-Object {
     $_.MainWindowTitle -match "benchmark" -or
-    ($_.Path -and ($_.Path -match "benchmark_pipeline|benchmark_categorizer|run_benchmark_full"))
+    ($_.Path -and ($_.Path -match "benchmark_classifier|benchmark_categorizer|run_benchmark_full"))
 }
 if ($procs.Count -gt 0) {
     foreach ($p in $procs) {
@@ -67,7 +67,7 @@ if ($procs.Count -gt 0) {
 } else {
     # Also check Python processes running benchmark scripts
     $pyProcs = Get-WmiObject Win32_Process -ErrorAction SilentlyContinue |
-        Where-Object { $_.CommandLine -match "benchmark_pipeline|benchmark_categorizer|run_benchmark_full" }
+        Where-Object { $_.CommandLine -match "benchmark_classifier|benchmark_categorizer|run_benchmark_full" }
     if ($pyProcs) {
         foreach ($p in $pyProcs) {
             Do-Run { Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue } `

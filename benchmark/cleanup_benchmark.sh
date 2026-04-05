@@ -60,7 +60,7 @@ echo "════════════════════════�
 echo ""
 echo "── [0] Stopping running benchmarks..."
 n_killed=0
-for pid in $(pgrep -f "benchmark_pipeline\|benchmark_categorizer\|run_benchmark_full\|run_all_benchmarks" 2>/dev/null || true); do
+for pid in $(pgrep -f "benchmark_classifier\|benchmark_categorizer\|run_benchmark_full\|run_all_benchmarks" 2>/dev/null || true); do
     _run kill "$pid" 2>/dev/null && n_killed=$((n_killed + 1))
 done
 if [ $n_killed -gt 0 ]; then

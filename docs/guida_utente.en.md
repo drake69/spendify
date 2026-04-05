@@ -531,7 +531,7 @@ Spendif.ai remembers the structure of each imported file (columns, date format, 
 
 Spendif.ai includes two benchmark scripts in the `tests/` folder:
 
-- **`benchmark_pipeline.py`** — measures schema detection quality (header, columns, date format, sign convention).
+- **`benchmark_classifier.py`** — measures schema detection quality (header, columns, date format, sign convention).
 - **`benchmark_categorizer.py`** — measures LLM categorisation quality in isolation (no database, no user rules, no history). Metrics: exact accuracy, fuzzy accuracy (top-level category), fallback rate.
 
 Both support the same CLI arguments: `--runs`, `--files`, `--backend`, `--model`, `--model-path`. Useful for comparing different models before choosing which one to use in production.

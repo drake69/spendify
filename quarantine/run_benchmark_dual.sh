@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run benchmark_pipeline.py across all models on BOTH llama.cpp and Ollama.
+# Run benchmark_classifier.py across all models on BOTH llama.cpp and Ollama.
 # Resume-safe: already-completed (run_id, filename, commit, branch, provider, model) are skipped.
 #
 # Usage: bash tests/run_benchmark_dual.sh [--runs N]
@@ -10,7 +10,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 PYTHON=".venv/bin/python"
-BENCH="tests/benchmark_pipeline.py"
+BENCH="tests/benchmark_classifier.py"
 RUNS="${1:-1}"
 MODELS_DIR="$HOME/.spendifai/models"
 

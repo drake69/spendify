@@ -103,7 +103,7 @@ run_one_model() {
 
     # Classifier benchmark
     echo "  → Classifier benchmark..."
-    $PYTHON tests/benchmark_pipeline.py \
+    $PYTHON tests/benchmark_classifier.py \
         --runs "$RUNS" \
         --backend local_llama_cpp \
         --model-path "$gguf_path" \

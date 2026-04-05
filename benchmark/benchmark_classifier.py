@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Benchmark: N runs of full pipeline on synthetic files.
+"""Benchmark: N runs of classifier stage on synthetic files.
 
-Measures LLM variability by repeating the same deterministic input N times.
-Since the LLM (Ollama) is probabilistic, results may differ between runs.
-This script quantifies that variance.
+Measures LLM variability in schema detection (header, columns, date format,
+sign convention) by repeating the same deterministic input N times.
+Since the LLM is probabilistic, results may differ between runs.
+This script quantifies that variance for the classifier stage only.
 
 Usage:
-    python benchmark/benchmark_pipeline.py [--runs N] [--files PATTERN]
+    python benchmark/benchmark_classifier.py [--runs N] [--files PATTERN]
 
     --runs N       Number of runs (default: 10)
     --files PAT    Glob pattern to filter files (default: all)
@@ -1211,7 +1212,7 @@ def main() -> None:
     # ── Log file: tee stdout+stderr to file ──────────────────────
     log_dir = Path(__file__).resolve().parent / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
-    log_file = log_dir / f"pipeline_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+    log_file = log_dir / f"classifier_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
     _tee = _TeeWriter(log_file)
     sys.stdout = _tee
     sys.stderr = _tee

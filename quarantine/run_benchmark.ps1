@@ -291,7 +291,7 @@ print(ctx or 0)
         }
 
         if ($Benchmark -eq "pipeline" -or $Benchmark -eq "both") {
-            Run-Bench -Script "tests/benchmark_pipeline.py" -Label "pipeline" -GgufPath $gguf.FullName
+            Run-Bench -Script "tests/benchmark_classifier.py" -Label "pipeline" -GgufPath $gguf.FullName
         }
         if ($Benchmark -eq "categorizer" -or $Benchmark -eq "both") {
             Run-Bench -Script "tests/benchmark_categorizer.py" -Label "categorizer" -GgufPath $gguf.FullName
@@ -299,7 +299,7 @@ print(ctx or 0)
     }
 } elseif ($Backend -eq "vllm") {
     if ($Benchmark -eq "pipeline" -or $Benchmark -eq "both") {
-        Run-Bench -Script "tests/benchmark_pipeline.py" -Label "pipeline"
+        Run-Bench -Script "tests/benchmark_classifier.py" -Label "pipeline"
     }
     if ($Benchmark -eq "categorizer" -or $Benchmark -eq "both") {
         Run-Bench -Script "tests/benchmark_categorizer.py" -Label "categorizer"

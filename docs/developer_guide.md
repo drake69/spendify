@@ -422,8 +422,8 @@ Su una macchina qualsiasi — anche appena clonata — basta un solo comando:
 
 ```bash
 # macOS / Linux — ENTRY POINT consigliato (tutti i backend × pipeline + categorizer)
-bash tests/run_benchmark_full.sh                             # pipeline + categorizer, 1 run, tutti i backend
-bash tests/run_benchmark_full.sh --benchmark pipeline        # solo pipeline
+bash tests/run_benchmark_full.sh                             # classifier + categorizer, 1 run, tutti i backend
+bash tests/run_benchmark_full.sh --benchmark classifier      # solo classifier
 bash tests/run_benchmark_full.sh --benchmark both --runs 3   # entrambi, 3 run ciascuno
 bash tests/run_benchmark_full.sh --setup-only                # solo download modelli
 
@@ -464,27 +464,27 @@ Il setup scarica automaticamente i modelli GGUF mancanti e fa `ollama pull` per 
 
 ```bash
 # Singolo modello llama.cpp (n_ctx auto-detect dal GGUF)
-uv run python tests/benchmark_pipeline.py --runs 1 --backend local_llama_cpp \
+uv run python tests/benchmark_classifier.py --runs 1 --backend local_llama_cpp \
   --model-path ~/.spendifai/models/gemma-3-12b-it-Q4_K_M.gguf
 
 # Forza un n_ctx specifico (limita RAM)
-uv run python tests/benchmark_pipeline.py --runs 1 --backend local_llama_cpp \
+uv run python tests/benchmark_classifier.py --runs 1 --backend local_llama_cpp \
   --model-path ~/.spendifai/models/gemma-3-12b-it-Q4_K_M.gguf --n-ctx 2048
 
 # Singolo modello Ollama (n_ctx auto-detect via /api/show)
-uv run python tests/benchmark_pipeline.py --runs 1 --backend local_ollama --model gemma3:12b
+uv run python tests/benchmark_classifier.py --runs 1 --backend local_ollama --model gemma3:12b
 
 # Gemma 4 E2B
-uv run python tests/benchmark_pipeline.py --runs 1 --backend local_llama_cpp \
+uv run python tests/benchmark_classifier.py --runs 1 --backend local_llama_cpp \
   --model-path ~/.spendifai/models/gemma-4-E2B-it-Q4_K_M.gguf
-uv run python tests/benchmark_pipeline.py --runs 1 --backend local_ollama --model gemma4:e2b
+uv run python tests/benchmark_classifier.py --runs 1 --backend local_ollama --model gemma4:e2b
 
 # Categorizer con Ollama
 uv run python tests/benchmark_categorizer.py --runs 1 --backend local_ollama --model gemma3:12b
 
 # vLLM (locale o remoto — auto-detect modello e context window)
 vllm serve Qwen/Qwen2.5-3B-Instruct  # in un altro terminale
-uv run python tests/benchmark_pipeline.py --runs 1 --backend vllm
+uv run python tests/benchmark_classifier.py --runs 1 --backend vllm
 
 # Suite completa (tutti i backend)
 bash tests/run_benchmark_full.sh
@@ -520,7 +520,7 @@ Il modulo `tests/hw_monitor.py` (`HWMonitor`) campiona CPU e GPU in background o
 | Linux AMD | `rocm-smi` → utilization % | Richiede ROCm |
 | Fallback | — | GPU utilization = 0.0 |
 
-`benchmark_pipeline.py` e `benchmark_categorizer.py` usano `HWMonitor` al posto delle vecchie funzioni inline `_sample_cpu_load()` / `_sample_gpu_utilization()`.
+`benchmark_classifier.py` e `benchmark_categorizer.py` usano `HWMonitor` al posto delle vecchie funzioni inline `_sample_cpu_load()` / `_sample_gpu_utilization()`.
 
 ### Monitor avanzamento (monitor_benchmark)
 
@@ -548,7 +548,7 @@ Ogni esecuzione salva un log in `tests/logs/` (gitignored, un file per run con t
 |--------|-----|
 | `run_benchmark_full.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
 | `run_benchmark_full.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
-| `benchmark_pipeline.py` | `tests/logs/pipeline_YYYYMMDD_HHMMSS.log` |
+| `benchmark_classifier.py` | `tests/logs/classifier_YYYYMMDD_HHMMSS.log` |
 | `benchmark_categorizer.py` | `tests/logs/categorizer_YYYYMMDD_HHMMSS.log` |
 
 Output su console e file simultaneamente (tee). Utile per troubleshooting e confronto tra run.
@@ -596,7 +596,7 @@ curl http://localhost:8080/v1/models
 
 ```bash
 # Punta al server remoto via backend openai_compatible
-uv run python tests/benchmark_pipeline.py --runs 1 \
+uv run python tests/benchmark_classifier.py --runs 1 \
   --backend openai_compatible \
   --base-url http://192.168.x.x:8080/v1 \
   --model gemma-3-12b-it

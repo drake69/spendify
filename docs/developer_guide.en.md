@@ -359,8 +359,8 @@ The recommended entry point for a full benchmark across all backends and both ph
 
 ```bash
 # macOS / Linux — RECOMMENDED (all backends × pipeline + categorizer)
-bash tests/run_benchmark_full.sh                             # pipeline + categorizer, 1 run
-bash tests/run_benchmark_full.sh --benchmark pipeline        # pipeline only
+bash tests/run_benchmark_full.sh                             # classifier + categorizer, 1 run
+bash tests/run_benchmark_full.sh --benchmark classifier      # classifier only
 bash tests/run_benchmark_full.sh --benchmark both --runs 3   # both phases, 3 runs each
 bash tests/run_benchmark_full.sh --setup-only                # download models only
 
@@ -372,7 +372,7 @@ powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -Benchma
 bash tests/run_benchmark_full.sh --skip-ollama --skip-vllm
 ```
 
-`run_benchmark_full.sh` / `run_benchmark_full.ps1` perform full setup (download missing GGUF models, `ollama pull` missing Ollama models, detect vLLM), then run **pipeline (classifier)** and **categorizer** benchmarks for every active backend. The model list is read from `tests/benchmark_models.csv`. Flags: `--benchmark pipeline|categorizer|both`, `--runs N`, `--setup-only`, `--skip-llama/ollama/vllm`, `--vllm-url`, `--ollama-url` (PS1 equivalents: `-Benchmark`, `-Runs`, `-SetupOnly`, `-SkipLlama`, `-SkipOllama`, `-SkipVllm`, `-VllmUrl`, `-OllamaUrl`).
+`run_benchmark_full.sh` / `run_benchmark_full.ps1` perform full setup (download missing GGUF models, `ollama pull` missing Ollama models, detect vLLM), then run **classifier** and **categorizer** benchmarks for every active backend. The model list is read from `tests/benchmark_models.csv`. Flags: `--benchmark classifier|categorizer|both`, `--runs N`, `--setup-only`, `--skip-llama/ollama/vllm`, `--vllm-url`, `--ollama-url` (PS1 equivalents: `-Benchmark`, `-Runs`, `-SetupOnly`, `-SkipLlama`, `-SkipOllama`, `-SkipVllm`, `-VllmUrl`, `-OllamaUrl`).
 
 ### Model catalogue (benchmark_models.csv)
 
@@ -380,7 +380,7 @@ bash tests/run_benchmark_full.sh --skip-ollama --skip-vllm
 
 ### LLM Benchmark — HW monitoring
 
-The benchmark suite (`tests/benchmark_pipeline.py`, `tests/benchmark_categorizer.py`) includes cross-platform GPU monitoring via `tests/hw_monitor.py`. A background thread (`HWMonitor`) samples CPU and GPU utilization every 0.5 s for the duration of each run, replacing the old point-in-time sampling functions.
+The benchmark suite (`tests/benchmark_classifier.py`, `tests/benchmark_categorizer.py`) includes cross-platform GPU monitoring via `tests/hw_monitor.py`. A background thread (`HWMonitor`) samples CPU and GPU utilization every 0.5 s for the duration of each run, replacing the old point-in-time sampling functions.
 
 | Platform | GPU method |
 |----------|-----------|
@@ -416,7 +416,7 @@ Each run saves a log to `tests/logs/` (gitignored, one timestamped file per run)
 |--------|-----|
 | `run_benchmark_full.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
 | `run_benchmark_full.sh` | `tests/logs/benchmark_YYYYMMDD_HHMMSS.log` |
-| `benchmark_pipeline.py` | `tests/logs/pipeline_YYYYMMDD_HHMMSS.log` |
+| `benchmark_classifier.py` | `tests/logs/classifier_YYYYMMDD_HHMMSS.log` |
 | `benchmark_categorizer.py` | `tests/logs/categorizer_YYYYMMDD_HHMMSS.log` |
 | `diagnose.ps1` | `~/spendifai_diagnose_YYYYMMDD_HHMMSS.log` |
 

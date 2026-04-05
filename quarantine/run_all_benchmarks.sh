@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Run benchmark_pipeline.py across all available llama.cpp GGUF models.
+# Run benchmark_classifier.py across all available llama.cpp GGUF models.
 # Each run appends to the same results_all_runs.csv (resume-safe via git commit key).
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 PYTHON=".venv/bin/python"
-BENCH="tests/benchmark_pipeline.py"
+BENCH="tests/benchmark_classifier.py"
 RUNS=1
 MODELS_DIR="$HOME/.spendifai/models"
 

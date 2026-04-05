@@ -22,7 +22,7 @@ powershell -ExecutionPolicy Bypass -File .\benchmark\run_benchmark_full.ps1
 
 `run_benchmark_full.sh` / `run_benchmark_full.ps1` eseguono automaticamente:
 1. Setup completo: scaricano i modelli GGUF mancanti + `ollama pull` dei modelli Ollama mancanti + rilevano vLLM
-2. Benchmark **pipeline (classifier)** per ogni backend attivo (llama.cpp, Ollama se in esecuzione, vLLM se in esecuzione)
+2. Benchmark **classifier** per ogni backend attivo (llama.cpp, Ollama se in esecuzione, vLLM se in esecuzione)
 3. Benchmark **categorizer** per ogni backend attivo
 4. La lista modelli viene letta da `benchmark/benchmark_models.csv`
 5. `--runs N` si applica a entrambe le fasi
@@ -66,7 +66,7 @@ Entrambi fanno tutto in automatico:
 **`run_benchmark_full.sh` (macOS / Linux):**
 ```bash
 bash benchmark/run_benchmark_full.sh                             # pipeline + categorizer, 1 run, tutti i backend
-bash benchmark/run_benchmark_full.sh --benchmark pipeline        # solo pipeline
+bash benchmark/run_benchmark_full.sh --benchmark classifier        # solo pipeline
 bash benchmark/run_benchmark_full.sh --benchmark categorizer     # solo categorizer
 bash benchmark/run_benchmark_full.sh --benchmark both --runs 3   # entrambi, 3 run ciascuno
 bash benchmark/run_benchmark_full.sh --setup-only                # solo download modelli, senza benchmark
@@ -80,7 +80,7 @@ bash benchmark/run_benchmark_full.sh --ollama-url http://host:11434   # URL Olla
 **`run_benchmark_full.ps1` (Windows PowerShell):**
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\benchmark\run_benchmark_full.ps1                            # default
-powershell -ExecutionPolicy Bypass -File .\benchmark\run_benchmark_full.ps1 -Benchmark pipeline        # solo pipeline
+powershell -ExecutionPolicy Bypass -File .\benchmark\run_benchmark_full.ps1 -Benchmark classifier        # solo pipeline
 powershell -ExecutionPolicy Bypass -File .\benchmark\run_benchmark_full.ps1 -Benchmark both -Runs 3    # entrambi, 3 run
 powershell -ExecutionPolicy Bypass -File .\benchmark\run_benchmark_full.ps1 -SetupOnly                 # solo setup
 powershell -ExecutionPolicy Bypass -File .\benchmark\run_benchmark_full.ps1 -SkipOllama               # salta Ollama
@@ -101,7 +101,7 @@ benchmark/                        ← tutto il materiale di benchmark (root del 
 ├── run_benchmark_full.ps1        ← avvia benchmark completo — Windows
 │
 │  ── MODULI PYTHON ─────────────────────────────────────────────────────────
-├── benchmark_pipeline.py         ← benchmark classifier (schema + parsing)
+├── benchmark_classifier.py         ← benchmark classifier (schema + parsing)
 ├── benchmark_categorizer.py      ← benchmark categorizer (categorie)
 ├── aggregate_results.py          ← aggregatore statistico + modello OLS predittivo
 ├── generate_synthetic_files.py   ← genera i file sintetici di test
@@ -134,7 +134,7 @@ benchmark/                        ← tutto il materiale di benchmark (root del 
 │   └── <version>_<hostname>.csv  ← es. 20260404120000-a1b2c3d_bench-mac.csv
 ├── logs/                         ← log di esecuzione
 │   ├── benchmark_YYYYMMDD_HHMMSS.log
-│   ├── pipeline_YYYYMMDD_HHMMSS.log
+│   ├── classifier_YYYYMMDD_HHMMSS.log
 │   └── categorizer_YYYYMMDD_HHMMSS.log
 └── generated_files/              ← file sintetici input (generati PRIMA del bench)
     ├── manifest.csv
@@ -149,7 +149,7 @@ benchmark/                        ← tutto il materiale di benchmark (root del 
 
 ## Tipi di benchmark
 
-### Classifier (pipeline)
+### Classifier
 
 Misura la capacità dell'LLM di:
 - Riconoscere lo schema del file (header, colonne)
@@ -157,7 +157,7 @@ Misura la capacità dell'LLM di:
 - Rilevare la convenzione segni (dare/avere)
 
 ```bash
-uv run python benchmark/benchmark_pipeline.py --runs 1 --backend local_llama_cpp \
+uv run python benchmark/benchmark_classifier.py --runs 1 --backend local_llama_cpp \
   --model-path ~/.spendifai/models/qwen2.5-3b-instruct-q4_k_m.gguf
 ```
 
@@ -241,16 +241,16 @@ quella categoria.
 ### Cosa fa
 
 1. **Setup automatico** — scarica i modelli GGUF mancanti da HuggingFace, esegue `ollama pull` per i modelli Ollama mancanti, rileva se vLLM è in esecuzione
-2. **Benchmark pipeline** — esegue `benchmark_pipeline.py` per ogni backend attivo (llama.cpp, Ollama, vLLM)
+2. **Benchmark classifier** — esegue `benchmark_classifier.py` per ogni backend attivo (llama.cpp, Ollama, vLLM)
 3. **Benchmark categorizer** — esegue `benchmark_categorizer.py` per ogni backend attivo
 4. **Lista modelli da CSV** — legge `benchmark/benchmark_models.csv` anziché array hardcoded
-5. **`--runs N` unificato** — si applica a entrambe le fasi (pipeline e categorizer)
+5. **`--runs N` unificato** — si applica a entrambe le fasi (classifier e categorizer)
 
 ### Flags
 
 | Flag (bash) | Flag (PS1) | Default | Descrizione |
 |-------------|-----------|---------|-------------|
-| `--benchmark pipeline\|categorizer\|both` | `-Benchmark` | `both` | Quale fase eseguire |
+| `--benchmark classifier\|categorizer\|both` | `-Benchmark` | `both` | Quale fase eseguire |
 | `--runs N` | `-Runs N` | `1` | Numero di run per fase |
 | `--setup-only` | `-SetupOnly` | off | Solo setup modelli, senza benchmark |
 | `--skip-llama` | `-SkipLlama` | off | Salta backend llama.cpp |
@@ -366,7 +366,7 @@ Il benchmark rileva automaticamente la context window ottimale per ogni modello 
 
 Per forzare un valore specifico (es. limitare RAM):
 ```bash
-uv run python benchmark/benchmark_pipeline.py --backend local_llama_cpp \
+uv run python benchmark/benchmark_classifier.py --backend local_llama_cpp \
   --model-path ~/.spendifai/models/gemma-3-12b-it-Q4_K_M.gguf \
   --n-ctx 2048
 ```
@@ -427,7 +427,7 @@ Il modulo `benchmark/hw_monitor.py` (`HWMonitor`) campiona CPU e GPU **in backgr
 | Linux AMD | `rocm-smi` → utilization % | Richiede ROCm |
 | Fallback | — | GPU utilization = 0.0 |
 
-`benchmark_pipeline.py` e `benchmark_categorizer.py` istanziano `HWMonitor` all'inizio del run e chiamano `stop()` alla fine per ottenere le medie. `monitor_benchmark` usa `HWMonitor.sample_once()` per le statistiche live.
+`benchmark_classifier.py` e `benchmark_categorizer.py` istanziano `HWMonitor` all'inizio del run e chiamano `stop()` alla fine per ottenere le medie. `monitor_benchmark` usa `HWMonitor.sample_once()` per le statistiche live.
 
 > **Import path**: `monitor_benchmark.py` importa `HWMonitor` via `tests.hw_monitor` (shim a `benchmark/hw_monitor.py` che risolve il path senza richiedere il pacchetto `tests` installato).
 
@@ -443,7 +443,7 @@ Ogni esecuzione salva un log completo in `benchmark/logs/` (gitignored):
 |--------|----------|
 | `run_benchmark_full.sh` | `benchmark/logs/benchmark_YYYYMMDD_HHMMSS.log` |
 | `run_benchmark_full.sh` | `benchmark/logs/benchmark_YYYYMMDD_HHMMSS.log` |
-| `benchmark_pipeline.py` | `benchmark/logs/pipeline_YYYYMMDD_HHMMSS.log` |
+| `benchmark_classifier.py` | `benchmark/logs/classifier_YYYYMMDD_HHMMSS.log` |
 | `benchmark_categorizer.py` | `benchmark/logs/categorizer_YYYYMMDD_HHMMSS.log` |
 | `diagnose.ps1` | `~/spendifai_diagnose_YYYYMMDD_HHMMSS.log` |
 
@@ -477,14 +477,14 @@ pip install vllm
 vllm serve Qwen/Qwen2.5-3B-Instruct
 
 # 3. Lancia il benchmark (auto-detect del modello servito)
-uv run python benchmark/benchmark_pipeline.py --runs 1 --backend vllm
+uv run python benchmark/benchmark_classifier.py --runs 1 --backend vllm
 
 # Con URL e modello espliciti
-uv run python benchmark/benchmark_pipeline.py --runs 1 --backend vllm \
+uv run python benchmark/benchmark_classifier.py --runs 1 --backend vllm \
   --base-url http://localhost:8000/v1 --model Qwen/Qwen2.5-3B-Instruct
 
 # vLLM remoto (es. su GPU server)
-uv run python benchmark/benchmark_pipeline.py --runs 1 --backend vllm \
+uv run python benchmark/benchmark_classifier.py --runs 1 --backend vllm \
   --base-url http://192.168.x.x:8000/v1
 ```
 
@@ -556,7 +556,7 @@ llama-server -m ~/.spendifai/models/gemma-3-12b-it-Q4_K_M.gguf \
   --host 0.0.0.0 --port 8080 -ngl 99 -c 4096
 
 # Su Mac locale: punta al remoto
-uv run python benchmark/benchmark_pipeline.py --runs 1 \
+uv run python benchmark/benchmark_classifier.py --runs 1 \
   --backend openai_compatible \
   --base-url http://192.168.x.x:8080/v1 \
   --model gemma-3-12b-it

@@ -159,7 +159,7 @@ run_pipeline() {
     echo "──────────────────────────────────────────────────────────"
     echo "  [pipeline] llama.cpp: $name"
     echo "──────────────────────────────────────────────────────────"
-    $PYTHON tests/benchmark_pipeline.py \
+    $PYTHON tests/benchmark_classifier.py \
         --runs "$RUNS" \
         --backend local_llama_cpp \
         --model-path "$gguf" \

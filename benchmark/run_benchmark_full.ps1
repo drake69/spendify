@@ -1,4 +1,4 @@
-﻿# Full benchmark: classifier (pipeline) + categorizer × all active backends.
+﻿# Full benchmark: classifier + categorizer × all active backends.
 #
 # Model catalogue: benchmark\benchmark_models.csv
 #   gguf_file + gguf_hf_url   → llama.cpp  (empty = model not on llama)
@@ -13,7 +13,7 @@
 # Usage:
 #   .\benchmark\run_benchmark_full.ps1
 #   .\benchmark\run_benchmark_full.ps1 -Runs 3
-#   .\benchmark\run_benchmark_full.ps1 -Benchmark pipeline
+#   .\benchmark\run_benchmark_full.ps1 -Benchmark classifier
 #   .\benchmark\run_benchmark_full.ps1 -Benchmark categorizer
 #   .\benchmark\run_benchmark_full.ps1 -VllmUrl http://gpu:8000/v1
 #   .\benchmark\run_benchmark_full.ps1 -OllamaUrl http://192.168.1.5:11434
@@ -23,7 +23,7 @@
 #   .\benchmark\run_benchmark_full.ps1 -SetupOnly
 
 param(
-    [ValidateSet("pipeline", "categorizer", "both")]
+    [ValidateSet("classifier", "categorizer", "both")]
     [string]$Benchmark   = "both",
     [int]$Runs           = 1,
     [string]$VllmUrl     = "http://localhost:8000/v1",
@@ -358,7 +358,7 @@ $Step   = 0
 
 function Invoke-Phase {
     param([string]$Phase, [string]$Label, [string[]]$BenchArgs)
-    $script = if ($Phase -eq "pipeline") { "benchmark/benchmark_pipeline.py" } else { "benchmark/benchmark_categorizer.py" }
+    $script = if ($Phase -eq "classifier") { "benchmark/benchmark_classifier.py" } else { "benchmark/benchmark_categorizer.py" }
     $script:Step++
     Write-Host ""
     Write-Host "────────────────────────────────────────────────────────────"
@@ -379,7 +379,7 @@ function Invoke-Phase {
 
 function Invoke-BothPhases {
     param([string]$Label, [string[]]$BenchArgs)
-    if ($Benchmark -eq "pipeline"    -or $Benchmark -eq "both") { Invoke-Phase "pipeline"    $Label $BenchArgs }
+    if ($Benchmark -eq "classifier"  -or $Benchmark -eq "both") { Invoke-Phase "classifier"  $Label $BenchArgs }
     if ($Benchmark -eq "categorizer" -or $Benchmark -eq "both") { Invoke-Phase "categorizer" $Label $BenchArgs }
 }
 

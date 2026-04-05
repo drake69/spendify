@@ -2,7 +2,7 @@
 # Guard: se invocato con sh invece di bash (es. su Ubuntu dove sh=dash),
 # si ri-esegue automaticamente con bash.
 [ -z "${BASH_VERSION:-}" ] && exec bash "$0" "$@"
-# Full benchmark: classifier (pipeline) + categorizer × all active backends.
+# Full benchmark: classifier + categorizer × all active backends.
 #
 # Model catalogue: benchmark/benchmark_models.csv
 #   gguf_file + gguf_hf_url   → llama.cpp  (empty = model not available on llama)
@@ -17,7 +17,7 @@
 # Usage:
 #   bash benchmark/run_benchmark_full.sh                           # both phases, 1 run
 #   bash benchmark/run_benchmark_full.sh --runs 3
-#   bash benchmark/run_benchmark_full.sh --benchmark pipeline      # classifier only
+#   bash benchmark/run_benchmark_full.sh --benchmark classifier    # classifier only
 #   bash benchmark/run_benchmark_full.sh --benchmark categorizer
 #   bash benchmark/run_benchmark_full.sh --vllm-url http://gpu:8000/v1
 #   bash benchmark/run_benchmark_full.sh --ollama-url http://192.168.1.5:11434
@@ -364,7 +364,7 @@ STEP=0
 run_phase() {
     local phase="$1" label="$2"; shift 2
     local script
-    [ "$phase" = "pipeline" ]    && script="benchmark/benchmark_pipeline.py"
+    [ "$phase" = "classifier" ]  && script="benchmark/benchmark_classifier.py"
     [ "$phase" = "categorizer" ] && script="benchmark/benchmark_categorizer.py"
     STEP=$((STEP + 1))
     echo ""
@@ -378,8 +378,8 @@ run_phase() {
 
 run_both() {
     local label="$1"; shift
-    if [ "$BENCHMARK" = "pipeline" ] || [ "$BENCHMARK" = "both" ]; then
-        run_phase pipeline "$label" "$@"
+    if [ "$BENCHMARK" = "classifier" ] || [ "$BENCHMARK" = "both" ]; then
+        run_phase classifier "$label" "$@"
     fi
     if [ "$BENCHMARK" = "categorizer" ] || [ "$BENCHMARK" = "both" ]; then
         run_phase categorizer "$label" "$@"
