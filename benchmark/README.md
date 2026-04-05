@@ -198,26 +198,41 @@ Il CSV del categorizer riporta per ogni file quante transazioni sono state risol
 categorize_batch [CC-1_S_000.csv]: 30 transactions — 8 by rules, 0 by history, 22 by LLM
 ```
 
-**Considerazioni importanti per l'interpretazione dei risultati:**
+**Architettura static rules (evoluzione in corso):**
 
-- `n_rule` **non distingue** tra user rules (tabella `category_rule` nel DB) e static country rules
-  (`core/static_rules/<language>.json`). Nel bench il DB è vuoto → tutti gli `n_rule` provengono
-  esclusivamente dalle static rules del JSON.
+Le static rules (`core/static_rules/<lingua>.json`) in origine bypassavano l'LLM, ma questo crea un problema
+strutturale: i nomi delle categorie nelle regole statiche potrebbero non corrispondere alla tassonomia
+personalizzata dell'utente. Una regola che forza "Alimentari" è sbagliata se l'utente ha rinominato
+quella categoria.
 
-- Le static rules **influenzano `cat_exact_accuracy`**: transazioni con keyword note (es. "ESSELUNGA",
-  "stipendio", "farmacia") vengono categorizzate correttamente al 100% indipendentemente dal modello LLM.
-  Un modello che riceve più file con queste keyword appare più accurato senza merito.
+**Direzione progettuale adottata:** le static rules diventano un **hint pre-LLM** (`merchant_category_hint`):
+- Vengono applicate prima della cascata deterministica e popolano un campo ausiliario sulla transazione
+  (analogo al Merchant Category Code dei circuiti internazionali)
+- La transazione passa **comunque all'LLM**, che riceve il hint come contesto aggiuntivo nel prompt
+- L'LLM decide liberamente se seguire il hint o ignorarlo, sempre mappando alla tassonomia utente
+- Le categorie utente non vengono mai sovrascritte da nomi hardcoded
 
-- Per confrontare modelli in modo puro, considera `n_llm / n_categorized` (quante transazioni ha
-  effettivamente gestito l'LLM) e la `category_accuracy` calcolata **solo sulle righe LLM**
-  (oggi non disponibile direttamente, ma ricavabile da `cat_results_detail.csv`).
+**Impatto sui campi benchmark con la nuova architettura:**
 
-- Le static rules sono in git (`core/static_rules/it.json`) → **riproducibili**: bench diversi
-  sulla stessa codebase producono sempre lo stesso `n_rule`. Se le regole vengono modificate,
-  i risultati cambiano e i run non sono più comparabili direttamente.
+| Campo | Significato |
+|-------|-------------|
+| `n_rule` | Solo user rules (DB) — le static rules non categorizzano più direttamente |
+| `n_llm`  | Tutte le transazioni passano dall'LLM (anche quelle con hint) |
+| `n_history` | Invariato — history match da sessioni precedenti |
 
-- Per un benchmark "LLM puro" (zero static rules): rinomina o svuota il file
-  `core/static_rules/it.json` prima di girare il bench.
+**Considerazioni:**
+
+- `n_rule` nel bench attuale (DB vuoto) sarà 0: tutti i match deterministici erano static rules che
+  con la nuova architettura diventano hint → finiscono in `n_llm`.
+
+- La `cat_exact_accuracy` rifletterà la capacità reale dell'LLM di usare il hint correttamente,
+  non un bypass deterministico che gonfiava artificialmente l'accuracy.
+
+- Le static rules sono in git (`core/static_rules/it.json`) → **riproducibili**. Per bench senza
+  hint (LLM puro): rinomina il file in `_it.json`.
+
+> **Nota:** Il campo `merchant_category_hint` è pianificato — vedere il doc
+> `04_software_engineering/04_deterministic_rules.tex` per i dettagli architetturali.
 
 ## Full benchmark (tutti i backend × classifier + categorizer)
 
