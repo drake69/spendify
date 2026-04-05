@@ -37,6 +37,17 @@ bash benchmark/run_benchmark_full.sh --skip-ollama --skip-vllm
 powershell -ExecutionPolicy Bypass -File .\benchmark\run_benchmark_full.ps1 -SkipOllama -SkipVllm
 ```
 
+> **Nota per chi esegue il bench sulla macchina di sviluppo:**
+> La cartella `benchmark/results/` contiene già risultati storici — il monitor mostrerà
+> dati vecchi finché il primo modello non completa. Per avere il monitor pulito fin
+> dall'avvio, copia prima la cartella su Desktop ed esegui da lì:
+> ```bash
+> cp -r /path/to/sw_artifacts ~/Desktop/spendif-ai
+> cd ~/Desktop/spendif-ai
+> bash benchmark/run_benchmark_full.sh
+> ```
+> In questo modo `benchmark/results/` parte vuota, esattamente come sulle macchine bench dedicate.
+
 > Su Parallels Desktop con cartella condivisa:
 > ```powershell
 > cd "\\Mac\Home\Documents\Progetti\PERSONALE\Spendif.ai\sw_artifacts"

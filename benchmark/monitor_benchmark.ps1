@@ -1,11 +1,11 @@
 ﻿# Benchmark progress monitor — Windows (PowerShell)
 #
 # Usage:
-#   .\tests\monitor_benchmark.ps1                    # aggiorna ogni 60s
-#   .\tests\monitor_benchmark.ps1 --interval 30      # ogni 30s
-#   .\tests\monitor_benchmark.ps1 --once             # snapshot singolo
-#   .\tests\monitor_benchmark.ps1 --runs 3           # se lanciato con --runs 3
-#   .\tests\monitor_benchmark.ps1 --all              # tutta la storia
+#   .\benchmark\monitor_benchmark.ps1                    # aggiorna ogni 60s
+#   .\benchmark\monitor_benchmark.ps1 --interval 30      # ogni 30s
+#   .\benchmark\monitor_benchmark.ps1 --once             # snapshot singolo
+#   .\benchmark\monitor_benchmark.ps1 --runs 3           # se lanciato con --runs 3
+#   .\benchmark\monitor_benchmark.ps1 --all              # tutta la storia
 
 $ErrorActionPreference = "Stop"
 
@@ -18,8 +18,8 @@ Set-Location $WorkDir
 $Python = ".venv\Scripts\python.exe"
 
 if (-not (Test-Path $Python)) {
-    Write-Host "[ERROR] .venv non trovato. Esegui prima: .\tests\run_benchmark.ps1"
+    Write-Host "[ERROR] .venv non trovato. Esegui prima: .\benchmark\run_benchmark_full.ps1"
     exit 1
 }
 
-& $Python "tests\monitor_benchmark.py" @args
+& $Python "benchmark\monitor_benchmark.py" @args

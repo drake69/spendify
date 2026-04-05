@@ -34,10 +34,10 @@ from pathlib import Path
 # ── Paths ─────────────────────────────────────────────────────────────────
 _TESTS_DIR      = Path(__file__).resolve().parent
 _PROJECT_ROOT   = _TESTS_DIR.parent
-_BENCHMARK_DIR  = _TESTS_DIR / "generated_files" / "benchmark"
+_BENCHMARK_DIR  = _TESTS_DIR / "results"
 _MANIFEST_PATH  = _TESTS_DIR / "generated_files" / "manifest.csv"
 _RESULTS_CSV    = _BENCHMARK_DIR / "results_all_runs.csv"
-_RESULTS_ARCHIVE_DIR = _TESTS_DIR / "results_archive"
+_RESULTS_ARCHIVE_DIR = _TESTS_DIR / "results"
 _MODELS_CSV     = _TESTS_DIR / "benchmark_models.csv"
 
 # ── HW monitor (optional — graceful fallback if unavailable) ───────────────
