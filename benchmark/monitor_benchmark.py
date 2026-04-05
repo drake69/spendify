@@ -119,18 +119,33 @@ def _load_manifest_count() -> int:
     with open(_MANIFEST_PATH, newline="", encoding="utf-8") as f:
         return sum(1 for _ in csv.DictReader(f))
 
+_SKIP_CSV_NAMES = {
+    "results_all_runs.csv", "cat_results_detail.csv",
+    "cat_results_all_runs.csv", "summary_variance.csv",
+    "results_run_01.csv", "summary_global.csv",
+}
+
 def _find_latest_csv(csv_override: Path | None = None) -> Path | None:
     """Return the CSV to monitor.
-    Priority: 1) explicit override  2) results_all_runs.csv  3) latest in results_archive/"""
+
+    Priority:
+      1) explicit --csv override
+      2) most recent per-run archive CSV (YYYYMMDD*_hostname_N.csv)
+         Written incrementally by the benchmark after each model completes.
+         results_all_runs.csv is EXCLUDED — it is only written by the
+         off-line aggregator, never by run_benchmark_full.sh directly.
+    """
     if csv_override and csv_override.exists():
         return csv_override
-    if _RESULTS_CSV.exists():
-        return _RESULTS_CSV
-    # Fallback: most recent file in results_archive/
+
     if _RESULTS_ARCHIVE_DIR.exists():
-        csvs = sorted(_RESULTS_ARCHIVE_DIR.glob("*.csv"), key=lambda p: p.stat().st_mtime, reverse=True)
-        if csvs:
-            return csvs[0]
+        candidates = [
+            p for p in _RESULTS_ARCHIVE_DIR.glob("*.csv")
+            if p.name not in _SKIP_CSV_NAMES
+        ]
+        if candidates:
+            return max(candidates, key=lambda p: p.stat().st_mtime)
+
     return None
 
 
@@ -460,20 +475,27 @@ def main() -> None:
     # Auto-detect expected model/backend pairs if not explicitly declared
     n_models_total = args.models if args.models > 0 else _count_expected_models()
 
-    start_time  = time.monotonic()
-    csv_path    = args.csv or _find_latest_csv()
-    start_mtime = csv_path.stat().st_mtime if csv_path and csv_path.exists() else None
+    start_time   = time.monotonic()
+    _csv_override = args.csv  # explicit path, never changes
+    # Record the mtime of the best CSV at startup to detect "freshness" later
+    _initial_csv  = _csv_override or _find_latest_csv()
+    start_mtime   = _initial_csv.stat().st_mtime if _initial_csv and _initial_csv.exists() else None
 
-    if csv_path:
-        print(f"  Monitoring: {csv_path}")
+    if _initial_csv:
+        print(f"  Monitoring: {_initial_csv}")
     else:
         print("  Waiting for benchmark to start...")
 
     def _run_once() -> None:
-        rows, csv_mtime = _load_results(current_only=current_only, path=csv_path)
+        # Re-evaluate the best CSV on every tick so we automatically switch to
+        # a freshly written archive file once the benchmark starts producing output.
+        live_csv = _csv_override or _find_latest_csv()
+        if live_csv and live_csv != _initial_csv:
+            print(f"  Monitoring: {live_csv}")
+        rows, csv_mtime = _load_results(current_only=current_only, path=live_csv)
         snap     = _snapshot(rows, exp_per_model, n_models_total=n_models_total)
         elapsed  = time.monotonic() - start_time
-        # CSV è "attivo" se è stato modificato dopo l'avvio del monitor
+        # CSV è "attivo" se il file corrente è stato modificato dopo l'avvio del monitor
         csv_active = (csv_mtime is not None and
                       (start_mtime is None or csv_mtime > start_mtime))
         # Live HW sample (taken just before printing for freshness)
