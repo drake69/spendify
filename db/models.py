@@ -49,6 +49,7 @@ DEFAULT_USER_SETTINGS = {
     "amount_decimal_sep": ",",
     "amount_thousands_sep": ".",
     "description_language": "it",
+    "country": "",  # ISO 3166-1 alpha-2 (e.g. "IT", "DE"). Empty = not set.
     "llm_backend": "local_llama_cpp",
     "llama_cpp_model_path": "",
     "llama_cpp_n_gpu_layers": "-1",

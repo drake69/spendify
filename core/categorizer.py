@@ -33,6 +33,7 @@ from core.models import CategorySource, Confidence
 from core.sanitizer import SanitizationConfig, redact_pii
 from core.schemas import build_categorization_batch_schema
 from support.logging import setup_logging
+from core.nsi_lookup import nsi_lookup
 
 logger = setup_logging()
 
@@ -299,7 +300,11 @@ def _run_llm_batch_group(
             desc = tx.get("description", "") or ""
             # Always redact before any LLM call (local or remote) — permutation-aware
             desc = redact_pii(desc, sanitize_config)
-            items.append({"amount": str(tx.get("amount", 0)), "description": desc})
+            item_dict: dict = {"amount": str(tx.get("amount", 0)), "description": desc}
+            nsi_hint = tx.get("_nsi_hint")
+            if nsi_hint:
+                item_dict["merchant_hint"] = nsi_hint
+            items.append(item_dict)
 
         n = len(items)
         items_json = json.dumps(items, ensure_ascii=False, indent=2)
@@ -429,6 +434,7 @@ def categorize_batch(
     source_name: str = "unknown",
     fallback_categories: dict[str, tuple[str, str]] | None = None,
     history_cache: HistoryCache | None = None,
+    user_country: str | None = None,  # ISO 3166-1 alpha-2, e.g. "IT" — for NSI ranking
 ) -> list[CategorizationResult]:
     """Categorize transactions using two directional LLM batches (expense / income).
 
@@ -436,6 +442,7 @@ def categorize_batch(
       1. User rules (deterministic)
       2. Static keyword rules (direction-aware)
       3. History lookup (validated transactions)
+      3b. NSI lookup (Fonte 3: brand → OSM tag → hint for LLM)
       4. LLM — expense batch sees only expense categories, income batch only income categories
       5. Fallback → to_review=True
     """
@@ -485,6 +492,12 @@ def categorize_batch(
                 )
                 n_history += 1
                 continue
+
+        # Step 3b: NSI lookup — brand → OSM hint (Fonte 3)
+        # Full taxonomy_map bypass planned (C-08-cascade); for now: hint passed to LLM.
+        nsi_match = nsi_lookup.lookup(description, user_country=user_country)
+        if nsi_match:
+            tx["_nsi_hint"] = nsi_match.hint  # injected into LLM prompt below
 
         if amount < 0:
             llm_expense.append(i)
