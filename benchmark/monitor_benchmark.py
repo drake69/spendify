@@ -125,18 +125,19 @@ _SKIP_CSV_NAMES = {
     "results_run_01.csv", "summary_global.csv",
 }
 
-def _find_latest_csv(csv_override: Path | None = None) -> Path | None:
-    """Return the CSV to monitor.
+def _find_archive_csvs(csv_override: Path | None = None) -> list[Path]:
+    """Return all per-run archive CSVs to read.
 
-    Priority:
-      1) explicit --csv override
-      2) most recent per-run archive CSV (YYYYMMDD*_hostname_N.csv)
-         Written incrementally by the benchmark after each model completes.
-         results_all_runs.csv is EXCLUDED — it is only written by the
-         off-line aggregator, never by run_benchmark_full.sh directly.
+    Each benchmark_categorizer.py / benchmark_classifier.py invocation writes
+    only its own results to a timestamped archive file (YYYYMMDD*_hostname_N.csv).
+    results_all_runs.csv is written only by the offline aggregator — excluded here.
+
+    Returns the list sorted by mtime ascending (oldest first) so rows from
+    multiple files are aggregated in chronological order.
+    Priority: explicit --csv override (single file) > all archive CSVs.
     """
     if csv_override and csv_override.exists():
-        return csv_override
+        return [csv_override]
 
     if _RESULTS_ARCHIVE_DIR.exists():
         candidates = [
@@ -144,36 +145,58 @@ def _find_latest_csv(csv_override: Path | None = None) -> Path | None:
             if p.name not in _SKIP_CSV_NAMES
         ]
         if candidates:
-            return max(candidates, key=lambda p: p.stat().st_mtime)
+            return sorted(candidates, key=lambda p: p.stat().st_mtime)
 
-    return None
+    return []
 
 
-def _load_results(current_only: bool = True, path: Path | None = None) -> tuple[list[dict], float | None]:
-    """Return (rows, csv_mtime). If current_only, keep only rows from the latest bench session.
+def _load_results(current_only: bool = True, paths: list[Path] | None = None) -> tuple[list[dict], float | None]:
+    """Return (rows, latest_mtime) aggregated across all archive CSVs.
+
+    Reads all per-run archive files and merges their rows.  Deduplicates on
+    (benchmark_type, provider, model, filename, run_id) so that a row present
+    in multiple archives (e.g. after a re-run) is counted only once.
+    The returned mtime is that of the most recently modified file.
+
+    If current_only, keep only rows from the latest bench session.
 
     Session identification strategy (in priority order):
     1. version field with format YYYYMMDDHHMMSS-sha  → filter by exact max version.
-       All invocations from the same bench push share the same .version file
-       (written by bench_push_usb/ssh scripts), so they all have identical version strings.
     2. Fallback: rows whose version date (YYYYMMDD) matches the most recent version date.
-       Handles drag-and-drop copies where .version is absent and each invocation gets
-       a unique timestamp — groups all of today's runs together.
     3. Last resort: max run_id (old behaviour for CSVs without version field).
     """
-    target = path or _find_latest_csv()
-    if target is None or not target.exists():
+    targets = paths if paths is not None else _find_archive_csvs()
+    if not targets:
         return [], None
 
     rows: list[dict] = []
-    try:
-        with open(target, newline="", encoding="utf-8") as f:
-            for row in csv.DictReader(f):
-                rows.append(row)
-    except Exception:
-        return [], None
+    seen: set[tuple] = set()
+    latest_mtime: float | None = None
 
-    mtime = target.stat().st_mtime
+    for target in targets:
+        if not target.exists():
+            continue
+        mtime = target.stat().st_mtime
+        if latest_mtime is None or mtime > latest_mtime:
+            latest_mtime = mtime
+        try:
+            with open(target, newline="", encoding="utf-8") as f:
+                for row in csv.DictReader(f):
+                    dedup_key = (
+                        row.get("benchmark_type", ""),
+                        row.get("provider", ""),
+                        row.get("model", ""),
+                        row.get("filename", ""),
+                        row.get("run_id", ""),
+                        row.get("scenario", ""),
+                    )
+                    if dedup_key not in seen:
+                        seen.add(dedup_key)
+                        rows.append(row)
+        except Exception:
+            continue
+
+    mtime = latest_mtime
 
     if current_only and rows:
         # Collect version strings that look like timestamps: start with YYYYMMDD digits
@@ -475,27 +498,27 @@ def main() -> None:
     # Auto-detect expected model/backend pairs if not explicitly declared
     n_models_total = args.models if args.models > 0 else _count_expected_models()
 
-    start_time   = time.monotonic()
-    _csv_override = args.csv  # explicit path, never changes
-    # Record the mtime of the best CSV at startup to detect "freshness" later
-    _initial_csv  = _csv_override or _find_latest_csv()
-    start_mtime   = _initial_csv.stat().st_mtime if _initial_csv and _initial_csv.exists() else None
+    start_time    = time.monotonic()
+    _csv_override = [args.csv] if args.csv else None  # explicit override (single file)
+    # Record the latest mtime across all archive CSVs at startup → detect new writes
+    _initial_paths = _csv_override or _find_archive_csvs()
+    start_mtime    = (
+        max((p.stat().st_mtime for p in _initial_paths if p.exists()), default=None)
+        if _initial_paths else None
+    )
 
-    if _initial_csv:
-        print(f"  Monitoring: {_initial_csv}")
+    if _initial_paths:
+        print(f"  Monitoring: {len(_initial_paths)} archive file(s) in {_RESULTS_ARCHIVE_DIR.name}/")
     else:
         print("  Waiting for benchmark to start...")
 
     def _run_once() -> None:
-        # Re-evaluate the best CSV on every tick so we automatically switch to
-        # a freshly written archive file once the benchmark starts producing output.
-        live_csv = _csv_override or _find_latest_csv()
-        if live_csv and live_csv != _initial_csv:
-            print(f"  Monitoring: {live_csv}")
-        rows, csv_mtime = _load_results(current_only=current_only, path=live_csv)
+        # Re-evaluate archive list on every tick to catch newly written files
+        live_paths = _csv_override or _find_archive_csvs()
+        rows, csv_mtime = _load_results(current_only=current_only, paths=live_paths)
         snap     = _snapshot(rows, exp_per_model, n_models_total=n_models_total)
         elapsed  = time.monotonic() - start_time
-        # CSV è "attivo" se il file corrente è stato modificato dopo l'avvio del monitor
+        # "active" if any archive file is newer than the newest one at startup
         csv_active = (csv_mtime is not None and
                       (start_mtime is None or csv_mtime > start_mtime))
         # Live HW sample (taken just before printing for freshness)
