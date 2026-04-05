@@ -322,6 +322,27 @@ def render_settings_page(engine):
 
     st.divider()
 
+    # ── Paese ──────────────────────────────────────────────────────────────────
+    st.subheader(t("settings.country"))
+    st.caption(t("settings.country_caption"))
+    from ui.onboarding_page import _COUNTRIES, _COUNTRY_LABELS, _COUNTRY_CODES, _COUNTRY_BY_NAME
+    _none_label = t("settings.country_none")
+    _country_options = [_none_label] + _COUNTRY_LABELS
+    _current_country = settings.get("country", "")
+    _country_idx = (
+        _COUNTRY_CODES.index(_current_country) + 1  # +1 per il None iniziale
+        if _current_country in _COUNTRY_CODES else 0
+    )
+    country_sel = st.selectbox(
+        t("settings.country_label"),
+        _country_options,
+        index=_country_idx,
+        label_visibility="collapsed",
+    )
+    country_code = "" if country_sel == _none_label else _COUNTRY_BY_NAME.get(country_sel, "")
+
+    st.divider()
+
     # ── Modalità Giroconti ─────────────────────────────────────────────────────
     st.subheader(t("settings.giroconto_mode_title"))
     st.caption(t("settings.giroconto_mode_caption"))
@@ -799,6 +820,7 @@ def render_settings_page(engine):
             "amount_thousands_sep":   _THOUSANDS_SEP_OPTIONS[thou_label],
             "description_language":   _LANGUAGE_OPTIONS[lang_label],
             "ui_language":            ui_language,
+            "country":                country_code,
             "giroconto_mode":         _GIROCONTO_OPTIONS[giroconto_label],
             "llm_backend":            backend,
             "ollama_base_url":        ollama_url,

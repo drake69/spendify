@@ -94,6 +94,7 @@ class ProcessingConfig:
     batch_size_llm: int = 1
     sanitize_config: SanitizationConfig = field(default_factory=SanitizationConfig)
     description_language: str = "it"  # language of transaction descriptions (ISO 639-1)
+    user_country: str = ""             # ISO 3166-1 alpha-2 (e.g. "IT") — used for NSI brand ranking
 
     # Plausibility cap for amount column detection: columns whose median absolute
     # value exceeds this threshold are treated as reference/ID columns, not amounts.
@@ -1069,6 +1070,7 @@ def process_file(
         fallback_backend=fallback,
         confidence_threshold=config.confidence_threshold,
         description_language=config.description_language,
+        user_country=config.user_country,
         progress_callback=_cat_cb,
         source_name=filename,
         history_cache=history_cache,

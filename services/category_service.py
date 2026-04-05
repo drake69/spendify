@@ -79,6 +79,7 @@ class CategoryService:
             sanitize_config=None,
             fallback_backend=None,
             description_language=settings.get("description_language", "it"),
+            user_country=settings.get("country", ""),
             progress_callback=progress_callback,
         )
 
@@ -95,4 +96,5 @@ class CategoryService:
             openai_model=settings.get("openai_model", "gpt-4o-mini"),
             anthropic_api_key=settings.get("anthropic_api_key", ""),
             claude_model=settings.get("anthropic_model", "claude-3-haiku-20240307"),
+            user_country=settings.get("country", ""),
         )

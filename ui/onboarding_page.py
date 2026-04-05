@@ -22,6 +22,7 @@ logger = setup_logging()
 # ── Session-state keys ────────────────────────────────────────────────────────
 _K_STEP     = "_ob_step"
 _K_LANG     = "_ob_lang"
+_K_COUNTRY  = "_ob_country"
 _K_NAMES    = "_ob_owner_names"
 _K_ACCOUNTS = "_ob_accounts"
 
@@ -36,6 +37,50 @@ def _account_types() -> dict[str, str]:
         t("onboarding.account_type.cash"): "cash",
     }
 
+
+# ── Country list & language → country suggestion ──────────────────────────────
+# Sorted alphabetically by display name (Italian)
+_COUNTRIES: list[tuple[str, str]] = [
+    ("AT", "Austria"),
+    ("AU", "Australia"),
+    ("BE", "Belgio"),
+    ("CA", "Canada"),
+    ("CH", "Svizzera"),
+    ("CZ", "Rep. Ceca"),
+    ("DE", "Germania"),
+    ("DK", "Danimarca"),
+    ("ES", "Spagna"),
+    ("FI", "Finlandia"),
+    ("FR", "Francia"),
+    ("GB", "Gran Bretagna"),
+    ("HU", "Ungheria"),
+    ("IE", "Irlanda"),
+    ("IT", "Italia"),
+    ("LU", "Lussemburgo"),
+    ("NL", "Paesi Bassi"),
+    ("NO", "Norvegia"),
+    ("PL", "Polonia"),
+    ("PT", "Portogallo"),
+    ("RO", "Romania"),
+    ("SE", "Svezia"),
+    ("SI", "Slovenia"),
+    ("SK", "Slovacchia"),
+    ("SM", "San Marino"),
+    ("US", "USA"),
+]
+_COUNTRY_CODES   = [c for c, _ in _COUNTRIES]
+_COUNTRY_LABELS  = [n for _, n in _COUNTRIES]
+_COUNTRY_BY_CODE = {c: n for c, n in _COUNTRIES}
+_COUNTRY_BY_NAME = {n: c for c, n in _COUNTRIES}
+
+# Default country suggestion per taxonomy language
+_COUNTRY_SUGGESTION: dict[str, str] = {
+    "it": "IT",
+    "de": "DE",
+    "fr": "FR",
+    "es": "ES",
+    "en": "GB",
+}
 
 # ── Locale defaults per language ──────────────────────────────────────────────
 # (date_display_format, amount_decimal_sep, amount_thousands_sep)
@@ -177,6 +222,30 @@ def _step0_language(cfg_svc: SettingsService, lang_options: list[tuple[str, str]
         )
 
     st.write("")
+
+    # ── Paese ──────────────────────────────────────────────────────────────────
+    # Auto-suggest country from selected language; user can override.
+    # If language changed since last render, reset suggestion.
+    _prev_lang_key = "_ob_prev_lang_for_country"
+    if st.session_state.get(_prev_lang_key) != sel_code:
+        suggested = _COUNTRY_SUGGESTION.get(sel_code, "IT")
+        st.session_state["_ob_country_select"] = _COUNTRY_BY_CODE.get(suggested, "Italia")
+        st.session_state[_K_COUNTRY] = suggested
+    st.session_state[_prev_lang_key] = sel_code
+
+    st.subheader(t("onboarding.step0.country"))
+    st.caption(t("onboarding.step0.country_caption"))
+    _cur_country_label = st.session_state.get("_ob_country_select", _COUNTRY_BY_CODE.get("IT", "Italia"))
+    selected_country_label = st.selectbox(
+        t("onboarding.step0.country"),
+        _COUNTRY_LABELS,
+        index=_COUNTRY_LABELS.index(_cur_country_label) if _cur_country_label in _COUNTRY_LABELS else _COUNTRY_LABELS.index("Italia"),
+        key="_ob_country_select",
+        label_visibility="collapsed",
+    )
+    st.session_state[_K_COUNTRY] = _COUNTRY_BY_NAME.get(selected_country_label, "IT")
+
+    st.write("")
     _, col_next = st.columns([1, 1])
     with col_next:
         if st.button(_ui(sel_code)["next"], type="primary", use_container_width=True):
@@ -296,7 +365,9 @@ def _step3_confirm(cfg_svc: SettingsService, lang_options: list[tuple[str, str]]
     lang     = st.session_state[_K_LANG]
     names    = st.session_state.get(_K_NAMES, "").strip()
     accounts = [a for a in st.session_state.get(_K_ACCOUNTS, []) if a["name"].strip()]
-    lang_label = next((lbl for code, lbl in lang_options if code == lang), lang)
+    lang_label    = next((lbl for code, lbl in lang_options if code == lang), lang)
+    country_code  = st.session_state.get(_K_COUNTRY, "")
+    country_label = _COUNTRY_BY_CODE.get(country_code, country_code) if country_code else "—"
     loc = _locale(lang)
 
     st.subheader(t("onboarding.step3.title"))
@@ -309,6 +380,7 @@ def _step3_confirm(cfg_svc: SettingsService, lang_options: list[tuple[str, str]]
         st.markdown(f"- {t('onboarding.step3.language')}: **{lang_label}**")
         st.markdown(f"- {t('onboarding.step3.date')}: `{_fmt_date(lang)}`")
         st.markdown(f"- {t('onboarding.step3.amount')}: `{_fmt_amount(lang)}`")
+        st.markdown(f"- {t('onboarding.step3.country')}: **{country_label}**")
 
         st.write("")
         st.markdown(t("onboarding.step3.owners_title"))
@@ -375,7 +447,7 @@ def _step3_confirm(cfg_svc: SettingsService, lang_options: list[tuple[str, str]]
     with col_start:
         if st.button(_ui(lang)["start"], type="primary",
                      use_container_width=True, key="_ob_conf_start"):
-            _apply_onboarding(cfg_svc, lang, names, accounts, loc)
+            _apply_onboarding(cfg_svc, lang, names, accounts, loc, country=country_code)
 
 
 def _apply_onboarding(
@@ -384,13 +456,14 @@ def _apply_onboarding(
     owner_names: str,
     accounts: list[dict],
     loc: dict,
+    country: str = "",
 ) -> None:
     """Apply all onboarding settings in one shot and mark as done."""
     with st.spinner(t("onboarding.step3.applying")):
         # 1. Taxonomy (also sets description_language)
         n_cats = cfg_svc.apply_default_taxonomy(lang)
 
-        # 2. Locale + owner settings + UI language
+        # 2. Locale + owner settings + UI language + country
         _ui_lang = st.session_state.get("_ob_ui_lang", lang)
         cfg_svc.set_bulk({
             "date_display_format":     loc["date_display_format"],
@@ -399,6 +472,7 @@ def _apply_onboarding(
             "owner_names":             owner_names,
             "use_owner_names_giroconto": "true" if owner_names.strip() else "false",
             "ui_language":             _ui_lang,
+            "country":                 country,
         })
 
         # 3. Accounts
@@ -418,7 +492,8 @@ def _apply_onboarding(
     )
 
     # Clean up session state
-    for k in (_K_STEP, _K_LANG, _K_NAMES, _K_ACCOUNTS):
+    for k in (_K_STEP, _K_LANG, _K_COUNTRY, _K_NAMES, _K_ACCOUNTS,
+              "_ob_prev_lang_for_country", "_ob_country_select"):
         st.session_state.pop(k, None)
 
     st.success(t("onboarding.step3.done"))
@@ -442,6 +517,7 @@ def render_onboarding_page(engine) -> None:
         detected = _detect_browser_language(supported_codes)
         st.session_state[_K_STEP]     = 0
         st.session_state[_K_LANG]     = detected
+        st.session_state[_K_COUNTRY]  = _COUNTRY_SUGGESTION.get(detected, "IT")
         st.session_state[_K_NAMES]    = ""
         st.session_state[_K_ACCOUNTS] = [{"name": "", "bank": "", "type": "bank_account"}]
 
