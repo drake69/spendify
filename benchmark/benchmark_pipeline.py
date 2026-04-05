@@ -160,6 +160,8 @@ class RunFileResult:
     step2_date_col_match: str = ""
     step2_amount_col_match: str = ""
     error: str = ""
+    # Timing aliases (for cross-script column alignment)
+    classifier_duration_s: float = 0.0
 
 
 # ── HW stress sampler (delegated to hw_monitor.py) ──────────────────────
@@ -819,6 +821,10 @@ _CSV_HEADER = [
     "step1_time_s", "step2_time_s", "step3_time_s",
     "step1_doc_type_match", "step2_date_col_match", "step2_amount_col_match",
     "error",
+    # Timing aliases (for cross-script column alignment)
+    "classifier_duration_s",
+    "cat_duration_s",
+    "cleaner_batch_size",
 ]
 
 # Filled at runtime by main()
@@ -885,6 +891,10 @@ def _result_to_row(r: RunFileResult) -> list:
         f"{r.step3_time_s:.2f}" if r.step3_time_s else "",
         r.step1_doc_type_match, r.step2_date_col_match, r.step2_amount_col_match,
         r.error,
+        # Timing aliases
+        f"{r.duration_seconds:.2f}",  # classifier_duration_s
+        "",  # cat_duration_s (empty for classifier rows)
+        "",  # cleaner_batch_size (empty for classifier rows)
     ]
 
 
@@ -1338,28 +1348,43 @@ def main() -> None:
         print(f"       Context window too small for Spendif.ai prompts. Skipping this model.")
         return
 
-    # Resume: load already-completed tuples from documents repo (cross-HW source of truth)
-    # Falls back to local benchmark dir if documents not available
+    # Resume: scan local results/ directory for already-completed classifier runs.
+    # Reads from:
+    #   1. results_run_*.csv  — per-run files written by _write_run_csv()
+    #   2. <timestamp>_<hostname>.csv — archive files written by _write_all_runs_csv()
+    # Does NOT read results_all_runs.csv — that is the cross-HW aggregated file
+    # produced by aggregate_results.py and is NOT guaranteed to be present locally.
     _completed: set[tuple] = set()
     _prev_results: list[RunFileResult] = []
-    _docs_runs_path = _DOCS_BENCHMARK_DIR / "results_all_runs.csv"
-    _local_runs_path = _BENCHMARK_DIR / "results_all_runs.csv"
-    _all_runs_path = _docs_runs_path if _docs_runs_path.exists() else _local_runs_path
-    if _all_runs_path.exists():
-        with open(_all_runs_path, encoding="utf-8") as _f:
-            _reader = csv.DictReader(_f)
-            for _row in _reader:
-                _key = (
-                    int(_row.get("run_id", 0)),
-                    _row.get("filename", ""),
-                    _row.get("git_commit", ""),
-                    _row.get("git_branch", ""),
-                    _row.get("provider", ""),
-                    _row.get("model", ""),
-                )
-                _completed.add(_key)
-        if _completed:
-            print(f"[resume] Found {len(_completed)} completed steps — skipping them")
+    _SKIP_NAMES = {"results_all_runs.csv", "cat_results_detail.csv",
+                   "cat_results_all_runs.csv", "summary_variance.csv",
+                   "summary_global.csv"}
+    _local_csvs = [
+        p for p in sorted(_RESULTS_ARCHIVE_DIR.glob("*.csv"))
+        if p.name not in _SKIP_NAMES
+    ]
+    _n_loaded = 0
+    for _csv_path in _local_csvs:
+        try:
+            with open(_csv_path, encoding="utf-8") as _f:
+                _reader = csv.DictReader(_f)
+                for _row in _reader:
+                    if _row.get("benchmark_type", "") not in ("classifier", "full"):
+                        continue  # skip categorizer rows
+                    _key = (
+                        int(_row.get("run_id", 0)),
+                        _row.get("filename", ""),
+                        _row.get("git_commit", ""),
+                        _row.get("git_branch", ""),
+                        _row.get("provider", ""),
+                        _row.get("model", ""),
+                    )
+                    _completed.add(_key)
+                    _n_loaded += 1
+        except Exception as _exc:
+            print(f"[resume] Warning: could not read {_csv_path.name}: {_exc}")
+    if _completed:
+        print(f"[resume] {len(_completed)} completed steps found in {len(_local_csvs)} local CSVs — skipping them")
 
     # Run benchmark
     all_results: list[RunFileResult] = list(_prev_results)

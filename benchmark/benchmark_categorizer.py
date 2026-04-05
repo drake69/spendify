@@ -134,6 +134,8 @@ class CatRunResult:
     gpu_utilization_pct: float = 0.0  # avg GPU utilization % during file processing
     cleaner_batch_size: int = 30   # batch size used for counterpart extraction
     error: str = ""
+    # Timing alias (same value as duration_seconds, for cross-script alignment)
+    cat_duration_s: float = 0.0
 
 
 @dataclass
@@ -724,6 +726,11 @@ _CSV_HEADER = [
     "runtime_os", "runtime_cpu", "runtime_ram_gb", "runtime_gpu", "runtime_gpu_cores",
     "runtime_hostname",
     "runtime_gpu_ram_gb",
+    # File characteristics (from manifest — self-contained row)
+    "file_doc_type", "file_format", "file_amount_format",
+    "file_n_header_rows", "file_n_data_rows", "file_n_footer_rows",
+    "file_has_debit_credit_split", "file_has_borders",
+    "file_n_income_rows", "file_n_expense_rows", "file_n_internal_transfers",
     # Classifier results (empty for categorizer rows)
     "header_detected", "header_expected", "header_match",
     "rows_detected", "rows_expected", "rows_match",
@@ -743,15 +750,22 @@ _CSV_HEADER = [
     "duration_seconds",
     # HW stress (sampled during file processing)
     "cpu_load_avg", "gpu_utilization_pct",
-    # Token usage
+    # Token usage (for cost tracking with remote APIs)
+    "prompt_tokens", "completion_tokens", "total_tokens",
     "tokens_per_second",
-    # Categorizer parameters
-    "cleaner_batch_size",
+    # Phase 0 → LLM → merge traceability (empty for categorizer rows)
+    "phase0_sign_convention", "phase0_debit_col", "phase0_credit_col",
+    "llm_debit_col", "llm_credit_col", "llm_invert_sign",
+    "final_debit_col", "final_credit_col", "final_invert_sign",
     # Multi-step classifier diagnostics (empty for categorizer rows)
     "classifier_mode",
     "step1_time_s", "step2_time_s", "step3_time_s",
     "step1_doc_type_match", "step2_date_col_match", "step2_amount_col_match",
     "error",
+    # Timing aliases (for cross-script column alignment)
+    "classifier_duration_s",
+    "cat_duration_s",
+    "cleaner_batch_size",
 ]
 
 _DETAIL_CSV_HEADER = [
@@ -792,6 +806,11 @@ def _result_to_row(r: CatRunResult) -> list:
         _LLM_META.get("runtime_gpu_cores", ""),
         _LLM_META.get("runtime_hostname", ""),
         _LLM_META.get("runtime_gpu_ram_gb", ""),
+        # File characteristics (empty for categorizer standalone rows)
+        "", "", "",  # file_doc_type, file_format, file_amount_format
+        "", "", "",  # file_n_header_rows, file_n_data_rows, file_n_footer_rows
+        "", "",      # file_has_debit_credit_split, file_has_borders
+        "", "", "",  # file_n_income_rows, file_n_expense_rows, file_n_internal_transfers
         # Classifier columns (empty for categorizer rows)
         "", "", "",  # header_detected, header_expected, header_match
         "", "", "",  # rows_detected, rows_expected, rows_match
@@ -811,12 +830,19 @@ def _result_to_row(r: CatRunResult) -> list:
         f"{r.duration_seconds:.2f}",
         f"{r.cpu_load_avg:.2f}", f"{r.gpu_utilization_pct:.1f}",
         # Token usage
-        "0",
-        # Categorizer parameters
-        r.cleaner_batch_size,
+        0, 0, 0,  # prompt_tokens, completion_tokens, total_tokens
+        "0",      # tokens_per_second
+        # Phase 0 → LLM → merge traceability (empty for categorizer rows)
+        "", "", "",  # phase0_sign_convention, phase0_debit_col, phase0_credit_col
+        "", "", "",  # llm_debit_col, llm_credit_col, llm_invert_sign
+        "", "", "",  # final_debit_col, final_credit_col, final_invert_sign
         # Multi-step classifier diagnostics (empty for categorizer rows)
         "", "", "", "", "", "", "",
         r.error,
+        # Timing aliases
+        "",                           # classifier_duration_s (empty for categorizer rows)
+        f"{r.duration_seconds:.2f}",  # cat_duration_s
+        r.cleaner_batch_size,         # cleaner_batch_size
     ]
 
 
@@ -1247,28 +1273,39 @@ def main() -> None:
         print(f"       Context window too small for Spendif.ai prompts. Skipping this model.")
         return
 
-    # Resume: load already-completed (run_id, filename, git_commit, git_branch, provider, model) tuples
-    # Reads from shared results_all_runs.csv, filtering for benchmark_type=categorizer
+    # Resume: scan local results/ directory for already-completed categorizer runs.
+    # Reads from archive files <timestamp>_<hostname>.csv written by _write_all_runs_csv().
+    # Does NOT read results_all_runs.csv — that is the cross-HW aggregated file
+    # produced by aggregate_results.py and is NOT guaranteed to be present locally.
     _completed: set[tuple] = set()
-    _all_runs_path = _BENCHMARK_DIR / "results_all_runs.csv"
-    if _all_runs_path.exists():
-        with open(_all_runs_path, encoding="utf-8") as _f:
-            _reader = csv.DictReader(_f)
-            for _row in _reader:
-                if _row.get("benchmark_type", "") != "categorizer":
-                    continue  # skip classifier rows
-                _key = (
-                    int(_row.get("run_id", 0)),
-                    _row.get("filename", ""),
-                    str(_row.get("cleaner_batch_size", "30")),
-                    _row.get("git_commit", ""),
-                    _row.get("git_branch", ""),
-                    _row.get("provider", ""),
-                    _row.get("model", ""),
-                )
-                _completed.add(_key)
-        if _completed:
-            print(f"[resume] Found {len(_completed)} completed steps — skipping them")
+    _SKIP_NAMES = {"results_all_runs.csv", "cat_results_detail.csv",
+                   "cat_results_all_runs.csv", "summary_variance.csv",
+                   "summary_global.csv"}
+    _local_csvs = [
+        p for p in sorted(_RESULTS_ARCHIVE_DIR.glob("*.csv"))
+        if p.name not in _SKIP_NAMES
+    ]
+    for _csv_path in _local_csvs:
+        try:
+            with open(_csv_path, encoding="utf-8") as _f:
+                _reader = csv.DictReader(_f)
+                for _row in _reader:
+                    if _row.get("benchmark_type", "") not in ("categorizer", "full"):
+                        continue  # skip classifier rows
+                    _key = (
+                        int(_row.get("run_id", 0)),
+                        _row.get("filename", ""),
+                        str(_row.get("cleaner_batch_size", "30")),
+                        _row.get("git_commit", ""),
+                        _row.get("git_branch", ""),
+                        _row.get("provider", ""),
+                        _row.get("model", ""),
+                    )
+                    _completed.add(_key)
+        except Exception as _exc:
+            print(f"[resume] Warning: could not read {_csv_path.name}: {_exc}")
+    if _completed:
+        print(f"[resume] {len(_completed)} completed steps found in {len(_local_csvs)} local CSVs — skipping them")
 
     # Run benchmark
     all_results: list[CatRunResult] = []
