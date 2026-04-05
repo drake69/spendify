@@ -157,38 +157,38 @@ def _detect_gpu_sampler():
 def _make_macos_gpu_sampler():
     """Create a macOS GPU sampler using AGXAccelerator PerformanceStatistics.
 
-    Works on Apple Silicon (M1/M2/M3/M4) without sudo.
+    Works on Apple Silicon (M1/M2/M3/M4/M5+) without sudo.
     Reads 'Device Utilization %' from ioreg AGXAccelerator node.
+
+    Uses dynamic discovery via `ioreg -l` so it works on any chip generation
+    without needing a hardcoded class list.
     """
-    # Detect AGX class name (varies by chip generation)
+    # Dynamic discovery: find whatever AGXAccelerator class is present on this chip.
+    # Covers M1 (G13), M2 (G14), M3 (G15), M4 (G16), future chips — no hardcoding needed.
     try:
-        result = subprocess.run(
-            ["ioreg", "-r", "-c", "AGXAcceleratorG13X", "-d", "1"],
-            capture_output=True, text=True, timeout=2,
+        discovery = subprocess.run(
+            ["ioreg", "-l"],
+            capture_output=True, text=True, timeout=5,
         )
-        if result.returncode == 0 and "Device Utilization" in result.stdout:
-            fn = _sample_gpu_macos_agx
-            fn._source = "ioreg/AGXAccelerator"
-            fn._agx_class = "AGXAcceleratorG13X"
-            return fn
+        if discovery.returncode == 0:
+            for line in discovery.stdout.splitlines():
+                if "AGXAccelerator" in line and "class" in line:
+                    # Extract class name e.g. "class AGXAcceleratorG16X"
+                    for token in line.split():
+                        if token.startswith("AGXAccelerator"):
+                            agx_class = token.rstrip(",>")
+                            # Verify it exposes Device Utilization
+                            probe = subprocess.run(
+                                ["ioreg", "-r", "-c", agx_class, "-d", "1"],
+                                capture_output=True, text=True, timeout=2,
+                            )
+                            if probe.returncode == 0 and "Device Utilization" in probe.stdout:
+                                fn = _sample_gpu_macos_agx
+                                fn._source = f"ioreg/{agx_class}"
+                                fn._agx_class = agx_class
+                                return fn
     except Exception:
         pass
-
-    # Try generic AGX class names for other chip generations
-    for agx_class in ("AGXAcceleratorG15X", "AGXAcceleratorG14X",
-                       "AGXAcceleratorG15G", "AGXAcceleratorG14G"):
-        try:
-            result = subprocess.run(
-                ["ioreg", "-r", "-c", agx_class, "-d", "1"],
-                capture_output=True, text=True, timeout=2,
-            )
-            if result.returncode == 0 and "Device Utilization" in result.stdout:
-                fn = _sample_gpu_macos_agx
-                fn._source = f"ioreg/{agx_class}"
-                fn._agx_class = agx_class
-                return fn
-        except Exception:
-            continue
 
     fn = _sample_gpu_none
     fn._source = "none (macOS — AGX not found)"
