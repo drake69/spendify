@@ -67,8 +67,26 @@ def _is_apple_silicon(cpu_str: str) -> int:
 
 # ── Data loading ─────────────────────────────────────────────────────────
 
+_SKIP_CSV_NAMES = frozenset({
+    "results_all_runs.csv",
+    "results_merged.csv",
+    "cat_results_all_runs.csv",
+    "cat_results_detail.csv",
+    "summary_variance.csv",
+    "summary_global.csv",
+    "benchmark_config.json",
+    "cat_benchmark_config.json",
+})
+
+
 def _find_csvs(csv_override: Optional[str] = None) -> list[Path]:
-    """Ritorna lista di CSV da usare."""
+    """Ritorna lista di CSV da usare.
+
+    Esclude sempre i file aggregati/summary (results_all_runs.csv,
+    results_merged.csv, ecc.) per evitare double-counting.
+    Legge i file archivio per-run: <timestamp>_<hostname>.csv
+    e results_run_*.csv scritti dai benchmark scripts.
+    """
     if csv_override:
         p = Path(csv_override)
         if not p.exists():
@@ -76,7 +94,11 @@ def _find_csvs(csv_override: Optional[str] = None) -> list[Path]:
             sys.exit(1)
         return [p]
 
-    archive_csvs: list[Path] = sorted(_RESULTS_DIR.glob("*.csv")) if _RESULTS_DIR.exists() else []
+    archive_csvs: list[Path] = [
+        p for p in sorted(_RESULTS_DIR.glob("*.csv"))
+        if p.name not in _SKIP_CSV_NAMES
+    ] if _RESULTS_DIR.exists() else []
+
     if archive_csvs:
         return archive_csvs
 
@@ -141,14 +163,131 @@ def _preprocess(df: pd.DataFrame) -> pd.DataFrame:
     return df.reset_index(drop=True)
 
 
+# ── Merge classifier + categorizer rows ─────────────────────────────────
+
+# Join key: identifica univocamente un (file × run × modello × macchina)
+_MERGE_KEY = [
+    "run_id", "filename", "git_commit", "git_branch",
+    "provider", "model", "runtime_hostname",
+]
+
+# Colonne che appartengono solo al classifier (vuote nelle righe categorizer)
+_CLF_ONLY_COLS = [
+    "header_detected", "header_expected", "header_match",
+    "rows_detected", "rows_expected", "rows_match",
+    "doc_type_detected", "doc_type_expected", "doc_type_match",
+    "convention_detected", "convention_expected", "convention_match",
+    "confidence_score",
+    "n_parsed", "n_expected", "parse_rate",
+    "amount_correct", "amount_total", "amount_accuracy",
+    "date_correct", "date_total", "date_accuracy",
+    "category_correct", "category_total", "category_accuracy",
+    "phase0_sign_convention", "phase0_debit_col", "phase0_credit_col",
+    "llm_debit_col", "llm_credit_col", "llm_invert_sign",
+    "final_debit_col", "final_credit_col", "final_invert_sign",
+    "classifier_mode",
+    "step1_time_s", "step2_time_s", "step3_time_s",
+    "step1_doc_type_match", "step2_date_col_match", "step2_amount_col_match",
+    "classifier_duration_s",
+]
+
+# Colonne che appartengono solo al categorizer
+_CAT_ONLY_COLS = [
+    "n_transactions", "n_categorized",
+    "n_correct_category", "n_correct_fuzzy",
+    "n_fallback", "n_history", "n_rule", "n_llm",
+    "cat_exact_accuracy", "cat_fuzzy_accuracy", "cat_fallback_rate",
+    "cleaner_batch_size",
+    "cat_duration_s",
+]
+
+# Colonne comuni (prese dal classifier come fonte primaria; il categorizer può avere
+# valori diversi per duration_seconds / tokens — vengono renominate con suffisso)
+_SHARED_COLS = [
+    "version", "git_branch", "temperature", "parameter_size", "quantization",
+    "n_ctx", "n_batch", "n_threads", "n_gpu_layers", "flash_attn",
+    "runtime_os", "runtime_cpu", "runtime_ram_gb", "runtime_gpu",
+    "runtime_gpu_cores", "runtime_gpu_ram_gb",
+    "file_doc_type", "file_format", "file_amount_format",
+    "file_n_header_rows", "file_n_data_rows", "file_n_footer_rows",
+    "file_has_debit_credit_split", "file_has_borders",
+    "file_n_income_rows", "file_n_expense_rows", "file_n_internal_transfers",
+]
+
+
+def merge_clf_cat(df: pd.DataFrame) -> pd.DataFrame:
+    """Produce una riga per chiave (run_id, filename, commit, model, host)
+    con colonne classifier + categorizer affiancate.
+
+    - Le colonne comuni vengono prese dalla riga classifier (source of truth).
+    - `duration_seconds` viene rinominato: classifier → `classifier_duration_s`,
+      categorizer → `cat_duration_s`.
+    - `prompt_tokens`, `completion_tokens`, `total_tokens`, `tokens_per_second`
+      vengono suffissati: `_clf` e `_cat`.
+    - Righe senza controparte (solo classifier o solo categorizer) vengono
+      incluse con le colonne mancanti a NaN.
+    """
+    key_cols = [c for c in _MERGE_KEY if c in df.columns]
+
+    clf = df[df["benchmark_type"] == "classifier"].copy()
+    cat = df[df["benchmark_type"] == "categorizer"].copy()
+
+    if clf.empty and cat.empty:
+        return pd.DataFrame()
+
+    # Rinomina duration e token per disambiguare
+    for src, suffix in [(clf, "_clf"), (cat, "_cat")]:
+        for col in ["duration_seconds", "prompt_tokens", "completion_tokens",
+                    "total_tokens", "tokens_per_second", "cpu_load_avg",
+                    "gpu_utilization_pct", "error"]:
+            if col in src.columns:
+                src.rename(columns={col: f"{col}{suffix}"}, inplace=True)
+
+    # Drop benchmark_type prima del join
+    clf = clf.drop(columns=["benchmark_type"], errors="ignore")
+    cat = cat.drop(columns=["benchmark_type"], errors="ignore")
+
+    # Outer join su key
+    merged = pd.merge(clf, cat, on=key_cols, how="outer", suffixes=("_clf_dup", "_cat_dup"))
+
+    # Risolvi colonne duplicate (_clf_dup vs _cat_dup): prendi il valore non-null
+    dup_bases = set()
+    for col in merged.columns:
+        if col.endswith("_clf_dup") or col.endswith("_cat_dup"):
+            dup_bases.add(col.replace("_clf_dup", "").replace("_cat_dup", ""))
+    for base in dup_bases:
+        col_a = f"{base}_clf_dup"
+        col_b = f"{base}_cat_dup"
+        if col_a in merged.columns and col_b in merged.columns:
+            merged[base] = merged[col_a].combine_first(merged[col_b])
+            merged.drop(columns=[col_a, col_b], inplace=True)
+        elif col_a in merged.columns:
+            merged.rename(columns={col_a: base}, inplace=True)
+        elif col_b in merged.columns:
+            merged.rename(columns={col_b: base}, inplace=True)
+
+    # Backward compat: se i vecchi CSV non hanno classifier_duration_s,
+    # usare duration_seconds_clf come fallback
+    if "classifier_duration_s" not in merged.columns and "duration_seconds_clf" in merged.columns:
+        merged["classifier_duration_s"] = merged["duration_seconds_clf"]
+    if "cat_duration_s" not in merged.columns and "duration_seconds_cat" in merged.columns:
+        merged["cat_duration_s"] = merged["duration_seconds_cat"]
+
+    return merged.reset_index(drop=True)
+
+
 # ── Aggregation ───────────────────────────────────────────────────────────
 
 _AGG_METRICS_CLASSIFIER = [
-    "duration_seconds", "tokens_per_second",
+    # prefer disambiguated column; fall back to duration_seconds if old CSV
+    "classifier_duration_s", "duration_seconds",
+    "tokens_per_second", "tokens_per_second_clf",
     "parse_rate", "amount_accuracy", "date_accuracy",
 ]
 _AGG_METRICS_CATEGORIZER = [
-    "duration_seconds", "duration_per_10tx", "tokens_per_second",
+    "cat_duration_s", "duration_seconds",
+    "duration_per_10tx",
+    "tokens_per_second", "tokens_per_second_cat",
     "cat_fuzzy_accuracy", "cat_exact_accuracy", "cat_fallback_rate",
 ]
 _GROUP_COLS = ["benchmark_type", "provider", "model", "quantization",
@@ -480,41 +619,62 @@ def main() -> None:
     print(f"Righe valide: {len(df)}  |  Tipi: {df['benchmark_type'].value_counts().to_dict()}",
           file=sys.stderr)
 
-    # ── Salva CSV aggregato (merge + deduplica) ───────────────────────────────
-    # Chiave di unicità: identifica univocamente ogni singola transazione testata
-    # su una specifica macchina in una specifica run.
+    # ── Salva results_all_runs.csv (righe separate per tipo, cross-HW) ──────
+    # Chiave di unicità: benchmark_type incluso — classifier e categorizer
+    # restano su righe separate per compatibilità e analisi per-tipo.
     _DEDUP_KEYS = [
         "version", "runtime_hostname", "benchmark_type",
-        "provider", "model", "quantization", "run_id", "file_id",
+        "provider", "model", "quantization", "run_id", "filename",
     ]
+    _MERGED_OUT = _BENCH_OUT.parent / "results_merged.csv"
+    _DOCS_MERGED_OUT = _DOCS_OUT.parent / "results_merged.csv"
     try:
         # Legge l'esistente da _BENCH_OUT (primario in sw_artifacts) se presente
         _ref = _BENCH_OUT if _BENCH_OUT.exists() else _DOCS_OUT
         if _ref.exists():
             existing = pd.read_csv(_ref, low_memory=False)
-            merged = pd.concat([existing, raw], ignore_index=True)
+            all_runs = pd.concat([existing, raw], ignore_index=True)
         else:
-            merged = raw.copy()
+            all_runs = raw.copy()
         # Deduplica: se stessa chiave compare più volte, tieni l'ultima
-        dedup_cols = [c for c in _DEDUP_KEYS if c in merged.columns]
+        dedup_cols = [c for c in _DEDUP_KEYS if c in all_runs.columns]
         if dedup_cols:
-            merged = merged.drop_duplicates(subset=dedup_cols, keep="last")
-        merged = merged.sort_values(
-            [c for c in ["version", "runtime_hostname", "run_id"] if c in merged.columns]
+            all_runs = all_runs.drop_duplicates(subset=dedup_cols, keep="last")
+        all_runs = all_runs.sort_values(
+            [c for c in ["version", "runtime_hostname", "run_id"] if c in all_runs.columns]
         ).reset_index(drop=True)
-        # Scrivi primario (benchmark/results_all_runs.csv — tracciato in sw_artifacts)
+        # Scrivi primario
         _BENCH_OUT.parent.mkdir(parents=True, exist_ok=True)
-        merged.to_csv(_BENCH_OUT, index=False)
-        print(f"CSV aggregato → {_BENCH_OUT}  ({len(merged)} righe, {len(raw)} nuove)")
-        # Copia mirror in documents/ (per consultazione senza repo codice)
+        all_runs.to_csv(_BENCH_OUT, index=False)
+        print(f"CSV aggregato   → {_BENCH_OUT}  ({len(all_runs)} righe, {len(raw)} nuove)")
+        # Mirror in documents/
         try:
             _DOCS_OUT.parent.mkdir(parents=True, exist_ok=True)
-            merged.to_csv(_DOCS_OUT, index=False)
-            print(f"               → {_DOCS_OUT}  (mirror)")
+            all_runs.to_csv(_DOCS_OUT, index=False)
+            print(f"                → {_DOCS_OUT}  (mirror)")
         except Exception as e_docs:
             print(f"WARN: impossibile scrivere mirror documents/: {e_docs}", file=sys.stderr)
     except Exception as e:
         print(f"WARN: impossibile scrivere {_BENCH_OUT}: {e}", file=sys.stderr)
+        all_runs = raw.copy()
+
+    # ── Salva results_merged.csv (una riga per chiave, clf+cat affiancati) ──
+    # Questo è il file da usare per analisi che correlano classifier e categorizer.
+    try:
+        merged_view = merge_clf_cat(all_runs)
+        if not merged_view.empty:
+            merged_view.to_csv(_MERGED_OUT, index=False)
+            print(f"CSV merged      → {_MERGED_OUT}  ({len(merged_view)} righe)")
+            try:
+                _DOCS_MERGED_OUT.parent.mkdir(parents=True, exist_ok=True)
+                merged_view.to_csv(_DOCS_MERGED_OUT, index=False)
+                print(f"                → {_DOCS_MERGED_OUT}  (mirror)")
+            except Exception as e_docs:
+                print(f"WARN: impossibile scrivere mirror merged: {e_docs}", file=sys.stderr)
+        else:
+            print("WARN: merged view vuota — nessun CSV merged scritto.", file=sys.stderr)
+    except Exception as e:
+        print(f"WARN: impossibile produrre results_merged.csv: {e}", file=sys.stderr)
 
     report = build_report(df, args.bench_type, args.predict)
 
