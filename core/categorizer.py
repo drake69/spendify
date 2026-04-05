@@ -2,10 +2,14 @@
 
 Cascade:
   Step 0 – user-defined rules (category_rule table)
-  Step 1 – static deterministic rules (keyword/regex patterns)
+  Step 1 – static country rules (core/static_rules/<language>.json — optional, per-country)
   Step 2 – supervised ML model (future; currently stub returning None)
   Step 3 – LLM structured output  ← two directional batches (expense / income)
   Fallback – to_review = True
+
+Static rules (Step 1) are loaded from JSON at first use and cached in memory.
+If the JSON for the requested language does not exist, Step 1 is silently skipped.
+To add a new country create core/static_rules/<iso_code>.json (e.g. en.json, de.json).
 """
 from __future__ import annotations
 
@@ -144,31 +148,39 @@ class CategorizationResult:
     to_review: bool = False
 
 
-# ── Static keyword rules ──────────────────────────────────────────────────────
-# Each rule is (pattern, category, subcategory, match_type, direction)
-# direction: "expense" | "income" | "any"
-_STATIC_RULES: list[tuple[str, str, str, str, str]] = [
-    (r'(conad|coop|esselunga|lidl|carrefour|eurospin|aldi|penny|pam\b)', "Alimentari", "Spesa supermercato", "regex", "expense"),
-    (r'(farmacia|pharma)', "Salute", "Farmaci", "regex", "expense"),
-    (r'(eni\b|shell|q8|tamoil|ip\b|api\b|agip)', "Trasporti", "Carburante", "regex", "expense"),
-    (r'(telepass|autostrad)', "Trasporti", "Parcheggio / ZTL", "regex", "expense"),
-    (r'(trenitalia|italo|frecciarossa|frecciargento)', "Trasporti", "Trasporto pubblico", "regex", "expense"),
-    (r'(enel\b|iren\b|a2a\b|hera\b|eni gas)', "Casa", "Energia elettrica", "regex", "expense"),
-    (r'(netflix|spotify|amazon prime|disney\+|apple tv)', "Svago e tempo libero", "Streaming / abbonamenti digitali", "regex", "expense"),
-    (r'(stipendio|salary|busta paga)', "Lavoro dipendente", "Stipendio", "regex", "income"),
-    (r'(pensione|inps rendita)', "Prestazioni sociali", "Pensione / rendita", "regex", "income"),
-    (r'(commissione|canone conto|spese tenuta)', "Finanza e assicurazioni", "Commissioni bancarie", "regex", "expense"),
-]
-
-_COMPILED_STATIC: list[tuple[re.Pattern, str, str, str]] = [
-    (re.compile(pat, re.IGNORECASE), cat, sub, direction)
-    for pat, cat, sub, _, direction in _STATIC_RULES
-]
+# ── Static country rules (loaded from core/static_rules/<language>.json) ─────
+_STATIC_RULES_DIR = Path(__file__).parent / "static_rules"
+_STATIC_RULES_CACHE: dict[str, list[tuple[re.Pattern, str, str, str]]] = {}
 
 
-def _apply_static_rules(description: str, is_expense: bool) -> Optional[tuple[str, str]]:
-    """Apply static rules respecting transaction direction."""
-    for pattern, category, subcategory, direction in _COMPILED_STATIC:
+def _load_static_rules(language: str) -> list[tuple[re.Pattern, str, str, str]]:
+    """Load and compile static rules for *language* from JSON.
+
+    Returns an empty list (no error) if the file does not exist —
+    Step 1 is simply skipped for languages without a rules file.
+    Results are cached in memory after the first load.
+    """
+    if language in _STATIC_RULES_CACHE:
+        return _STATIC_RULES_CACHE[language]
+    path = _STATIC_RULES_DIR / f"{language}.json"
+    if not path.exists():
+        _STATIC_RULES_CACHE[language] = []
+        return []
+    try:
+        entries = json.loads(path.read_text(encoding="utf-8"))
+        compiled = [
+            (re.compile(e["pattern"], re.IGNORECASE), e["category"], e["subcategory"], e["direction"])
+            for e in entries
+        ]
+    except Exception:
+        compiled = []
+    _STATIC_RULES_CACHE[language] = compiled
+    return compiled
+
+
+def _apply_static_rules(description: str, is_expense: bool, language: str = "it") -> Optional[tuple[str, str]]:
+    """Apply country static rules respecting transaction direction."""
+    for pattern, category, subcategory, direction in _load_static_rules(language):
         if direction == "expense" and not is_expense:
             continue
         if direction == "income" and is_expense:
@@ -195,6 +207,7 @@ def _try_deterministic(
     doc_type: str,
     user_rules: list[CategoryRule],
     taxonomy: TaxonomyConfig,
+    language: str = "it",
 ) -> Optional[CategorizationResult]:
     """Apply user rules and static rules. Returns result or None if LLM needed."""
     # Step 0: user-defined rules (sorted by priority desc)
@@ -216,9 +229,9 @@ def _try_deterministic(
                 source=CategorySource.rule,
             )
 
-    # Step 1: static rules (direction-aware)
+    # Step 1: country static rules from core/static_rules/<language>.json
     is_expense = amount < 0
-    static_match = _apply_static_rules(description, is_expense)
+    static_match = _apply_static_rules(description, is_expense, language)
     if static_match:
         category, subcategory = static_match
         return CategorizationResult(
@@ -444,7 +457,7 @@ def categorize_batch(
         description = tx.get("description", "") or ""
         doc_type = tx.get("doc_type", "") or ""
 
-        result = _try_deterministic(description, amount, doc_type, user_rules, taxonomy)
+        result = _try_deterministic(description, amount, doc_type, user_rules, taxonomy, language=description_language)
         if result is not None:
             results[i] = result
             continue
@@ -553,7 +566,7 @@ def categorize_transaction(
     session=None,
 ) -> CategorizationResult:
     """Single-transaction categorization. Used for real-time correction in the UI."""
-    result = _try_deterministic(description, amount, doc_type, user_rules, taxonomy)
+    result = _try_deterministic(description, amount, doc_type, user_rules, taxonomy, language=description_language)
     if result is not None:
         return result
 
