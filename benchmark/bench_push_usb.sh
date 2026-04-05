@@ -48,9 +48,21 @@ if [[ ! -f "$EXCLUDE_FILE" ]]; then
     exit 1
 fi
 
+# ── Generate benchmark/.version (YYYYMMDDHHMMSS-sha7) ─────────────────────
+# Written here (on dev machine, where git is available) so the bench machine
+# can identify the code version without needing a .git directory.
+# All model invocations on the bench machine read the same .version file
+# → every CSV row gets an identical version string → monitor can filter
+# by exact version to show only rows from the current bench push.
+_PUSH_SHA=$(git -C "$PROJECT_ROOT" rev-parse --short HEAD 2>/dev/null || echo "unknown")
+_PUSH_TS=$(date +"%Y%m%d%H%M%S")
+_PUSH_VERSION="${_PUSH_TS}-${_PUSH_SHA}"
+echo "${_PUSH_VERSION}" > "$SCRIPT_DIR/.version"
+
 echo "=== bench_push_usb ==="
 echo "  Source  : $PROJECT_ROOT"
 echo "  Dest    : $DEST"
+echo "  Version : ${_PUSH_VERSION}"
 echo "  Exclude : $EXCLUDE_FILE"
 [[ $CLEAN -eq 1 ]]   && echo "  Mode    : --clean (rsync --delete-excluded)"
 [[ $DRY_RUN -eq 1 ]] && echo "  Mode    : --dry-run"

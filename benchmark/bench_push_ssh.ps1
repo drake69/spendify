@@ -41,9 +41,16 @@ if ($Dest -notmatch "^(.+):(.+)$") {
 $RemoteHost = $Matches[1]
 $RemotePath = $Matches[2]
 
+# ── Generate benchmark\.version (yyyyMMddHHmmss-sha7) ─────────────────────
+$_PushSha = try { (git -C $ProjectRoot rev-parse --short HEAD 2>$null).Trim() } catch { "unknown" }
+if (-not $_PushSha) { $_PushSha = "unknown" }
+$_PushVersion = "$(Get-Date -Format 'yyyyMMddHHmmss')-$_PushSha"
+$_PushVersion | Out-File -FilePath (Join-Path $ScriptDir ".version") -Encoding utf8 -NoNewline
+
 Write-Host "=== bench_push_ssh ===" -ForegroundColor Cyan
-Write-Host "  Source : $ProjectRoot"
-Write-Host "  Dest   : $Dest"
+Write-Host "  Source  : $ProjectRoot"
+Write-Host "  Dest    : $Dest"
+Write-Host "  Version : $_PushVersion" -ForegroundColor Green
 if ($Clean)  { Write-Host "  Mode   : -Clean" }
 if ($DryRun) { Write-Host "  Mode   : -DryRun" }
 Write-Host ""

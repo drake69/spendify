@@ -135,7 +135,17 @@ def _find_latest_csv(csv_override: Path | None = None) -> Path | None:
 
 
 def _load_results(current_only: bool = True, path: Path | None = None) -> tuple[list[dict], float | None]:
-    """Return (rows, csv_mtime). If current_only, keep only rows with the latest run_id."""
+    """Return (rows, csv_mtime). If current_only, keep only rows from the latest bench session.
+
+    Session identification strategy (in priority order):
+    1. version field with format YYYYMMDDHHMMSS-sha  → filter by exact max version.
+       All invocations from the same bench push share the same .version file
+       (written by bench_push_usb/ssh scripts), so they all have identical version strings.
+    2. Fallback: rows whose version date (YYYYMMDD) matches the most recent version date.
+       Handles drag-and-drop copies where .version is absent and each invocation gets
+       a unique timestamp — groups all of today's runs together.
+    3. Last resort: max run_id (old behaviour for CSVs without version field).
+    """
     target = path or _find_latest_csv()
     if target is None or not target.exists():
         return [], None
@@ -151,12 +161,37 @@ def _load_results(current_only: bool = True, path: Path | None = None) -> tuple[
     mtime = target.stat().st_mtime
 
     if current_only and rows:
-        # Find the max run_id present in the file
-        try:
-            max_run = max(int(r.get("run_id", 0) or 0) for r in rows)
-            rows = [r for r in rows if int(r.get("run_id", 0) or 0) == max_run]
-        except (ValueError, TypeError):
-            pass  # keep all if run_id is non-numeric
+        # Collect version strings that look like timestamps: start with YYYYMMDD digits
+        ts_versions = [
+            (r.get("version") or "").strip()
+            for r in rows
+            if len((r.get("version") or "").strip()) >= 8
+            and (r.get("version") or "").strip()[:8].isdigit()
+        ]
+
+        if ts_versions:
+            max_ver  = max(ts_versions)          # lex max = most recent timestamp
+            max_date = max_ver[:8]               # YYYYMMDD portion
+
+            # If a significant fraction share the exact max version,
+            # the .version file was present → filter by exact match (strict).
+            # Otherwise (each invocation has unique ts) → filter by date only.
+            exact_count = sum(1 for v in ts_versions if v == max_ver)
+            if exact_count >= len(ts_versions) * 0.5:
+                # .version file scenario: all rows of this push share the same string
+                rows = [r for r in rows
+                        if (r.get("version") or "").strip() == max_ver]
+            else:
+                # No .version file: group by same calendar day as the latest row
+                rows = [r for r in rows
+                        if (r.get("version") or "").strip()[:8] == max_date]
+        else:
+            # Fallback: filter by max run_id (old CSV format without version)
+            try:
+                max_run = max(int(r.get("run_id", 0) or 0) for r in rows)
+                rows = [r for r in rows if int(r.get("run_id", 0) or 0) == max_run]
+            except (ValueError, TypeError):
+                pass
 
     return rows, mtime
 

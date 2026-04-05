@@ -56,8 +56,15 @@ if [[ ! -f "$EXCLUDE_FILE" ]]; then
     exit 1
 fi
 
+# ── Generate benchmark/.version (YYYYMMDDHHMMSS-sha7) ─────────────────────
+_PUSH_SHA=$(git -C "$PROJECT_ROOT" rev-parse --short HEAD 2>/dev/null || echo "unknown")
+_PUSH_TS=$(date +"%Y%m%d%H%M%S")
+_PUSH_VERSION="${_PUSH_TS}-${_PUSH_SHA}"
+echo "${_PUSH_VERSION}" > "$SCRIPT_DIR/.version"
+
 echo "=== bench_push_ssh ==="
 echo "  Source  : $PROJECT_ROOT"
+echo "  Version : ${_PUSH_VERSION}"
 echo "  Dest    : $DEST"
 echo "  Exclude : $EXCLUDE_FILE"
 [[ $CLEAN -eq 1 ]]   && echo "  Mode    : --clean (rsync --delete-excluded)"
