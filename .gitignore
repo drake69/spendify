@@ -21,3 +21,6 @@ my_secrets.py
 *.db
 # Claude internal session data
 .claude/
+# NSI raw data (large downloaded datasets — not in git)
+nsi/
+
