@@ -258,7 +258,8 @@ def _read_version() -> str:
         return version_file.read_text().strip()
     try:
         sha = subprocess.check_output(
-            ["git", "rev-parse", "--short", "HEAD"], cwd=PROJECT_ROOT, text=True
+            ["git", "rev-parse", "--short", "HEAD"], cwd=PROJECT_ROOT, text=True,
+            stderr=subprocess.DEVNULL,
         ).strip()
         ts = datetime.now().strftime("%Y%m%d%H%M%S")
         return f"{ts}-{sha}"
@@ -321,7 +322,8 @@ def _collect_llm_metadata(config: ProcessingConfig, backend) -> dict[str, str]:
     _git_branch = "unknown"
     try:
         _git_branch = subprocess.check_output(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=PROJECT_ROOT, text=True
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=PROJECT_ROOT, text=True,
+            stderr=subprocess.DEVNULL,
         ).strip()
     except Exception:
         pass
