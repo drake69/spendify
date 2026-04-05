@@ -114,7 +114,7 @@ benchmark/                        ← tutto il materiale di benchmark (root del 
 │
 │  ── SCRIPT OPERATIVI ──────────────────────────────────────────────────────
 ├── benchmark_models.csv          ← catalogo modelli (gguf + ollama)
-├── .version                      ← versione YYYYMMDDHHMMSS-SHA7 (aggiornata da git hook)
+├── .version                      ← versione YYYYMMDDHHMMSS-SHA7 (scritta da bench_push al momento del push)
 ├── monitor_benchmark.sh          ← monitor avanzamento — macOS/Linux
 ├── monitor_benchmark.ps1         ← monitor avanzamento — Windows
 ├── cleanup_benchmark.sh          ← pulizia file generati
@@ -333,10 +333,12 @@ uv run python benchmark/benchmark_pipeline.py --backend local_llama_cpp \
 
 ### Funzionalità
 
-- Progress bar per modello con percentuale completata, righe processate, elapsed e ETA
-- Fase corrente (classifier / categorizer) rilevata dalla colonna `benchmark_type`
+- **Due sezioni distinte** — CLASSIFIER e CATEGORIZER, ciascuna con progress bar per modello
+- Progress bar per modello con percentuale completata, righe processate, tag `← in corso` / `○ in attesa`
+- **Parametri di inferenza per modello** — mostra `[gpu=N, thr=N, flash]` accanto a ogni riga
 - Statistiche CPU e GPU live (via `HWMonitor.sample_once()`) e medie storiche dal CSV
 - Refresh automatico ogni N secondi (configurabile)
+- **Session filtering** — mostra solo i dati della sessione bench corrente (filtro per `version`), escludendo automaticamente righe di run precedenti accumulate nel CSV append-only
 
 ### Opzioni
 
@@ -372,12 +374,14 @@ Il modulo `benchmark/hw_monitor.py` (`HWMonitor`) campiona CPU e GPU **in backgr
 
 | Piattaforma | Metodo GPU | Note |
 |-------------|-----------|------|
-| macOS Apple Silicon | `ioreg` / AGXAccelerator → Device Utilization % | Nessun sudo richiesto |
+| macOS Apple Silicon | `ioreg` / AGXAccelerator → Device Utilization % | Nessun sudo richiesto. Discovery dinamica: funziona su M1-M5+ senza hardcoding del nome classe (G13/G14/G15/G16/…) |
 | Linux NVIDIA | `nvidia-smi` → utilization % + power watts | Richiede driver NVIDIA |
 | Linux AMD | `rocm-smi` → utilization % | Richiede ROCm |
 | Fallback | — | GPU utilization = 0.0 |
 
 `benchmark_pipeline.py` e `benchmark_categorizer.py` istanziano `HWMonitor` all'inizio del run e chiamano `stop()` alla fine per ottenere le medie. `monitor_benchmark` usa `HWMonitor.sample_once()` per le statistiche live.
+
+> **Import path**: `monitor_benchmark.py` importa `HWMonitor` via `tests.hw_monitor` (shim a `benchmark/hw_monitor.py` che risolve il path senza richiedere il pacchetto `tests` installato).
 
 ### Diagnostica GPU (Windows)
 
@@ -469,6 +473,14 @@ I risultati sono **append-only** in `results_all_runs.csv`. La chiave di resume 
 
 Se rilanci lo stesso benchmark con lo stesso modello e commit, le righe esistenti vengono skippate. Cambiando modello, commit, o hardware, vengono aggiunte nuove righe.
 
+> **Session filtering nel monitor**: poiché il CSV è append-only, con il tempo accumula
+> righe di sessioni diverse. Il monitor filtra automaticamente per mostrare solo la
+> sessione corrente usando il campo `version` (scritto da `bench_push`):
+> - Se `.version` è presente → filtro per stringa esatta (tutte le invocazioni della
+>   stessa push condividono la stessa stringa)
+> - Fallback → righe dello stesso giorno calendario
+> - Ultimo fallback → `max(run_id)` (CSV senza campo `version`)
+
 ## Workflow collaborativo
 
 ```
@@ -514,15 +526,17 @@ Ogni run produce un CSV versionato in `benchmark/results/` con nome:
 
 Esempio: `20260404120000-a1b2c3d_bench-mac.csv`
 
-La versione viene letta da `benchmark/.version`, un file di testo committato nel repo e
-aggiornato automaticamente dal **post-commit hook** a ogni commit:
+La versione viene letta da `benchmark/.version`, un file di testo **generato automaticamente
+dagli script di push** al momento del push sulla macchina bench:
 
-```sh
-# .git/hooks/post-commit
-TS=$(date +%Y%m%d%H%M%S)
-SHA=$(git rev-parse --short HEAD)
-printf '%s-%s\n' "$TS" "$SHA" > benchmark/.version
 ```
+bench_push_usb.sh / bench_push_usb.ps1  →  scrive benchmark/.version = YYYYMMDDHHMMSS-SHA7
+bench_push_ssh.sh / bench_push_ssh.ps1  →  idem
+```
+
+Il file viene scritto PRIMA del rsync/robocopy, quindi viene incluso nella copia sul bench.
+Tutti i modelli della stessa sessione bench leggono lo stesso `.version` → stessa stringa
+`version` in ogni riga CSV → il monitor può filtrare per sessione corrente con `max(version)`.
 
 **Perché `.version` e non `git describe`?**
 Su macchine bench senza git (chiavetta USB, host remoti senza repo clonato) non è
@@ -530,7 +544,10 @@ possibile eseguire `git rev-parse`. Il file `.version` viaggia con il codice e
 garantisce la tracciabilità anche in assenza di git.
 
 Se il file non esiste, lo script fa fallback a `git rev-parse --short HEAD`
-(oppure `unknown` se nemmeno git è disponibile).
+(oppure `YYYYMMDDHHMMSS-unknown` se nemmeno git è disponibile).
+
+> **Nota**: `.version` è *untracked* in git (non committato). Viene rigenerato a ogni push,
+> quindi riflette sempre il commit e il momento esatto dell'ultima push verso il bench.
 
 ### Colonne aggiuntive nei CSV versionati
 
@@ -558,10 +575,18 @@ un PC Windows, un server Linux), usa gli script in `benchmark/`.
 > I file sintetici **non vengono rigenerati automaticamente** — questo garantisce
 > che ogni macchina esegua esattamente gli stessi input (determinismo).
 
-### USB — flusso completo (6 passi)
+### USB / Network share — flusso completo (6 passi)
+
+Gli script USB funzionano identicamente con una **share di rete** (NFS, SMB, AFP) al posto
+della chiavetta USB: basta passare il path della share come `--dest` / `--from`.
+I file delle varie macchine non si sovrascrivono tra loro perché ogni CSV di archivio
+include l'hostname nel nome (`<version>_<hostname>.csv`). L'unico file condiviso è
+`results_all_runs.csv` (append-only): in caso di salvataggio contemporaneo da due macchine
+l'ultima scrittura vince — in pratica non è un problema perché i bench girano in serie.
 
 ```
 [dev]  bench_push_usb.sh --dest /Volumes/BENCH_USB
+         └── scrive benchmark/.version (YYYYMMDDHHMMSS-SHA7)
          └── copia codice + file sintetici (generated_files/) sulla chiavetta
               │
               ▼ (porta chiavetta alla macchina bench)
