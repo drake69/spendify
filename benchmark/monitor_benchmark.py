@@ -391,8 +391,20 @@ def _print_report(snap: dict, elapsed_s: float, interval: int,
             print(f"  {'Backend':<{col_b}}{'Model':<{col_m}}{'Done':>{col_d}}   Progress")
             print("  " + "─" * (W - 2))
 
+            # Sort by phase-specific count so a model with 50 classifier + 9
+            # categorizer rows (59 total) is still shown as "in corso" for the
+            # categorizer phase — not prematurely marked "done" because its
+            # global count (59) crossed exp_per (50).
+            def _ph_sort_key(item: tuple) -> tuple:
+                (prov, mdl), cnt = item   # cnt = ph_counts.get(k, 0)
+                if exp_per > 0:
+                    if 0 < cnt < exp_per: return (0, prov, mdl)   # running
+                    if cnt >= exp_per:    return (1, prov, mdl)   # done
+                return (2, prov, mdl)                              # waiting
+
             for (prov, mdl), _ in sorted(
-                {k: counts[k] for k in all_keys}.items(), key=_sort_key
+                {k: ph_counts.get(k, 0) for k in all_keys}.items(),
+                key=_ph_sort_key,
             ):
                 cnt  = ph_counts.get((prov, mdl), 0)
                 bar  = _bar(cnt, exp_per)
