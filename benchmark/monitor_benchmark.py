@@ -163,6 +163,8 @@ def _load_results(current_only: bool = True, path: Path | None = None) -> tuple[
 # ── Snapshot ───────────────────────────────────────────────────────────────
 def _snapshot(rows: list[dict], exp_per_model: int, n_models_total: int = 0) -> dict:
     counts:    dict[tuple, int]  = defaultdict(int)
+    # Per-phase counts: {"classifier": {(prov, mdl): n}, "categorizer": {...}}
+    counts_by_phase: dict[str, dict[tuple, int]] = defaultdict(lambda: defaultdict(int))
     durations: list[float]       = []
     cpu_samples: list[float]     = []
     gpu_samples: list[float]     = []
@@ -194,6 +196,7 @@ def _snapshot(rows: list[dict], exp_per_model: int, n_models_total: int = 0) -> 
         bt = (row.get("benchmark_type") or "").strip()
         if bt:
             phases[bt] += 1
+            counts_by_phase[bt][key] += 1
         # Capture inference params once per model key (values are constant)
         if key not in infer_params:
             p: dict[str, str] = {}
@@ -222,19 +225,20 @@ def _snapshot(rows: list[dict], exp_per_model: int, n_models_total: int = 0) -> 
     current_run_id = max(run_ids) if run_ids else 0
 
     return {
-        "counts":        dict(counts),
-        "total_done":    total_done,
-        "total_exp":     total_exp,
-        "n_models_eff":  n_models_eff,
-        "exp_per_model": exp_per_model,
-        "avg_dur_s":     avg_dur,
-        "rate_fpm":      rate_fpm,
-        "rate_fps":      rate_fpm / 60,
-        "cpu_avg_hist":  sum(cpu_samples) / len(cpu_samples) if cpu_samples else 0.0,
-        "gpu_avg_hist":  sum(gpu_samples) / len(gpu_samples) if gpu_samples else 0.0,
-        "phases":        dict(phases),
-        "run_id":        current_run_id,
-        "infer_params":  infer_params,
+        "counts":           dict(counts),
+        "counts_by_phase":  {ph: dict(c) for ph, c in counts_by_phase.items()},
+        "total_done":       total_done,
+        "total_exp":        total_exp,
+        "n_models_eff":     n_models_eff,
+        "exp_per_model":    exp_per_model,
+        "avg_dur_s":        avg_dur,
+        "rate_fpm":         rate_fpm,
+        "rate_fps":         rate_fpm / 60,
+        "cpu_avg_hist":     sum(cpu_samples) / len(cpu_samples) if cpu_samples else 0.0,
+        "gpu_avg_hist":     sum(gpu_samples) / len(gpu_samples) if gpu_samples else 0.0,
+        "phases":           dict(phases),
+        "run_id":           current_run_id,
+        "infer_params":     infer_params,
     }
 
 # ── Report ─────────────────────────────────────────────────────────────────
@@ -299,10 +303,14 @@ def _print_report(snap: dict, elapsed_s: float, interval: int,
         return
 
     # Column widths
-    col_b, col_m, col_d = 12, 34, 5
+    col_b, col_m, col_d = 12, 30, 5
 
-    print(f"  {'Backend':<{col_b}}{'Model':<{col_m}}{'Done':>{col_d}}   {'Progress (cap 100%)'}")
-    print("  " + "─" * (W - 2))
+    counts_by_phase = snap.get("counts_by_phase", {})
+
+    # Canonical phase order; fall back to sorted keys for unknown phases
+    _PHASE_ORDER = ["classifier", "categorizer"]
+    present_phases = [ph for ph in _PHASE_ORDER if ph in counts_by_phase]
+    present_phases += [ph for ph in sorted(counts_by_phase) if ph not in _PHASE_ORDER]
 
     def _sort_key(item: tuple) -> tuple:
         (prov, mdl), cnt = item
@@ -311,33 +319,66 @@ def _print_report(snap: dict, elapsed_s: float, interval: int,
             if cnt >= exp_per:    return (1, prov, mdl)   # done
         return (2, prov, mdl)                              # waiting
 
-    for (prov, mdl), cnt in sorted(counts.items(), key=_sort_key):
-        bar = _bar(cnt, exp_per)
-        pct = f"{min(100*cnt//exp_per, 100):3d}%" if exp_per else "  ?%"
-        tag = ""
-        if exp_per > 0:
-            if 0 < cnt < exp_per: tag = " ← in corso"
-            elif cnt == 0:        tag = " ○ in attesa"
-        # Append inference params if available
+    def _ip_tag(prov: str, mdl: str) -> str:
         ip = infer_params.get((prov, mdl), {})
-        if ip:
-            parts = []
-            gl = ip.get("n_gpu_layers", "")
-            if gl:
-                parts.append(f"gpu={gl}")
-            nt = ip.get("n_threads", "")
-            if nt:
-                parts.append(f"thr={nt}")
-            fa = ip.get("flash_attn", "")
-            if fa and fa.lower() not in ("", "false", "0"):
-                parts.append("flash")
-            if parts:
-                tag += f"  [{', '.join(parts)}]"
-        print(f"  {prov:<{col_b}}{mdl:<{col_m}}{cnt:>{col_d}}   {bar} {pct}{tag}")
+        if not ip:
+            return ""
+        parts = []
+        gl = ip.get("n_gpu_layers", "")
+        if gl:
+            parts.append(f"gpu={gl}")
+        nt = ip.get("n_threads", "")
+        if nt:
+            parts.append(f"thr={nt}")
+        fa = ip.get("flash_attn", "")
+        if fa and fa.lower() not in ("", "false", "0"):
+            parts.append("flash")
+        return f"  [{', '.join(parts)}]" if parts else ""
 
-    print("  " + "─" * (W - 2))
+    if present_phases:
+        for ph in present_phases:
+            ph_counts = counts_by_phase[ph]
+            ph_done   = sum(ph_counts.values())
+            # Union of all known models to show waiting rows too
+            all_keys  = counts.keys() | ph_counts.keys()
+            ph_exp    = n_models_eff * exp_per if n_models_eff and exp_per else 0
 
-    tot_bar = _bar(total_done, total_exp, 24)
+            ph_bar = _bar(ph_done, ph_exp, 20)
+            ph_pct = f"{min(100*ph_done//ph_exp, 100):3d}%" if ph_exp else "  ?%"
+            print(f"  ── {ph.upper():<12}  {ph_done:>4} / {ph_exp if ph_exp else '?':>4}  {ph_bar} {ph_pct}")
+            print(f"  {'Backend':<{col_b}}{'Model':<{col_m}}{'Done':>{col_d}}   Progress")
+            print("  " + "─" * (W - 2))
+
+            for (prov, mdl), _ in sorted(
+                {k: counts[k] for k in all_keys}.items(), key=_sort_key
+            ):
+                cnt  = ph_counts.get((prov, mdl), 0)
+                bar  = _bar(cnt, exp_per)
+                pct  = f"{min(100*cnt//exp_per, 100):3d}%" if exp_per else "  ?%"
+                tag  = ""
+                if exp_per > 0:
+                    if 0 < cnt < exp_per: tag = " ← in corso"
+                    elif cnt == 0:        tag = " ○ in attesa"
+                tag += _ip_tag(prov, mdl)
+                print(f"  {prov:<{col_b}}{mdl:<{col_m}}{cnt:>{col_d}}   {bar} {pct}{tag}")
+
+            print("  " + "─" * (W - 2))
+    else:
+        # Fallback: no phase info, single table
+        print(f"  {'Backend':<{col_b}}{'Model':<{col_m}}{'Done':>{col_d}}   Progress")
+        print("  " + "─" * (W - 2))
+        for (prov, mdl), cnt in sorted(counts.items(), key=_sort_key):
+            bar = _bar(cnt, exp_per)
+            pct = f"{min(100*cnt//exp_per, 100):3d}%" if exp_per else "  ?%"
+            tag = ""
+            if exp_per > 0:
+                if 0 < cnt < exp_per: tag = " ← in corso"
+                elif cnt == 0:        tag = " ○ in attesa"
+            tag += _ip_tag(prov, mdl)
+            print(f"  {prov:<{col_b}}{mdl:<{col_m}}{cnt:>{col_d}}   {bar} {pct}{tag}")
+        print("  " + "─" * (W - 2))
+
+    tot_bar = _bar(total_done, total_exp, 20)
     tot_pct = f"{min(100*total_done//total_exp, 100):3d}%" if total_exp else "?"
     print(f"  TOTALE   {total_done} / {total_exp}  {tot_bar} {tot_pct}")
     print("═" * W)
