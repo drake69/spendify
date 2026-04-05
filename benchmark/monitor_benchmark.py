@@ -249,6 +249,13 @@ def _snapshot(rows: list[dict], exp_per_model: int, n_models_total: int = 0) -> 
     total_exp    = n_models_eff * exp_per_model if n_models_eff else 0
     avg_dur      = sum(durations) / len(durations) if durations else 0
     rate_fpm   = (60 / avg_dur) if avg_dur > 0 else 0
+    # TODO(backlog): ETA deve riflettere il bench COMPLETO, non il modello corrente.
+    # avg_dur è la media globale di tutti i file completati (inclusi modelli già finiti,
+    # potenzialmente più veloci di quelli rimanenti). Soluzione: calcolare rate_fpm
+    # separatamente per il modello in esecuzione (ultimi N file dello stesso model key)
+    # e usare quel rate per proiettare i file rimanenti. Il totale atteso deve includere
+    # entrambe le fasi (classifier + categorizer) per ogni modello.
+    # Rif: GitHub issue #XX — "monitor: ETA deve essere del bench completo"
 
     # Determine the run_id being displayed
     run_ids: set[int] = set()
