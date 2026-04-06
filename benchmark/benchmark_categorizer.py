@@ -11,8 +11,17 @@ Usage:
     --runs N           Number of runs (default: 10)
     --files PAT        Glob pattern to filter files (default: *_S_*)
     --backend NAME     LLM backend (default: from user settings or local_llama_cpp)
-    --model MODEL      Model name for Ollama (default: from user settings)
+    --model MODEL      Model name for Ollama/OpenAI/Claude (default: from user settings)
     --model-path PATH  GGUF path for llama-cpp
+    --scenario SC      Benchmark scenario (default: cold):
+                         cold          — pure LLM, no warm data
+                         nsi_warm      — NSI + taxonomy_map
+                         cross_warm    — leave-one-out: history from all GT files
+                                         *except* the current one (realistic warm-up)
+                         full_warm     — history from ALL GT files (upper bound)
+                         country_with  — nsi_warm + country ranking
+                         country_without — nsi_warm without country ranking
+                         all           — all scenarios sequentially
 """
 from __future__ import annotations
 
@@ -1254,11 +1263,13 @@ def main() -> None:
         "--scenario",
         type=str,
         default="cold",
-        choices=["cold", "nsi_warm", "full_warm", "country_with", "country_without", "all"],
+        choices=["cold", "nsi_warm", "cross_warm", "full_warm", "country_with", "country_without", "all"],
         help=(
             "Benchmark scenario (default: cold). "
             "cold=no warm data; nsi_warm=NSI+taxonomy_map; "
-            "full_warm=NSI+history+rules; country_with/without=NSI±country ranking; "
+            "cross_warm=leave-one-out history (all GT files except current); "
+            "full_warm=history from ALL files (upper bound); "
+            "country_with/without=NSI±country ranking; "
             "all=run all scenarios sequentially."
         ),
     )
@@ -1451,7 +1462,7 @@ def main() -> None:
 
     # ── Build warm fixtures per scenario ─────────────────────────────────
     scenarios_to_run: list[str] = (
-        ["cold", "nsi_warm", "full_warm", "country_with", "country_without"]
+        ["cold", "nsi_warm", "cross_warm", "full_warm", "country_with", "country_without"]
         if args.scenario == "all"
         else [args.scenario]
     )
@@ -1462,8 +1473,25 @@ def main() -> None:
         _build_real_taxonomy_map(taxonomy) if _needs_warm else {}
     )
 
-    def _warm_kwargs_for_scenario(sc: str, gt_all: dict[str, list[GroundTruthRow]]) -> dict:
-        """Return kwargs for _evaluate_file based on scenario."""
+    def _warm_kwargs_for_scenario(
+        sc: str,
+        gt_all: dict[str, list[GroundTruthRow]],
+        current_filename: str | None = None,
+    ) -> dict:
+        """Return kwargs for _evaluate_file based on scenario.
+
+        Scenarios:
+          cold          — no warm data; pure LLM baseline.
+          nsi_warm      — NSI lookup + taxonomy_map; no history.
+          cross_warm    — leave-one-out: history from all GT files *except*
+                          current_filename. Simulates a real user who has
+                          validated past transactions but has never seen this
+                          specific file. Requires current_filename.
+          full_warm     — history from ALL GT files including current file.
+                          Upper bound: 100% coverage by construction.
+          country_with  — nsi_warm + country ranking (args.country).
+          country_without — nsi_warm without country ranking.
+        """
         if sc == "cold":
             return {"taxonomy_map": None, "history_cache": None, "user_rules": [], "user_country": None}
         if sc in ("nsi_warm", "country_with", "country_without"):
@@ -1472,6 +1500,20 @@ def main() -> None:
                 "history_cache": None,
                 "user_rules": [],
                 "user_country": args.country if sc == "country_with" else None,
+            }
+        if sc == "cross_warm":
+            # Leave-one-out: exclude GT rows belonging to the current file.
+            # Models a user with prior validated history but zero knowledge of
+            # this specific file. Measures realistic warm-up benefit.
+            cross_gt: list[GroundTruthRow] = []
+            for fname, rows in gt_all.items():
+                if fname != current_filename:
+                    cross_gt.extend(rows)
+            return {
+                "taxonomy_map": _real_taxonomy_map,
+                "history_cache": _SyntheticHistoryCache(cross_gt),
+                "user_rules": [],
+                "user_country": None,
             }
         if sc == "full_warm":
             # Build combined history from all ground truth entries
@@ -1495,9 +1537,18 @@ def main() -> None:
     completed_steps = 0
 
     for scenario in scenarios_to_run:
-        warm_kwargs = _warm_kwargs_for_scenario(scenario, ground_truth_map)
+        # cross_warm builds a per-file leave-one-out cache — computed inside the
+        # file loop below. For all other scenarios, build once per scenario.
+        warm_kwargs = (
+            {} if scenario == "cross_warm"
+            else _warm_kwargs_for_scenario(scenario, ground_truth_map)
+        )
         print(f"\n[scenario] {scenario.upper()}")
-        if scenario != "cold":
+        if scenario == "cross_warm":
+            print("  history_cache: leave-one-out (built per file)")
+            tm = _real_taxonomy_map
+            print(f"  taxonomy_map: {len(tm)} OSM tags" if tm else "  taxonomy_map: none")
+        elif scenario != "cold":
             tm = warm_kwargs.get("taxonomy_map")
             hc = warm_kwargs.get("history_cache")
             print(f"  taxonomy_map: {len(tm)} OSM tags" if tm else "  taxonomy_map: none")
@@ -1510,6 +1561,15 @@ def main() -> None:
             run_start = time.time()
 
             for file_idx, entry in enumerate(manifest, 1):
+                # For cross_warm: build leave-one-out cache per file
+                if scenario == "cross_warm":
+                    warm_kwargs = _warm_kwargs_for_scenario(
+                        scenario, ground_truth_map, current_filename=entry.filename
+                    )
+                    hc = warm_kwargs.get("history_cache")
+                    n_cross = len(hc._lookup_dict) if hc else 0
+                    print(f"  [{entry.filename}] cross_warm cache: {n_cross} descriptions from other files")
+
                 # Resume key includes scenario
                 _resume_key = (
                     run_id, entry.filename,
