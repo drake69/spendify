@@ -1,6 +1,7 @@
 import streamlit as st
 
 from ui.i18n import t
+from ui.components.update_checker import render_update_warning
 
 # Navigation entries: (i18n_key_suffix, page_key)
 _NAV_KEYS = [
@@ -23,6 +24,7 @@ _NAV_KEYS = [
 
 def render_sidebar() -> str:
     """Render the sidebar and return the selected page key."""
+    render_update_warning()
     st.sidebar.title(t("sidebar.title"))
 
     if "page" not in st.session_state:
