@@ -1,0 +1,40 @@
+# Drake69.SpendifAi.locale.en-US.yaml — winget default locale manifest
+#
+# This is a TEMPLATE file. The `PackageVersion` and `ReleaseNotesUrl` fields
+# are updated automatically by packaging/release.sh on each release.
+#
+# This file provides English (US) metadata displayed in:
+#   winget show Drake69.SpendifAi
+#   winget search spendifai
+#   The Windows Package Manager GUI (e.g. WinGet UI, UniGetUI)
+#
+# Schema reference: https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
+
+PackageIdentifier: Drake69.SpendifAi
+PackageVersion: 0.1.0
+PackageLocale: en-US
+Publisher: Drake69
+PublisherUrl: https://github.com/drake69
+PublisherSupportUrl: https://github.com/drake69/spendify/issues
+PackageName: Spendif.ai
+PackageUrl: https://github.com/drake69/spendify
+License: MIT
+LicenseUrl: https://github.com/drake69/spendify/blob/main/LICENSE
+ShortDescription: Personal finance manager with local AI categorisation
+Description: >-
+  Spendif.ai imports CSV/XLSX bank statements from Italian financial instruments,
+  categorises transactions using a local LLM (Qwen, Gemma, Phi, Llama) running
+  via llama.cpp, and provides an interactive Streamlit analytics dashboard.
+  All financial data stays on your machine — no cloud, no telemetry.
+Moniker: spendifai
+Tags:
+  - finance
+  - budgeting
+  - ai
+  - local-llm
+  - streamlit
+  - personal-finance
+  - italian-banks
+ReleaseNotesUrl: https://github.com/drake69/spendify/releases/tag/v0.1.0
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0
