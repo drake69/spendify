@@ -11,10 +11,12 @@ Usage:
 from __future__ import annotations
 
 import csv
+import json
 import random
 import sys
 from dataclasses import dataclass, field
 from datetime import date, timedelta, datetime
+from typing import Optional
 from decimal import Decimal
 from pathlib import Path
 from typing import Literal
@@ -244,6 +246,129 @@ EXPENSE_MISC = [
     "Addebito SDD - GENERALI ITALIA POLIZZA VITA",
     "Disposizione - RIF:{ref} BEN. TINTORIA RAPIDA CENTRO",
 ]
+
+
+# ── T-10: OSM-aware brand injection ──────────────────────────────────────
+# At generation time, ~65% of expense transactions use a real NSI/OSM brand
+# drawn from core/static_rules.json (IT entries), making nsi_warm meaningful.
+
+_OSM_RATIO: float = 0.65  # probability of using a real OSM brand per expense tx
+
+# Map internal expense category → relevant OSM tags to sample from
+_CAT_TO_OSM_TAGS: dict[str, list[str]] = {
+    "grocery":             ["shop=supermarket", "shop=convenience", "shop=bakery", "shop=butcher", "shop=greengrocer"],
+    "restaurant":          ["amenity=restaurant", "amenity=fast_food", "amenity=cafe", "amenity=pub"],
+    "housing_maint":       ["shop=doityourself", "shop=furniture"],
+    "transport_fuel":      ["amenity=fuel"],
+    "transport_insurance": ["office=insurance"],
+    "transport_mechanic":  ["amenity=car_wash"],
+    "health":              ["amenity=pharmacy", "shop=optician", "amenity=dentist", "amenity=clinic"],
+    "education":           ["shop=books"],
+    "clothing":            ["shop=shoes", "shop=sports", "shop=chemist"],
+    "tech_purchase":       ["shop=electronics"],
+    "vacation":            ["tourism=hotel", "tourism=hostel"],
+    "weekend":             ["amenity=cinema", "leisure=sports_centre", "leisure=fitness_centre"],
+    "professional":        ["shop=stationery"],
+    "nonna_small":         ["shop=supermarket", "shop=convenience", "shop=bakery"],
+    "nonna_service":       ["shop=chemist", "shop=cosmetics", "amenity=dentist"],
+    "misc":                ["shop=pet", "shop=gift", "shop=jewelry", "shop=cosmetics"],
+}
+
+# OSM tags whose brands appear via SDD (direct debit) rather than POS
+_SDD_TAGS: frozenset[str] = frozenset({"office=insurance"})
+
+
+def _load_osm_it_brands() -> dict[str, list[str]]:
+    """Load Italian brands from core/static_rules.json grouped by OSM tag.
+
+    Returns {osm_tag: [brand_name, ...]}. Empty dict on failure (graceful).
+    """
+    rules_path = Path(__file__).resolve().parent.parent / "core" / "static_rules.json"
+    if not rules_path.exists():
+        print(f"[T-10] static_rules.json not found — using invented names only")
+        return {}
+    try:
+        with open(rules_path, encoding="utf-8") as f:
+            data = json.load(f)
+        by_tag: dict[str, list[str]] = {}
+        for rule in data.get("rules", []):
+            if "IT" not in rule.get("countries", []):
+                continue
+            tag = rule.get("osm_tag", "")
+            brand = rule.get("brand", "")
+            if not tag or not brand:
+                continue
+            # Strip parenthetical suffix: "Aldi (Aldi Süd group)" → "Aldi"
+            clean = brand.split(" (")[0].strip()
+            if clean:
+                by_tag.setdefault(tag, []).append(clean)
+        n_brands = sum(len(v) for v in by_tag.values())
+        print(f"[T-10] Loaded {n_brands} IT OSM brands across {len(by_tag)} tags "
+              f"from {rules_path.name}")
+        return by_tag
+    except Exception as exc:
+        print(f"[T-10] Failed to load static_rules.json: {exc} — using invented names only")
+        return {}
+
+
+# Loaded once at module startup
+_OSM_IT_BY_TAG: dict[str, list[str]] = _load_osm_it_brands()
+
+# Build per-category brand pool (union of all matching tags)
+_CAT_OSM_BRANDS: dict[str, list[str]] = {}
+for _cat, _tags in _CAT_TO_OSM_TAGS.items():
+    _pool: list[str] = []
+    for _tag in _tags:
+        _pool.extend(_OSM_IT_BY_TAG.get(_tag, []))
+    if _pool:
+        _CAT_OSM_BRANDS[_cat] = _pool
+
+# Flat list of ALL IT brands (fallback for categories with no specific mapping)
+_OSM_IT_ALL: list[str] = [b for brands in _OSM_IT_BY_TAG.values() for b in brands]
+
+
+# Italian city/district location suffixes appended to brand names with P=0.50.
+# DESIGN DECISION (see GitHub issue #78 — T-12):
+#   Real bank statements often include a location after the brand name
+#   ("ESSELUNGA CORSICO", "LIDL ITALIA ASSAGO MILANOFIORI").
+#   We simulate this with 50% probability WITHOUT modifying the extracted
+#   counterpart in the pipeline, to measure the baseline behaviour.
+#   With T-12 (brand normaliser) the nsi_warm numbers are expected to improve.
+_IT_LOCATIONS: list[str] = [
+    "MILANO", "ROMA", "TORINO", "NAPOLI", "BOLOGNA", "FIRENZE", "VENEZIA",
+    "GENOVA", "PALERMO", "BARI", "VERONA", "PADOVA", "BRESCIA", "BERGAMO",
+    "MODENA", "PARMA", "CATANIA", "CAGLIARI", "LIVORNO", "PERUGIA",
+    "CORSICO", "ASSAGO", "SESTO SAN GIOVANNI", "COLOGNO MONZESE",
+    "CINISELLO BALSAMO", "ROZZANO", "VIMODRONE", "SAN GIULIANO MILANESE",
+    "EUR", "PRATI", "TIBURTINA", "OSTIENSE", "FLAMINIO",
+    "VOMERO", "FUORIGROTTA", "MESTRE", "MARGHERA",
+    "PORTA NUOVA", "LINGOTTO", "CENTRO", "NORD", "OVEST",
+    "CENTRO COMMERCIALE LE GRANGE", "CENTRO COMM. IL LEONE",
+]
+
+
+def _osm_description(brand: str, amount: float, d: date, use_sdd: bool = False) -> str:
+    """Build an Italian bank description using a real OSM/NSI brand name.
+
+    Location suffix added with P=0.50 to simulate realistic bank strings
+    (see T-12 / GitHub issue #78 for discussion on counterpart normalisation).
+    The pipeline counterpart extractor is NOT modified — this is the baseline.
+    """
+    brand_up = brand.upper()
+    # 50% chance of appending a location suffix (realistic, but no normalisation yet)
+    if random.random() < 0.50:
+        brand_up = f"{brand_up} {random.choice(_IT_LOCATIONS)}"
+    if use_sdd:
+        return f"Addebito SDD - {brand_up}"
+    # 50/50 between POS and contactless formats
+    if random.random() < 0.5:
+        return (
+            f"Pagam. POS - PAGAMENTO POS {_format_amount_desc(amount)} "
+            f"EUR DEL {_format_date_desc(d)} A (ITA) {brand_up}"
+        )
+    else:
+        return f"PAGAMENTO CONTACTLESS CARTA **** {_rand_card4()} {brand_up}"
+
 
 # --- INCOMES ---
 
@@ -487,9 +612,30 @@ CATEGORY_MAP: dict[str, str] = {
 
 
 def _generate_expense(templates: list[str], category: str, d: date) -> Transaction:
+    """Generate one expense transaction.
+
+    T-10: with probability _OSM_RATIO (0.65), use a real OSM/NSI brand drawn from
+    _CAT_OSM_BRANDS[category] (or _OSM_IT_ALL as fallback).  The remaining 35%
+    uses the original invented templates (local shops, generic merchants).
+    This mix simulates real-world ledgers: ~65% recognisable chains, ~35%
+    local/invented merchants (tabaccherie, officine, parrucchieri...).
+    """
     amount = _rand_amount(category)
-    tmpl = random.choice(templates)
-    desc = _fill_template(tmpl, amount, d)
+
+    # T-10: try to use a real OSM brand for this category
+    osm_brands = _CAT_OSM_BRANDS.get(category)
+    if osm_brands and random.random() < _OSM_RATIO:
+        brand = random.choice(osm_brands)
+        use_sdd = any(
+            tag in _SDD_TAGS
+            for tag in _CAT_TO_OSM_TAGS.get(category, [])
+        )
+        desc = _osm_description(brand, amount, d, use_sdd=use_sdd)
+    else:
+        # 35% invented: local shops, generic names — keeps dataset realistic
+        tmpl = random.choice(templates)
+        desc = _fill_template(tmpl, amount, d)
+
     valuta = d + timedelta(days=random.choice([0, 0, 0, 1, 2]))
     return Transaction(date=d, valuta_date=valuta, description=desc, amount=-amount,
                        expected_category=CATEGORY_MAP.get(category, "Altro/Varie"))

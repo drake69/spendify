@@ -32,10 +32,11 @@ from core.classifier import _run_step0_analysis
 
 # -- Paths ---------------------------------------------------------------------
 _TESTS_DIR = Path(__file__).resolve().parent
-_GENERATED_DIR = _TESTS_DIR / "generated_files"
+_BENCHMARK_DIR = _TESTS_DIR.parent / "benchmark"
+_GENERATED_DIR = _BENCHMARK_DIR / "generated_files"
 _MANIFEST_PATH = _GENERATED_DIR / "manifest.csv"
 _RESULTS_PATH = _GENERATED_DIR / "results_deterministic.csv"
-_GENERATOR_SCRIPT = _TESTS_DIR / "generate_synthetic_files.py"
+_GENERATOR_SCRIPT = _BENCHMARK_DIR / "generate_synthetic_files.py"
 
 
 # -- Data classes --------------------------------------------------------------

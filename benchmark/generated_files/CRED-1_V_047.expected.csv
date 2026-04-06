@@ -1,31 +1,31 @@
 row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_category
-1,2026-01-06,-9.10,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
-2,2026-01-06,-68.32,PAGAMENTO CONTACTLESS CARTA **** 4758 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
-3,2026-01-07,-98.99,"Pagam. POS - PAGAMENTO POS 98,99 EUR DEL 07.01.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
-4,2026-01-08,-128.92,"Pagam. POS - PAGAMENTO POS 128,92 EUR DEL 08.01.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
-5,2026-01-09,-30.86,"Pagam. POS - PAGAMENTO POS 30,86 EUR DEL 09.01.2026 A (ITA) STAZIONE Q8",expense,false,Trasporti/Carburante
-6,2026-01-11,-61.49,"Pagam. POS - PAGAMENTO POS 61,49 EUR DEL 11.01.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
-7,2026-01-11,-113.61,"Pagam. POS - PAGAMENTO POS 113,61 EUR DEL 11.01.2026 A (ITA) BAGNO MARINO N.42 RICCIONE",expense,false,Svago e tempo libero/Viaggi e vacanze
-8,2026-01-14,-81.51,PAGAMENTO CONTACTLESS CARTA **** 9693 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
-9,2026-01-14,-70.26,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Hobby
-10,2026-01-15,-33.40,"Pagam. POS - PAGAMENTO POS 33,40 EUR DEL 15.01.2026 A (ITA) STAZIONE Q8",expense,false,Trasporti/Carburante
-11,2026-01-16,-145.26,"Pagam. POS - PAGAMENTO POS 145,26 EUR DEL 16.01.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
-12,2026-01-17,-393.31,"Pagam. POS - PAGAMENTO POS 393,31 EUR DEL 17.01.2026 A (ITA) RISTORANTE IL FARO CESENATICO",expense,false,Svago e tempo libero/Viaggi e vacanze
-13,2026-01-18,-31.14,AMAZON.IT MARKETPLACE HW - ORDINE 402-211302128,expense,false,Tasse e tributi/Imposte varie
-14,2026-01-20,-326.66,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Hobby
-15,2026-01-22,-399.63,Addebito SDD - TELEPASS PEDAGGI A14 AUTOSTRADA,expense,false,Svago e tempo libero/Viaggi e vacanze
-16,2026-01-24,-42.53,"Pagam. POS - PAGAMENTO POS 42,53 EUR DEL 24.01.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
-17,2026-01-25,-32.03,"Pagam. POS - PAGAMENTO POS 32,03 EUR DEL 25.01.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Hobby
-18,2026-01-29,-64.47,Addebito SDD - ACI BOLLO AUTO TARGA MK265YW,expense,false,Trasporti/Carburante
-19,2026-02-10,-60.12,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Hobby
-20,2026-02-11,-111.38,"Pagam. POS - PAGAMENTO POS 111,38 EUR DEL 11.02.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
-21,2026-02-14,-197.31,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Hobby
-22,2026-02-16,-61.13,Addebito SDD - JETBRAINS S.R.O. INTELLIJ IDEA,expense,false,Tasse e tributi/Imposte varie
-23,2026-02-18,-59.33,Addebito SDD - GITHUB INC. PRO PLAN,expense,false,Tasse e tributi/Imposte varie
-24,2026-02-20,-165.17,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Hobby
-25,2026-02-24,-48.19,"Pagam. POS - PAGAMENTO POS 48,19 EUR DEL 24.02.2026 A (ITA) ITALO NTV S.P.A.",expense,false,Trasporti/Carburante
-26,2026-02-24,-64.62,"Pagam. POS - PAGAMENTO POS 64,62 EUR DEL 24.02.2026 A (ITA) PIZZERIA NAPOLI",expense,false,Ristorazione/Ristorante
-27,2026-02-26,-68.83,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
-28,2026-02-26,-110.40,PAGAMENTO CONTACTLESS CARTA **** 2774 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
-29,2026-02-27,-352.25,AMAZON.IT MARKETPLACE - ORDINE 402-215482131,expense,false,Svago e tempo libero/Hobby
-30,2026-02-27,-103.80,Disposizione - RIF:210524953 BEN. STUDIO COMM.LE FERRI & ASSOCIATI,expense,false,Tasse e tributi/Imposte varie
+1,2026-01-05,-77.30,PAGAMENTO CONTACTLESS CARTA **** 6611 DM BERGAMO,expense,false,Abbigliamento/Abbigliamento adulti
+2,2026-01-06,-140.70,"Pagam. POS - PAGAMENTO POS 140,70 EUR DEL 06.01.2026 A (ITA) BUFFETTI PARMA",expense,false,Tasse e tributi/Imposte varie
+3,2026-01-12,-64.83,"Pagam. POS - PAGAMENTO POS 64,83 EUR DEL 12.01.2026 A (ITA) SPORTLER PERUGIA",expense,false,Abbigliamento/Abbigliamento adulti
+4,2026-01-13,-77.17,PAGAMENTO CONTACTLESS CARTA **** 4459 MAXI ZOO,expense,false,Altro/Spese non classificate
+5,2026-01-13,-22.36,"Pagam. POS - PAGAMENTO POS 22,36 EUR DEL 13.01.2026 A (ITA) SUSHI SHOP MODENA",expense,false,Ristorazione/Ristorante
+6,2026-01-14,-63.88,PAGAMENTO CONTACTLESS CARTA **** 5829 EXKI SAN GIULIANO MILANESE,expense,false,Ristorazione/Ristorante
+7,2026-01-19,-61.67,PAGAMENTO CONTACTLESS CARTA **** 2458 SPORTLER,expense,false,Abbigliamento/Abbigliamento adulti
+8,2026-01-21,-17.84,"Pagam. POS - PAGAMENTO POS 17,84 EUR DEL 21.01.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
+9,2026-01-22,-290.80,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Hobby
+10,2026-01-22,-266.20,"Pagam. POS - PAGAMENTO POS 266,20 EUR DEL 22.01.2026 A (ITA) RISTORANTE IL FARO CESENATICO",expense,false,Svago e tempo libero/Viaggi e vacanze
+11,2026-01-23,-88.63,"Pagam. POS - PAGAMENTO POS 88,63 EUR DEL 23.01.2026 A (ITA) EWA",expense,false,Trasporti/Carburante
+12,2026-01-23,-90.68,Addebito SDD - JETBRAINS S.R.O. INTELLIJ IDEA,expense,false,Tasse e tributi/Imposte varie
+13,2026-01-24,-284.01,"Pagam. POS - PAGAMENTO POS 284,01 EUR DEL 24.01.2026 A (ITA) RYANAIR LTD",expense,false,Svago e tempo libero/Viaggi e vacanze
+14,2026-01-29,-385.95,PAGAMENTO CONTACTLESS CARTA **** 7237 TRONY,expense,false,Svago e tempo libero/Hobby
+15,2026-02-04,-70.52,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Hobby
+16,2026-02-05,-53.11,PAGAMENTO CONTACTLESS CARTA **** 3356 ENI GENOVA,expense,false,Trasporti/Carburante
+17,2026-02-08,-181.95,"Pagam. POS - PAGAMENTO POS 181,95 EUR DEL 08.02.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Hobby
+18,2026-02-10,-53.06,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
+19,2026-02-12,-122.09,PAGAMENTO CONTACTLESS CARTA **** 8694 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
+20,2026-02-12,-305.92,PAGAMENTO CONTACTLESS CARTA **** 4572 INMOTION CENTRO COMM. IL LEONE,expense,false,Svago e tempo libero/Hobby
+21,2026-02-13,-90.15,PAGAMENTO CONTACTLESS CARTA **** 9425 ACQUA & SAPONE,expense,false,Abbigliamento/Abbigliamento adulti
+22,2026-02-15,-39.03,"Pagam. POS - PAGAMENTO POS 39,03 EUR DEL 15.02.2026 A (ITA) SAN MARCO PETROLI",expense,false,Trasporti/Carburante
+23,2026-02-16,-454.21,"Pagam. POS - PAGAMENTO POS 454,21 EUR DEL 16.02.2026 A (ITA) EXE HOTELS",expense,false,Svago e tempo libero/Viaggi e vacanze
+24,2026-02-18,-138.45,"Pagam. POS - PAGAMENTO POS 138,45 EUR DEL 18.02.2026 A (ITA) PRIMADONNA",expense,false,Abbigliamento/Abbigliamento adulti
+25,2026-02-18,-391.54,PAGAMENTO CONTACTLESS CARTA **** 8409 INMOTION,expense,false,Svago e tempo libero/Hobby
+26,2026-02-22,-75.95,"Pagam. POS - PAGAMENTO POS 75,95 EUR DEL 22.02.2026 A (ITA) AS 24",expense,false,Trasporti/Carburante
+27,2026-02-23,-312.12,PAGAMENTO CONTACTLESS CARTA **** 5314 CEX MARGHERA,expense,false,Svago e tempo libero/Hobby
+28,2026-02-25,-315.04,Addebito SDD - TELEPASS PEDAGGI A14 AUTOSTRADA,expense,false,Svago e tempo libero/Viaggi e vacanze
+29,2026-02-26,-14.65,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
+30,2026-02-27,-416.80,PAGAMENTO CONTACTLESS CARTA **** 6976 LEONARDO ROYAL HOTEL,expense,false,Svago e tempo libero/Viaggi e vacanze

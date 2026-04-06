@@ -1,301 +1,301 @@
 row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_category
-1,2026-01-01,-8.40,Disposizione - RIF:218635270 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
-2,2026-01-01,-76.14,"Pagam. POS - PAGAMENTO POS 76,14 EUR DEL 01.01.2026 A (ITA) CENTRO MEDICO SANTAGOSTINO",expense,false,Salute/Farmaci
-3,2026-01-02,-12.22,"Pagam. POS - PAGAMENTO POS 12,22 EUR DEL 02.01.2026 A (ITA) CENTRO DIAGNOSTICO SAN DONATO",expense,false,Salute/Farmaci
-4,2026-01-02,-20.33,PAGAMENTO CONTACTLESS CARTA **** 3780 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
-5,2026-01-03,-103.45,"Pagam. POS - PAGAMENTO POS 103,45 EUR DEL 03.01.2026 A (ITA) CONAD CITY ROMA",expense,false,Alimentari/Spesa supermercato
-6,2026-01-03,-81.47,"Pagam. POS - PAGAMENTO POS 81,47 EUR DEL 03.01.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
-7,2026-01-03,-10.70,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-8,2026-01-03,-416.49,Disposizione - RIF:212026573 BEN. UNIVERSITA' DEGLI STUDI DI BOLOGNA,expense,false,Istruzione/Rette scolastiche
-9,2026-01-04,-96.68,"Pagam. POS - PAGAMENTO POS 96,68 EUR DEL 04.01.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
-10,2026-01-04,-11.02,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
-11,2026-01-04,-74.04,"Pagam. POS - PAGAMENTO POS 74,04 EUR DEL 04.01.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
-12,2026-01-05,-96.05,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
-13,2026-01-05,-15.58,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
-14,2026-01-05,-72.40,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
-15,2026-01-05,-24.61,"Pagam. POS - PAGAMENTO POS 24,61 EUR DEL 05.01.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
-16,2026-01-05,-169.82,"Pagam. POS - PAGAMENTO POS 169,82 EUR DEL 05.01.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
-17,2026-01-06,-80.06,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
-18,2026-01-06,-33.49,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
-19,2026-01-06,-9.50,"Pagam. POS - PAGAMENTO POS 9,50 EUR DEL 06.01.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-20,2026-01-06,-89.69,"Pagam. POS - PAGAMENTO POS 89,69 EUR DEL 06.01.2026 A (ITA) ZARA ITALIA SRL",expense,false,Abbigliamento/Abbigliamento adulti
-21,2026-01-06,-96.14,Disposizione - RIF:212369793 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
-22,2026-01-07,-6.49,"Pagam. POS - PAGAMENTO POS 6,49 EUR DEL 07.01.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-23,2026-01-07,-19.10,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
-24,2026-01-08,-157.08,"Pagam. POS - PAGAMENTO POS 157,08 EUR DEL 08.01.2026 A (ITA) MACELLERIA BONI",expense,false,Alimentari/Spesa supermercato
-25,2026-01-08,-85.62,PAGAMENTO CONTACTLESS CARTA **** 9551 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
-26,2026-01-08,-21.62,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
-27,2026-01-08,-15.70,"Pagam. POS - PAGAMENTO POS 15,70 EUR DEL 08.01.2026 A (ITA) CONAD CITY ROMA",expense,false,Alimentari/Spesa supermercato
-28,2026-01-08,-5.10,AMAZON.IT MARKETPLACE - ORDINE 402-213176779,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-29,2026-01-08,-376.55,Disposizione - RIF:211513511 BEN. UNIVERSITA' DEGLI STUDI DI BOLOGNA,expense,false,Istruzione/Rette scolastiche
-30,2026-01-08,-168.50,PAGAMENTO CONTACTLESS CARTA **** 1862 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
-31,2026-01-08,-32.89,"Pagam. POS - PAGAMENTO POS 32,89 EUR DEL 08.01.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
-32,2026-01-08,-431.77,Disposizione - RIF:213954493 BEN. AFFITTO APPARTAMENTO SOFIA BOLOGNA,expense,false,Istruzione/Rette scolastiche
-33,2026-01-08,-72.62,"Pagam. POS - PAGAMENTO POS 72,62 EUR DEL 08.01.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
-34,2026-01-08,-10.95,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-35,2026-01-09,-231.11,"Pagam. POS - PAGAMENTO POS 231,11 EUR DEL 09.01.2026 A (ITA) FARMACIA DR ROSSI",expense,false,Salute/Farmaci
-36,2026-01-09,-155.92,"Pagam. POS - PAGAMENTO POS 155,92 EUR DEL 09.01.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
-37,2026-01-09,-55.33,"Pagam. POS - PAGAMENTO POS 55,33 EUR DEL 09.01.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
-38,2026-01-09,-29.21,"Pagam. POS - PAGAMENTO POS 29,21 EUR DEL 09.01.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
-39,2026-01-09,-5.02,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-40,2026-01-09,-141.59,"Pagam. POS - PAGAMENTO POS 141,59 EUR DEL 09.01.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
-41,2026-01-09,-146.98,Disposizione - RIF:210020454 BEN. UNIVERSITA' DEGLI STUDI DI BOLOGNA,expense,false,Istruzione/Rette scolastiche
-42,2026-01-09,-30.46,"Pagam. POS - PAGAMENTO POS 30,46 EUR DEL 09.01.2026 A (ITA) MACELLERIA BONI",expense,false,Alimentari/Spesa supermercato
-43,2026-01-09,-72.72,PAGAMENTO CONTACTLESS CARTA **** 3206 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
-44,2026-01-09,-51.18,PAGAMENTO CONTACTLESS CARTA **** 6307 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
-45,2026-01-09,-53.44,"Pagam. POS - PAGAMENTO POS 53,44 EUR DEL 09.01.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
-46,2026-01-10,-188.75,"Pagam. POS - PAGAMENTO POS 188,75 EUR DEL 10.01.2026 A (ITA) FARMACIA COMUNALE",expense,false,Salute/Farmaci
-47,2026-01-10,-107.18,"Pagam. POS - PAGAMENTO POS 107,18 EUR DEL 10.01.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
-48,2026-01-10,-14.21,"Pagam. POS - PAGAMENTO POS 14,21 EUR DEL 10.01.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
-49,2026-01-10,-44.96,"Pagam. POS - PAGAMENTO POS 44,96 EUR DEL 10.01.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
-50,2026-01-10,-73.74,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
-51,2026-01-10,-109.72,PAGAMENTO CONTACTLESS CARTA **** 7590 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
-52,2026-01-11,-42.53,"Pagam. POS - PAGAMENTO POS 42,53 EUR DEL 11.01.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
-53,2026-01-11,-207.07,"Pagam. POS - PAGAMENTO POS 207,07 EUR DEL 11.01.2026 A (ITA) CENTRO DIAGNOSTICO SAN DONATO",expense,false,Salute/Farmaci
-54,2026-01-11,-176.70,"Pagam. POS - PAGAMENTO POS 176,70 EUR DEL 11.01.2026 A (ITA) LIBRERIA FELTRINELLI",expense,false,Istruzione/Rette scolastiche
-55,2026-01-11,-82.75,"Pagam. POS - PAGAMENTO POS 82,75 EUR DEL 11.01.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
-56,2026-01-11,-87.58,PAGAMENTO CONTACTLESS CARTA **** 7988 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
-57,2026-01-11,-25.82,"Pagam. POS - PAGAMENTO POS 25,82 EUR DEL 11.01.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
-58,2026-01-11,-36.60,"Pagam. POS - PAGAMENTO POS 36,60 EUR DEL 11.01.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
-59,2026-01-12,-18.02,"Pagam. POS - PAGAMENTO POS 18,02 EUR DEL 12.01.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
-60,2026-01-12,-113.93,Disposizione - RIF:210998597 BEN. DR VERDI ODONTOIATRA,expense,false,Salute/Farmaci
-61,2026-01-12,-178.87,"Pagam. POS - PAGAMENTO POS 178,87 EUR DEL 12.01.2026 A (ITA) CENTRO DIAGNOSTICO SAN DONATO",expense,false,Salute/Farmaci
-62,2026-01-12,-82.03,"Pagam. POS - PAGAMENTO POS 82,03 EUR DEL 12.01.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
-63,2026-01-13,-90.21,"Pagam. POS - PAGAMENTO POS 90,21 EUR DEL 13.01.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
-64,2026-01-13,-45.67,PAGAMENTO CONTACTLESS CARTA **** 8421 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
-65,2026-01-13,-134.13,"Pagam. POS - PAGAMENTO POS 134,13 EUR DEL 13.01.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
-66,2026-01-13,-181.58,"Pagam. POS - PAGAMENTO POS 181,58 EUR DEL 13.01.2026 A (ITA) OTTICA AVANZI",expense,false,Salute/Farmaci
-67,2026-01-13,-25.75,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
-68,2026-01-13,-84.48,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
-69,2026-01-14,-12.62,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-70,2026-01-14,-151.01,"Pagam. POS - PAGAMENTO POS 151,01 EUR DEL 14.01.2026 A (ITA) CENTRO DIAGNOSTICO SAN DONATO",expense,false,Salute/Farmaci
-71,2026-01-14,-175.46,Addebito SDD - MENSA SCOLASTICA COMUNE DI MILANO,expense,false,Istruzione/Rette scolastiche
-72,2026-01-15,-247.51,Disposizione - RIF:219092278 BEN. DR VERDI ODONTOIATRA,expense,false,Salute/Farmaci
-73,2026-01-15,-39.95,"Pagam. POS - PAGAMENTO POS 39,95 EUR DEL 15.01.2026 A (ITA) FARMACIA DR ROSSI",expense,false,Salute/Farmaci
-74,2026-01-15,-80.80,"Pagam. POS - PAGAMENTO POS 80,80 EUR DEL 15.01.2026 A (ITA) CONAD CITY ROMA",expense,false,Alimentari/Spesa supermercato
-75,2026-01-15,-85.71,"Pagam. POS - PAGAMENTO POS 85,71 EUR DEL 15.01.2026 A (ITA) FARMACIA DR ROSSI",expense,false,Salute/Farmaci
-76,2026-01-16,-122.68,"Pagam. POS - PAGAMENTO POS 122,68 EUR DEL 16.01.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
-77,2026-01-16,-15.53,PAGAMENTO CONTACTLESS CARTA **** 6262 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
-78,2026-01-16,-90.29,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
-79,2026-01-16,-14.08,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-80,2026-01-16,-132.59,"Pagam. POS - PAGAMENTO POS 132,59 EUR DEL 16.01.2026 A (ITA) CONAD CITY ROMA",expense,false,Alimentari/Spesa supermercato
-81,2026-01-16,-6.29,Disposizione - RIF:212293594 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
-82,2026-01-17,-14.42,PAGAMENTO CONTACTLESS CARTA **** 4865 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
-83,2026-01-17,-75.97,"Pagam. POS - PAGAMENTO POS 75,97 EUR DEL 17.01.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
-84,2026-01-17,-110.26,"Pagam. POS - PAGAMENTO POS 110,26 EUR DEL 17.01.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
-85,2026-01-17,-147.15,"Pagam. POS - PAGAMENTO POS 147,15 EUR DEL 17.01.2026 A (ITA) ZARA ITALIA SRL",expense,false,Abbigliamento/Abbigliamento adulti
-86,2026-01-17,-31.21,"Pagam. POS - PAGAMENTO POS 31,21 EUR DEL 17.01.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
-87,2026-01-17,-91.77,"Pagam. POS - PAGAMENTO POS 91,77 EUR DEL 17.01.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
-88,2026-01-17,-70.88,"Pagam. POS - PAGAMENTO POS 70,88 EUR DEL 17.01.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
-89,2026-01-17,-99.49,"Pagam. POS - PAGAMENTO POS 99,49 EUR DEL 17.01.2026 A (ITA) CONAD CITY ROMA",expense,false,Alimentari/Spesa supermercato
-90,2026-01-18,-116.31,PAGAMENTO CONTACTLESS CARTA **** 3369 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
-91,2026-01-18,-85.52,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
-92,2026-01-18,-323.53,Disposizione - RIF:216414059 BEN. AFFITTO APPARTAMENTO SOFIA BOLOGNA,expense,false,Istruzione/Rette scolastiche
-93,2026-01-18,-14.92,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-94,2026-01-18,-35.51,"Pagam. POS - PAGAMENTO POS 35,51 EUR DEL 18.01.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
-95,2026-01-19,-232.53,"Pagam. POS - PAGAMENTO POS 232,53 EUR DEL 19.01.2026 A (ITA) OTTICA AVANZI",expense,false,Salute/Farmaci
-96,2026-01-19,-123.96,"Pagam. POS - PAGAMENTO POS 123,96 EUR DEL 19.01.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
-97,2026-01-19,-766.55,Disposizione - RIF:215101321 BEN. AFFITTO APPARTAMENTO SOFIA BOLOGNA,expense,false,Istruzione/Rette scolastiche
-98,2026-01-19,-14.46,"Pagam. POS - PAGAMENTO POS 14,46 EUR DEL 19.01.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-99,2026-01-19,-71.63,"Pagam. POS - PAGAMENTO POS 71,63 EUR DEL 19.01.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
-100,2026-01-19,-7.53,"Pagam. POS - PAGAMENTO POS 7,53 EUR DEL 19.01.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-101,2026-01-20,-48.64,"Pagam. POS - PAGAMENTO POS 48,64 EUR DEL 20.01.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
-102,2026-01-20,-11.46,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-103,2026-01-20,-49.94,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
-104,2026-01-20,-93.46,"Pagam. POS - PAGAMENTO POS 93,46 EUR DEL 20.01.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
-105,2026-01-20,-178.08,"Pagam. POS - PAGAMENTO POS 178,08 EUR DEL 20.01.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
-106,2026-01-21,-24.94,"Pagam. POS - PAGAMENTO POS 24,94 EUR DEL 21.01.2026 A (ITA) PIZZERIA NAPOLI",expense,false,Ristorazione/Ristorante
-107,2026-01-21,-79.97,"Pagam. POS - PAGAMENTO POS 79,97 EUR DEL 21.01.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
-108,2026-01-21,-43.94,"Pagam. POS - PAGAMENTO POS 43,94 EUR DEL 21.01.2026 A (ITA) CENTRO MEDICO SANTAGOSTINO",expense,false,Salute/Farmaci
-109,2026-01-22,-115.82,"Pagam. POS - PAGAMENTO POS 115,82 EUR DEL 22.01.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
-110,2026-01-22,-43.97,"Pagam. POS - PAGAMENTO POS 43,97 EUR DEL 22.01.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
-111,2026-01-22,-116.75,"Pagam. POS - PAGAMENTO POS 116,75 EUR DEL 22.01.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
-112,2026-01-23,-52.69,"Pagam. POS - PAGAMENTO POS 52,69 EUR DEL 23.01.2026 A (ITA) CENTRO MEDICO SANTAGOSTINO",expense,false,Salute/Farmaci
-113,2026-01-23,-102.55,"Pagam. POS - PAGAMENTO POS 102,55 EUR DEL 23.01.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
-114,2026-01-23,-115.47,"Pagam. POS - PAGAMENTO POS 115,47 EUR DEL 23.01.2026 A (ITA) FARMACIA DR ROSSI",expense,false,Salute/Farmaci
-115,2026-01-23,-179.62,"Pagam. POS - PAGAMENTO POS 179,62 EUR DEL 23.01.2026 A (ITA) OTTICA AVANZI",expense,false,Salute/Farmaci
-116,2026-01-23,-6.27,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-117,2026-01-23,-77.66,"Pagam. POS - PAGAMENTO POS 77,66 EUR DEL 23.01.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
-118,2026-01-23,-189.72,Disposizione - RIF:210950689 BEN. DR VERDI ODONTOIATRA,expense,false,Salute/Farmaci
-119,2026-01-24,-148.29,PAGAMENTO CONTACTLESS CARTA **** 3887 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
-120,2026-01-24,-18.06,"Pagam. POS - PAGAMENTO POS 18,06 EUR DEL 24.01.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
-121,2026-01-24,-12.48,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-122,2026-01-25,-102.13,"Pagam. POS - PAGAMENTO POS 102,13 EUR DEL 25.01.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
-123,2026-01-25,-77.26,"Pagam. POS - PAGAMENTO POS 77,26 EUR DEL 25.01.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
-124,2026-01-25,-34.22,"Pagam. POS - PAGAMENTO POS 34,22 EUR DEL 25.01.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
-125,2026-01-25,-96.94,"Pagam. POS - PAGAMENTO POS 96,94 EUR DEL 25.01.2026 A (ITA) ZARA ITALIA SRL",expense,false,Abbigliamento/Abbigliamento adulti
-126,2026-01-25,-14.20,"Pagam. POS - PAGAMENTO POS 14,20 EUR DEL 25.01.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-127,2026-01-25,-61.85,"Pagam. POS - PAGAMENTO POS 61,85 EUR DEL 25.01.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
-128,2026-01-25,-74.22,"Pagam. POS - PAGAMENTO POS 74,22 EUR DEL 25.01.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
-129,2026-01-25,-76.10,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
-130,2026-01-26,-55.50,"Pagam. POS - PAGAMENTO POS 55,50 EUR DEL 26.01.2026 A (ITA) CONAD CITY ROMA",expense,false,Alimentari/Spesa supermercato
-131,2026-01-26,-116.81,"Pagam. POS - PAGAMENTO POS 116,81 EUR DEL 26.01.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
-132,2026-01-26,-78.60,"Pagam. POS - PAGAMENTO POS 78,60 EUR DEL 26.01.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
-133,2026-01-26,-97.91,"Pagam. POS - PAGAMENTO POS 97,91 EUR DEL 26.01.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
-134,2026-01-26,-181.53,Disposizione - RIF:215286954 BEN. DR VERDI ODONTOIATRA,expense,false,Salute/Farmaci
-135,2026-01-26,-110.50,PAGAMENTO CONTACTLESS CARTA **** 7081 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
-136,2026-01-26,-28.84,"Pagam. POS - PAGAMENTO POS 28,84 EUR DEL 26.01.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
-137,2026-01-27,-51.25,"Pagam. POS - PAGAMENTO POS 51,25 EUR DEL 27.01.2026 A (ITA) COOP LOMBARDIA",expense,false,Altro/Spese non classificate
-138,2026-01-27,-50.01,PAGAMENTO CONTACTLESS CARTA **** 4614 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
-139,2026-01-27,-10.03,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-140,2026-01-28,-35.42,"Pagam. POS - PAGAMENTO POS 35,42 EUR DEL 28.01.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
-141,2026-01-28,-128.87,"Pagam. POS - PAGAMENTO POS 128,87 EUR DEL 28.01.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
-142,2026-01-28,-7.43,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
-143,2026-01-28,-66.22,"Pagam. POS - PAGAMENTO POS 66,22 EUR DEL 28.01.2026 A (ITA) ZARA ITALIA SRL",expense,false,Abbigliamento/Abbigliamento adulti
-144,2026-01-28,-9.19,"Pagam. POS - PAGAMENTO POS 9,19 EUR DEL 28.01.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-145,2026-01-28,-13.08,"Pagam. POS - PAGAMENTO POS 13,08 EUR DEL 28.01.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-146,2026-01-29,-79.16,"Pagam. POS - PAGAMENTO POS 79,16 EUR DEL 29.01.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
-147,2026-01-29,-78.87,"Pagam. POS - PAGAMENTO POS 78,87 EUR DEL 29.01.2026 A (ITA) PIZZERIA NAPOLI",expense,false,Ristorazione/Ristorante
-148,2026-01-30,-126.25,PAGAMENTO CONTACTLESS CARTA **** 8256 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
-149,2026-01-30,-76.19,"Pagam. POS - PAGAMENTO POS 76,19 EUR DEL 30.01.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
-150,2026-01-30,-62.69,"Pagam. POS - PAGAMENTO POS 62,69 EUR DEL 30.01.2026 A (ITA) CENTRO MEDICO SANTAGOSTINO",expense,false,Salute/Farmaci
-151,2026-01-30,-121.96,PAGAMENTO CONTACTLESS CARTA **** 2964 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
-152,2026-01-30,-8.32,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-153,2026-01-30,-58.35,PAGAMENTO CONTACTLESS CARTA **** 7661 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
-154,2026-01-31,-40.83,"Pagam. POS - PAGAMENTO POS 40,83 EUR DEL 31.01.2026 A (ITA) FARMACIA COMUNALE",expense,false,Salute/Farmaci
-155,2026-01-31,-67.18,Disposizione - RIF:215491052 BEN. DR VERDI ODONTOIATRA,expense,false,Salute/Farmaci
-156,2026-02-01,-55.80,"Pagam. POS - PAGAMENTO POS 55,80 EUR DEL 01.02.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
-157,2026-02-01,-97.47,"Pagam. POS - PAGAMENTO POS 97,47 EUR DEL 01.02.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
-158,2026-02-01,-91.87,"Pagam. POS - PAGAMENTO POS 91,87 EUR DEL 01.02.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
-159,2026-02-01,-41.37,"Pagam. POS - PAGAMENTO POS 41,37 EUR DEL 01.02.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
-160,2026-02-01,-29.45,"Pagam. POS - PAGAMENTO POS 29,45 EUR DEL 01.02.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
-161,2026-02-01,-74.74,"Pagam. POS - PAGAMENTO POS 74,74 EUR DEL 01.02.2026 A (ITA) FARMACIA COMUNALE",expense,false,Salute/Farmaci
-162,2026-02-01,-210.55,"Pagam. POS - PAGAMENTO POS 210,55 EUR DEL 01.02.2026 A (ITA) LIBRERIA FELTRINELLI",expense,false,Istruzione/Rette scolastiche
-163,2026-02-02,-89.64,Addebito SDD - GENERALI ITALIA POLIZZA VITA,expense,false,Altro/Spese non classificate
-164,2026-02-02,-152.24,"Pagam. POS - PAGAMENTO POS 152,24 EUR DEL 02.02.2026 A (ITA) LIBRERIA FELTRINELLI",expense,false,Istruzione/Rette scolastiche
-165,2026-02-02,-29.06,"Pagam. POS - PAGAMENTO POS 29,06 EUR DEL 02.02.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
-166,2026-02-02,-728.26,Disposizione - RIF:218540685 BEN. UNIVERSITA' DEGLI STUDI DI BOLOGNA,expense,false,Istruzione/Rette scolastiche
-167,2026-02-03,-21.33,PAGAMENTO CONTACTLESS CARTA **** 3984 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
-168,2026-02-03,-24.24,"Pagam. POS - PAGAMENTO POS 24,24 EUR DEL 03.02.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
-169,2026-02-03,-179.14,"Pagam. POS - PAGAMENTO POS 179,14 EUR DEL 03.02.2026 A (ITA) MACELLERIA BONI",expense,false,Alimentari/Spesa supermercato
-170,2026-02-03,-178.97,"Pagam. POS - PAGAMENTO POS 178,97 EUR DEL 03.02.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
-171,2026-02-04,-24.30,"Pagam. POS - PAGAMENTO POS 24,30 EUR DEL 04.02.2026 A (ITA) COOP LOMBARDIA",expense,false,Altro/Spese non classificate
-172,2026-02-04,-21.39,Disposizione - RIF:214353698 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
-173,2026-02-04,-166.96,PAGAMENTO CONTACTLESS CARTA **** 1102 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
-174,2026-02-04,-58.91,"Pagam. POS - PAGAMENTO POS 58,91 EUR DEL 04.02.2026 A (ITA) CONAD CITY ROMA",expense,false,Alimentari/Spesa supermercato
-175,2026-02-05,-80.66,"Pagam. POS - PAGAMENTO POS 80,66 EUR DEL 05.02.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
-176,2026-02-05,-50.85,PAGAMENTO CONTACTLESS CARTA **** 6646 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
-177,2026-02-05,-5.05,"Pagam. POS - PAGAMENTO POS 5,05 EUR DEL 05.02.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-178,2026-02-05,-42.14,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
-179,2026-02-06,-10.95,"Pagam. POS - PAGAMENTO POS 10,95 EUR DEL 06.02.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-180,2026-02-06,-47.81,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
-181,2026-02-06,-71.95,"Pagam. POS - PAGAMENTO POS 71,95 EUR DEL 06.02.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
-182,2026-02-06,-213.28,Disposizione - RIF:213775348 BEN. DR VERDI ODONTOIATRA,expense,false,Salute/Farmaci
-183,2026-02-06,-76.21,Addebito SDD - GENERALI ITALIA POLIZZA VITA,expense,false,Altro/Spese non classificate
-184,2026-02-06,-143.91,PAGAMENTO CONTACTLESS CARTA **** 4532 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
-185,2026-02-06,-99.92,PAGAMENTO CONTACTLESS CARTA **** 3572 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
-186,2026-02-07,-98.69,PAGAMENTO CONTACTLESS CARTA **** 3360 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
-187,2026-02-07,-23.40,Disposizione - RIF:215871611 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
-188,2026-02-07,-83.51,"Pagam. POS - PAGAMENTO POS 83,51 EUR DEL 07.02.2026 A (ITA) CONAD CITY ROMA",expense,false,Alimentari/Spesa supermercato
-189,2026-02-07,-103.79,"Pagam. POS - PAGAMENTO POS 103,79 EUR DEL 07.02.2026 A (ITA) OTTICA AVANZI",expense,false,Salute/Farmaci
-190,2026-02-07,-96.80,"Pagam. POS - PAGAMENTO POS 96,80 EUR DEL 07.02.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
-191,2026-02-07,-116.79,"Pagam. POS - PAGAMENTO POS 116,79 EUR DEL 07.02.2026 A (ITA) OTTICA AVANZI",expense,false,Salute/Farmaci
-192,2026-02-07,-142.49,PAGAMENTO CONTACTLESS CARTA **** 7312 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
-193,2026-02-07,-78.80,"Pagam. POS - PAGAMENTO POS 78,80 EUR DEL 07.02.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
-194,2026-02-08,-69.41,"Pagam. POS - PAGAMENTO POS 69,41 EUR DEL 08.02.2026 A (ITA) FARMACIA DR ROSSI",expense,false,Salute/Farmaci
-195,2026-02-08,-94.53,"Pagam. POS - PAGAMENTO POS 94,53 EUR DEL 08.02.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
-196,2026-02-08,-31.02,PAGAMENTO CONTACTLESS CARTA **** 3583 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
-197,2026-02-09,-47.38,"Pagam. POS - PAGAMENTO POS 47,38 EUR DEL 09.02.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
-198,2026-02-09,-40.70,"Pagam. POS - PAGAMENTO POS 40,70 EUR DEL 09.02.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
-199,2026-02-09,-85.74,Disposizione - RIF:216601346 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
-200,2026-02-09,-54.38,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
-201,2026-02-09,-132.31,"Pagam. POS - PAGAMENTO POS 132,31 EUR DEL 09.02.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
-202,2026-02-10,-15.77,"Pagam. POS - PAGAMENTO POS 15,77 EUR DEL 10.02.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
-203,2026-02-10,-54.07,"Pagam. POS - PAGAMENTO POS 54,07 EUR DEL 10.02.2026 A (ITA) PIZZERIA NAPOLI",expense,false,Ristorazione/Ristorante
-204,2026-02-10,-19.94,"Pagam. POS - PAGAMENTO POS 19,94 EUR DEL 10.02.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
-205,2026-02-10,-79.13,"Pagam. POS - PAGAMENTO POS 79,13 EUR DEL 10.02.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
-206,2026-02-10,-89.20,"Pagam. POS - PAGAMENTO POS 89,20 EUR DEL 10.02.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
-207,2026-02-10,-80.08,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
-208,2026-02-10,-194.33,Disposizione - RIF:213160426 BEN. DR VERDI ODONTOIATRA,expense,false,Salute/Farmaci
-209,2026-02-10,-103.82,"Pagam. POS - PAGAMENTO POS 103,82 EUR DEL 10.02.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
-210,2026-02-11,-5.67,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
-211,2026-02-11,-180.97,"Pagam. POS - PAGAMENTO POS 180,97 EUR DEL 11.02.2026 A (ITA) LIBRERIA FELTRINELLI",expense,false,Istruzione/Rette scolastiche
-212,2026-02-11,-83.60,Disposizione - RIF:212558536 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
-213,2026-02-11,-139.82,Disposizione - RIF:213489742 BEN. DR VERDI ODONTOIATRA,expense,false,Salute/Farmaci
-214,2026-02-11,-58.51,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
-215,2026-02-12,-9.55,"Pagam. POS - PAGAMENTO POS 9,55 EUR DEL 12.02.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-216,2026-02-12,-89.76,"Pagam. POS - PAGAMENTO POS 89,76 EUR DEL 12.02.2026 A (ITA) ZARA ITALIA SRL",expense,false,Abbigliamento/Abbigliamento adulti
-217,2026-02-12,-12.42,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-218,2026-02-12,-159.92,"Pagam. POS - PAGAMENTO POS 159,92 EUR DEL 12.02.2026 A (ITA) FARMACIA DR ROSSI",expense,false,Salute/Farmaci
-219,2026-02-12,-6.36,"Pagam. POS - PAGAMENTO POS 6,36 EUR DEL 12.02.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-220,2026-02-12,-246.15,"Pagam. POS - PAGAMENTO POS 246,15 EUR DEL 12.02.2026 A (ITA) FARMACIA DR ROSSI",expense,false,Salute/Farmaci
-221,2026-02-12,-8.98,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-222,2026-02-13,-222.13,"Pagam. POS - PAGAMENTO POS 222,13 EUR DEL 13.02.2026 A (ITA) OTTICA AVANZI",expense,false,Salute/Farmaci
-223,2026-02-13,-110.08,"Pagam. POS - PAGAMENTO POS 110,08 EUR DEL 13.02.2026 A (ITA) CONAD CITY ROMA",expense,false,Alimentari/Spesa supermercato
-224,2026-02-13,-142.34,PAGAMENTO CONTACTLESS CARTA **** 5036 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
-225,2026-02-13,-170.47,PAGAMENTO CONTACTLESS CARTA **** 6005 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
-226,2026-02-13,-119.96,PAGAMENTO CONTACTLESS CARTA **** 4947 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
-227,2026-02-13,-39.73,PAGAMENTO CONTACTLESS CARTA **** 5862 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
-228,2026-02-13,-11.28,PAGAMENTO CONTACTLESS CARTA **** 5832 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
-229,2026-02-13,-38.62,"Pagam. POS - PAGAMENTO POS 38,62 EUR DEL 13.02.2026 A (ITA) CENTRO MEDICO SANTAGOSTINO",expense,false,Salute/Farmaci
-230,2026-02-13,-8.48,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-231,2026-02-14,-32.47,"Pagam. POS - PAGAMENTO POS 32,47 EUR DEL 14.02.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
-232,2026-02-14,-52.10,PAGAMENTO CONTACTLESS CARTA **** 9721 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
-233,2026-02-14,-66.12,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
-234,2026-02-14,-29.76,"Pagam. POS - PAGAMENTO POS 29,76 EUR DEL 14.02.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
-235,2026-02-14,-29.13,"Pagam. POS - PAGAMENTO POS 29,13 EUR DEL 14.02.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
-236,2026-02-15,-157.03,"Pagam. POS - PAGAMENTO POS 157,03 EUR DEL 15.02.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
-237,2026-02-15,-75.60,Addebito SDD - GENERALI ITALIA POLIZZA VITA,expense,false,Altro/Spese non classificate
-238,2026-02-15,-40.14,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
-239,2026-02-16,-36.19,"Pagam. POS - PAGAMENTO POS 36,19 EUR DEL 16.02.2026 A (ITA) CENTRO DIAGNOSTICO SAN DONATO",expense,false,Salute/Farmaci
-240,2026-02-16,-123.27,"Pagam. POS - PAGAMENTO POS 123,27 EUR DEL 16.02.2026 A (ITA) MACELLERIA BONI",expense,false,Alimentari/Spesa supermercato
-241,2026-02-16,-9.95,PAGAMENTO CONTACTLESS CARTA **** 4393 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
-242,2026-02-16,-27.08,"Pagam. POS - PAGAMENTO POS 27,08 EUR DEL 16.02.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
-243,2026-02-16,-51.06,PAGAMENTO CONTACTLESS CARTA **** 7396 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
-244,2026-02-17,-13.61,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-245,2026-02-17,-56.42,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
-246,2026-02-18,-35.62,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
-247,2026-02-18,-36.37,"Pagam. POS - PAGAMENTO POS 36,37 EUR DEL 18.02.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
-248,2026-02-18,-57.66,"Pagam. POS - PAGAMENTO POS 57,66 EUR DEL 18.02.2026 A (ITA) ZARA ITALIA SRL",expense,false,Abbigliamento/Abbigliamento adulti
-249,2026-02-18,-17.41,"Pagam. POS - PAGAMENTO POS 17,41 EUR DEL 18.02.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
-250,2026-02-18,-50.46,"Pagam. POS - PAGAMENTO POS 50,46 EUR DEL 18.02.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
-251,2026-02-19,-19.84,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
-252,2026-02-19,-56.19,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
-253,2026-02-19,-132.76,"Pagam. POS - PAGAMENTO POS 132,76 EUR DEL 19.02.2026 A (ITA) CONAD CITY ROMA",expense,false,Alimentari/Spesa supermercato
-254,2026-02-19,-13.97,PAGAMENTO CONTACTLESS CARTA **** 4464 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
-255,2026-02-19,-8.39,"Pagam. POS - PAGAMENTO POS 8,39 EUR DEL 19.02.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-256,2026-02-19,-6.84,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-257,2026-02-19,-29.61,PAGAMENTO CONTACTLESS CARTA **** 1166 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
-258,2026-02-20,-113.02,"Pagam. POS - PAGAMENTO POS 113,02 EUR DEL 20.02.2026 A (ITA) ZARA ITALIA SRL",expense,false,Abbigliamento/Abbigliamento adulti
-259,2026-02-20,-626.25,"Pagam. POS - PAGAMENTO POS 626,25 EUR DEL 20.02.2026 A (ITA) CARTOLIBRERIA IL PAPIRO",expense,false,Istruzione/Rette scolastiche
-260,2026-02-20,-147.15,"Pagam. POS - PAGAMENTO POS 147,15 EUR DEL 20.02.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
-261,2026-02-20,-116.40,"Pagam. POS - PAGAMENTO POS 116,40 EUR DEL 20.02.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
-262,2026-02-21,-75.61,PAGAMENTO CONTACTLESS CARTA **** 1320 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
-263,2026-02-21,-23.40,"Pagam. POS - PAGAMENTO POS 23,40 EUR DEL 21.02.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
-264,2026-02-21,-39.42,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
-265,2026-02-22,-37.73,"Pagam. POS - PAGAMENTO POS 37,73 EUR DEL 22.02.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
-266,2026-02-22,-698.13,"Pagam. POS - PAGAMENTO POS 698,13 EUR DEL 22.02.2026 A (ITA) CARTOLIBRERIA IL PAPIRO",expense,false,Istruzione/Rette scolastiche
-267,2026-02-22,-143.97,PAGAMENTO CONTACTLESS CARTA **** 6156 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
-268,2026-02-22,-47.54,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
-269,2026-02-22,-21.90,"Pagam. POS - PAGAMENTO POS 21,90 EUR DEL 22.02.2026 A (ITA) CENTRO MEDICO SANTAGOSTINO",expense,false,Salute/Farmaci
-270,2026-02-22,-42.27,"Pagam. POS - PAGAMENTO POS 42,27 EUR DEL 22.02.2026 A (ITA) LIBRERIA FELTRINELLI",expense,false,Istruzione/Rette scolastiche
-271,2026-02-22,-16.05,Disposizione - RIF:215183258 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
-272,2026-02-22,-104.16,PAGAMENTO CONTACTLESS CARTA **** 7916 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
-273,2026-02-22,-55.31,Disposizione - RIF:215067422 BEN. DR VERDI ODONTOIATRA,expense,false,Salute/Farmaci
-274,2026-02-23,-211.91,"Pagam. POS - PAGAMENTO POS 211,91 EUR DEL 23.02.2026 A (ITA) FARMACIA COMUNALE",expense,false,Salute/Farmaci
-275,2026-02-23,-25.06,"Pagam. POS - PAGAMENTO POS 25,06 EUR DEL 23.02.2026 A (ITA) ZARA ITALIA SRL",expense,false,Abbigliamento/Abbigliamento adulti
-276,2026-02-23,-122.07,"Pagam. POS - PAGAMENTO POS 122,07 EUR DEL 23.02.2026 A (ITA) FARMACIA DR ROSSI",expense,false,Salute/Farmaci
-277,2026-02-24,-142.54,PAGAMENTO CONTACTLESS CARTA **** 7626 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
-278,2026-02-24,-82.95,"Pagam. POS - PAGAMENTO POS 82,95 EUR DEL 24.02.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
-279,2026-02-24,-19.57,"Pagam. POS - PAGAMENTO POS 19,57 EUR DEL 24.02.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
-280,2026-02-24,-25.47,PAGAMENTO CONTACTLESS CARTA **** 7177 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
-281,2026-02-24,-6.56,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-282,2026-02-25,-13.89,Disposizione - RIF:219683615 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
-283,2026-02-25,-175.59,Disposizione - RIF:213903200 BEN. UNIVERSITA' DEGLI STUDI DI BOLOGNA,expense,false,Istruzione/Rette scolastiche
-284,2026-02-25,-138.41,"Pagam. POS - PAGAMENTO POS 138,41 EUR DEL 25.02.2026 A (ITA) CENTRO DIAGNOSTICO SAN DONATO",expense,false,Salute/Farmaci
-285,2026-02-25,-22.68,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
-286,2026-02-26,-248.32,"Pagam. POS - PAGAMENTO POS 248,32 EUR DEL 26.02.2026 A (ITA) OTTICA AVANZI",expense,false,Salute/Farmaci
-287,2026-02-26,-15.50,PAGAMENTO CONTACTLESS CARTA **** 4725 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
-288,2026-02-26,-51.36,"Pagam. POS - PAGAMENTO POS 51,36 EUR DEL 26.02.2026 A (ITA) FARMACIA DR ROSSI",expense,false,Salute/Farmaci
-289,2026-02-26,-714.38,Disposizione - RIF:216610243 BEN. UNIVERSITA' DEGLI STUDI DI BOLOGNA,expense,false,Istruzione/Rette scolastiche
-290,2026-02-26,-43.94,"Pagam. POS - PAGAMENTO POS 43,94 EUR DEL 26.02.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
-291,2026-02-26,-42.63,"Pagam. POS - PAGAMENTO POS 42,63 EUR DEL 26.02.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
-292,2026-02-27,-119.34,PAGAMENTO CONTACTLESS CARTA **** 5900 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
-293,2026-02-27,-62.64,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
-294,2026-02-27,-129.97,"Pagam. POS - PAGAMENTO POS 129,97 EUR DEL 27.02.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
-295,2026-02-27,-37.76,PAGAMENTO CONTACTLESS CARTA **** 5232 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
-296,2026-02-28,-103.47,"Pagam. POS - PAGAMENTO POS 103,47 EUR DEL 28.02.2026 A (ITA) CENTRO DIAGNOSTICO SAN DONATO",expense,false,Salute/Farmaci
-297,2026-02-28,-164.59,"Pagam. POS - PAGAMENTO POS 164,59 EUR DEL 28.02.2026 A (ITA) CONAD CITY ROMA",expense,false,Alimentari/Spesa supermercato
-298,2026-02-28,-6.66,AMAZON.IT MARKETPLACE - ORDINE 402-216180060,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-299,2026-02-28,-58.86,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
-300,2026-02-28,-40.26,"Pagam. POS - PAGAMENTO POS 40,26 EUR DEL 28.02.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
+1,2026-01-01,-30.31,"Pagam. POS - PAGAMENTO POS 30,31 EUR DEL 01.01.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
+2,2026-01-01,-87.78,"Pagam. POS - PAGAMENTO POS 87,78 EUR DEL 01.01.2026 A (ITA) CHURCH'S TORINO",expense,false,Abbigliamento/Abbigliamento adulti
+3,2026-01-01,-125.73,"Pagam. POS - PAGAMENTO POS 125,73 EUR DEL 01.01.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
+4,2026-01-01,-8.40,Addebito SDD - GENERALI ITALIA POLIZZA VITA,expense,false,Altro/Spese non classificate
+5,2026-01-01,-40.16,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
+6,2026-01-01,-76.14,"Pagam. POS - PAGAMENTO POS 76,14 EUR DEL 01.01.2026 A (ITA) CENTRO DIAGNOSTICO SAN DONATO",expense,false,Salute/Farmaci
+7,2026-01-01,-107.09,"Pagam. POS - PAGAMENTO POS 107,09 EUR DEL 01.01.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
+8,2026-01-01,-51.13,PAGAMENTO CONTACTLESS CARTA **** 6307 COMPRO ORO,expense,false,Altro/Spese non classificate
+9,2026-01-02,-147.72,"Pagam. POS - PAGAMENTO POS 147,72 EUR DEL 02.01.2026 A (ITA) CONAD CITY ROMA",expense,false,Alimentari/Spesa supermercato
+10,2026-01-02,-110.19,PAGAMENTO CONTACTLESS CARTA **** 3226 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
+11,2026-01-02,-126.72,Disposizione - RIF:210905691 BEN. UNIVERSITA' DEGLI STUDI DI BOLOGNA,expense,false,Istruzione/Rette scolastiche
+12,2026-01-03,-48.55,PAGAMENTO CONTACTLESS CARTA **** 2772 PANS & COMPANY BARI,expense,false,Ristorazione/Ristorante
+13,2026-01-03,-81.47,PAGAMENTO CONTACTLESS CARTA **** 8597 TACO BELL,expense,false,Ristorazione/Ristorante
+14,2026-01-03,-159.07,PAGAMENTO CONTACTLESS CARTA **** 5656 MPREIS,expense,false,Alimentari/Spesa supermercato
+15,2026-01-03,-63.78,PAGAMENTO CONTACTLESS CARTA **** 1213 CHURCH'S OSTIENSE,expense,false,Abbigliamento/Abbigliamento adulti
+16,2026-01-03,-13.98,"Pagam. POS - PAGAMENTO POS 13,98 EUR DEL 03.01.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+17,2026-01-03,-231.85,PAGAMENTO CONTACTLESS CARTA **** 9798 NAU!,expense,false,Salute/Farmaci
+18,2026-01-04,-99.27,"Pagam. POS - PAGAMENTO POS 99,27 EUR DEL 04.01.2026 A (ITA) LAFARMACIA.",expense,false,Salute/Farmaci
+19,2026-01-04,-124.75,"Pagam. POS - PAGAMENTO POS 124,75 EUR DEL 04.01.2026 A (ITA) JOHNSON FITNESS & WELLNESS",expense,false,Abbigliamento/Abbigliamento adulti
+20,2026-01-04,-96.68,"Pagam. POS - PAGAMENTO POS 96,68 EUR DEL 04.01.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
+21,2026-01-04,-126.49,PAGAMENTO CONTACTLESS CARTA **** 8784 JOHNSON FITNESS & WELLNESS,expense,false,Abbigliamento/Abbigliamento adulti
+22,2026-01-05,-134.89,"Pagam. POS - PAGAMENTO POS 134,89 EUR DEL 05.01.2026 A (ITA) ZARA ITALIA SRL",expense,false,Abbigliamento/Abbigliamento adulti
+23,2026-01-05,-72.40,PAGAMENTO CONTACTLESS CARTA **** 6889 ALL'ANTICO VINAIO CATANIA,expense,false,Ristorazione/Ristorante
+24,2026-01-05,-8.08,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+25,2026-01-06,-8.52,AMAZON.IT MARKETPLACE - ORDINE 402-214035722,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+26,2026-01-06,-97.72,Addebito SDD - GENERALI ITALIA POLIZZA VITA,expense,false,Altro/Spese non classificate
+27,2026-01-06,-71.30,"Pagam. POS - PAGAMENTO POS 71,30 EUR DEL 06.01.2026 A (ITA) BILLY TACOS FIRENZE",expense,false,Ristorazione/Ristorante
+28,2026-01-06,-80.67,PAGAMENTO CONTACTLESS CARTA **** 9811 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
+29,2026-01-06,-156.24,"Pagam. POS - PAGAMENTO POS 156,24 EUR DEL 06.01.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
+30,2026-01-06,-110.71,"Pagam. POS - PAGAMENTO POS 110,71 EUR DEL 06.01.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
+31,2026-01-06,-89.69,PAGAMENTO CONTACTLESS CARTA **** 2193 TIGOTÀ,expense,false,Abbigliamento/Abbigliamento adulti
+32,2026-01-06,-55.72,PAGAMENTO CONTACTLESS CARTA **** 9599 IL GIGANTE,expense,false,Alimentari/Spesa supermercato
+33,2026-01-06,-59.74,"Pagam. POS - PAGAMENTO POS 59,74 EUR DEL 06.01.2026 A (ITA) THUN",expense,false,Altro/Spese non classificate
+34,2026-01-06,-116.35,PAGAMENTO CONTACTLESS CARTA **** 6486 IPER FLAMINIO,expense,false,Alimentari/Spesa supermercato
+35,2026-01-07,-12.36,"Pagam. POS - PAGAMENTO POS 12,36 EUR DEL 07.01.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+36,2026-01-07,-67.99,PAGAMENTO CONTACTLESS CARTA **** 8680 PITTAROSSO,expense,false,Abbigliamento/Abbigliamento adulti
+37,2026-01-07,-6.49,"Pagam. POS - PAGAMENTO POS 6,49 EUR DEL 07.01.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+38,2026-01-07,-19.10,"Pagam. POS - PAGAMENTO POS 19,10 EUR DEL 07.01.2026 A (ITA) L'ISOLA DEI TESORI MARGHERA",expense,false,Altro/Spese non classificate
+39,2026-01-07,-79.79,"Pagam. POS - PAGAMENTO POS 79,79 EUR DEL 07.01.2026 A (ITA) COOP LOMBARDIA",expense,false,Altro/Spese non classificate
+40,2026-01-08,-43.59,"Pagam. POS - PAGAMENTO POS 43,59 EUR DEL 08.01.2026 A (ITA) DENTALPRO",expense,false,Salute/Farmaci
+41,2026-01-08,-15.70,"Pagam. POS - PAGAMENTO POS 15,70 EUR DEL 08.01.2026 A (ITA) EKOM MILANO",expense,false,Alimentari/Spesa supermercato
+42,2026-01-08,-168.50,PAGAMENTO CONTACTLESS CARTA **** 4201 SÌ CON TE,expense,false,Alimentari/Spesa supermercato
+43,2026-01-09,-715.36,PAGAMENTO CONTACTLESS CARTA **** 4765 GIUNTI AL PUNTO,expense,false,Istruzione/Rette scolastiche
+44,2026-01-09,-62.66,"Pagam. POS - PAGAMENTO POS 62,66 EUR DEL 09.01.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
+45,2026-01-09,-231.11,"Pagam. POS - PAGAMENTO POS 231,11 EUR DEL 09.01.2026 A (ITA) OTTICA AVANZI",expense,false,Salute/Farmaci
+46,2026-01-09,-196.57,"Pagam. POS - PAGAMENTO POS 196,57 EUR DEL 09.01.2026 A (ITA) DR. MAX",expense,false,Salute/Farmaci
+47,2026-01-09,-84.49,PAGAMENTO CONTACTLESS CARTA **** 2941 BOTTEGA VERDE TORINO,expense,false,Altro/Spese non classificate
+48,2026-01-09,-132.25,"Pagam. POS - PAGAMENTO POS 132,25 EUR DEL 09.01.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
+49,2026-01-09,-29.23,PAGAMENTO CONTACTLESS CARTA **** 6931 UNES CORSICO,expense,false,Alimentari/Spesa supermercato
+50,2026-01-09,-353.82,"Pagam. POS - PAGAMENTO POS 353,82 EUR DEL 09.01.2026 A (ITA) CARTOLIBRERIA IL PAPIRO",expense,false,Istruzione/Rette scolastiche
+51,2026-01-10,-26.39,"Pagam. POS - PAGAMENTO POS 26,39 EUR DEL 10.01.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
+52,2026-01-10,-156.39,PAGAMENTO CONTACTLESS CARTA **** 3333 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
+53,2026-01-10,-49.02,"Pagam. POS - PAGAMENTO POS 49,02 EUR DEL 10.01.2026 A (ITA) COOP LOMBARDIA",expense,false,Altro/Spese non classificate
+54,2026-01-10,-148.73,PAGAMENTO CONTACTLESS CARTA **** 2116 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
+55,2026-01-10,-58.59,"Pagam. POS - PAGAMENTO POS 58,59 EUR DEL 10.01.2026 A (ITA) MACELLERIA BONI",expense,false,Alimentari/Spesa supermercato
+56,2026-01-10,-15.86,PAGAMENTO CONTACTLESS CARTA **** 8967 CONAD SUPERSTORE ROMA,expense,false,Alimentari/Spesa supermercato
+57,2026-01-11,-28.31,"Pagam. POS - PAGAMENTO POS 28,31 EUR DEL 11.01.2026 A (ITA) MACELLERIA BONI",expense,false,Alimentari/Spesa supermercato
+58,2026-01-11,-134.19,PAGAMENTO CONTACTLESS CARTA **** 9191 LAFARMACIA. GENOVA,expense,false,Salute/Farmaci
+59,2026-01-11,-35.36,"Pagam. POS - PAGAMENTO POS 35,36 EUR DEL 11.01.2026 A (ITA) SPLENDIDI E SPLENDENTI GENOVA",expense,false,Abbigliamento/Abbigliamento adulti
+60,2026-01-11,-14.40,"Pagam. POS - PAGAMENTO POS 14,40 EUR DEL 11.01.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+61,2026-01-11,-43.23,"Pagam. POS - PAGAMENTO POS 43,23 EUR DEL 11.01.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
+62,2026-01-12,-20.93,"Pagam. POS - PAGAMENTO POS 20,93 EUR DEL 12.01.2026 A (ITA) CONAD CITY ROMA",expense,false,Alimentari/Spesa supermercato
+63,2026-01-12,-48.47,PAGAMENTO CONTACTLESS CARTA **** 4059 MERCATÒ LOCAL BRESCIA,expense,false,Alimentari/Spesa supermercato
+64,2026-01-12,-198.44,"Pagam. POS - PAGAMENTO POS 198,44 EUR DEL 12.01.2026 A (ITA) CENTRO DIAGNOSTICO SAN DONATO",expense,false,Salute/Farmaci
+65,2026-01-12,-35.95,"Pagam. POS - PAGAMENTO POS 35,95 EUR DEL 12.01.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
+66,2026-01-12,-83.70,"Pagam. POS - PAGAMENTO POS 83,70 EUR DEL 12.01.2026 A (ITA) IPERCOOP LINGOTTO",expense,false,Alimentari/Spesa supermercato
+67,2026-01-12,-6.13,"Pagam. POS - PAGAMENTO POS 6,13 EUR DEL 12.01.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+68,2026-01-12,-125.98,"Pagam. POS - PAGAMENTO POS 125,98 EUR DEL 12.01.2026 A (ITA) CENTRO MEDICO SANTAGOSTINO",expense,false,Salute/Farmaci
+69,2026-01-12,-120.85,PAGAMENTO CONTACTLESS CARTA **** 3370 ACQUA & SAPONE,expense,false,Abbigliamento/Abbigliamento adulti
+70,2026-01-12,-712.84,"Pagam. POS - PAGAMENTO POS 712,84 EUR DEL 12.01.2026 A (ITA) CARTOLIBRERIA IL PAPIRO",expense,false,Istruzione/Rette scolastiche
+71,2026-01-12,-15.72,"Pagam. POS - PAGAMENTO POS 15,72 EUR DEL 12.01.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
+72,2026-01-12,-147.30,"Pagam. POS - PAGAMENTO POS 147,30 EUR DEL 12.01.2026 A (ITA) SALMOIRAGHI & VIGANÒ",expense,false,Salute/Farmaci
+73,2026-01-12,-23.13,"Pagam. POS - PAGAMENTO POS 23,13 EUR DEL 12.01.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
+74,2026-01-13,-157.23,PAGAMENTO CONTACTLESS CARTA **** 8778 MEGA,expense,false,Alimentari/Spesa supermercato
+75,2026-01-13,-82.21,"Pagam. POS - PAGAMENTO POS 82,21 EUR DEL 13.01.2026 A (ITA) CONAD CITY ROMA",expense,false,Alimentari/Spesa supermercato
+76,2026-01-14,-107.08,PAGAMENTO CONTACTLESS CARTA **** 8707 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
+77,2026-01-14,-12.58,"Pagam. POS - PAGAMENTO POS 12,58 EUR DEL 14.01.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
+78,2026-01-14,-36.69,PAGAMENTO CONTACTLESS CARTA **** 6129 CHURCH'S BERGAMO,expense,false,Abbigliamento/Abbigliamento adulti
+79,2026-01-14,-785.99,"Pagam. POS - PAGAMENTO POS 785,99 EUR DEL 14.01.2026 A (ITA) LIBRERIA FELTRINELLI",expense,false,Istruzione/Rette scolastiche
+80,2026-01-15,-30.36,"Pagam. POS - PAGAMENTO POS 30,36 EUR DEL 15.01.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
+81,2026-01-15,-25.15,PAGAMENTO CONTACTLESS CARTA **** 2552 COOP.FI FLAMINIO,expense,false,Alimentari/Spesa supermercato
+82,2026-01-15,-39.95,PAGAMENTO CONTACTLESS CARTA **** 2468 DR. MAX,expense,false,Salute/Farmaci
+83,2026-01-15,-80.80,"Pagam. POS - PAGAMENTO POS 80,80 EUR DEL 15.01.2026 A (ITA) ITALMARK",expense,false,Alimentari/Spesa supermercato
+84,2026-01-16,-199.02,"Pagam. POS - PAGAMENTO POS 199,02 EUR DEL 16.01.2026 A (ITA) OTTICA AVANZI",expense,false,Salute/Farmaci
+85,2026-01-16,-11.33,PAGAMENTO CONTACTLESS CARTA **** 5518 L'ISOLA DEI TESORI CENTRO COMM. IL LEONE,expense,false,Altro/Spese non classificate
+86,2026-01-17,-92.98,PAGAMENTO CONTACTLESS CARTA **** 2908 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
+87,2026-01-17,-77.29,PAGAMENTO CONTACTLESS CARTA **** 8182 PRIMOR,expense,false,Altro/Spese non classificate
+88,2026-01-17,-14.42,PAGAMENTO CONTACTLESS CARTA **** 4865 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
+89,2026-01-17,-67.35,"Pagam. POS - PAGAMENTO POS 67,35 EUR DEL 17.01.2026 A (ITA) MALVÓN CATANIA",expense,false,Ristorazione/Ristorante
+90,2026-01-18,-762.89,"Pagam. POS - PAGAMENTO POS 762,89 EUR DEL 18.01.2026 A (ITA) UBIK",expense,false,Istruzione/Rette scolastiche
+91,2026-01-18,-40.81,"Pagam. POS - PAGAMENTO POS 40,81 EUR DEL 18.01.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
+92,2026-01-18,-71.54,"Pagam. POS - PAGAMENTO POS 71,54 EUR DEL 18.01.2026 A (ITA) MONDADORI SAN GIULIANO MILANESE",expense,false,Istruzione/Rette scolastiche
+93,2026-01-19,-86.03,PAGAMENTO CONTACTLESS CARTA **** 6998 IPERAL BERGAMO,expense,false,Alimentari/Spesa supermercato
+94,2026-01-19,-93.21,PAGAMENTO CONTACTLESS CARTA **** 8906 MAXI ZOO,expense,false,Altro/Spese non classificate
+95,2026-01-19,-100.30,"Pagam. POS - PAGAMENTO POS 100,30 EUR DEL 19.01.2026 A (ITA) IKEA SWEDISH FOOD MARKET",expense,false,Alimentari/Spesa supermercato
+96,2026-01-19,-91.01,PAGAMENTO CONTACTLESS CARTA **** 1019 TIGOTÀ MILANO,expense,false,Abbigliamento/Abbigliamento adulti
+97,2026-01-20,-48.64,"Pagam. POS - PAGAMENTO POS 48,64 EUR DEL 20.01.2026 A (ITA) FAMILA",expense,false,Alimentari/Spesa supermercato
+98,2026-01-20,-11.46,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+99,2026-01-20,-107.97,"Pagam. POS - PAGAMENTO POS 107,97 EUR DEL 20.01.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
+100,2026-01-20,-66.44,"Pagam. POS - PAGAMENTO POS 66,44 EUR DEL 20.01.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
+101,2026-01-20,-115.82,PAGAMENTO CONTACTLESS CARTA **** 6518 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
+102,2026-01-20,-694.99,Disposizione - RIF:212820608 BEN. AFFITTO APPARTAMENTO SOFIA BOLOGNA,expense,false,Istruzione/Rette scolastiche
+103,2026-01-21,-156.61,"Pagam. POS - PAGAMENTO POS 156,61 EUR DEL 21.01.2026 A (ITA) MERCATÒ BIG",expense,false,Alimentari/Spesa supermercato
+104,2026-01-21,-24.94,"Pagam. POS - PAGAMENTO POS 24,94 EUR DEL 21.01.2026 A (ITA) PIZZERIA NAPOLI",expense,false,Ristorazione/Ristorante
+105,2026-01-21,-79.97,PAGAMENTO CONTACTLESS CARTA **** 2714 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
+106,2026-01-22,-45.90,"Pagam. POS - PAGAMENTO POS 45,90 EUR DEL 22.01.2026 A (ITA) ZARA ITALIA SRL",expense,false,Abbigliamento/Abbigliamento adulti
+107,2026-01-22,-100.72,"Pagam. POS - PAGAMENTO POS 100,72 EUR DEL 22.01.2026 A (ITA) COOP.FI",expense,false,Alimentari/Spesa supermercato
+108,2026-01-22,-43.97,"Pagam. POS - PAGAMENTO POS 43,97 EUR DEL 22.01.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
+109,2026-01-22,-39.88,PAGAMENTO CONTACTLESS CARTA **** 7505 DESPAR COLOGNO MONZESE,expense,false,Alimentari/Spesa supermercato
+110,2026-01-23,-38.50,"Pagam. POS - PAGAMENTO POS 38,50 EUR DEL 23.01.2026 A (ITA) NATURASÌ",expense,false,Alimentari/Spesa supermercato
+111,2026-01-23,-61.66,PAGAMENTO CONTACTLESS CARTA **** 2077 PANS & COMPANY,expense,false,Ristorazione/Ristorante
+112,2026-01-23,-5.68,"Pagam. POS - PAGAMENTO POS 5,68 EUR DEL 23.01.2026 A (ITA) PITAYA BRESCIA",expense,false,Ristorazione/Ristorante
+113,2026-01-23,-664.39,"Pagam. POS - PAGAMENTO POS 664,39 EUR DEL 23.01.2026 A (ITA) LIBRERIA FELTRINELLI",expense,false,Istruzione/Rette scolastiche
+114,2026-01-23,-454.77,Disposizione - RIF:213089229 BEN. AFFITTO APPARTAMENTO SOFIA BOLOGNA,expense,false,Istruzione/Rette scolastiche
+115,2026-01-24,-14.18,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+116,2026-01-24,-73.95,PAGAMENTO CONTACTLESS CARTA **** 3575 POKE HOUSE CINISELLO BALSAMO,expense,false,Ristorazione/Ristorante
+117,2026-01-24,-107.29,"Pagam. POS - PAGAMENTO POS 107,29 EUR DEL 24.01.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
+118,2026-01-24,-37.47,PAGAMENTO CONTACTLESS CARTA **** 7443 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
+119,2026-01-24,-774.14,"Pagam. POS - PAGAMENTO POS 774,14 EUR DEL 24.01.2026 A (ITA) LIBRACCIO CAGLIARI",expense,false,Istruzione/Rette scolastiche
+120,2026-01-24,-63.98,"Pagam. POS - PAGAMENTO POS 63,98 EUR DEL 24.01.2026 A (ITA) CONAD BARI",expense,false,Alimentari/Spesa supermercato
+121,2026-01-25,-77.26,PAGAMENTO CONTACTLESS CARTA **** 8315 EKOM CENTRO,expense,false,Alimentari/Spesa supermercato
+122,2026-01-25,-69.83,"Pagam. POS - PAGAMENTO POS 69,83 EUR DEL 25.01.2026 A (ITA) BOTTEGA VERDE VIMODRONE",expense,false,Altro/Spese non classificate
+123,2026-01-25,-14.72,"Pagam. POS - PAGAMENTO POS 14,72 EUR DEL 25.01.2026 A (ITA) GRANDVISION",expense,false,Salute/Farmaci
+124,2026-01-25,-26.09,PAGAMENTO CONTACTLESS CARTA **** 5615 O'TACOS,expense,false,Ristorazione/Ristorante
+125,2026-01-25,-14.15,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+126,2026-01-25,-14.61,AMAZON.IT MARKETPLACE - ORDINE 402-213500091,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+127,2026-01-25,-115.06,"Pagam. POS - PAGAMENTO POS 115,06 EUR DEL 25.01.2026 A (ITA) DESPAR",expense,false,Alimentari/Spesa supermercato
+128,2026-01-25,-59.00,PAGAMENTO CONTACTLESS CARTA **** 9761 O'TACOS,expense,false,Ristorazione/Ristorante
+129,2026-01-26,-77.59,PAGAMENTO CONTACTLESS CARTA **** 3725 COMPRO ORO,expense,false,Altro/Spese non classificate
+130,2026-01-26,-45.76,PAGAMENTO CONTACTLESS CARTA **** 7717 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
+131,2026-01-26,-61.67,"Pagam. POS - PAGAMENTO POS 61,67 EUR DEL 26.01.2026 A (ITA) SALMOIRAGHI & VIGANÒ",expense,false,Salute/Farmaci
+132,2026-01-26,-57.51,PAGAMENTO CONTACTLESS CARTA **** 5981 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
+133,2026-01-26,-39.59,"Pagam. POS - PAGAMENTO POS 39,59 EUR DEL 26.01.2026 A (ITA) PAM PORTA NUOVA",expense,false,Alimentari/Spesa supermercato
+134,2026-01-27,-18.73,PAGAMENTO CONTACTLESS CARTA **** 8175 JULIUS MEINL,expense,false,Ristorazione/Ristorante
+135,2026-01-27,-13.35,AMAZON.IT MARKETPLACE - ORDINE 402-212369793,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+136,2026-01-28,-14.84,AMAZON.IT MARKETPLACE - ORDINE 402-210104984,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+137,2026-01-28,-35.42,"Pagam. POS - PAGAMENTO POS 35,42 EUR DEL 28.01.2026 A (ITA) 100 MONTADITOS",expense,false,Ristorazione/Ristorante
+138,2026-01-28,-28.52,"Pagam. POS - PAGAMENTO POS 28,52 EUR DEL 28.01.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
+139,2026-01-28,-66.22,PAGAMENTO CONTACTLESS CARTA **** 8878 CHURCH'S,expense,false,Abbigliamento/Abbigliamento adulti
+140,2026-01-28,-25.92,"Pagam. POS - PAGAMENTO POS 25,92 EUR DEL 28.01.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
+141,2026-01-28,-85.02,PAGAMENTO CONTACTLESS CARTA **** 5908 EUROSPIN,expense,false,Alimentari/Spesa supermercato
+142,2026-01-28,-142.29,"Pagam. POS - PAGAMENTO POS 142,29 EUR DEL 28.01.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
+143,2026-01-28,-134.08,"Pagam. POS - PAGAMENTO POS 134,08 EUR DEL 28.01.2026 A (ITA) SCARPE&SCARPE",expense,false,Abbigliamento/Abbigliamento adulti
+144,2026-01-28,-76.85,"Pagam. POS - PAGAMENTO POS 76,85 EUR DEL 28.01.2026 A (ITA) EMISFERO MILANO",expense,false,Alimentari/Spesa supermercato
+145,2026-01-28,-92.37,PAGAMENTO CONTACTLESS CARTA **** 4037 COOP,expense,false,Alimentari/Spesa supermercato
+146,2026-01-29,-20.79,PAGAMENTO CONTACTLESS CARTA **** 6031 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
+147,2026-01-29,-31.12,"Pagam. POS - PAGAMENTO POS 31,12 EUR DEL 29.01.2026 A (ITA) COOP LOMBARDIA",expense,false,Altro/Spese non classificate
+148,2026-01-29,-111.07,"Pagam. POS - PAGAMENTO POS 111,07 EUR DEL 29.01.2026 A (ITA) GRANDVISION BERGAMO",expense,false,Salute/Farmaci
+149,2026-01-29,-10.00,PAGAMENTO CONTACTLESS CARTA **** 6825 COOP.FI VERONA,expense,false,Alimentari/Spesa supermercato
+150,2026-01-29,-178.51,PAGAMENTO CONTACTLESS CARTA **** 6251 DR. MAX,expense,false,Salute/Farmaci
+151,2026-01-29,-9.27,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
+152,2026-01-29,-241.61,PAGAMENTO CONTACTLESS CARTA **** 4089 FIELMANN,expense,false,Salute/Farmaci
+153,2026-01-29,-95.07,"Pagam. POS - PAGAMENTO POS 95,07 EUR DEL 29.01.2026 A (ITA) ZARA ITALIA SRL",expense,false,Abbigliamento/Abbigliamento adulti
+154,2026-01-30,-12.36,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+155,2026-01-30,-28.43,"Pagam. POS - PAGAMENTO POS 28,43 EUR DEL 30.01.2026 A (ITA) RAY-BAN PARMA",expense,false,Salute/Farmaci
+156,2026-01-30,-120.96,PAGAMENTO CONTACTLESS CARTA **** 2938 JOHNSON FITNESS & WELLNESS MESTRE,expense,false,Abbigliamento/Abbigliamento adulti
+157,2026-01-31,-11.61,"Pagam. POS - PAGAMENTO POS 11,61 EUR DEL 31.01.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
+158,2026-01-31,-99.23,PAGAMENTO CONTACTLESS CARTA **** 5587 HISTOIRE D'OR,expense,false,Altro/Spese non classificate
+159,2026-01-31,-67.40,PAGAMENTO CONTACTLESS CARTA **** 1737 HISTOIRE D'OR,expense,false,Altro/Spese non classificate
+160,2026-02-01,-97.47,"Pagam. POS - PAGAMENTO POS 97,47 EUR DEL 01.02.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
+161,2026-02-01,-41.37,"Pagam. POS - PAGAMENTO POS 41,37 EUR DEL 01.02.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
+162,2026-02-02,-147.24,PAGAMENTO CONTACTLESS CARTA **** 7160 HOKA MARGHERA,expense,false,Abbigliamento/Abbigliamento adulti
+163,2026-02-02,-26.27,PAGAMENTO CONTACTLESS CARTA **** 6993 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
+164,2026-02-02,-57.44,PAGAMENTO CONTACTLESS CARTA **** 8973 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
+165,2026-02-02,-29.06,"Pagam. POS - PAGAMENTO POS 29,06 EUR DEL 02.02.2026 A (ITA) PETMARK ROZZANO",expense,false,Altro/Spese non classificate
+166,2026-02-02,-154.23,"Pagam. POS - PAGAMENTO POS 154,23 EUR DEL 02.02.2026 A (ITA) CONAD",expense,false,Alimentari/Spesa supermercato
+167,2026-02-03,-11.50,"Pagam. POS - PAGAMENTO POS 11,50 EUR DEL 03.02.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+168,2026-02-03,-21.33,PAGAMENTO CONTACTLESS CARTA **** 5651 BREWDOG,expense,false,Ristorazione/Ristorante
+169,2026-02-03,-85.85,PAGAMENTO CONTACTLESS CARTA **** 3360 SPORTLER,expense,false,Abbigliamento/Abbigliamento adulti
+170,2026-02-03,-83.56,"Pagam. POS - PAGAMENTO POS 83,56 EUR DEL 03.02.2026 A (ITA) JULIUS MEINL",expense,false,Ristorazione/Ristorante
+171,2026-02-03,-9.67,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+172,2026-02-03,-66.12,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
+173,2026-02-03,-111.78,PAGAMENTO CONTACTLESS CARTA **** 4638 IN'S MERCATO TIBURTINA,expense,false,Alimentari/Spesa supermercato
+174,2026-02-04,-48.57,"Pagam. POS - PAGAMENTO POS 48,57 EUR DEL 04.02.2026 A (ITA) SPORTLER CAGLIARI",expense,false,Abbigliamento/Abbigliamento adulti
+175,2026-02-04,-60.74,"Pagam. POS - PAGAMENTO POS 60,74 EUR DEL 04.02.2026 A (ITA) DOPPIO MALTO",expense,false,Ristorazione/Ristorante
+176,2026-02-04,-166.96,PAGAMENTO CONTACTLESS CARTA **** 1102 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
+177,2026-02-04,-9.51,PAGAMENTO CONTACTLESS CARTA **** 1821 PRIMOR,expense,false,Altro/Spese non classificate
+178,2026-02-04,-234.73,Disposizione - RIF:210713118 BEN. DR VERDI ODONTOIATRA,expense,false,Salute/Farmaci
+179,2026-02-04,-109.20,PAGAMENTO CONTACTLESS CARTA **** 6019 SNIPES,expense,false,Abbigliamento/Abbigliamento adulti
+180,2026-02-04,-38.63,PAGAMENTO CONTACTLESS CARTA **** 6058 EXKI,expense,false,Ristorazione/Ristorante
+181,2026-02-05,-478.65,"Pagam. POS - PAGAMENTO POS 478,65 EUR DEL 05.02.2026 A (ITA) CARTOLIBRERIA IL PAPIRO",expense,false,Istruzione/Rette scolastiche
+182,2026-02-05,-9.81,"Pagam. POS - PAGAMENTO POS 9,81 EUR DEL 05.02.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
+183,2026-02-05,-44.59,"Pagam. POS - PAGAMENTO POS 44,59 EUR DEL 05.02.2026 A (ITA) FRANCO MANCA FIRENZE",expense,false,Ristorazione/Ristorante
+184,2026-02-05,-22.38,"Pagam. POS - PAGAMENTO POS 22,38 EUR DEL 05.02.2026 A (ITA) MD FIRENZE",expense,false,Alimentari/Spesa supermercato
+185,2026-02-05,-21.18,PAGAMENTO CONTACTLESS CARTA **** 7639 PITAYA,expense,false,Ristorazione/Ristorante
+186,2026-02-05,-29.29,PAGAMENTO CONTACTLESS CARTA **** 5881 FIVE GUYS NORD,expense,false,Ristorazione/Ristorante
+187,2026-02-05,-89.33,"Pagam. POS - PAGAMENTO POS 89,33 EUR DEL 05.02.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
+188,2026-02-05,-97.73,PAGAMENTO CONTACTLESS CARTA **** 2979 NATURA OSTIENSE,expense,false,Altro/Spese non classificate
+189,2026-02-05,-42.14,"Pagam. POS - PAGAMENTO POS 42,14 EUR DEL 05.02.2026 A (ITA) BEFED",expense,false,Ristorazione/Ristorante
+190,2026-02-06,-41.48,"Pagam. POS - PAGAMENTO POS 41,48 EUR DEL 06.02.2026 A (ITA) ZARA ITALIA SRL",expense,false,Abbigliamento/Abbigliamento adulti
+191,2026-02-06,-38.20,"Pagam. POS - PAGAMENTO POS 38,20 EUR DEL 06.02.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
+192,2026-02-06,-732.65,PAGAMENTO CONTACTLESS CARTA **** 7076 GIUNTI AL PUNTO PERUGIA,expense,false,Istruzione/Rette scolastiche
+193,2026-02-06,-71.95,PAGAMENTO CONTACTLESS CARTA **** 2789 EKOM,expense,false,Alimentari/Spesa supermercato
+194,2026-02-06,-79.59,"Pagam. POS - PAGAMENTO POS 79,59 EUR DEL 06.02.2026 A (ITA) HISTOIRE D'OR",expense,false,Altro/Spese non classificate
+195,2026-02-06,-177.99,"Pagam. POS - PAGAMENTO POS 177,99 EUR DEL 06.02.2026 A (ITA) FIELMANN VENEZIA",expense,false,Salute/Farmaci
+196,2026-02-06,-24.82,"Pagam. POS - PAGAMENTO POS 24,82 EUR DEL 06.02.2026 A (ITA) ACQUA & SAPONE",expense,false,Abbigliamento/Abbigliamento adulti
+197,2026-02-07,-23.40,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
+198,2026-02-07,-83.51,PAGAMENTO CONTACTLESS CARTA **** 2672 MERCATÒ BIG MESTRE,expense,false,Alimentari/Spesa supermercato
+199,2026-02-07,-134.75,PAGAMENTO CONTACTLESS CARTA **** 3744 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
+200,2026-02-08,-155.19,"Pagam. POS - PAGAMENTO POS 155,19 EUR DEL 08.02.2026 A (ITA) DR. MAX CENTRO COMM. IL LEONE",expense,false,Salute/Farmaci
+201,2026-02-08,-159.79,"Pagam. POS - PAGAMENTO POS 159,79 EUR DEL 08.02.2026 A (ITA) IL FORNO",expense,false,Alimentari/Spesa supermercato
+202,2026-02-08,-179.02,PAGAMENTO CONTACTLESS CARTA **** 9934 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
+203,2026-02-08,-754.94,PAGAMENTO CONTACTLESS CARTA **** 5523 LIBRACCIO PADOVA,expense,false,Istruzione/Rette scolastiche
+204,2026-02-09,-106.83,"Pagam. POS - PAGAMENTO POS 106,83 EUR DEL 09.02.2026 A (ITA) MIX MARKT",expense,false,Alimentari/Spesa supermercato
+205,2026-02-09,-59.80,"Pagam. POS - PAGAMENTO POS 59,80 EUR DEL 09.02.2026 A (ITA) CHURCH'S GENOVA",expense,false,Abbigliamento/Abbigliamento adulti
+206,2026-02-09,-58.26,"Pagam. POS - PAGAMENTO POS 58,26 EUR DEL 09.02.2026 A (ITA) ACQUA & SAPONE CATANIA",expense,false,Abbigliamento/Abbigliamento adulti
+207,2026-02-09,-31.20,"Pagam. POS - PAGAMENTO POS 31,20 EUR DEL 09.02.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
+208,2026-02-09,-202.75,PAGAMENTO CONTACTLESS CARTA **** 6105 VITALDENT CENTRO,expense,false,Salute/Farmaci
+209,2026-02-09,-60.30,"Pagam. POS - PAGAMENTO POS 60,30 EUR DEL 09.02.2026 A (ITA) CISALFA SPORT MARGHERA",expense,false,Abbigliamento/Abbigliamento adulti
+210,2026-02-09,-92.00,PAGAMENTO CONTACTLESS CARTA **** 2386 LA FELTRINELLI PARMA,expense,false,Istruzione/Rette scolastiche
+211,2026-02-09,-14.92,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+212,2026-02-09,-43.34,PAGAMENTO CONTACTLESS CARTA **** 8775 PRIMOR MARGHERA,expense,false,Altro/Spese non classificate
+213,2026-02-10,-15.77,"Pagam. POS - PAGAMENTO POS 15,77 EUR DEL 10.02.2026 A (ITA) MERCATÒ BIG",expense,false,Alimentari/Spesa supermercato
+214,2026-02-11,-28.33,PAGAMENTO CONTACTLESS CARTA **** 1586 DENTALPRO,expense,false,Salute/Farmaci
+215,2026-02-11,-74.43,"Pagam. POS - PAGAMENTO POS 74,43 EUR DEL 11.02.2026 A (ITA) FRANCO MANCA",expense,false,Ristorazione/Ristorante
+216,2026-02-11,-122.89,"Pagam. POS - PAGAMENTO POS 122,89 EUR DEL 11.02.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
+217,2026-02-11,-7.53,"Pagam. POS - PAGAMENTO POS 7,53 EUR DEL 11.02.2026 A (ITA) KEBHOUZE MARGHERA",expense,false,Ristorazione/Ristorante
+218,2026-02-11,-113.72,"Pagam. POS - PAGAMENTO POS 113,72 EUR DEL 11.02.2026 A (ITA) GIUNTI AL PUNTO LINGOTTO",expense,false,Istruzione/Rette scolastiche
+219,2026-02-11,-10.42,"Pagam. POS - PAGAMENTO POS 10,42 EUR DEL 11.02.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+220,2026-02-11,-76.60,PAGAMENTO CONTACTLESS CARTA **** 9863 DOPPIO MALTO MILANO,expense,false,Ristorazione/Ristorante
+221,2026-02-11,-128.06,PAGAMENTO CONTACTLESS CARTA **** 4991 LAFARMACIA. BOLOGNA,expense,false,Salute/Farmaci
+222,2026-02-12,-12.42,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+223,2026-02-12,-123.49,"Pagam. POS - PAGAMENTO POS 123,49 EUR DEL 12.02.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
+224,2026-02-12,-159.92,PAGAMENTO CONTACTLESS CARTA **** 4853 DENTALPRO,expense,false,Salute/Farmaci
+225,2026-02-12,-321.10,"Pagam. POS - PAGAMENTO POS 321,10 EUR DEL 12.02.2026 A (ITA) BUCHHANDLUNG WALTHER KÖNIG OVEST",expense,false,Istruzione/Rette scolastiche
+226,2026-02-12,-66.63,PAGAMENTO CONTACTLESS CARTA **** 2998 AUTOGRILL OVEST,expense,false,Ristorazione/Ristorante
+227,2026-02-12,-20.34,"Pagam. POS - PAGAMENTO POS 20,34 EUR DEL 12.02.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
+228,2026-02-13,-165.55,"Pagam. POS - PAGAMENTO POS 165,55 EUR DEL 13.02.2026 A (ITA) UNES TIBURTINA",expense,false,Alimentari/Spesa supermercato
+229,2026-02-13,-44.99,PAGAMENTO CONTACTLESS CARTA **** 4049 TIGROS,expense,false,Alimentari/Spesa supermercato
+230,2026-02-13,-170.47,"Pagam. POS - PAGAMENTO POS 170,47 EUR DEL 13.02.2026 A (ITA) SUPERMERCATI ZAZZERON OVEST",expense,false,Alimentari/Spesa supermercato
+231,2026-02-13,-121.66,PAGAMENTO CONTACTLESS CARTA **** 8488 PRIMADONNA,expense,false,Abbigliamento/Abbigliamento adulti
+232,2026-02-13,-57.83,PAGAMENTO CONTACTLESS CARTA **** 8024 L'ANTICA PIZZERIA DA MICHELE COLOGNO MONZESE,expense,false,Ristorazione/Ristorante
+233,2026-02-14,-9.89,"Pagam. POS - PAGAMENTO POS 9,89 EUR DEL 14.02.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
+234,2026-02-14,-792.51,PAGAMENTO CONTACTLESS CARTA **** 5795 LA FELTRINELLI,expense,false,Istruzione/Rette scolastiche
+235,2026-02-14,-187.08,Disposizione - RIF:215995577 BEN. DR VERDI ODONTOIATRA,expense,false,Salute/Farmaci
+236,2026-02-14,-162.02,"Pagam. POS - PAGAMENTO POS 162,02 EUR DEL 14.02.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
+237,2026-02-14,-61.60,PAGAMENTO CONTACTLESS CARTA **** 4697 PRIMOR SESTO SAN GIOVANNI,expense,false,Altro/Spese non classificate
+238,2026-02-14,-19.18,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
+239,2026-02-14,-636.53,"Pagam. POS - PAGAMENTO POS 636,53 EUR DEL 14.02.2026 A (ITA) LIBRERIA FELTRINELLI",expense,false,Istruzione/Rette scolastiche
+240,2026-02-15,-31.69,"Pagam. POS - PAGAMENTO POS 31,69 EUR DEL 15.02.2026 A (ITA) DOPPIO MALTO COLOGNO MONZESE",expense,false,Ristorazione/Ristorante
+241,2026-02-15,-103.07,"Pagam. POS - PAGAMENTO POS 103,07 EUR DEL 15.02.2026 A (ITA) PAM TIBURTINA",expense,false,Alimentari/Spesa supermercato
+242,2026-02-15,-157.03,"Pagam. POS - PAGAMENTO POS 157,03 EUR DEL 15.02.2026 A (ITA) CONAD CITY CENTRO",expense,false,Alimentari/Spesa supermercato
+243,2026-02-15,-37.68,"Pagam. POS - PAGAMENTO POS 37,68 EUR DEL 15.02.2026 A (ITA) ALICE",expense,false,Ristorazione/Ristorante
+244,2026-02-15,-109.86,"Pagam. POS - PAGAMENTO POS 109,86 EUR DEL 15.02.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
+245,2026-02-15,-151.53,"Pagam. POS - PAGAMENTO POS 151,53 EUR DEL 15.02.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
+246,2026-02-16,-52.86,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
+247,2026-02-16,-150.37,Disposizione - RIF:212982571 BEN. DR VERDI ODONTOIATRA,expense,false,Salute/Farmaci
+248,2026-02-16,-15.69,PAGAMENTO CONTACTLESS CARTA **** 9502 HISTOIRE D'OR MESTRE,expense,false,Altro/Spese non classificate
+249,2026-02-16,-101.38,"Pagam. POS - PAGAMENTO POS 101,38 EUR DEL 16.02.2026 A (ITA) FARMACIA DR ROSSI",expense,false,Salute/Farmaci
+250,2026-02-16,-5.41,PAGAMENTO CONTACTLESS CARTA **** 4464 PETMARK GENOVA,expense,false,Altro/Spese non classificate
+251,2026-02-17,-66.93,"Pagam. POS - PAGAMENTO POS 66,93 EUR DEL 17.02.2026 A (ITA) GULLIVER VOMERO",expense,false,Alimentari/Spesa supermercato
+252,2026-02-17,-43.74,"Pagam. POS - PAGAMENTO POS 43,74 EUR DEL 17.02.2026 A (ITA) PIZZERIA NAPOLI",expense,false,Ristorazione/Ristorante
+253,2026-02-17,-184.90,PAGAMENTO CONTACTLESS CARTA **** 8385 VITALDENT,expense,false,Salute/Farmaci
+254,2026-02-18,-12.89,"Pagam. POS - PAGAMENTO POS 12,89 EUR DEL 18.02.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+255,2026-02-18,-35.62,PAGAMENTO CONTACTLESS CARTA **** 8308 COMPRO ORO,expense,false,Altro/Spese non classificate
+256,2026-02-18,-156.88,PAGAMENTO CONTACTLESS CARTA **** 8349 DENTALPRO,expense,false,Salute/Farmaci
+257,2026-02-18,-66.31,"Pagam. POS - PAGAMENTO POS 66,31 EUR DEL 18.02.2026 A (ITA) SUSHIKO PERUGIA",expense,false,Ristorazione/Ristorante
+258,2026-02-18,-14.91,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+259,2026-02-19,-32.87,PAGAMENTO CONTACTLESS CARTA **** 8014 SUSHIKO,expense,false,Ristorazione/Ristorante
+260,2026-02-19,-249.53,PAGAMENTO CONTACTLESS CARTA **** 5116 RAY-BAN,expense,false,Salute/Farmaci
+261,2026-02-19,-132.76,"Pagam. POS - PAGAMENTO POS 132,76 EUR DEL 19.02.2026 A (ITA) GULLIVER BARI",expense,false,Alimentari/Spesa supermercato
+262,2026-02-20,-65.47,PAGAMENTO CONTACTLESS CARTA **** 6904 GRANDVISION,expense,false,Salute/Farmaci
+263,2026-02-20,-26.94,"Pagam. POS - PAGAMENTO POS 26,94 EUR DEL 20.02.2026 A (ITA) GABOR TORINO",expense,false,Abbigliamento/Abbigliamento adulti
+264,2026-02-20,-17.43,"Pagam. POS - PAGAMENTO POS 17,43 EUR DEL 20.02.2026 A (ITA) BOTTEGA VERDE LIVORNO",expense,false,Altro/Spese non classificate
+265,2026-02-20,-13.02,"Pagam. POS - PAGAMENTO POS 13,02 EUR DEL 20.02.2026 A (ITA) TUODÌ",expense,false,Alimentari/Spesa supermercato
+266,2026-02-21,-11.21,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+267,2026-02-21,-39.42,"Pagam. POS - PAGAMENTO POS 39,42 EUR DEL 21.02.2026 A (ITA) 100 MONTADITOS TIBURTINA",expense,false,Ristorazione/Ristorante
+268,2026-02-21,-36.50,PAGAMENTO CONTACTLESS CARTA **** 5173 LA PIADINERIA,expense,false,Ristorazione/Ristorante
+269,2026-02-22,-44.85,"Pagam. POS - PAGAMENTO POS 44,85 EUR DEL 22.02.2026 A (ITA) COOP LOMBARDIA",expense,false,Altro/Spese non classificate
+270,2026-02-22,-164.70,PAGAMENTO CONTACTLESS CARTA **** 3286 MERCATÒ EXTRA,expense,false,Alimentari/Spesa supermercato
+271,2026-02-22,-11.29,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+272,2026-02-22,-36.21,"Pagam. POS - PAGAMENTO POS 36,21 EUR DEL 22.02.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
+273,2026-02-22,-173.96,"Pagam. POS - PAGAMENTO POS 173,96 EUR DEL 22.02.2026 A (ITA) CENTRO DIAGNOSTICO SAN DONATO",expense,false,Salute/Farmaci
+274,2026-02-22,-38.85,"Pagam. POS - PAGAMENTO POS 38,85 EUR DEL 22.02.2026 A (ITA) PETMARK MESTRE",expense,false,Altro/Spese non classificate
+275,2026-02-23,-13.65,"Pagam. POS - PAGAMENTO POS 13,65 EUR DEL 23.02.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+276,2026-02-23,-27.43,PAGAMENTO CONTACTLESS CARTA **** 6861 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
+277,2026-02-23,-109.54,"Pagam. POS - PAGAMENTO POS 109,54 EUR DEL 23.02.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
+278,2026-02-23,-127.73,"Pagam. POS - PAGAMENTO POS 127,73 EUR DEL 23.02.2026 A (ITA) DM",expense,false,Abbigliamento/Abbigliamento adulti
+279,2026-02-23,-13.53,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+280,2026-02-24,-12.93,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+281,2026-02-24,-5.70,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+282,2026-02-24,-52.82,"Pagam. POS - PAGAMENTO POS 52,82 EUR DEL 24.02.2026 A (ITA) COOP LOMBARDIA",expense,false,Altro/Spese non classificate
+283,2026-02-24,-88.61,"Pagam. POS - PAGAMENTO POS 88,61 EUR DEL 24.02.2026 A (ITA) THUN EUR",expense,false,Altro/Spese non classificate
+284,2026-02-24,-25.47,"Pagam. POS - PAGAMENTO POS 25,47 EUR DEL 24.02.2026 A (ITA) CISALFA SPORT LINGOTTO",expense,false,Abbigliamento/Abbigliamento adulti
+285,2026-02-24,-157.58,"Pagam. POS - PAGAMENTO POS 157,58 EUR DEL 24.02.2026 A (ITA) ALDI",expense,false,Alimentari/Spesa supermercato
+286,2026-02-24,-143.54,"Pagam. POS - PAGAMENTO POS 143,54 EUR DEL 24.02.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
+287,2026-02-25,-76.04,"Pagam. POS - PAGAMENTO POS 76,04 EUR DEL 25.02.2026 A (ITA) ENI SHOP CAGLIARI",expense,false,Alimentari/Spesa supermercato
+288,2026-02-25,-13.25,"Pagam. POS - PAGAMENTO POS 13,25 EUR DEL 25.02.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+289,2026-02-25,-37.62,PAGAMENTO CONTACTLESS CARTA **** 5581 SNIPES,expense,false,Abbigliamento/Abbigliamento adulti
+290,2026-02-25,-13.89,Addebito SDD - GENERALI ITALIA POLIZZA VITA,expense,false,Altro/Spese non classificate
+291,2026-02-26,-23.57,"Pagam. POS - PAGAMENTO POS 23,57 EUR DEL 26.02.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
+292,2026-02-26,-294.50,"Pagam. POS - PAGAMENTO POS 294,50 EUR DEL 26.02.2026 A (ITA) FUNSIDE",expense,false,Istruzione/Rette scolastiche
+293,2026-02-26,-11.93,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+294,2026-02-27,-4.99,"Pagam. POS - PAGAMENTO POS 4,99 EUR DEL 27.02.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+295,2026-02-27,-61.96,"Pagam. POS - PAGAMENTO POS 61,96 EUR DEL 27.02.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
+296,2026-02-28,-143.95,"Pagam. POS - PAGAMENTO POS 143,95 EUR DEL 28.02.2026 A (ITA) LIBRACCIO CINISELLO BALSAMO",expense,false,Istruzione/Rette scolastiche
+297,2026-02-28,-63.36,"Pagam. POS - PAGAMENTO POS 63,36 EUR DEL 28.02.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
+298,2026-02-28,-6.64,"Pagam. POS - PAGAMENTO POS 6,64 EUR DEL 28.02.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+299,2026-02-28,-10.90,"Pagam. POS - PAGAMENTO POS 10,90 EUR DEL 28.02.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+300,2026-02-28,-208.56,"Pagam. POS - PAGAMENTO POS 208,56 EUR DEL 28.02.2026 A (ITA) DENTALPRO",expense,false,Salute/Farmaci

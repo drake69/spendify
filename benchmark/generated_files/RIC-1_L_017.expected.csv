@@ -1,301 +1,301 @@
 row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_category
-1,2026-01-01,-40.63,PAGAMENTO CONTACTLESS CARTA **** 4389 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
-2,2026-01-01,-122.40,"Pagam. POS - PAGAMENTO POS 122,40 EUR DEL 01.01.2026 A (ITA) CONAD CITY ROMA",expense,false,Alimentari/Spesa supermercato
-3,2026-01-01,-22.65,PAGAMENTO CONTACTLESS CARTA **** 5030 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
-4,2026-01-01,-69.46,"Pagam. POS - PAGAMENTO POS 69,46 EUR DEL 01.01.2026 A (ITA) PIZZERIA NAPOLI",expense,false,Ristorazione/Ristorante
-5,2026-01-01,-56.67,Addebito SDD - SARA ASSICURAZIONI RCA AUTO,expense,false,Trasporti/Trasporto pubblico
-6,2026-01-01,58.31,Bonif. v/fav. - RIF:213098520 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-7,2026-01-02,-149.73,PAGAMENTO CONTACTLESS CARTA **** 4093 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
-8,2026-01-02,-21.50,"Pagam. POS - PAGAMENTO POS 21,50 EUR DEL 02.01.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
-9,2026-01-02,-24.59,"Pagam. POS - PAGAMENTO POS 24,59 EUR DEL 02.01.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
-10,2026-01-02,251.60,Bonif. v/fav. - RIF:217952128 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-11,2026-01-03,-65.60,"Pagam. POS - PAGAMENTO POS 65,60 EUR DEL 03.01.2026 A (ITA) ZARA ITALIA SRL",expense,false,Abbigliamento/Abbigliamento adulti
-12,2026-01-03,-23.23,"Pagam. POS - PAGAMENTO POS 23,23 EUR DEL 03.01.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
-13,2026-01-04,-34.38,"Pagam. POS - PAGAMENTO POS 34,38 EUR DEL 04.01.2026 A (ITA) DISTRIBUTORE ENI",expense,false,Trasporti/Trasporto pubblico
-14,2026-01-04,-28.88,PAGAMENTO CONTACTLESS CARTA **** 1974 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
-15,2026-01-04,-37.12,"Pagam. POS - PAGAMENTO POS 37,12 EUR DEL 04.01.2026 A (ITA) ITALO NTV S.P.A.",expense,false,Trasporti/Trasporto pubblico
-16,2026-01-04,-33.65,"Pagam. POS - PAGAMENTO POS 33,65 EUR DEL 04.01.2026 A (ITA) MACELLERIA BONI",expense,false,Alimentari/Spesa supermercato
-17,2026-01-04,-57.19,"Pagam. POS - PAGAMENTO POS 57,19 EUR DEL 04.01.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
-18,2026-01-04,-47.14,"Pagam. POS - PAGAMENTO POS 47,14 EUR DEL 04.01.2026 A (ITA) ZARA ITALIA SRL",expense,false,Abbigliamento/Abbigliamento adulti
-19,2026-01-04,-8.29,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-20,2026-01-04,-74.90,"Pagam. POS - PAGAMENTO POS 74,90 EUR DEL 04.01.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
-21,2026-01-04,222.78,Bonif. v/fav. - RIF:210068231 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-22,2026-01-05,-21.74,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
-23,2026-01-05,-29.01,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
-24,2026-01-06,-439.57,"Pagam. POS - PAGAMENTO POS 439,57 EUR DEL 06.01.2026 A (ITA) CARTOLIBRERIA IL PAPIRO",expense,false,Istruzione/Rette scolastiche
-25,2026-01-06,112.54,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-26,2026-01-07,-7.99,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-27,2026-01-07,-57.66,"Pagam. POS - PAGAMENTO POS 57,66 EUR DEL 07.01.2026 A (ITA) ZARA ITALIA SRL",expense,false,Abbigliamento/Abbigliamento adulti
-28,2026-01-07,68.85,Bonif. v/fav. - RIF:215364657 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-29,2026-01-07,156.10,Bonif. v/fav. - RIF:214191766 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-30,2026-01-07,262.58,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-31,2026-01-07,168.71,Bonif. v/fav. - RIF:212628221 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-32,2026-01-07,265.11,Bonif. v/fav. - RIF:218390169 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-33,2026-01-08,-50.49,"Pagam. POS - PAGAMENTO POS 50,49 EUR DEL 08.01.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
-34,2026-01-08,-10.93,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-35,2026-01-08,-12.17,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-36,2026-01-08,-43.32,PAGAMENTO CONTACTLESS CARTA **** 5428 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
-37,2026-01-08,-67.40,"Pagam. POS - PAGAMENTO POS 67,40 EUR DEL 08.01.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
-38,2026-01-09,-172.07,"Pagam. POS - PAGAMENTO POS 172,07 EUR DEL 09.01.2026 A (ITA) LIBRERIA FELTRINELLI",expense,false,Istruzione/Rette scolastiche
-39,2026-01-09,-718.91,Addebito SDD - MENSA SCOLASTICA COMUNE DI MILANO,expense,false,Istruzione/Rette scolastiche
-40,2026-01-09,-54.05,"Pagam. POS - PAGAMENTO POS 54,05 EUR DEL 09.01.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
-41,2026-01-09,-458.47,Addebito SDD - MENSA SCOLASTICA COMUNE DI MILANO,expense,false,Istruzione/Rette scolastiche
-42,2026-01-09,-74.99,"Pagam. POS - PAGAMENTO POS 74,99 EUR DEL 09.01.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
-43,2026-01-09,263.22,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-44,2026-01-09,236.98,Bonif. v/fav. - RIF:212585301 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-45,2026-01-10,-57.05,"Pagam. POS - PAGAMENTO POS 57,05 EUR DEL 10.01.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
-46,2026-01-10,-30.95,"Pagam. POS - PAGAMENTO POS 30,95 EUR DEL 10.01.2026 A (ITA) STAZIONE Q8",expense,false,Trasporti/Trasporto pubblico
-47,2026-01-11,-84.30,"Pagam. POS - PAGAMENTO POS 84,30 EUR DEL 11.01.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
-48,2026-01-11,-52.37,"Pagam. POS - PAGAMENTO POS 52,37 EUR DEL 11.01.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
-49,2026-01-11,-144.38,PAGAMENTO CONTACTLESS CARTA **** 5481 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
-50,2026-01-11,-59.24,"Pagam. POS - PAGAMENTO POS 59,24 EUR DEL 11.01.2026 A (ITA) MACELLERIA BONI",expense,false,Alimentari/Spesa supermercato
-51,2026-01-11,-51.23,"Pagam. POS - PAGAMENTO POS 51,23 EUR DEL 11.01.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
-52,2026-01-11,-62.69,"Pagam. POS - PAGAMENTO POS 62,69 EUR DEL 11.01.2026 A (ITA) CONAD CITY ROMA",expense,false,Alimentari/Spesa supermercato
-53,2026-01-11,-131.60,"Pagam. POS - PAGAMENTO POS 131,60 EUR DEL 11.01.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
-54,2026-01-11,286.32,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-55,2026-01-12,-25.45,Disposizione - RIF:219690051 BEN. OFFICINA MECCANICA BRAMBILLA,expense,false,Trasporti/Trasporto pubblico
-56,2026-01-12,-39.78,"Pagam. POS - PAGAMENTO POS 39,78 EUR DEL 12.01.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
-57,2026-01-12,-49.11,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
-58,2026-01-12,-773.31,"Pagam. POS - PAGAMENTO POS 773,31 EUR DEL 12.01.2026 A (ITA) LIBRERIA FELTRINELLI",expense,false,Istruzione/Rette scolastiche
-59,2026-01-12,-51.82,"Pagam. POS - PAGAMENTO POS 51,82 EUR DEL 12.01.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
-60,2026-01-12,-135.79,PAGAMENTO CONTACTLESS CARTA **** 6624 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
-61,2026-01-12,268.57,Bonif. v/fav. - RIF:215622669 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-62,2026-01-13,-24.78,"Pagam. POS - PAGAMENTO POS 24,78 EUR DEL 13.01.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
-63,2026-01-13,-76.40,PAGAMENTO CONTACTLESS CARTA **** 3528 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
-64,2026-01-13,-133.95,"Pagam. POS - PAGAMENTO POS 133,95 EUR DEL 13.01.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
-65,2026-01-13,-23.24,"Pagam. POS - PAGAMENTO POS 23,24 EUR DEL 13.01.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
-66,2026-01-13,93.47,Bonif. v/fav. - RIF:210914505 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-67,2026-01-13,131.00,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-68,2026-01-14,-176.72,"Pagam. POS - PAGAMENTO POS 176,72 EUR DEL 14.01.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
-69,2026-01-14,-73.89,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
-70,2026-01-15,-113.70,"Pagam. POS - PAGAMENTO POS 113,70 EUR DEL 15.01.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
-71,2026-01-15,-60.47,"Pagam. POS - PAGAMENTO POS 60,47 EUR DEL 15.01.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
-72,2026-01-15,-29.38,"Pagam. POS - PAGAMENTO POS 29,38 EUR DEL 15.01.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
-73,2026-01-15,-28.89,"Pagam. POS - PAGAMENTO POS 28,89 EUR DEL 15.01.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
-74,2026-01-15,140.90,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-75,2026-01-16,-44.84,Disposizione - RIF:219096839 BEN. OFFICINA MECCANICA BRAMBILLA,expense,false,Trasporti/Trasporto pubblico
-76,2026-01-16,-141.62,PAGAMENTO CONTACTLESS CARTA **** 2026 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
-77,2026-01-16,128.00,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-78,2026-01-17,-66.30,PAGAMENTO CONTACTLESS CARTA **** 8537 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
-79,2026-01-17,-466.79,"Pagam. POS - PAGAMENTO POS 466,79 EUR DEL 17.01.2026 A (ITA) CARTOLIBRERIA IL PAPIRO",expense,false,Istruzione/Rette scolastiche
-80,2026-01-18,-38.54,PAGAMENTO CONTACTLESS CARTA **** 5563 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
-81,2026-01-18,-56.54,Addebito SDD - TELEPASS S.P.A. PEDAGGI,expense,false,Trasporti/Trasporto pubblico
-82,2026-01-18,-33.13,"Pagam. POS - PAGAMENTO POS 33,13 EUR DEL 18.01.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
-83,2026-01-18,-17.31,"Pagam. POS - PAGAMENTO POS 17,31 EUR DEL 18.01.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
-84,2026-01-19,-189.37,Disposizione - RIF:214394356 BEN. AFFITTO APPARTAMENTO SOFIA BOLOGNA,expense,false,Istruzione/Rette scolastiche
-85,2026-01-19,-40.91,"Pagam. POS - PAGAMENTO POS 40,91 EUR DEL 19.01.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
-86,2026-01-19,-5.40,"Pagam. POS - PAGAMENTO POS 5,40 EUR DEL 19.01.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
-87,2026-01-19,-104.70,"Pagam. POS - PAGAMENTO POS 104,70 EUR DEL 19.01.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
-88,2026-01-19,244.36,Bonif. v/fav. - RIF:214543184 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-89,2026-01-20,-94.38,"Pagam. POS - PAGAMENTO POS 94,38 EUR DEL 20.01.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
-90,2026-01-20,-26.33,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
-91,2026-01-20,-27.91,"Pagam. POS - PAGAMENTO POS 27,91 EUR DEL 20.01.2026 A (ITA) CARTOLIBRERIA IL PAPIRO",expense,false,Istruzione/Rette scolastiche
-92,2026-01-20,-12.24,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
-93,2026-01-20,132.67,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-94,2026-01-21,-60.79,PAGAMENTO CONTACTLESS CARTA **** 9684 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
-95,2026-01-21,-47.26,"Pagam. POS - PAGAMENTO POS 47,26 EUR DEL 21.01.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
-96,2026-01-21,-13.52,"Pagam. POS - PAGAMENTO POS 13,52 EUR DEL 21.01.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
-97,2026-01-21,-9.93,AMAZON.IT MARKETPLACE - ORDINE 402-216200756,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-98,2026-01-21,267.27,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-99,2026-01-22,-142.19,PAGAMENTO CONTACTLESS CARTA **** 5255 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
-100,2026-01-22,-83.25,"Pagam. POS - PAGAMENTO POS 83,25 EUR DEL 22.01.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
-101,2026-01-22,-5.90,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-102,2026-01-22,-100.38,"Pagam. POS - PAGAMENTO POS 100,38 EUR DEL 22.01.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
-103,2026-01-22,-12.37,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-104,2026-01-23,-74.81,"Pagam. POS - PAGAMENTO POS 74,81 EUR DEL 23.01.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
-105,2026-01-23,-141.32,"Pagam. POS - PAGAMENTO POS 141,32 EUR DEL 23.01.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
-106,2026-01-24,-35.74,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
-107,2026-01-24,-47.92,"Pagam. POS - PAGAMENTO POS 47,92 EUR DEL 24.01.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
-108,2026-01-24,-70.23,"Pagam. POS - PAGAMENTO POS 70,23 EUR DEL 24.01.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
-109,2026-01-24,-48.04,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
-110,2026-01-24,190.68,Bonif. v/fav. - RIF:211112928 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-111,2026-01-25,-676.02,"Pagam. POS - PAGAMENTO POS 676,02 EUR DEL 25.01.2026 A (ITA) LIBRERIA FELTRINELLI",expense,false,Istruzione/Rette scolastiche
-112,2026-01-25,-27.75,Addebito SDD - TELEPASS S.P.A. PEDAGGI,expense,false,Trasporti/Trasporto pubblico
-113,2026-01-25,-14.89,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-114,2026-01-25,-55.12,"Pagam. POS - PAGAMENTO POS 55,12 EUR DEL 25.01.2026 A (ITA) STAZIONE Q8",expense,false,Trasporti/Trasporto pubblico
-115,2026-01-26,-785.29,Disposizione - RIF:219311363 BEN. UNIVERSITA' DEGLI STUDI DI BOLOGNA,expense,false,Istruzione/Rette scolastiche
-116,2026-01-26,-51.47,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
-117,2026-01-26,-7.51,AMAZON.IT MARKETPLACE - ORDINE 402-210426222,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-118,2026-01-26,-784.58,"Pagam. POS - PAGAMENTO POS 784,58 EUR DEL 26.01.2026 A (ITA) LIBRERIA FELTRINELLI",expense,false,Istruzione/Rette scolastiche
-119,2026-01-26,-77.23,"Pagam. POS - PAGAMENTO POS 77,23 EUR DEL 26.01.2026 A (ITA) LIBRERIA FELTRINELLI",expense,false,Istruzione/Rette scolastiche
-120,2026-01-26,-10.64,AMAZON.IT MARKETPLACE - ORDINE 402-211658962,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-121,2026-01-26,-37.50,Addebito SDD - TELEPASS S.P.A. PEDAGGI,expense,false,Trasporti/Trasporto pubblico
-122,2026-01-26,133.65,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-123,2026-01-26,223.66,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-124,2026-01-27,-64.93,"Pagam. POS - PAGAMENTO POS 64,93 EUR DEL 27.01.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
-125,2026-01-27,-104.95,"Pagam. POS - PAGAMENTO POS 104,95 EUR DEL 27.01.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
-126,2026-01-27,-38.93,PAGAMENTO CONTACTLESS CARTA **** 7159 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
-127,2026-01-27,-35.39,"Pagam. POS - PAGAMENTO POS 35,39 EUR DEL 27.01.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
-128,2026-01-27,-16.43,"Pagam. POS - PAGAMENTO POS 16,43 EUR DEL 27.01.2026 A (ITA) ITALO NTV S.P.A.",expense,false,Trasporti/Trasporto pubblico
-129,2026-01-27,-761.60,"Pagam. POS - PAGAMENTO POS 761,60 EUR DEL 27.01.2026 A (ITA) CARTOLIBRERIA IL PAPIRO",expense,false,Istruzione/Rette scolastiche
-130,2026-01-27,148.32,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-131,2026-01-28,-73.04,"Pagam. POS - PAGAMENTO POS 73,04 EUR DEL 28.01.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
-132,2026-01-28,-250.24,"Pagam. POS - PAGAMENTO POS 250,24 EUR DEL 28.01.2026 A (ITA) LIBRERIA FELTRINELLI",expense,false,Istruzione/Rette scolastiche
-133,2026-01-28,-215.84,Addebito SDD - MENSA SCOLASTICA COMUNE DI MILANO,expense,false,Istruzione/Rette scolastiche
-134,2026-01-28,-114.60,"Pagam. POS - PAGAMENTO POS 114,60 EUR DEL 28.01.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
-135,2026-01-28,-5.94,"Pagam. POS - PAGAMENTO POS 5,94 EUR DEL 28.01.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-136,2026-01-28,209.16,Bonif. v/fav. - RIF:217944908 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-137,2026-01-29,-39.66,"Pagam. POS - PAGAMENTO POS 39,66 EUR DEL 29.01.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
-138,2026-01-29,-62.82,PAGAMENTO CONTACTLESS CARTA **** 5937 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
-139,2026-01-29,-14.11,PAGAMENTO CONTACTLESS CARTA **** 9746 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
-140,2026-01-29,-65.71,"Pagam. POS - PAGAMENTO POS 65,71 EUR DEL 29.01.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
-141,2026-01-30,-57.74,Disposizione - RIF:213446190 BEN. OFFICINA MECCANICA BRAMBILLA,expense,false,Trasporti/Trasporto pubblico
-142,2026-01-30,-42.59,PAGAMENTO CONTACTLESS CARTA **** 9574 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
-143,2026-01-30,-119.77,"Pagam. POS - PAGAMENTO POS 119,77 EUR DEL 30.01.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
-144,2026-01-30,-64.00,"Pagam. POS - PAGAMENTO POS 64,00 EUR DEL 30.01.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
-145,2026-01-30,-14.93,PAGAMENTO CONTACTLESS CARTA **** 4012 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
-146,2026-01-30,-68.00,"Pagam. POS - PAGAMENTO POS 68,00 EUR DEL 30.01.2026 A (ITA) MACELLERIA BONI",expense,false,Alimentari/Spesa supermercato
-147,2026-01-30,-83.75,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
-148,2026-01-30,-83.99,PAGAMENTO CONTACTLESS CARTA **** 9496 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
-149,2026-01-31,-433.90,"Pagam. POS - PAGAMENTO POS 433,90 EUR DEL 31.01.2026 A (ITA) CARTOLIBRERIA IL PAPIRO",expense,false,Istruzione/Rette scolastiche
-150,2026-01-31,-94.34,"Pagam. POS - PAGAMENTO POS 94,34 EUR DEL 31.01.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
-151,2026-01-31,-7.85,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-152,2026-01-31,-50.96,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
-153,2026-02-01,-117.06,"Pagam. POS - PAGAMENTO POS 117,06 EUR DEL 01.02.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
-154,2026-02-01,-93.29,"Pagam. POS - PAGAMENTO POS 93,29 EUR DEL 01.02.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
-155,2026-02-02,-55.67,Disposizione - RIF:219567586 BEN. OFFICINA MECCANICA BRAMBILLA,expense,false,Trasporti/Trasporto pubblico
-156,2026-02-02,-65.79,"Pagam. POS - PAGAMENTO POS 65,79 EUR DEL 02.02.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
-157,2026-02-02,-112.18,"Pagam. POS - PAGAMENTO POS 112,18 EUR DEL 02.02.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
-158,2026-02-02,-49.09,"Pagam. POS - PAGAMENTO POS 49,09 EUR DEL 02.02.2026 A (ITA) DISTRIBUTORE ENI",expense,false,Trasporti/Trasporto pubblico
-159,2026-02-02,124.60,Bonif. v/fav. - RIF:214998755 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-160,2026-02-03,-65.37,"Pagam. POS - PAGAMENTO POS 65,37 EUR DEL 03.02.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
-161,2026-02-03,-18.64,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
-162,2026-02-03,-33.02,"Pagam. POS - PAGAMENTO POS 33,02 EUR DEL 03.02.2026 A (ITA) ZARA ITALIA SRL",expense,false,Abbigliamento/Abbigliamento adulti
-163,2026-02-03,-59.44,"Pagam. POS - PAGAMENTO POS 59,44 EUR DEL 03.02.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
-164,2026-02-03,-136.32,"Pagam. POS - PAGAMENTO POS 136,32 EUR DEL 03.02.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
-165,2026-02-03,-160.58,"Pagam. POS - PAGAMENTO POS 160,58 EUR DEL 03.02.2026 A (ITA) CONAD CITY ROMA",expense,false,Alimentari/Spesa supermercato
-166,2026-02-03,-6.48,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-167,2026-02-03,-49.27,Disposizione - RIF:215036037 BEN. OFFICINA MECCANICA BRAMBILLA,expense,false,Trasporti/Trasporto pubblico
-168,2026-02-03,-700.93,Disposizione - RIF:211778740 BEN. AFFITTO APPARTAMENTO SOFIA BOLOGNA,expense,false,Istruzione/Rette scolastiche
-169,2026-02-03,-21.78,"Pagam. POS - PAGAMENTO POS 21,78 EUR DEL 03.02.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
-170,2026-02-03,-21.31,"Pagam. POS - PAGAMENTO POS 21,31 EUR DEL 03.02.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
-171,2026-02-04,-40.14,"Pagam. POS - PAGAMENTO POS 40,14 EUR DEL 04.02.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
-172,2026-02-04,-64.36,"Pagam. POS - PAGAMENTO POS 64,36 EUR DEL 04.02.2026 A (ITA) PIZZERIA NAPOLI",expense,false,Ristorazione/Ristorante
-173,2026-02-04,-8.97,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-174,2026-02-04,-7.22,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-175,2026-02-04,102.27,Bonif. v/fav. - RIF:219661597 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-176,2026-02-04,253.63,Bonif. v/fav. - RIF:219292739 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-177,2026-02-05,-91.05,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
-178,2026-02-05,-21.81,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
-179,2026-02-05,74.33,Bonif. v/fav. - RIF:216801301 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-180,2026-02-05,175.05,Bonif. v/fav. - RIF:217200209 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-181,2026-02-06,-71.45,"Pagam. POS - PAGAMENTO POS 71,45 EUR DEL 06.02.2026 A (ITA) ZARA ITALIA SRL",expense,false,Abbigliamento/Abbigliamento adulti
-182,2026-02-06,-13.15,"Pagam. POS - PAGAMENTO POS 13,15 EUR DEL 06.02.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-183,2026-02-06,-46.41,Addebito SDD - TELEPASS S.P.A. PEDAGGI,expense,false,Trasporti/Trasporto pubblico
-184,2026-02-06,-28.56,"Pagam. POS - PAGAMENTO POS 28,56 EUR DEL 06.02.2026 A (ITA) DISTRIBUTORE ENI",expense,false,Trasporti/Trasporto pubblico
-185,2026-02-06,197.56,Bonif. v/fav. - RIF:213965533 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-186,2026-02-07,-35.23,"Pagam. POS - PAGAMENTO POS 35,23 EUR DEL 07.02.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
-187,2026-02-07,-125.89,"Pagam. POS - PAGAMENTO POS 125,89 EUR DEL 07.02.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
-188,2026-02-07,-14.32,"Pagam. POS - PAGAMENTO POS 14,32 EUR DEL 07.02.2026 A (ITA) STAZIONE Q8",expense,false,Trasporti/Trasporto pubblico
-189,2026-02-07,-30.70,"Pagam. POS - PAGAMENTO POS 30,70 EUR DEL 07.02.2026 A (ITA) MACELLERIA BONI",expense,false,Alimentari/Spesa supermercato
-190,2026-02-08,-14.76,"Pagam. POS - PAGAMENTO POS 14,76 EUR DEL 08.02.2026 A (ITA) DISTRIBUTORE ENI",expense,false,Trasporti/Trasporto pubblico
-191,2026-02-08,-82.91,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
-192,2026-02-08,-566.20,Disposizione - RIF:212856168 BEN. UNIVERSITA' DEGLI STUDI DI BOLOGNA,expense,false,Istruzione/Rette scolastiche
-193,2026-02-08,-27.49,"Pagam. POS - PAGAMENTO POS 27,49 EUR DEL 08.02.2026 A (ITA) DISTRIBUTORE ENI",expense,false,Trasporti/Trasporto pubblico
-194,2026-02-08,-77.40,"Pagam. POS - PAGAMENTO POS 77,40 EUR DEL 08.02.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
-195,2026-02-09,-14.69,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-196,2026-02-09,-94.44,"Pagam. POS - PAGAMENTO POS 94,44 EUR DEL 09.02.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
-197,2026-02-09,-105.20,Addebito SDD - MENSA SCOLASTICA COMUNE DI MILANO,expense,false,Istruzione/Rette scolastiche
-198,2026-02-09,-15.82,Addebito SDD - TELEPASS S.P.A. PEDAGGI,expense,false,Trasporti/Trasporto pubblico
-199,2026-02-09,154.12,Bonif. v/fav. - RIF:211765405 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-200,2026-02-10,-28.04,Addebito SDD - TELEPASS S.P.A. PEDAGGI,expense,false,Trasporti/Trasporto pubblico
-201,2026-02-10,-66.98,Disposizione - RIF:218133442 BEN. AFFITTO APPARTAMENTO SOFIA BOLOGNA,expense,false,Istruzione/Rette scolastiche
-202,2026-02-11,-40.20,"Pagam. POS - PAGAMENTO POS 40,20 EUR DEL 11.02.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
-203,2026-02-11,-47.22,"Pagam. POS - PAGAMENTO POS 47,22 EUR DEL 11.02.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
-204,2026-02-11,-53.55,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
-205,2026-02-11,-132.47,"Pagam. POS - PAGAMENTO POS 132,47 EUR DEL 11.02.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
-206,2026-02-11,-21.90,Addebito SDD - TELEPASS S.P.A. PEDAGGI,expense,false,Trasporti/Trasporto pubblico
-207,2026-02-11,-19.46,Addebito SDD - TELEPASS S.P.A. PEDAGGI,expense,false,Trasporti/Trasporto pubblico
-208,2026-02-11,-93.99,"Pagam. POS - PAGAMENTO POS 93,99 EUR DEL 11.02.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
-209,2026-02-11,85.70,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-210,2026-02-12,-93.23,"Pagam. POS - PAGAMENTO POS 93,23 EUR DEL 12.02.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
-211,2026-02-12,-75.15,"Pagam. POS - PAGAMENTO POS 75,15 EUR DEL 12.02.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
-212,2026-02-12,-14.36,PAGAMENTO CONTACTLESS CARTA **** 1768 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
-213,2026-02-12,61.80,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-214,2026-02-12,94.34,Bonif. v/fav. - RIF:217917129 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-215,2026-02-13,-8.20,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-216,2026-02-13,-17.90,Addebito SDD - SARA ASSICURAZIONI RCA AUTO,expense,false,Trasporti/Trasporto pubblico
-217,2026-02-13,-69.93,"Pagam. POS - PAGAMENTO POS 69,93 EUR DEL 13.02.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
-218,2026-02-13,-63.83,"Pagam. POS - PAGAMENTO POS 63,83 EUR DEL 13.02.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
-219,2026-02-13,-17.54,"Pagam. POS - PAGAMENTO POS 17,54 EUR DEL 13.02.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
-220,2026-02-13,133.31,Bonif. v/fav. - RIF:213633581 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-221,2026-02-14,-47.61,PAGAMENTO CONTACTLESS CARTA **** 6810 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
-222,2026-02-14,-500.07,Disposizione - RIF:216707613 BEN. AFFITTO APPARTAMENTO SOFIA BOLOGNA,expense,false,Istruzione/Rette scolastiche
-223,2026-02-14,-12.43,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-224,2026-02-14,-400.98,Disposizione - RIF:218830779 BEN. AFFITTO APPARTAMENTO SOFIA BOLOGNA,expense,false,Istruzione/Rette scolastiche
-225,2026-02-15,-36.33,Addebito SDD - TELEPASS S.P.A. PEDAGGI,expense,false,Trasporti/Trasporto pubblico
-226,2026-02-15,-638.08,"Pagam. POS - PAGAMENTO POS 638,08 EUR DEL 15.02.2026 A (ITA) LIBRERIA FELTRINELLI",expense,false,Istruzione/Rette scolastiche
-227,2026-02-15,-37.01,"Pagam. POS - PAGAMENTO POS 37,01 EUR DEL 15.02.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
-228,2026-02-15,-56.86,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
-229,2026-02-15,-10.05,AMAZON.IT MARKETPLACE - ORDINE 402-215261044,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-230,2026-02-16,-110.32,"Pagam. POS - PAGAMENTO POS 110,32 EUR DEL 16.02.2026 A (ITA) ZARA ITALIA SRL",expense,false,Abbigliamento/Abbigliamento adulti
-231,2026-02-16,-79.01,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
-232,2026-02-16,-11.74,"Pagam. POS - PAGAMENTO POS 11,74 EUR DEL 16.02.2026 A (ITA) COOP LOMBARDIA",expense,false,Altro/Spese non classificate
-233,2026-02-16,216.73,Bonif. v/fav. - RIF:215671770 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-234,2026-02-17,-8.21,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-235,2026-02-17,-56.38,Addebito SDD - ACI BOLLO AUTO TARGA BF279YE,expense,false,Trasporti/Trasporto pubblico
-236,2026-02-17,-44.25,"Pagam. POS - PAGAMENTO POS 44,25 EUR DEL 17.02.2026 A (ITA) COOP LOMBARDIA",expense,false,Altro/Spese non classificate
-237,2026-02-17,-78.70,Addebito SDD - GENERALI ITALIA POLIZZA VITA,expense,false,Altro/Spese non classificate
-238,2026-02-17,-49.55,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
-239,2026-02-17,-13.12,"Pagam. POS - PAGAMENTO POS 13,12 EUR DEL 17.02.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
-240,2026-02-18,-20.90,"Pagam. POS - PAGAMENTO POS 20,90 EUR DEL 18.02.2026 A (ITA) MACELLERIA BONI",expense,false,Alimentari/Spesa supermercato
-241,2026-02-18,-85.64,PAGAMENTO CONTACTLESS CARTA **** 7809 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
-242,2026-02-18,-76.03,Disposizione - RIF:210498946 BEN. UNIVERSITA' DEGLI STUDI DI BOLOGNA,expense,false,Istruzione/Rette scolastiche
-243,2026-02-18,-34.35,"Pagam. POS - PAGAMENTO POS 34,35 EUR DEL 18.02.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
-244,2026-02-18,-8.56,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-245,2026-02-18,290.11,Bonif. v/fav. - RIF:216203072 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-246,2026-02-19,-58.66,"Pagam. POS - PAGAMENTO POS 58,66 EUR DEL 19.02.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
-247,2026-02-19,-8.15,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
-248,2026-02-19,-6.67,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-249,2026-02-19,-7.70,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-250,2026-02-19,-752.72,Addebito SDD - MENSA SCOLASTICA COMUNE DI MILANO,expense,false,Istruzione/Rette scolastiche
-251,2026-02-19,-58.24,Disposizione - RIF:212140084 BEN. OFFICINA MECCANICA BRAMBILLA,expense,false,Trasporti/Trasporto pubblico
-252,2026-02-19,-35.21,"Pagam. POS - PAGAMENTO POS 35,21 EUR DEL 19.02.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
-253,2026-02-20,-59.51,Disposizione - RIF:213299848 BEN. AFFITTO APPARTAMENTO SOFIA BOLOGNA,expense,false,Istruzione/Rette scolastiche
-254,2026-02-20,-52.41,Addebito SDD - TELEPASS S.P.A. PEDAGGI,expense,false,Trasporti/Trasporto pubblico
-255,2026-02-20,56.83,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-256,2026-02-20,89.58,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-257,2026-02-20,93.32,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-258,2026-02-20,104.79,Bonif. v/fav. - RIF:216783360 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-259,2026-02-21,-36.48,Disposizione - RIF:211904584 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
-260,2026-02-21,-77.11,"Pagam. POS - PAGAMENTO POS 77,11 EUR DEL 21.02.2026 A (ITA) PIZZERIA NAPOLI",expense,false,Ristorazione/Ristorante
-261,2026-02-21,-71.01,"Pagam. POS - PAGAMENTO POS 71,01 EUR DEL 21.02.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
-262,2026-02-21,-47.37,"Pagam. POS - PAGAMENTO POS 47,37 EUR DEL 21.02.2026 A (ITA) PIZZERIA NAPOLI",expense,false,Ristorazione/Ristorante
-263,2026-02-21,-8.88,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-264,2026-02-21,143.07,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-265,2026-02-22,-499.81,"Pagam. POS - PAGAMENTO POS 499,81 EUR DEL 22.02.2026 A (ITA) CARTOLIBRERIA IL PAPIRO",expense,false,Istruzione/Rette scolastiche
-266,2026-02-22,-16.92,PAGAMENTO CONTACTLESS CARTA **** 1680 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
-267,2026-02-22,-14.47,"Pagam. POS - PAGAMENTO POS 14,47 EUR DEL 22.02.2026 A (ITA) MACELLERIA BONI",expense,false,Alimentari/Spesa supermercato
-268,2026-02-22,-36.91,"Pagam. POS - PAGAMENTO POS 36,91 EUR DEL 22.02.2026 A (ITA) DISTRIBUTORE ENI",expense,false,Trasporti/Trasporto pubblico
-269,2026-02-22,-145.01,"Pagam. POS - PAGAMENTO POS 145,01 EUR DEL 22.02.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
-270,2026-02-22,-27.41,"Pagam. POS - PAGAMENTO POS 27,41 EUR DEL 22.02.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
-271,2026-02-23,-174.14,PAGAMENTO CONTACTLESS CARTA **** 5427 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
-272,2026-02-23,-76.35,"Pagam. POS - PAGAMENTO POS 76,35 EUR DEL 23.02.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
-273,2026-02-23,-69.09,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
-274,2026-02-23,-74.68,"Pagam. POS - PAGAMENTO POS 74,68 EUR DEL 23.02.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
-275,2026-02-24,-70.39,"Pagam. POS - PAGAMENTO POS 70,39 EUR DEL 24.02.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
-276,2026-02-24,-63.99,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
-277,2026-02-25,-778.44,Disposizione - RIF:217784482 BEN. AFFITTO APPARTAMENTO SOFIA BOLOGNA,expense,false,Istruzione/Rette scolastiche
-278,2026-02-25,-27.06,"Pagam. POS - PAGAMENTO POS 27,06 EUR DEL 25.02.2026 A (ITA) STAZIONE Q8",expense,false,Trasporti/Trasporto pubblico
-279,2026-02-25,-104.44,"Pagam. POS - PAGAMENTO POS 104,44 EUR DEL 25.02.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
-280,2026-02-26,-68.16,"Pagam. POS - PAGAMENTO POS 68,16 EUR DEL 26.02.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
-281,2026-02-26,-178.08,"Pagam. POS - PAGAMENTO POS 178,08 EUR DEL 26.02.2026 A (ITA) MACELLERIA BONI",expense,false,Alimentari/Spesa supermercato
-282,2026-02-26,-73.61,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
-283,2026-02-26,-7.64,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-284,2026-02-26,-5.49,Disposizione - RIF:216938030 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
-285,2026-02-26,-91.14,"Pagam. POS - PAGAMENTO POS 91,14 EUR DEL 26.02.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
-286,2026-02-26,-9.69,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
-287,2026-02-26,173.46,Bonif. v/fav. - RIF:219938658 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-288,2026-02-27,-75.50,"Pagam. POS - PAGAMENTO POS 75,50 EUR DEL 27.02.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
-289,2026-02-27,-131.93,"Pagam. POS - PAGAMENTO POS 131,93 EUR DEL 27.02.2026 A (ITA) ZARA ITALIA SRL",expense,false,Abbigliamento/Abbigliamento adulti
-290,2026-02-27,-55.85,"Pagam. POS - PAGAMENTO POS 55,85 EUR DEL 27.02.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
-291,2026-02-27,-81.85,PAGAMENTO CONTACTLESS CARTA **** 9988 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
-292,2026-02-27,-61.52,PAGAMENTO CONTACTLESS CARTA **** 5977 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
-293,2026-02-27,-7.62,"Pagam. POS - PAGAMENTO POS 7,62 EUR DEL 27.02.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
-294,2026-02-28,-329.70,Disposizione - RIF:216008500 BEN. UNIVERSITA' DEGLI STUDI DI BOLOGNA,expense,false,Istruzione/Rette scolastiche
-295,2026-02-28,-74.97,"Pagam. POS - PAGAMENTO POS 74,97 EUR DEL 28.02.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
-296,2026-02-28,-137.72,PAGAMENTO CONTACTLESS CARTA **** 7151 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
-297,2026-02-28,-57.33,Addebito SDD - TELEPASS S.P.A. PEDAGGI,expense,false,Trasporti/Trasporto pubblico
-298,2026-02-28,-11.87,"Pagam. POS - PAGAMENTO POS 11,87 EUR DEL 28.02.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-299,2026-02-28,-13.52,"Pagam. POS - PAGAMENTO POS 13,52 EUR DEL 28.02.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
-300,2026-02-28,92.05,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+1,2026-01-01,-101.19,PAGAMENTO CONTACTLESS CARTA **** 9901 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
+2,2026-01-01,-44.37,PAGAMENTO CONTACTLESS CARTA **** 3564 SPLENDIDI E SPLENDENTI,expense,false,Abbigliamento/Abbigliamento adulti
+3,2026-01-01,-54.91,PAGAMENTO CONTACTLESS CARTA **** 2937 100 MONTADITOS,expense,false,Ristorazione/Ristorante
+4,2026-01-01,250.42,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+5,2026-01-01,259.77,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+6,2026-01-02,-42.72,"Pagam. POS - PAGAMENTO POS 42,72 EUR DEL 02.01.2026 A (ITA) STAZIONE Q8",expense,false,Trasporti/Trasporto pubblico
+7,2026-01-02,-166.47,"Pagam. POS - PAGAMENTO POS 166,47 EUR DEL 02.01.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
+8,2026-01-02,-17.67,"Pagam. POS - PAGAMENTO POS 17,67 EUR DEL 02.01.2026 A (ITA) STAZIONE Q8",expense,false,Trasporti/Trasporto pubblico
+9,2026-01-02,-14.48,PAGAMENTO CONTACTLESS CARTA **** 7944 LA PIADINERIA,expense,false,Ristorazione/Ristorante
+10,2026-01-02,-385.95,PAGAMENTO CONTACTLESS CARTA **** 9562 LIBRACCIO,expense,false,Istruzione/Rette scolastiche
+11,2026-01-02,-9.76,"Pagam. POS - PAGAMENTO POS 9,76 EUR DEL 02.01.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
+12,2026-01-02,-59.98,"Pagam. POS - PAGAMENTO POS 59,98 EUR DEL 02.01.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
+13,2026-01-02,178.83,Bonif. v/fav. - RIF:217446110 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+14,2026-01-02,230.64,Bonif. v/fav. - RIF:216320713 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+15,2026-01-03,-21.63,Addebito SDD - TELEPASS S.P.A. PEDAGGI,expense,false,Trasporti/Trasporto pubblico
+16,2026-01-03,-61.73,Addebito SDD - SARA ASSICURAZIONI RCA AUTO,expense,false,Trasporti/Trasporto pubblico
+17,2026-01-03,-75.44,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
+18,2026-01-03,-10.17,"Pagam. POS - PAGAMENTO POS 10,17 EUR DEL 03.01.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+19,2026-01-03,-36.70,PAGAMENTO CONTACTLESS CARTA **** 2437 100 MONTADITOS PALERMO,expense,false,Ristorazione/Ristorante
+20,2026-01-03,-31.80,"Pagam. POS - PAGAMENTO POS 31,80 EUR DEL 03.01.2026 A (ITA) STARBUCKS RESERVE",expense,false,Ristorazione/Ristorante
+21,2026-01-03,232.83,Bonif. v/fav. - RIF:219069047 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+22,2026-01-04,-73.57,PAGAMENTO CONTACTLESS CARTA **** 9583 COMPRO ORO,expense,false,Altro/Spese non classificate
+23,2026-01-04,-18.65,"Pagam. POS - PAGAMENTO POS 18,65 EUR DEL 04.01.2026 A (ITA) ITALO NTV S.P.A.",expense,false,Trasporti/Trasporto pubblico
+24,2026-01-04,-117.32,"Pagam. POS - PAGAMENTO POS 117,32 EUR DEL 04.01.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
+25,2026-01-04,-57.19,"Pagam. POS - PAGAMENTO POS 57,19 EUR DEL 04.01.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
+26,2026-01-04,-91.91,PAGAMENTO CONTACTLESS CARTA **** 2137 BOTTEGA VERDE,expense,false,Altro/Spese non classificate
+27,2026-01-05,-15.35,PAGAMENTO CONTACTLESS CARTA **** 3853 JULIUS MEINL,expense,false,Ristorazione/Ristorante
+28,2026-01-05,-9.95,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+29,2026-01-05,-34.96,PAGAMENTO CONTACTLESS CARTA **** 2477 100 MONTADITOS MODENA,expense,false,Ristorazione/Ristorante
+30,2026-01-05,-21.74,"Pagam. POS - PAGAMENTO POS 21,74 EUR DEL 05.01.2026 A (ITA) LA PIADINERIA CATANIA",expense,false,Ristorazione/Ristorante
+31,2026-01-06,-86.71,"Pagam. POS - PAGAMENTO POS 86,71 EUR DEL 06.01.2026 A (ITA) CHURCH'S",expense,false,Abbigliamento/Abbigliamento adulti
+32,2026-01-06,-36.61,PAGAMENTO CONTACTLESS CARTA **** 5890 SPLENDIDI E SPLENDENTI SESTO SAN GIOVANNI,expense,false,Abbigliamento/Abbigliamento adulti
+33,2026-01-07,-29.35,Addebito SDD - SARA ASSICURAZIONI RCA AUTO,expense,false,Trasporti/Trasporto pubblico
+34,2026-01-07,-64.13,PAGAMENTO CONTACTLESS CARTA **** 9932 VALMANO MARGHERA,expense,false,Altro/Spese non classificate
+35,2026-01-07,-57.66,"Pagam. POS - PAGAMENTO POS 57,66 EUR DEL 07.01.2026 A (ITA) JOHNSON FITNESS & WELLNESS NAPOLI",expense,false,Abbigliamento/Abbigliamento adulti
+36,2026-01-07,89.79,Bonif. v/fav. - RIF:213687348 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+37,2026-01-08,-59.33,"Pagam. POS - PAGAMENTO POS 59,33 EUR DEL 08.01.2026 A (ITA) ALE-HOP PERUGIA",expense,false,Altro/Spese non classificate
+38,2026-01-09,-7.35,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
+39,2026-01-09,-24.41,"Pagam. POS - PAGAMENTO POS 24,41 EUR DEL 09.01.2026 A (ITA) TRENITALIA S.P.A.",expense,false,Trasporti/Trasporto pubblico
+40,2026-01-09,-48.01,"Pagam. POS - PAGAMENTO POS 48,01 EUR DEL 09.01.2026 A (ITA) ITALO NTV S.P.A.",expense,false,Trasporti/Trasporto pubblico
+41,2026-01-09,-172.07,Disposizione - RIF:215032846 BEN. AFFITTO APPARTAMENTO SOFIA BOLOGNA,expense,false,Istruzione/Rette scolastiche
+42,2026-01-09,-34.92,"Pagam. POS - PAGAMENTO POS 34,92 EUR DEL 09.01.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
+43,2026-01-09,134.16,Bonif. v/fav. - RIF:212564507 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+44,2026-01-10,-62.15,"Pagam. POS - PAGAMENTO POS 62,15 EUR DEL 10.01.2026 A (ITA) L'ANTICA PIZZERIA DA MICHELE",expense,false,Ristorazione/Ristorante
+45,2026-01-10,-41.66,PAGAMENTO CONTACTLESS CARTA **** 7999 ALL'ANTICO VINAIO PALERMO,expense,false,Ristorazione/Ristorante
+46,2026-01-10,-50.03,PAGAMENTO CONTACTLESS CARTA **** 3673 CISALFA SPORT VIMODRONE,expense,false,Abbigliamento/Abbigliamento adulti
+47,2026-01-10,-63.45,Addebito SDD - SARA ASSICURAZIONI RCA AUTO,expense,false,Trasporti/Trasporto pubblico
+48,2026-01-10,-80.01,PAGAMENTO CONTACTLESS CARTA **** 4823 MINI MIX,expense,false,Alimentari/Spesa supermercato
+49,2026-01-10,-71.03,Addebito SDD - GENERALI ITALIA POLIZZA VITA,expense,false,Altro/Spese non classificate
+50,2026-01-10,-52.16,"Pagam. POS - PAGAMENTO POS 52,16 EUR DEL 10.01.2026 A (ITA) ITALO NTV S.P.A.",expense,false,Trasporti/Trasporto pubblico
+51,2026-01-10,-13.88,AMAZON.IT MARKETPLACE - ORDINE 402-215559959,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+52,2026-01-11,-52.37,PAGAMENTO CONTACTLESS CARTA **** 9820 BEFED MARGHERA,expense,false,Ristorazione/Ristorante
+53,2026-01-11,-59.80,PAGAMENTO CONTACTLESS CARTA **** 7308 COMPRO ORO PRATI,expense,false,Altro/Spese non classificate
+54,2026-01-11,-11.95,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+55,2026-01-11,-18.45,PAGAMENTO CONTACTLESS CARTA **** 3353 HOKA BRESCIA,expense,false,Abbigliamento/Abbigliamento adulti
+56,2026-01-12,-61.81,"Pagam. POS - PAGAMENTO POS 61,81 EUR DEL 12.01.2026 A (ITA) MONDADORI VENEZIA",expense,false,Istruzione/Rette scolastiche
+57,2026-01-12,-21.92,Addebito SDD - TELEPASS S.P.A. PEDAGGI,expense,false,Trasporti/Trasporto pubblico
+58,2026-01-12,-10.34,"Pagam. POS - PAGAMENTO POS 10,34 EUR DEL 12.01.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
+59,2026-01-12,-72.11,PAGAMENTO CONTACTLESS CARTA **** 3668 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
+60,2026-01-12,-11.41,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+61,2026-01-12,-25.15,"Pagam. POS - PAGAMENTO POS 25,15 EUR DEL 12.01.2026 A (ITA) ITALO NTV S.P.A.",expense,false,Trasporti/Trasporto pubblico
+62,2026-01-13,-65.41,Addebito SDD - GENERALI ITALIA POLIZZA VITA,expense,false,Altro/Spese non classificate
+63,2026-01-13,-9.11,"Pagam. POS - PAGAMENTO POS 9,11 EUR DEL 13.01.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+64,2026-01-13,-21.69,"Pagam. POS - PAGAMENTO POS 21,69 EUR DEL 13.01.2026 A (ITA) WOK TO WALK CAGLIARI",expense,false,Ristorazione/Ristorante
+65,2026-01-13,-24.78,"Pagam. POS - PAGAMENTO POS 24,78 EUR DEL 13.01.2026 A (ITA) ALICE BOLOGNA",expense,false,Ristorazione/Ristorante
+66,2026-01-13,-81.86,PAGAMENTO CONTACTLESS CARTA **** 9666 DOPPIO MALTO PRATI,expense,false,Ristorazione/Ristorante
+67,2026-01-13,-125.09,"Pagam. POS - PAGAMENTO POS 125,09 EUR DEL 13.01.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
+68,2026-01-13,-23.24,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
+69,2026-01-13,292.77,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+70,2026-01-14,-18.52,PAGAMENTO CONTACTLESS CARTA **** 8875 CRAI CATANIA,expense,false,Alimentari/Spesa supermercato
+71,2026-01-14,-45.19,PAGAMENTO CONTACTLESS CARTA **** 4348 DOPPIO MALTO BERGAMO,expense,false,Ristorazione/Ristorante
+72,2026-01-14,-632.12,"Pagam. POS - PAGAMENTO POS 632,12 EUR DEL 14.01.2026 A (ITA) LIBRACCIO",expense,false,Istruzione/Rette scolastiche
+73,2026-01-14,-80.14,"Pagam. POS - PAGAMENTO POS 80,14 EUR DEL 14.01.2026 A (ITA) STARBUCKS RESERVE",expense,false,Ristorazione/Ristorante
+74,2026-01-14,147.31,Bonif. v/fav. - RIF:214534911 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+75,2026-01-15,-10.00,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+76,2026-01-15,-60.47,PAGAMENTO CONTACTLESS CARTA **** 8014 SPORTLER,expense,false,Abbigliamento/Abbigliamento adulti
+77,2026-01-15,-31.78,PAGAMENTO CONTACTLESS CARTA **** 4497 SPLENDIDI E SPLENDENTI LIVORNO,expense,false,Abbigliamento/Abbigliamento adulti
+78,2026-01-16,-763.18,"Pagam. POS - PAGAMENTO POS 763,18 EUR DEL 16.01.2026 A (ITA) BUCHHANDLUNG WALTHER KÖNIG",expense,false,Istruzione/Rette scolastiche
+79,2026-01-16,-38.32,"Pagam. POS - PAGAMENTO POS 38,32 EUR DEL 16.01.2026 A (ITA) STAZIONE Q8",expense,false,Trasporti/Trasporto pubblico
+80,2026-01-16,-49.14,PAGAMENTO CONTACTLESS CARTA **** 9072 ROSSOPOMODORO BOLOGNA,expense,false,Ristorazione/Ristorante
+81,2026-01-16,-44.84,Disposizione - RIF:219096839 BEN. OFFICINA MECCANICA BRAMBILLA,expense,false,Trasporti/Trasporto pubblico
+82,2026-01-16,-34.07,PAGAMENTO CONTACTLESS CARTA **** 1545 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
+83,2026-01-16,-14.57,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+84,2026-01-16,-5.72,"Pagam. POS - PAGAMENTO POS 5,72 EUR DEL 16.01.2026 A (ITA) IKEA RESTAURANT",expense,false,Ristorazione/Ristorante
+85,2026-01-16,-161.47,PAGAMENTO CONTACTLESS CARTA **** 6225 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
+86,2026-01-16,-795.15,Disposizione - RIF:219094272 BEN. UNIVERSITA' DEGLI STUDI DI BOLOGNA,expense,false,Istruzione/Rette scolastiche
+87,2026-01-17,-161.01,PAGAMENTO CONTACTLESS CARTA **** 3110 FUNSIDE VIMODRONE,expense,false,Istruzione/Rette scolastiche
+88,2026-01-17,-98.33,"Pagam. POS - PAGAMENTO POS 98,33 EUR DEL 17.01.2026 A (ITA) IL PANE QUOTIDIANO",expense,false,Alimentari/Spesa supermercato
+89,2026-01-17,51.02,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+90,2026-01-17,157.74,Bonif. v/fav. - RIF:210095980 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+91,2026-01-17,76.63,Bonif. v/fav. - RIF:212938111 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+92,2026-01-17,242.46,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+93,2026-01-18,-75.62,"Pagam. POS - PAGAMENTO POS 75,62 EUR DEL 18.01.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
+94,2026-01-18,-13.00,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+95,2026-01-18,-60.34,"Pagam. POS - PAGAMENTO POS 60,34 EUR DEL 18.01.2026 A (ITA) ITALO NTV S.P.A.",expense,false,Trasporti/Trasporto pubblico
+96,2026-01-18,-518.12,PAGAMENTO CONTACTLESS CARTA **** 3962 LA FELTRINELLI VENEZIA,expense,false,Istruzione/Rette scolastiche
+97,2026-01-18,-37.09,Addebito SDD - TELEPASS S.P.A. PEDAGGI,expense,false,Trasporti/Trasporto pubblico
+98,2026-01-18,-11.22,PAGAMENTO CONTACTLESS CARTA **** 4217 FIVE GUYS SAN GIULIANO MILANESE,expense,false,Ristorazione/Ristorante
+99,2026-01-18,-68.02,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
+100,2026-01-18,-64.05,PAGAMENTO CONTACTLESS CARTA **** 1929 HOKA,expense,false,Abbigliamento/Abbigliamento adulti
+101,2026-01-18,174.82,Bonif. v/fav. - RIF:218770096 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+102,2026-01-19,-102.09,"Pagam. POS - PAGAMENTO POS 102,09 EUR DEL 19.01.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
+103,2026-01-19,-6.93,"Pagam. POS - PAGAMENTO POS 6,93 EUR DEL 19.01.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+104,2026-01-19,-110.72,PAGAMENTO CONTACTLESS CARTA **** 3341 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
+105,2026-01-20,-63.05,PAGAMENTO CONTACTLESS CARTA **** 1383 HOKA NORD,expense,false,Abbigliamento/Abbigliamento adulti
+106,2026-01-20,-133.86,PAGAMENTO CONTACTLESS CARTA **** 5506 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
+107,2026-01-20,-63.41,"Pagam. POS - PAGAMENTO POS 63,41 EUR DEL 20.01.2026 A (ITA) TACO BELL MESTRE",expense,false,Ristorazione/Ristorante
+108,2026-01-20,256.68,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+109,2026-01-20,193.26,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+110,2026-01-21,-286.57,"Pagam. POS - PAGAMENTO POS 286,57 EUR DEL 21.01.2026 A (ITA) MONDADORI",expense,false,Istruzione/Rette scolastiche
+111,2026-01-21,-156.62,PAGAMENTO CONTACTLESS CARTA **** 1878 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
+112,2026-01-21,-88.08,"Pagam. POS - PAGAMENTO POS 88,08 EUR DEL 21.01.2026 A (ITA) THUN VENEZIA",expense,false,Altro/Spese non classificate
+113,2026-01-21,-8.99,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+114,2026-01-21,272.12,Bonif. v/fav. - RIF:215906671 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+115,2026-01-21,166.01,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+116,2026-01-22,-50.04,"Pagam. POS - PAGAMENTO POS 50,04 EUR DEL 22.01.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
+117,2026-01-22,-5.90,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+118,2026-01-22,-37.01,"Pagam. POS - PAGAMENTO POS 37,01 EUR DEL 22.01.2026 A (ITA) PITTAROSSO",expense,false,Abbigliamento/Abbigliamento adulti
+119,2026-01-22,-191.73,"Pagam. POS - PAGAMENTO POS 191,73 EUR DEL 22.01.2026 A (ITA) LIBRACCIO MESTRE",expense,false,Istruzione/Rette scolastiche
+120,2026-01-22,66.85,Bonif. v/fav. - RIF:218760333 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+121,2026-01-22,202.63,Bonif. v/fav. - RIF:210294645 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+122,2026-01-23,-12.53,"Pagam. POS - PAGAMENTO POS 12,53 EUR DEL 23.01.2026 A (ITA) STAZIONE Q8",expense,false,Trasporti/Trasporto pubblico
+123,2026-01-23,-592.16,"Pagam. POS - PAGAMENTO POS 592,16 EUR DEL 23.01.2026 A (ITA) UBIK",expense,false,Istruzione/Rette scolastiche
+124,2026-01-23,-113.46,PAGAMENTO CONTACTLESS CARTA **** 3752 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
+125,2026-01-23,-73.97,"Pagam. POS - PAGAMENTO POS 73,97 EUR DEL 23.01.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
+126,2026-01-23,-11.28,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+127,2026-01-23,-11.33,"Pagam. POS - PAGAMENTO POS 11,33 EUR DEL 23.01.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+128,2026-01-24,-5.14,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+129,2026-01-24,-19.06,"Pagam. POS - PAGAMENTO POS 19,06 EUR DEL 24.01.2026 A (ITA) SUSHI SHOP",expense,false,Ristorazione/Ristorante
+130,2026-01-24,288.92,Bonif. v/fav. - RIF:211907213 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+131,2026-01-25,-111.62,"Pagam. POS - PAGAMENTO POS 111,62 EUR DEL 25.01.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
+132,2026-01-25,-50.25,"Pagam. POS - PAGAMENTO POS 50,25 EUR DEL 25.01.2026 A (ITA) VALMANO",expense,false,Altro/Spese non classificate
+133,2026-01-25,-52.91,"Pagam. POS - PAGAMENTO POS 52,91 EUR DEL 25.01.2026 A (ITA) O'TACOS",expense,false,Ristorazione/Ristorante
+134,2026-01-25,-56.92,"Pagam. POS - PAGAMENTO POS 56,92 EUR DEL 25.01.2026 A (ITA) SUSHIKO",expense,false,Ristorazione/Ristorante
+135,2026-01-25,134.39,Bonif. v/fav. - RIF:216961284 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+136,2026-01-26,-260.75,Disposizione - RIF:210946936 BEN. AFFITTO APPARTAMENTO SOFIA BOLOGNA,expense,false,Istruzione/Rette scolastiche
+137,2026-01-26,-147.49,"Pagam. POS - PAGAMENTO POS 147,49 EUR DEL 26.01.2026 A (ITA) FUNSIDE",expense,false,Istruzione/Rette scolastiche
+138,2026-01-26,-10.81,"Pagam. POS - PAGAMENTO POS 10,81 EUR DEL 26.01.2026 A (ITA) SPIZZICO SESTO SAN GIOVANNI",expense,false,Ristorazione/Ristorante
+139,2026-01-26,166.88,Bonif. v/fav. - RIF:219646134 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+140,2026-01-26,62.67,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+141,2026-01-27,-135.73,PAGAMENTO CONTACTLESS CARTA **** 4414 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
+142,2026-01-27,-100.85,PAGAMENTO CONTACTLESS CARTA **** 7305 SIGMA,expense,false,Alimentari/Spesa supermercato
+143,2026-01-27,-37.72,PAGAMENTO CONTACTLESS CARTA **** 6459 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
+144,2026-01-27,146.05,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+145,2026-01-27,139.08,Bonif. v/fav. - RIF:215346158 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+146,2026-01-27,61.40,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+147,2026-01-28,-25.05,"Pagam. POS - PAGAMENTO POS 25,05 EUR DEL 28.01.2026 A (ITA) PITAYA",expense,false,Ristorazione/Ristorante
+148,2026-01-28,-62.43,"Pagam. POS - PAGAMENTO POS 62,43 EUR DEL 28.01.2026 A (ITA) DISTRIBUTORE ENI",expense,false,Trasporti/Trasporto pubblico
+149,2026-01-28,-23.50,"Pagam. POS - PAGAMENTO POS 23,50 EUR DEL 28.01.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
+150,2026-01-28,84.37,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+151,2026-01-29,-30.73,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
+152,2026-01-29,-39.06,Disposizione - RIF:217940739 BEN. OFFICINA MECCANICA BRAMBILLA,expense,false,Trasporti/Trasporto pubblico
+153,2026-01-29,-102.73,"Pagam. POS - PAGAMENTO POS 102,73 EUR DEL 29.01.2026 A (ITA) SISA",expense,false,Alimentari/Spesa supermercato
+154,2026-01-29,-69.69,"Pagam. POS - PAGAMENTO POS 69,69 EUR DEL 29.01.2026 A (ITA) 100 MONTADITOS",expense,false,Ristorazione/Ristorante
+155,2026-01-29,-14.11,"Pagam. POS - PAGAMENTO POS 14,11 EUR DEL 29.01.2026 A (ITA) ITALO NTV S.P.A.",expense,false,Trasporti/Trasporto pubblico
+156,2026-01-29,-64.98,"Pagam. POS - PAGAMENTO POS 64,98 EUR DEL 29.01.2026 A (ITA) SUSHIKO",expense,false,Ristorazione/Ristorante
+157,2026-01-30,-135.65,PAGAMENTO CONTACTLESS CARTA **** 8533 PAM,expense,false,Alimentari/Spesa supermercato
+158,2026-01-30,-61.15,"Pagam. POS - PAGAMENTO POS 61,15 EUR DEL 30.01.2026 A (ITA) DPIÙ MILANO",expense,false,Alimentari/Spesa supermercato
+159,2026-01-30,-9.10,"Pagam. POS - PAGAMENTO POS 9,10 EUR DEL 30.01.2026 A (ITA) PIZZERIA NAPOLI",expense,false,Ristorazione/Ristorante
+160,2026-01-30,-145.38,"Pagam. POS - PAGAMENTO POS 145,38 EUR DEL 30.01.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
+161,2026-01-31,-94.03,"Pagam. POS - PAGAMENTO POS 94,03 EUR DEL 31.01.2026 A (ITA) MACELLERIA BONI",expense,false,Alimentari/Spesa supermercato
+162,2026-01-31,-401.72,"Pagam. POS - PAGAMENTO POS 401,72 EUR DEL 31.01.2026 A (ITA) MONDADORI MARGHERA",expense,false,Istruzione/Rette scolastiche
+163,2026-01-31,-77.86,PAGAMENTO CONTACTLESS CARTA **** 4933 PENNY PALERMO,expense,false,Alimentari/Spesa supermercato
+164,2026-01-31,-11.59,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+165,2026-02-01,-56.66,PAGAMENTO CONTACTLESS CARTA **** 8936 THE COFFEE,expense,false,Ristorazione/Ristorante
+166,2026-02-02,-689.44,PAGAMENTO CONTACTLESS CARTA **** 7763 UBIK OSTIENSE,expense,false,Istruzione/Rette scolastiche
+167,2026-02-02,-112.18,"Pagam. POS - PAGAMENTO POS 112,18 EUR DEL 02.02.2026 A (ITA) HOKA",expense,false,Abbigliamento/Abbigliamento adulti
+168,2026-02-02,234.45,Bonif. v/fav. - RIF:218769129 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+169,2026-02-03,-62.06,"Pagam. POS - PAGAMENTO POS 62,06 EUR DEL 03.02.2026 A (ITA) 100 MONTADITOS",expense,false,Ristorazione/Ristorante
+170,2026-02-04,-170.40,PAGAMENTO CONTACTLESS CARTA **** 2737 FUNSIDE VIMODRONE,expense,false,Istruzione/Rette scolastiche
+171,2026-02-04,-9.76,"Pagam. POS - PAGAMENTO POS 9,76 EUR DEL 04.02.2026 A (ITA) CONAD CITY ROMA",expense,false,Alimentari/Spesa supermercato
+172,2026-02-05,-97.27,PAGAMENTO CONTACTLESS CARTA **** 8429 IN'S MERCATO,expense,false,Alimentari/Spesa supermercato
+173,2026-02-05,-11.45,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+174,2026-02-05,-31.73,"Pagam. POS - PAGAMENTO POS 31,73 EUR DEL 05.02.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
+175,2026-02-05,-21.52,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
+176,2026-02-06,-106.62,"Pagam. POS - PAGAMENTO POS 106,62 EUR DEL 06.02.2026 A (ITA) CARREFOUR CONTACT OVEST",expense,false,Alimentari/Spesa supermercato
+177,2026-02-06,-6.88,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+178,2026-02-06,-25.54,"Pagam. POS - PAGAMENTO POS 25,54 EUR DEL 06.02.2026 A (ITA) DISTRIBUTORE ENI",expense,false,Trasporti/Trasporto pubblico
+179,2026-02-06,-8.32,"Pagam. POS - PAGAMENTO POS 8,32 EUR DEL 06.02.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
+180,2026-02-06,-167.27,"Pagam. POS - PAGAMENTO POS 167,27 EUR DEL 06.02.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
+181,2026-02-07,-69.55,PAGAMENTO CONTACTLESS CARTA **** 5255 HISTOIRE D'OR,expense,false,Altro/Spese non classificate
+182,2026-02-07,-38.73,Disposizione - RIF:213248757 BEN. OFFICINA MECCANICA BRAMBILLA,expense,false,Trasporti/Trasporto pubblico
+183,2026-02-07,-141.97,PAGAMENTO CONTACTLESS CARTA **** 7115 IL FORNO NORD,expense,false,Alimentari/Spesa supermercato
+184,2026-02-07,-53.27,"Pagam. POS - PAGAMENTO POS 53,27 EUR DEL 07.02.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
+185,2026-02-07,-53.37,PAGAMENTO CONTACTLESS CARTA **** 1364 VALMANO EUR,expense,false,Altro/Spese non classificate
+186,2026-02-07,-58.21,PAGAMENTO CONTACTLESS CARTA **** 4840 TIGROS,expense,false,Alimentari/Spesa supermercato
+187,2026-02-07,-11.52,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+188,2026-02-07,209.49,Bonif. v/fav. - RIF:217979753 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+189,2026-02-08,-139.53,"Pagam. POS - PAGAMENTO POS 139,53 EUR DEL 08.02.2026 A (ITA) CHURCH'S ROZZANO",expense,false,Abbigliamento/Abbigliamento adulti
+190,2026-02-08,-37.74,"Pagam. POS - PAGAMENTO POS 37,74 EUR DEL 08.02.2026 A (ITA) MERCATÒ EXTRA NAPOLI",expense,false,Alimentari/Spesa supermercato
+191,2026-02-08,-45.67,PAGAMENTO CONTACTLESS CARTA **** 9081 DECÒ VERONA,expense,false,Alimentari/Spesa supermercato
+192,2026-02-08,-47.44,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
+193,2026-02-08,-176.10,"Pagam. POS - PAGAMENTO POS 176,10 EUR DEL 08.02.2026 A (ITA) IPER NAPOLI",expense,false,Alimentari/Spesa supermercato
+194,2026-02-08,-67.44,PAGAMENTO CONTACTLESS CARTA **** 7550 BLUESPIRIT MESTRE,expense,false,Altro/Spese non classificate
+195,2026-02-08,236.68,Bonif. v/fav. - RIF:213566687 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+196,2026-02-09,-5.04,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+197,2026-02-09,-88.84,"Pagam. POS - PAGAMENTO POS 88,84 EUR DEL 09.02.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
+198,2026-02-09,-131.26,"Pagam. POS - PAGAMENTO POS 131,26 EUR DEL 09.02.2026 A (ITA) DECÒ",expense,false,Alimentari/Spesa supermercato
+199,2026-02-10,-14.42,Addebito SDD - ACI BOLLO AUTO TARGA NA257KK,expense,false,Trasporti/Trasporto pubblico
+200,2026-02-11,-31.71,"Pagam. POS - PAGAMENTO POS 31,71 EUR DEL 11.02.2026 A (ITA) ARCAPLANET",expense,false,Altro/Spese non classificate
+201,2026-02-11,-19.46,Addebito SDD - TELEPASS S.P.A. PEDAGGI,expense,false,Trasporti/Trasporto pubblico
+202,2026-02-11,250.36,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+203,2026-02-12,-242.52,"Pagam. POS - PAGAMENTO POS 242,52 EUR DEL 12.02.2026 A (ITA) BUCHHANDLUNG WALTHER KÖNIG",expense,false,Istruzione/Rette scolastiche
+204,2026-02-12,-18.48,"Pagam. POS - PAGAMENTO POS 18,48 EUR DEL 12.02.2026 A (ITA) COOP LOMBARDIA",expense,false,Altro/Spese non classificate
+205,2026-02-12,-93.23,"Pagam. POS - PAGAMENTO POS 93,23 EUR DEL 12.02.2026 A (ITA) SPORTLER OVEST",expense,false,Abbigliamento/Abbigliamento adulti
+206,2026-02-12,-75.15,PAGAMENTO CONTACTLESS CARTA **** 3559 AUTOGRILL,expense,false,Ristorazione/Ristorante
+207,2026-02-12,-14.36,"Pagam. POS - PAGAMENTO POS 14,36 EUR DEL 12.02.2026 A (ITA) JULIUS MEINL",expense,false,Ristorazione/Ristorante
+208,2026-02-12,-35.56,Addebito SDD - GENERALI ITALIA POLIZZA VITA,expense,false,Altro/Spese non classificate
+209,2026-02-12,132.39,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+210,2026-02-12,50.27,Bonif. v/fav. - RIF:214210656 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+211,2026-02-12,167.79,Bonif. v/fav. - RIF:218935384 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+212,2026-02-13,-51.94,PAGAMENTO CONTACTLESS CARTA **** 9654 STARBUCKS RESERVE,expense,false,Ristorazione/Ristorante
+213,2026-02-13,-48.18,"Pagam. POS - PAGAMENTO POS 48,18 EUR DEL 13.02.2026 A (ITA) STAZIONE Q8",expense,false,Trasporti/Trasporto pubblico
+214,2026-02-13,-131.09,PAGAMENTO CONTACTLESS CARTA **** 5622 SPAZIO CONAD NORD,expense,false,Alimentari/Spesa supermercato
+215,2026-02-13,-12.72,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+216,2026-02-13,-8.70,AMAZON.IT MARKETPLACE - ORDINE 402-218305419,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+217,2026-02-13,-56.84,"Pagam. POS - PAGAMENTO POS 56,84 EUR DEL 13.02.2026 A (ITA) PANS & COMPANY",expense,false,Ristorazione/Ristorante
+218,2026-02-13,139.35,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+219,2026-02-13,272.07,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+220,2026-02-14,-51.65,"Pagam. POS - PAGAMENTO POS 51,65 EUR DEL 14.02.2026 A (ITA) STAZIONE Q8",expense,false,Trasporti/Trasporto pubblico
+221,2026-02-14,-23.33,"Pagam. POS - PAGAMENTO POS 23,33 EUR DEL 14.02.2026 A (ITA) FIVE GUYS",expense,false,Ristorazione/Ristorante
+222,2026-02-14,-66.19,"Pagam. POS - PAGAMENTO POS 66,19 EUR DEL 14.02.2026 A (ITA) POKE HOUSE",expense,false,Ristorazione/Ristorante
+223,2026-02-14,-547.46,Disposizione - RIF:211873109 BEN. UNIVERSITA' DEGLI STUDI DI BOLOGNA,expense,false,Istruzione/Rette scolastiche
+224,2026-02-14,-57.95,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
+225,2026-02-14,-12.43,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+226,2026-02-14,296.86,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+227,2026-02-15,-22.95,"Pagam. POS - PAGAMENTO POS 22,95 EUR DEL 15.02.2026 A (ITA) TRENITALIA S.P.A.",expense,false,Trasporti/Trasporto pubblico
+228,2026-02-15,-638.08,"Pagam. POS - PAGAMENTO POS 638,08 EUR DEL 15.02.2026 A (ITA) UBIK FLAMINIO",expense,false,Istruzione/Rette scolastiche
+229,2026-02-15,-81.88,"Pagam. POS - PAGAMENTO POS 81,88 EUR DEL 15.02.2026 A (ITA) SNIPES",expense,false,Abbigliamento/Abbigliamento adulti
+230,2026-02-15,-56.86,PAGAMENTO CONTACTLESS CARTA **** 7449 ARCAPLANET,expense,false,Altro/Spese non classificate
+231,2026-02-15,-44.19,Disposizione - RIF:216643577 BEN. OFFICINA MECCANICA BRAMBILLA,expense,false,Trasporti/Trasporto pubblico
+232,2026-02-15,-26.72,"Pagam. POS - PAGAMENTO POS 26,72 EUR DEL 15.02.2026 A (ITA) STAZIONE Q8",expense,false,Trasporti/Trasporto pubblico
+233,2026-02-15,236.63,Bonif. v/fav. - RIF:218249276 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+234,2026-02-16,-118.15,"Pagam. POS - PAGAMENTO POS 118,15 EUR DEL 16.02.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
+235,2026-02-16,-8.68,"Pagam. POS - PAGAMENTO POS 8,68 EUR DEL 16.02.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
+236,2026-02-16,-593.24,PAGAMENTO CONTACTLESS CARTA **** 7429 UBIK CAGLIARI,expense,false,Istruzione/Rette scolastiche
+237,2026-02-16,-47.92,PAGAMENTO CONTACTLESS CARTA **** 7687 TIGOTÀ,expense,false,Abbigliamento/Abbigliamento adulti
+238,2026-02-16,-75.81,PAGAMENTO CONTACTLESS CARTA **** 8660 HISTOIRE D'OR,expense,false,Altro/Spese non classificate
+239,2026-02-16,-87.16,PAGAMENTO CONTACTLESS CARTA **** 9708 TUODÌ OVEST,expense,false,Alimentari/Spesa supermercato
+240,2026-02-17,-131.48,PAGAMENTO CONTACTLESS CARTA **** 1032 GIUNTI AL PUNTO BERGAMO,expense,false,Istruzione/Rette scolastiche
+241,2026-02-17,-548.32,"Pagam. POS - PAGAMENTO POS 548,32 EUR DEL 17.02.2026 A (ITA) LIBRERIA FELTRINELLI",expense,false,Istruzione/Rette scolastiche
+242,2026-02-17,-14.24,"Pagam. POS - PAGAMENTO POS 14,24 EUR DEL 17.02.2026 A (ITA) LA PIADINERIA",expense,false,Ristorazione/Ristorante
+243,2026-02-17,-165.28,"Pagam. POS - PAGAMENTO POS 165,28 EUR DEL 17.02.2026 A (ITA) MERCATÒ EXTRA",expense,false,Alimentari/Spesa supermercato
+244,2026-02-17,-67.87,"Pagam. POS - PAGAMENTO POS 67,87 EUR DEL 17.02.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
+245,2026-02-17,-589.14,PAGAMENTO CONTACTLESS CARTA **** 7542 GIUNTI AL PUNTO,expense,false,Istruzione/Rette scolastiche
+246,2026-02-17,-48.81,"Pagam. POS - PAGAMENTO POS 48,81 EUR DEL 17.02.2026 A (ITA) MD LINGOTTO",expense,false,Alimentari/Spesa supermercato
+247,2026-02-17,-79.94,PAGAMENTO CONTACTLESS CARTA **** 4519 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
+248,2026-02-18,-46.57,"Pagam. POS - PAGAMENTO POS 46,57 EUR DEL 18.02.2026 A (ITA) ITALO NTV S.P.A.",expense,false,Trasporti/Trasporto pubblico
+249,2026-02-18,-26.84,"Pagam. POS - PAGAMENTO POS 26,84 EUR DEL 18.02.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
+250,2026-02-18,-21.02,"Pagam. POS - PAGAMENTO POS 21,02 EUR DEL 18.02.2026 A (ITA) ITALO NTV S.P.A.",expense,false,Trasporti/Trasporto pubblico
+251,2026-02-18,-21.06,"Pagam. POS - PAGAMENTO POS 21,06 EUR DEL 18.02.2026 A (ITA) SUSHIKO PRATI",expense,false,Ristorazione/Ristorante
+252,2026-02-18,-82.39,"Pagam. POS - PAGAMENTO POS 82,39 EUR DEL 18.02.2026 A (ITA) AVIA PALERMO",expense,false,Alimentari/Spesa supermercato
+253,2026-02-19,-10.59,"Pagam. POS - PAGAMENTO POS 10,59 EUR DEL 19.02.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+254,2026-02-19,-42.44,"Pagam. POS - PAGAMENTO POS 42,44 EUR DEL 19.02.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
+255,2026-02-19,-755.06,Disposizione - RIF:216151669 BEN. AFFITTO APPARTAMENTO SOFIA BOLOGNA,expense,false,Istruzione/Rette scolastiche
+256,2026-02-20,-43.02,PAGAMENTO CONTACTLESS CARTA **** 8240 ALE-HOP BOLOGNA,expense,false,Altro/Spese non classificate
+257,2026-02-20,-117.60,"Pagam. POS - PAGAMENTO POS 117,60 EUR DEL 20.02.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
+258,2026-02-20,-47.16,PAGAMENTO CONTACTLESS CARTA **** 3133 ALL'ANTICO VINAIO ROZZANO,expense,false,Ristorazione/Ristorante
+259,2026-02-20,-11.16,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+260,2026-02-20,-76.01,"Pagam. POS - PAGAMENTO POS 76,01 EUR DEL 20.02.2026 A (ITA) SUSHIKO PADOVA",expense,false,Ristorazione/Ristorante
+261,2026-02-20,-31.46,Disposizione - RIF:214078064 BEN. OFFICINA MECCANICA BRAMBILLA,expense,false,Trasporti/Trasporto pubblico
+262,2026-02-20,-80.15,"Pagam. POS - PAGAMENTO POS 80,15 EUR DEL 20.02.2026 A (ITA) ROSSOPOMODORO",expense,false,Ristorazione/Ristorante
+263,2026-02-21,-38.58,"Pagam. POS - PAGAMENTO POS 38,58 EUR DEL 21.02.2026 A (ITA) POKE HOUSE ROMA",expense,false,Ristorazione/Ristorante
+264,2026-02-21,-99.79,PAGAMENTO CONTACTLESS CARTA **** 1176 THUN TORINO,expense,false,Altro/Spese non classificate
+265,2026-02-21,-36.48,"Pagam. POS - PAGAMENTO POS 36,48 EUR DEL 21.02.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
+266,2026-02-21,-15.68,"Pagam. POS - PAGAMENTO POS 15,68 EUR DEL 21.02.2026 A (ITA) TRENITALIA S.P.A.",expense,false,Trasporti/Trasporto pubblico
+267,2026-02-21,-37.67,"Pagam. POS - PAGAMENTO POS 37,67 EUR DEL 21.02.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
+268,2026-02-22,-28.02,"Pagam. POS - PAGAMENTO POS 28,02 EUR DEL 22.02.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
+269,2026-02-22,-84.87,"Pagam. POS - PAGAMENTO POS 84,87 EUR DEL 22.02.2026 A (ITA) CHURCH'S",expense,false,Abbigliamento/Abbigliamento adulti
+270,2026-02-22,-14.47,"Pagam. POS - PAGAMENTO POS 14,47 EUR DEL 22.02.2026 A (ITA) TIGROS NAPOLI",expense,false,Alimentari/Spesa supermercato
+271,2026-02-23,-792.76,Disposizione - RIF:217861196 BEN. UNIVERSITA' DEGLI STUDI DI BOLOGNA,expense,false,Istruzione/Rette scolastiche
+272,2026-02-23,-31.66,Addebito SDD - ACI BOLLO AUTO TARGA SD533FB,expense,false,Trasporti/Trasporto pubblico
+273,2026-02-23,-11.19,"Pagam. POS - PAGAMENTO POS 11,19 EUR DEL 23.02.2026 A (ITA) AUTOGRILL",expense,false,Ristorazione/Ristorante
+274,2026-02-23,-174.14,"Pagam. POS - PAGAMENTO POS 174,14 EUR DEL 23.02.2026 A (ITA) IL GIGANTE PORTA NUOVA",expense,false,Alimentari/Spesa supermercato
+275,2026-02-23,-8.95,"Pagam. POS - PAGAMENTO POS 8,95 EUR DEL 23.02.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
+276,2026-02-23,-95.54,PAGAMENTO CONTACTLESS CARTA **** 3617 TIGRE,expense,false,Alimentari/Spesa supermercato
+277,2026-02-24,-5.46,"Pagam. POS - PAGAMENTO POS 5,46 EUR DEL 24.02.2026 A (ITA) AUTOGRILL",expense,false,Ristorazione/Ristorante
+278,2026-02-24,-56.80,PAGAMENTO CONTACTLESS CARTA **** 9561 ROADHOUSE PRATI,expense,false,Ristorazione/Ristorante
+279,2026-02-24,-47.55,Disposizione - RIF:212332014 BEN. OFFICINA MECCANICA BRAMBILLA,expense,false,Trasporti/Trasporto pubblico
+280,2026-02-24,-66.19,"Pagam. POS - PAGAMENTO POS 66,19 EUR DEL 24.02.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
+281,2026-02-24,-8.69,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+282,2026-02-24,88.39,Bonif. v/fav. - RIF:213814428 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+283,2026-02-25,-79.86,"Pagam. POS - PAGAMENTO POS 79,86 EUR DEL 25.02.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
+284,2026-02-25,-54.84,Addebito SDD - TELEPASS S.P.A. PEDAGGI,expense,false,Trasporti/Trasporto pubblico
+285,2026-02-25,-131.30,"Pagam. POS - PAGAMENTO POS 131,30 EUR DEL 25.02.2026 A (ITA) MIX MARKT COLOGNO MONZESE",expense,false,Alimentari/Spesa supermercato
+286,2026-02-25,-27.06,"Pagam. POS - PAGAMENTO POS 27,06 EUR DEL 25.02.2026 A (ITA) STAZIONE Q8",expense,false,Trasporti/Trasporto pubblico
+287,2026-02-25,-104.44,PAGAMENTO CONTACTLESS CARTA **** 8539 FAMILA,expense,false,Alimentari/Spesa supermercato
+288,2026-02-25,232.55,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+289,2026-02-26,-10.60,"Pagam. POS - PAGAMENTO POS 10,60 EUR DEL 26.02.2026 A (ITA) MALVÓN",expense,false,Ristorazione/Ristorante
+290,2026-02-26,-362.21,"Pagam. POS - PAGAMENTO POS 362,21 EUR DEL 26.02.2026 A (ITA) CARTOLIBRERIA IL PAPIRO",expense,false,Istruzione/Rette scolastiche
+291,2026-02-26,-101.43,"Pagam. POS - PAGAMENTO POS 101,43 EUR DEL 26.02.2026 A (ITA) IL GIGANTE",expense,false,Alimentari/Spesa supermercato
+292,2026-02-26,-156.52,PAGAMENTO CONTACTLESS CARTA **** 5025 UBIK,expense,false,Istruzione/Rette scolastiche
+293,2026-02-26,-5.49,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
+294,2026-02-27,-98.99,"Pagam. POS - PAGAMENTO POS 98,99 EUR DEL 27.02.2026 A (ITA) MACELLERIA BONI",expense,false,Alimentari/Spesa supermercato
+295,2026-02-27,-55.85,PAGAMENTO CONTACTLESS CARTA **** 6361 SUSHIKO CENTRO,expense,false,Ristorazione/Ristorante
+296,2026-02-27,75.36,Bonif. v/fav. - RIF:211691886 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+297,2026-02-28,-12.50,"Pagam. POS - PAGAMENTO POS 12,50 EUR DEL 28.02.2026 A (ITA) STAZIONE Q8",expense,false,Trasporti/Trasporto pubblico
+298,2026-02-28,101.26,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+299,2026-02-28,54.25,Bonif. v/fav. - RIF:213915486 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+300,2026-02-28,178.17,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata

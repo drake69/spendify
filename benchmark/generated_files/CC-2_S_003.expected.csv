@@ -1,31 +1,31 @@
 row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_category
-1,2026-01-05,4523.84,Bonif. v/fav. - RIF:211217848 ORD. EPSILON DIGITAL SRL,income,false,Lavoro autonomo/Fattura / parcella
-2,2026-01-07,2169.58,Bonif. v/fav. - RIF:210122986 ORD. EPSILON DIGITAL SRL,income,false,Lavoro autonomo/Fattura / parcella
-3,2026-01-07,2289.67,Bonif. v/fav. - RIF:215550757 ORD. EPSILON DIGITAL SRL,income,false,Lavoro autonomo/Fattura / parcella
-4,2026-01-09,-13.28,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
-5,2026-01-10,1712.26,Bonif. v/fav. - RIF:214479152 ORD. CLIENTE ALFA S.P.A.,income,false,Lavoro autonomo/Fattura / parcella
-6,2026-01-10,1659.76,Bonif. v/fav. - RIF:215052539 ORD. GAMMA TECHNOLOGIES SRL,income,false,Lavoro autonomo/Fattura / parcella
-7,2026-01-13,2338.85,Bonif. v/fav. - RIF:212225862 ORD. GAMMA TECHNOLOGIES SRL,income,false,Lavoro autonomo/Fattura / parcella
-8,2026-01-15,5327.95,Bonif. v/fav. - RIF:218474848 ORD. EPSILON DIGITAL SRL,income,false,Lavoro autonomo/Fattura / parcella
-9,2026-01-17,2277.30,Bonif. v/fav. - RIF:219208193 ORD. BETA CONSULTING SRL,income,false,Lavoro autonomo/Fattura / parcella
-10,2026-01-19,-117.59,"Pagam. POS - PAGAMENTO POS 117,59 EUR DEL 19.01.2026 A (ITA) FARMACIA COMUNALE",expense,false,Salute/Farmaci
-11,2026-01-19,2316.00,Bonif. v/fav. - RIF:216017692 ORD. EPSILON DIGITAL SRL,income,false,Lavoro autonomo/Fattura / parcella
-12,2026-01-19,4561.10,Bonif. v/fav. - RIF:216628900 ORD. DELTA SOLUTIONS SPA,income,false,Lavoro autonomo/Fattura / parcella
-13,2026-01-22,1651.55,Bonif. v/fav. - RIF:212986212 ORD. CLIENTE ALFA S.P.A.,income,false,Lavoro autonomo/Fattura / parcella
-14,2026-01-22,-223.36,RICARICA HYPE DA CONTO 0075849,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-15,2026-01-24,3557.24,Bonif. v/fav. - RIF:218167227 ORD. EPSILON DIGITAL SRL,income,false,Lavoro autonomo/Fattura / parcella
-16,2026-01-25,1662.54,Bonif. v/fav. - RIF:212182154 ORD. GAMMA TECHNOLOGIES SRL,income,false,Lavoro autonomo/Fattura / parcella
-17,2026-01-26,4687.08,Bonif. v/fav. - RIF:212417186 ORD. EPSILON DIGITAL SRL,income,false,Lavoro autonomo/Fattura / parcella
-18,2026-01-28,4842.66,Bonif. v/fav. - RIF:217302077 ORD. BETA CONSULTING SRL,income,false,Lavoro autonomo/Fattura / parcella
-19,2026-01-28,-51.21,RICARICA HYPE DA CONTO 0075849,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-20,2026-01-29,4020.87,Bonif. v/fav. - RIF:210283383 ORD. DELTA SOLUTIONS SPA,income,false,Lavoro autonomo/Fattura / parcella
-21,2026-02-05,3055.55,Bonif. v/fav. - RIF:210788191 ORD. EPSILON DIGITAL SRL,income,false,Lavoro autonomo/Fattura / parcella
-22,2026-02-05,2065.50,Bonif. v/fav. - RIF:219608623 ORD. CLIENTE ALFA S.P.A.,income,false,Lavoro autonomo/Fattura / parcella
-23,2026-02-09,-275.03,RICARICA HYPE DA CONTO 0075849,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-24,2026-02-13,448.55,Bonif. v/fav. - RIF:216473923 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
-25,2026-02-17,2505.36,Bonif. v/fav. - RIF:213784075 ORD. EPSILON DIGITAL SRL,income,false,Lavoro autonomo/Fattura / parcella
-26,2026-02-17,5114.19,Bonif. v/fav. - RIF:216923193 ORD. GAMMA TECHNOLOGIES SRL,income,false,Lavoro autonomo/Fattura / parcella
-27,2026-02-18,2908.95,Bonif. v/fav. - RIF:218957402 ORD. DELTA SOLUTIONS SPA,income,false,Lavoro autonomo/Fattura / parcella
-28,2026-02-19,4399.66,Bonif. v/fav. - RIF:217529864 ORD. BETA CONSULTING SRL,income,false,Lavoro autonomo/Fattura / parcella
-29,2026-02-22,388.46,Bonif. v/fav. - RIF:215805039 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
-30,2026-02-26,2353.42,Bonif. v/fav. - RIF:216053183 ORD. GAMMA TECHNOLOGIES SRL,income,false,Lavoro autonomo/Fattura / parcella
+1,2026-01-03,2934.73,Bonif. v/fav. - RIF:219426865 ORD. DELTA SOLUTIONS SPA,income,false,Lavoro autonomo/Fattura / parcella
+2,2026-01-08,-12.79,"Pagam. POS - PAGAMENTO POS 12,79 EUR DEL 08.01.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
+3,2026-01-08,-303.52,GIROCONTO DA CC 0075849 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+4,2026-01-09,2143.72,Bonif. v/fav. - RIF:215545923 ORD. GAMMA TECHNOLOGIES SRL,income,false,Lavoro autonomo/Fattura / parcella
+5,2026-01-11,-157.88,Addebito SDD - GITHUB INC. PRO PLAN,expense,false,Tasse e tributi/Imposte varie
+6,2026-01-12,-731.82,GIROCONTO DA CC 0075849 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+7,2026-01-13,3982.25,Bonif. v/fav. - RIF:216169672 ORD. DELTA SOLUTIONS SPA,income,false,Lavoro autonomo/Fattura / parcella
+8,2026-01-14,4959.80,Bonif. v/fav. - RIF:213449052 ORD. DELTA SOLUTIONS SPA,income,false,Lavoro autonomo/Fattura / parcella
+9,2026-01-14,-102.93,RICARICA HYPE DA CONTO 0075849,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+10,2026-01-19,4246.45,Bonif. v/fav. - RIF:218453929 ORD. BETA CONSULTING SRL,income,false,Lavoro autonomo/Fattura / parcella
+11,2026-01-19,251.97,Bonif. v/fav. - RIF:212915798 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
+12,2026-01-19,1598.82,Bonif. v/fav. - RIF:218628674 ORD. EPSILON DIGITAL SRL,income,false,Lavoro autonomo/Fattura / parcella
+13,2026-01-19,4561.10,Bonif. v/fav. - RIF:216628900 ORD. DELTA SOLUTIONS SPA,income,false,Lavoro autonomo/Fattura / parcella
+14,2026-01-22,2943.19,Bonif. v/fav. - RIF:217966781 ORD. BETA CONSULTING SRL,income,false,Lavoro autonomo/Fattura / parcella
+15,2026-01-25,3174.66,Bonif. v/fav. - RIF:214590177 ORD. EPSILON DIGITAL SRL,income,false,Lavoro autonomo/Fattura / parcella
+16,2026-01-26,4687.08,Bonif. v/fav. - RIF:212417186 ORD. EPSILON DIGITAL SRL,income,false,Lavoro autonomo/Fattura / parcella
+17,2026-01-27,3052.13,Bonif. v/fav. - RIF:215308382 ORD. DELTA SOLUTIONS SPA,income,false,Lavoro autonomo/Fattura / parcella
+18,2026-01-29,3329.55,Bonif. v/fav. - RIF:212258817 ORD. EPSILON DIGITAL SRL,income,false,Lavoro autonomo/Fattura / parcella
+19,2026-01-31,5197.48,Bonif. v/fav. - RIF:212153888 ORD. BETA CONSULTING SRL,income,false,Lavoro autonomo/Fattura / parcella
+20,2026-02-02,1829.38,Bonif. v/fav. - RIF:219025719 ORD. CLIENTE ALFA S.P.A.,income,false,Lavoro autonomo/Fattura / parcella
+21,2026-02-03,80.68,Bonif. v/fav. - RIF:219111373 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
+22,2026-02-06,5270.69,Bonif. v/fav. - RIF:214797075 ORD. DELTA SOLUTIONS SPA,income,false,Lavoro autonomo/Fattura / parcella
+23,2026-02-09,1752.95,Bonif. v/fav. - RIF:211217848 ORD. EPSILON DIGITAL SRL,income,false,Lavoro autonomo/Fattura / parcella
+24,2026-02-10,3962.43,Bonif. v/fav. - RIF:219607925 ORD. GAMMA TECHNOLOGIES SRL,income,false,Lavoro autonomo/Fattura / parcella
+25,2026-02-12,1726.42,Bonif. v/fav. - RIF:214808610 ORD. GAMMA TECHNOLOGIES SRL,income,false,Lavoro autonomo/Fattura / parcella
+26,2026-02-14,5045.75,Bonif. v/fav. - RIF:219190659 ORD. EPSILON DIGITAL SRL,income,false,Lavoro autonomo/Fattura / parcella
+27,2026-02-15,2826.86,Bonif. v/fav. - RIF:210910467 ORD. CLIENTE ALFA S.P.A.,income,false,Lavoro autonomo/Fattura / parcella
+28,2026-02-21,4284.51,Bonif. v/fav. - RIF:216502088 ORD. CLIENTE ALFA S.P.A.,income,false,Lavoro autonomo/Fattura / parcella
+29,2026-02-22,4625.68,Bonif. v/fav. - RIF:216953658 ORD. GAMMA TECHNOLOGIES SRL,income,false,Lavoro autonomo/Fattura / parcella
+30,2026-02-27,4069.06,Bonif. v/fav. - RIF:210669029 ORD. EPSILON DIGITAL SRL,income,false,Lavoro autonomo/Fattura / parcella
