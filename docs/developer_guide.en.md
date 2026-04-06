@@ -468,14 +468,21 @@ This allows the monitor to isolate the current session by filtering on `version`
 
 The categorizer benchmark supports predefined scenarios that simulate different levels of "warm data" available at categorization time. The scenario controls which deterministic sources are active before the LLM call.
 
-| Scenario | Active warm data | Expected LLM% |
-|---|---|---|
-| `cold` (default) | none | ~70% |
-| `nsi_warm` | NSI + taxonomy_map (52 OSM tags) | ~30-40% |
-| `full_warm` | NSI + history (GT) + rules | <10% |
-| `country_with` | NSI + country ranking | ~30-40% |
-| `country_without` | NSI, no country | ~30-40% |
-| `all` | runs all scenarios in sequence | — |
+| Scenario | Active warm data | Expected LLM% | Notes |
+|---|---|---|---|
+| `cold` (default) | none | ~70% | Pure baseline — new user, zero history |
+| `nsi_warm` | NSI + taxonomy_map | ~30-40% | Public sources only, no history |
+| `cross_warm` | NSI + leave-one-out history | ~20-50% | **Realistic**: history from all GT files *except* the current one. Simulates a user with prior validated history encountering a new file |
+| `full_warm` | NSI + history (all GT) | <5% | Theoretical upper bound — 100% by construction (includes the file itself) |
+| `country_with` | NSI + country ranking | ~30-40% | Like nsi_warm with geographic bias |
+| `country_without` | NSI, no country | ~30-40% | — |
+| `all` | runs all scenarios in sequence | — | Order: cold → nsi_warm → cross_warm → full_warm → country |
+
+> **Interpreting the scenarios:**
+> `cold` and `full_warm` are the two extremes (lower/upper bound). `cross_warm` is the
+> most representative of real usage: it measures the benefit of history on counterparts
+> **recurring across different files** (e.g. same bank, different months).
+> `full_warm` at 100% is tautological — do not use it as a primary metric.
 
 **New CSV columns** produced per run with scenario: `scenario`, `n_nsi`, `nsi_accuracy`, `nsi_coverage_pct`, `taxonomy_map_hit_pct`.
 

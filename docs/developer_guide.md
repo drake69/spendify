@@ -705,14 +705,21 @@ Output su console e file simultaneamente (tee). Utile per troubleshooting e conf
 
 Il benchmark categorizer supporta scenari predefiniti che simulano diversi livelli di "warm data" disponibile al momento della categorizzazione. Lo scenario controlla quali sorgenti deterministiche sono attive prima della chiamata LLM.
 
-| Scenario | Warm data attivo | LLM% atteso |
-|---|---|---|
-| `cold` (default) | nessuno | ~70% |
-| `nsi_warm` | NSI + taxonomy_map (35 OSM tag) | ~30-40% |
-| `full_warm` | NSI + history (GT) + rules | <10% |
-| `country_with` | NSI + country ranking | ~30-40% |
-| `country_without` | NSI, senza country | ~30-40% |
-| `all` | esegue tutti gli scenari in sequenza | — |
+| Scenario | Warm data attivo | LLM% atteso | Note |
+|---|---|---|---|
+| `cold` (default) | nessuno | ~70% | Baseline pura — utente nuovo |
+| `nsi_warm` | NSI + taxonomy_map | ~30-40% | Solo fonti pubbliche, nessuna history |
+| `cross_warm` | NSI + history leave-one-out | ~20-50% | **Realistico**: history da tutti i file GT tranne il file corrente. Simula utente con storico pregresso ma file mai visto |
+| `full_warm` | NSI + history (tutti i GT) | <5% | Upper bound teorico — 100% per costruzione (include il file stesso) |
+| `country_with` | NSI + country ranking | ~30-40% | Come nsi_warm con bias geografico |
+| `country_without` | NSI, senza country | ~30-40% | — |
+| `all` | esegue tutti gli scenari in sequenza | — | Ordine: cold → nsi_warm → cross_warm → full_warm → country |
+
+> **Interpretazione degli scenari:**
+> `cold` e `full_warm` sono i due estremi (lower/upper bound). `cross_warm` è lo scenario
+> più rappresentativo della realtà: misura il beneficio dello storico su controparti
+> **ricorrenti tra file diversi** (es. stessa banca, mesi diversi).
+> `full_warm` a 100% è tautologico — non usarlo come metrica principale.
 
 **Nuove colonne CSV** prodotte da ogni run con scenario: `scenario`, `n_nsi`, `nsi_accuracy`, `nsi_coverage_pct`, `taxonomy_map_hit_pct`.
 
