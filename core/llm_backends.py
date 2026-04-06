@@ -264,7 +264,7 @@ class ClaudeBackend(LLMBackend):
         import anthropic as _anthropic
         self._anthropic = _anthropic
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY", "")
-        self.model = model or os.getenv("CLAUDE_MODEL", "claude-3-5-haiku-20241022")
+        self.model = model or os.getenv("CLAUDE_MODEL", "claude-haiku-4-5-20251001")
         self.timeout = timeout
 
     @property
