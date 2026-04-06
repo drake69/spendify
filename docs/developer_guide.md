@@ -733,6 +733,12 @@ Il benchmark categorizer supporta scenari predefiniti che simulano diversi livel
 > tempo è lo **scudo deterministico** (storico + regole + NSI-map), che riduce monotonicamente
 > il numero di chiamate LLM. Il tasso di invocazione LLM per transazione è la metrica di
 > maturità del sistema, non la sua accuracy sul cold start.
+>
+> **Due motori di crescita indipendenti:** (1) *user-driven* — storico validato, regole personali,
+> taxonomy map individuale; (2) *community-driven* — il knowledge base NSI (OpenStreetMap/GeoNames)
+> cresce continuamente grazie ai contributori globali: quando un nuovo brand viene aggiunto a OSM,
+> la pipeline lo risolve deterministicamente al prossimo refresh del DB, senza alcuna azione
+> dell'utente. La metrica `taxonomy_map_hit_pct` misura la maturità NSI nel tempo.
 
 **Nuove colonne CSV** prodotte da ogni run con scenario: `scenario`, `n_nsi`, `nsi_accuracy`, `nsi_coverage_pct`, `taxonomy_map_hit_pct`.
 

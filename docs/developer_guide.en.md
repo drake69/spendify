@@ -496,6 +496,12 @@ The categorizer benchmark supports predefined scenarios that simulate different 
 > time is the **deterministic shield** (history + rules + NSI-map), which monotonically reduces
 > the number of LLM calls. The LLM invocation rate per transaction is the system maturity
 > metric — not its cold-start accuracy.
+>
+> **Two independent growth engines:** (1) *user-driven* — validated history, personal rules,
+> individual taxonomy mapping; (2) *community-driven* — the NSI knowledge base
+> (OpenStreetMap/GeoNames) grows continuously through global contributors: when a new brand
+> is added to OSM, the pipeline resolves it deterministically at the next DB refresh, with
+> no user action required. The `taxonomy_map_hit_pct` metric tracks NSI maturity over time.
 
 **New CSV columns** produced per run with scenario: `scenario`, `n_nsi`, `nsi_accuracy`, `nsi_coverage_pct`, `taxonomy_map_hit_pct`.
 
