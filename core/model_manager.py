@@ -199,6 +199,10 @@ def _download_from_hf(
 
     try:
         from huggingface_hub import hf_hub_download
+        try:
+            from tqdm.auto import tqdm as tqdm_cls
+        except ImportError:
+            tqdm_cls = None
 
         # hf_hub_download handles caching, resume, etc.
         downloaded = hf_hub_download(
@@ -206,6 +210,7 @@ def _download_from_hf(
             filename=filename,
             local_dir=str(MODELS_DIR),
             local_dir_use_symlinks=False,
+            tqdm_class=tqdm_cls,
         )
         # Move to expected path if needed
         dl_path = Path(downloaded)

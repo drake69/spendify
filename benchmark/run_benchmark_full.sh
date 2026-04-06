@@ -193,11 +193,37 @@ if [ "$SKIP_LLAMA" = false ]; then
     _hf_download() {
         local repo_id="$1" filename="$2" local_dir="$4"
         uv run python - "$repo_id" "$filename" "$local_dir" <<'PYEOF'
-import sys
-from huggingface_hub import hf_hub_download
+import sys, os, requests
+from pathlib import Path
+from tqdm import tqdm
+
 repo_id, filename, local_dir = sys.argv[1], sys.argv[2], sys.argv[3]
-path = hf_hub_download(repo_id=repo_id, filename=filename, local_dir=local_dir)
-print(f"  → {path}")
+dest = Path(local_dir) / filename
+
+# Se già scaricato salta
+if dest.exists() and dest.stat().st_size > 0:
+    print(f"  → {dest} (già presente)")
+    sys.exit(0)
+
+token = os.environ.get("HF_TOKEN", "")
+headers = {"Authorization": f"Bearer {token}"} if token else {}
+url = f"https://huggingface.co/{repo_id}/resolve/main/{filename}"
+
+r = requests.get(url, stream=True, headers=headers, timeout=30)
+r.raise_for_status()
+total = int(r.headers.get("content-length", 0))
+
+dest.parent.mkdir(parents=True, exist_ok=True)
+tmp = dest.with_suffix(".tmp")
+with open(tmp, "wb") as f, tqdm(
+    total=total, unit="B", unit_scale=True, unit_divisor=1024,
+    desc=filename[-40:], file=sys.stderr, dynamic_ncols=True,
+) as bar:
+    for chunk in r.iter_content(chunk_size=1024 * 1024):
+        f.write(chunk)
+        bar.update(len(chunk))
+tmp.rename(dest)
+print(f"  → {dest}")
 PYEOF
     }
 
