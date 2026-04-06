@@ -8,6 +8,7 @@
 [![Streamlit](https://img.shields.io/badge/UI-Streamlit-ff4b4b?logo=streamlit&logoColor=white)](https://streamlit.io)
 [![Issues](https://img.shields.io/github/issues/drake69/spendifai)](https://github.com/drake69/spendify/issues)
 [![Last commit](https://img.shields.io/github/last-commit/drake69/spendifai)](https://github.com/drake69/spendify/commits/main)
+[![Support on Patreon](https://img.shields.io/badge/Patreon-buy%20me%20a%20coffee%20☕-F96854?logo=patreon&logoColor=white)](https://patreon.com/drake69)
 
 > 🇮🇹 [Leggi in italiano](README.it.md)
 
