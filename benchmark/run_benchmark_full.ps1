@@ -418,6 +418,13 @@ print(ctx or 0)
         }
 
         Invoke-BothPhases "llama.cpp: $($m.name) ($($m.gguf_file))" @("--backend","local_llama_cpp","--model-path",$gguf)
+
+        $deleteAfter = $false
+        if ($m.PSObject.Properties.Name -contains 'delete_after') { $deleteAfter = $m.delete_after -eq 'true' }
+        if ($deleteAfter -and (Test-Path $gguf)) {
+            Write-Host "[delete] $($m.name) — removing $($m.gguf_file) (delete_after=true)"
+            Remove-Item $gguf -Force
+        }
     }
 }
 

@@ -434,6 +434,12 @@ print(ctx or 0)
 
         run_both "llama.cpp: $name ($gguf_file)" \
             --backend local_llama_cpp --model-path "$gguf"
+
+        delete_after=$(_csv_field "$row" "$CSV_HEADER" "delete_after")
+        if [ "$delete_after" = "true" ] && [ -f "$gguf" ]; then
+            echo "[delete] $name — removing $gguf_file (delete_after=true)"
+            rm -f "$gguf"
+        fi
     done < <(_read_models_csv)
 fi
 
