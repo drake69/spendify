@@ -484,6 +484,19 @@ The categorizer benchmark supports predefined scenarios that simulate different 
 > **recurring across different files** (e.g. same bank, different months).
 > `full_warm` at 100% is tautological — do not use it as a primary metric.
 
+> **💡 Key empirical finding — Counterpart extraction is deterministic**
+>
+> The 100% accuracy in `full_warm` does **not** mean the LLM "learns" from previous transactions.
+> It means the **counterpart extraction step is deterministic and consistent across runs**:
+> given the same raw bank string, the model always produces the same normalised merchant name
+> (e.g. `PAGAM. POS 549,91 EUR DEL 01.01 CARTOLIBRERIA IL PAPIRO` → `Cartolibreria Il Papiro`).
+> This makes the history cache key stable, and deterministic lookup reliable.
+>
+> **The LLM has invariant per-call quality** — it does not improve with use. What grows over
+> time is the **deterministic shield** (history + rules + NSI-map), which monotonically reduces
+> the number of LLM calls. The LLM invocation rate per transaction is the system maturity
+> metric — not its cold-start accuracy.
+
 **New CSV columns** produced per run with scenario: `scenario`, `n_nsi`, `nsi_accuracy`, `nsi_coverage_pct`, `taxonomy_map_hit_pct`.
 
 > **⚠️ Known limitation — taxonomy_map shared across models**

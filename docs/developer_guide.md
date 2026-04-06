@@ -721,6 +721,19 @@ Il benchmark categorizer supporta scenari predefiniti che simulano diversi livel
 > **ricorrenti tra file diversi** (es. stessa banca, mesi diversi).
 > `full_warm` a 100% è tautologico — non usarlo come metrica principale.
 
+> **💡 Risultato empirico chiave — Determinismo del counterpart extraction**
+>
+> Il 100% di accuratezza in `full_warm` **non** indica che l'LLM "impara" dalle transazioni precedenti.
+> Indica che il passo di **estrazione controparte è deterministico e consistente tra run diversi**:
+> data la stessa stringa raw di banca, il modello produce sempre lo stesso nome normalizzato
+> (es. `PAGAM. POS 549,91 EUR DEL 01.01 CARTOLIBRERIA IL PAPIRO` → `Cartolibreria Il Papiro`).
+> Questo rende la chiave del cache storico stabile, e il lookup deterministico affidabile.
+>
+> **L'LLM ha qualità per-chiamata invariante** — non migliora con l'uso. Ciò che cresce nel
+> tempo è lo **scudo deterministico** (storico + regole + NSI-map), che riduce monotonicamente
+> il numero di chiamate LLM. Il tasso di invocazione LLM per transazione è la metrica di
+> maturità del sistema, non la sua accuracy sul cold start.
+
 **Nuove colonne CSV** prodotte da ogni run con scenario: `scenario`, `n_nsi`, `nsi_accuracy`, `nsi_coverage_pct`, `taxonomy_map_hit_pct`.
 
 > **⚠️ Limitazione nota — taxonomy_map condivisa tra modelli**
