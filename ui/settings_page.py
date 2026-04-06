@@ -847,6 +847,8 @@ def render_settings_page(engine):
         st.session_state["llm_backend"] = backend
         st.session_state["ollama_base_url"] = ollama_url
         st.session_state.pop("settings_contexts", None)
+        # invalidate chatbot so it re-initialises with the new backend
+        st.session_state.pop("chatbot", None)
         st.success(t("settings.saved"))
         logger.info(f"settings_page: saved backend={backend!r} ollama_url={ollama_url!r}")
         st.rerun()

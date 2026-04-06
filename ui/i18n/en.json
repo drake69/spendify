@@ -278,6 +278,10 @@
   "rules.pattern_empty": "Pattern cannot be empty.",
   "rules.created": "Rule created: '{pattern}' → {cat} / {sub}",
   "rules.existing_updated": "Existing rule updated: '{pattern}' → {cat} / {sub}",
+  "rules.preview_match": "🔍 This pattern matches **{n}** existing transactions",
+  "rules.preview_no_match": "No existing transactions match this pattern.",
+  "rules.preview_invalid_regex": "⚠️ Invalid regular expression.",
+  "rules.new_rule_also_apply": "Also apply to the {n} transactions already in the ledger",
 
   "taxonomy.title": "🗂️ Taxonomy — Categories and Subcategories",
   "taxonomy.caption": "Changes are saved immediately to the database. New categories/subcategories are instantly available in Review and Rules.",

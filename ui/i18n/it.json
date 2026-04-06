@@ -278,6 +278,10 @@
   "rules.pattern_empty": "Il pattern non può essere vuoto.",
   "rules.created": "Regola creata: '{pattern}' → {cat} / {sub}",
   "rules.existing_updated": "Regola esistente aggiornata: '{pattern}' → {cat} / {sub}",
+  "rules.preview_match": "🔍 Questo pattern corrisponde a **{n}** transazioni esistenti",
+  "rules.preview_no_match": "Nessuna transazione esistente corrisponde a questo pattern.",
+  "rules.preview_invalid_regex": "⚠️ Espressione regolare non valida.",
+  "rules.new_rule_also_apply": "Applica anche alle {n} transazioni già presenti nel registro",
 
   "taxonomy.title": "🗂️ Tassonomia — Categorie e Sottocategorie",
   "taxonomy.caption": "Le modifiche vengono salvate immediatamente nel database. Le nuove categorie/sottocategorie sono subito disponibili in Review e Regole.",

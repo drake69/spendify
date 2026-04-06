@@ -210,7 +210,13 @@ def _try_deterministic(
     taxonomy: TaxonomyConfig,
     language: str = "it",
 ) -> Optional[CategorizationResult]:
-    """Apply user rules and static rules. Returns result or None if LLM needed."""
+    """Apply user rules. Returns result or None if further steps are needed.
+
+    Step 1 (static language rules from core/static_rules/_it.json) has been
+    deprecated (C-08-cascade): those rules matched against the raw causale
+    which is stripped by clean_descriptions_batch() before categorization,
+    making them ineffective.  Brand matching is handled better by NSI (Step 3b).
+    """
     # Step 0: user-defined rules (sorted by priority desc)
     for rule in sorted(user_rules, key=lambda r: r.priority, reverse=True):
         if rule.matches(description, doc_type):
@@ -229,18 +235,6 @@ def _try_deterministic(
                 confidence=Confidence.high,
                 source=CategorySource.rule,
             )
-
-    # Step 1: country static rules from core/static_rules/<language>.json
-    is_expense = amount < 0
-    static_match = _apply_static_rules(description, is_expense, language)
-    if static_match:
-        category, subcategory = static_match
-        return CategorizationResult(
-            category=category,
-            subcategory=subcategory,
-            confidence=Confidence.high,
-            source=CategorySource.rule,
-        )
 
     return None
 
@@ -435,14 +429,18 @@ def categorize_batch(
     fallback_categories: dict[str, tuple[str, str]] | None = None,
     history_cache: HistoryCache | None = None,
     user_country: str | None = None,  # ISO 3166-1 alpha-2, e.g. "IT" — for NSI ranking
+    taxonomy_map: dict[str, tuple[str, str]] | None = None,  # C-08-cascade: osm_tag → (cat, sub)
 ) -> list[CategorizationResult]:
     """Categorize transactions using two directional LLM batches (expense / income).
 
     Pipeline per transaction:
-      1. User rules (deterministic)
-      2. Static keyword rules (direction-aware)
-      3. History lookup (validated transactions)
-      3b. NSI lookup (Fonte 3: brand → OSM tag → hint for LLM)
+      0. User rules (deterministic)
+      1. [deprecated] Static keyword rules — removed (C-08-cascade)
+      2. History lookup (validated transactions)
+      3b. NSI lookup (Fonte 3: brand → OSM tag):
+           - if user_country ∈ NsiMatch.countries AND taxonomy_map has the osm_tag
+             → direct CategorizationResult(source=nsi), skip LLM
+           - otherwise inject hint into LLM prompt
       4. LLM — expense batch sees only expense categories, income batch only income categories
       5. Fallback → to_review=True
     """
@@ -493,11 +491,31 @@ def categorize_batch(
                 n_history += 1
                 continue
 
-        # Step 3b: NSI lookup — brand → OSM hint (Fonte 3)
-        # Full taxonomy_map bypass planned (C-08-cascade); for now: hint passed to LLM.
+        # Step 3b: NSI lookup — brand → OSM tag → taxonomy_map bypass (C-08-cascade)
         nsi_match = nsi_lookup.lookup(description, user_country=user_country)
         if nsi_match:
-            tx["_nsi_hint"] = nsi_match.hint  # injected into LLM prompt below
+            # Full bypass: only when user_country is confirmed in this brand's country list
+            _country_match = (
+                not nsi_match.countries  # universal brand
+                or (
+                    user_country
+                    and user_country.upper() in (c.upper() for c in nsi_match.countries)
+                )
+            )
+            if _country_match and taxonomy_map:
+                pair = taxonomy_map.get(nsi_match.osm_tag)
+                if pair:
+                    cat_nsi, sub_nsi = pair
+                    results[i] = CategorizationResult(
+                        category=cat_nsi,
+                        subcategory=sub_nsi,
+                        confidence=Confidence.high,
+                        source=CategorySource.nsi,
+                        to_review=False,
+                    )
+                    continue
+            # No bypass: inject hint for LLM
+            tx["_nsi_hint"] = nsi_match.hint
 
         if amount < 0:
             llm_expense.append(i)
@@ -551,6 +569,7 @@ def categorize_batch(
         f"categorize_batch [{source_name}]: {n} transactions — "
         f"{sum(1 for r in results if r and r.source == CategorySource.rule)} by rules, "
         f"{n_history} by history, "
+        f"{sum(1 for r in results if r and r.source == CategorySource.nsi)} by NSI, "
         f"{sum(1 for r in results if r and r.source == CategorySource.llm)} by LLM"
     )
 

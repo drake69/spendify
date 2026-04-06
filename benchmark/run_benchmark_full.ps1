@@ -66,12 +66,7 @@ Start-Transcript -Path $LogFile -Force | Out-Null
 $env:PYTHONIOENCODING = "utf-8"
 $env:PYTHONUTF8       = "1"
 
-$VersionFile = Join-Path $WorkDir "benchmark\.version"
-$SwVersion = if (Test-Path $VersionFile) {
-    (Get-Content $VersionFile -Raw).Trim()
-} else {
-    try { (git rev-parse --short HEAD 2>$null).Trim() } catch { "unknown" }
-}
+$SwVersion = & "$PSScriptRoot\bench_guard.ps1" -WorkDir $WorkDir
 
 Write-Host "════════════════════════════════════════════════════════════"
 Write-Host "  SPENDIFY FULL BENCHMARK  —  $StartTs"

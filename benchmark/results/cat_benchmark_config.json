@@ -1,12 +1,15 @@
 {
-  "timestamp": "2026-04-04 09:50:34",
-  "git_commit": "deabd2f",
+  "timestamp": "2026-04-06 09:19:25",
+  "git_commit": "c24bb62",
   "git_branch": "geppi-rasnovich",
+  "version": "20260406082954-c24bb62",
   "provider": "llamacpp",
-  "model": "qwen2.5-3b-instruct-q4_k_m",
+  "model": "Qwen2.5-7B-Instruct-Q4_K_M",
   "temperature": "default",
   "llm_timeout_s": "120",
   "runtime_os": "macOS 26.3.1",
+  "runtime_hostname": "Luigis-MacBook-Pro.local",
+  "runtime_gpu_ram_gb": "64",
   "runtime_cpu": "Apple M1 Max",
   "runtime_ram_gb": "64",
   "runtime_gpu": "Apple M1 Max",
@@ -18,7 +21,7 @@
   "n_threads": "?",
   "n_gpu_layers": "?",
   "flash_attn": "?",
-  "n_runs": 3,
-  "n_files": 9,
+  "n_runs": 1,
+  "n_files": 1,
   "benchmark_type": "categorizer"
 }

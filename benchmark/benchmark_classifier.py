@@ -909,6 +909,26 @@ def _write_run_csv(results: list[RunFileResult], run_id: int) -> None:
             writer.writerow(_result_to_row(r))
 
 
+def _init_archive_csv() -> None:
+    """Write CSV header to archive file. Called once at startup before the run loop."""
+    if _ARCHIVE_CSV_PATH is None:
+        return
+    with open(_ARCHIVE_CSV_PATH, "w", newline="", encoding="utf-8") as f:
+        csv.writer(f).writerow(_CSV_HEADER)
+
+
+def _append_result_to_archive(result: "RunFileResult") -> None:
+    """Append a single result row to the archive CSV immediately (per-file flush).
+
+    Opening in append mode for each row is safe: each write is atomic at the OS
+    level for rows this size, and the file is never re-opened for read during a run.
+    """
+    if _ARCHIVE_CSV_PATH is None:
+        return
+    with open(_ARCHIVE_CSV_PATH, "a", newline="", encoding="utf-8") as f:
+        csv.writer(f).writerow(_result_to_row(result))
+
+
 def _init_archive_path() -> Path:
     """Return a fresh (non-existing) path for this run's archive CSV.
     Format: results/<version>_<hostname>.csv
@@ -945,14 +965,9 @@ def _write_all_runs_csv(all_results: list[RunFileResult]) -> None:
             for r in all_results:
                 writer.writerow(_result_to_row(r))
 
-    # Write to archive (this invocation only — fresh file, not cumulative)
+    # Archive CSV is written incrementally (per-file) via _append_result_to_archive().
     if _ARCHIVE_CSV_PATH is not None:
-        with open(_ARCHIVE_CSV_PATH, "w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow(_CSV_HEADER)
-            for r in all_results:
-                writer.writerow(_result_to_row(r))
-        print(f"[output] Archive: {_ARCHIVE_CSV_PATH}")
+        print(f"[output] Archive: {_ARCHIVE_CSV_PATH}  ({len(all_results)} rows, written incrementally)")
 
 
 def _migrate_csv_header(path: Path) -> None:
@@ -1321,6 +1336,7 @@ def main() -> None:
 
     global _ARCHIVE_CSV_PATH
     _ARCHIVE_CSV_PATH = _init_archive_path()
+    _init_archive_csv()
     print(f"[archive] {_ARCHIVE_CSV_PATH.name}")
 
     print(f"\n[config] Provider: {llm_meta['provider']}")
@@ -1433,6 +1449,7 @@ def main() -> None:
             gt = ground_truth_map.get(entry.filename, [])
             result = _evaluate_file(entry, gt, backend, run_id)
             run_results.append(result)
+            _append_result_to_archive(result)
 
             status = "OK" if not result.error else f"ERR: {result.error[:40]}"
             _now = datetime.now().strftime('%H:%M:%S')

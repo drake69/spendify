@@ -22,6 +22,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import collections
 import csv
 import os
 import sys
@@ -233,7 +234,8 @@ def _load_results(current_only: bool = True, paths: list[Path] | None = None) ->
     return rows, mtime
 
 # ── Snapshot ───────────────────────────────────────────────────────────────
-def _snapshot(rows: list[dict], exp_per_model: int, n_models_total: int = 0) -> dict:
+def _snapshot(rows: list[dict], exp_per_model: int, n_models_total: int = 0,
+              n_phases: int = 2, window_rate_fps: float = 0.0) -> dict:
     counts:    dict[tuple, int]  = defaultdict(int)
     # Per-phase counts: {"classifier": {(prov, mdl): n}, "categorizer": {...}}
     counts_by_phase: dict[str, dict[tuple, int]] = defaultdict(lambda: defaultdict(int))
@@ -283,16 +285,14 @@ def _snapshot(rows: list[dict], exp_per_model: int, n_models_total: int = 0) -> 
     n_models     = len(counts)
     # Use declared total if provided, otherwise fall back to models seen so far
     n_models_eff = n_models_total if n_models_total > 0 else n_models
-    total_exp    = n_models_eff * exp_per_model if n_models_eff else 0
+    # total_exp = models × files_per_model × phases (classifier + categorizer)
+    total_exp    = n_models_eff * exp_per_model * n_phases if n_models_eff else 0
     avg_dur      = sum(durations) / len(durations) if durations else 0
-    rate_fpm   = (60 / avg_dur) if avg_dur > 0 else 0
-    # TODO(backlog): ETA deve riflettere il bench COMPLETO, non il modello corrente.
-    # avg_dur è la media globale di tutti i file completati (inclusi modelli già finiti,
-    # potenzialmente più veloci di quelli rimanenti). Soluzione: calcolare rate_fpm
-    # separatamente per il modello in esecuzione (ultimi N file dello stesso model key)
-    # e usare quel rate per proiettare i file rimanenti. Il totale atteso deve includere
-    # entrambe le fasi (classifier + categorizer) per ogni modello.
-    # Rif: GitHub issue #XX — "monitor: ETA deve essere del bench completo"
+    hist_rate_fps = (1 / avg_dur) if avg_dur > 0 else 0.0
+    # Effective rate: prefer sliding-window (recent, adapts to current model speed)
+    # over historical average (biased by already-completed faster models).
+    eff_rate_fps  = window_rate_fps if window_rate_fps > 0 else hist_rate_fps
+    rate_fpm      = eff_rate_fps * 60
 
     # Determine the run_id being displayed
     run_ids: set[int] = set()
@@ -312,7 +312,7 @@ def _snapshot(rows: list[dict], exp_per_model: int, n_models_total: int = 0) -> 
         "exp_per_model":    exp_per_model,
         "avg_dur_s":        avg_dur,
         "rate_fpm":         rate_fpm,
-        "rate_fps":         rate_fpm / 60,
+        "rate_fps":         eff_rate_fps,
         "cpu_avg_hist":     sum(cpu_samples) / len(cpu_samples) if cpu_samples else 0.0,
         "gpu_avg_hist":     sum(gpu_samples) / len(gpu_samples) if gpu_samples else 0.0,
         "phases":           dict(phases),
@@ -323,7 +323,7 @@ def _snapshot(rows: list[dict], exp_per_model: int, n_models_total: int = 0) -> 
 # ── Report ─────────────────────────────────────────────────────────────────
 def _print_report(snap: dict, elapsed_s: float, interval: int,
                   live_cpu: float = 0.0, live_gpu: float = 0.0,
-                  csv_active: bool = True) -> None:
+                  csv_active: bool = True, n_phases: int = 2) -> None:
     counts       = snap["counts"]
     total_done   = snap["total_done"]
     total_exp    = snap["total_exp"]
@@ -345,13 +345,29 @@ def _print_report(snap: dict, elapsed_s: float, interval: int,
     stale_tag = "" if csv_active else "  ⚠ DATI PRECEDENTI"
     print(f"  BENCHMARK MONITOR  —  {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  [{run_label}]{stale_tag}")
     n_models_eff = snap["n_models_eff"]
-    rate_str = f"{rate_fpm:.1f} file/min  ({avg_dur_s:.1f}s/file)" if rate_fpm > 0 else "—"
-    eta_str  = _fmt_eta(remaining, rate_fps)
-    models_str = f"{n_models_eff} pair(s)" if n_models_eff else "?"
+    rate_str   = f"{rate_fpm:.1f} file/min  ({avg_dur_s:.1f}s/file)" if rate_fpm > 0 else "—"
+    eta_session = _fmt_eta(remaining, rate_fps)
+    models_str  = f"{n_models_eff} pair(s)" if n_models_eff else "?"
+    n_phases_str = f"×{n_phases} fasi" if n_phases > 1 else "×1 fase"
+
+    # ETA per modello corrente: cerca il modello/fase con avanzamento parziale
+    counts_by_phase = snap.get("counts_by_phase", {})
+    eta_model_str = "—"
+    for ph in ("classifier", "categorizer"):
+        ph_counts = counts_by_phase.get(ph, {})
+        active_keys = [(k, v) for k, v in ph_counts.items() if 0 < v < exp_per] if exp_per else []
+        if active_keys and rate_fps > 0:
+            # Take the one with the most progress (most recently active)
+            active_key, active_cnt = max(active_keys, key=lambda x: x[1])
+            remaining_model = exp_per - active_cnt
+            eta_model_str = f"~{_fmt_duration(remaining_model / rate_fps)}  ({active_key[1]} — {ph}: {active_cnt}/{exp_per})"
+            break
+
     print(f"  Elapsed : {_fmt_duration(elapsed_s)}")
-    print(f"  Models  : {models_str}  ×  {exp_per if exp_per else '?'} file  =  {total_exp if total_exp else '?'} totali")
+    print(f"  Models  : {models_str}  ×  {exp_per if exp_per else '?'} file  {n_phases_str}  =  {total_exp if total_exp else '?'} righe totali")
     print(f"  Rate    : {rate_str}")
-    print(f"  ETA     : {eta_str}")
+    print(f"  ETA mod.: {eta_model_str}")
+    print(f"  ETA tot.: {eta_session}  ({total_done}/{total_exp if total_exp else '?'} completati)")
     if not csv_active:
         print(f"  !! CSV non aggiornato dal avvio monitor — benchmark non ancora attivo")
 
@@ -486,6 +502,7 @@ def main() -> None:
     parser.add_argument("--models",   type=int,  default=0,     help="Total model/backend pairs expected (0 = auto from benchmark_models.csv)")
     parser.add_argument("--once",     action="store_true",      help="Print once and exit")
     parser.add_argument("--all",      action="store_true",      help="Show all historical data, not just current run_id")
+    parser.add_argument("--phases",   type=int,  default=2,     help="Expected benchmark phases per model (1=one phase, 2=classifier+categorizer, default: 2)")
     parser.add_argument("--csv",      type=Path, default=None,
                         help="Path CSV da monitorare (default: auto-detect da results_archive/)")
     args = parser.parse_args()
@@ -493,12 +510,15 @@ def main() -> None:
     manifest_count = _load_manifest_count()
     exp_per_model  = (args.total if args.total > 0 else manifest_count) * args.runs
     current_only   = not args.all
+    n_phases       = args.phases
 
     # Auto-detect expected model/backend pairs if not explicitly declared
     n_models_total = args.models if args.models > 0 else _count_expected_models()
 
     start_time    = time.monotonic()
     _csv_override = [args.csv] if args.csv else None  # explicit override (single file)
+    # Sliding window: deque of (monotonic_time, total_done) for recent-rate computation
+    _rate_window: collections.deque = collections.deque(maxlen=20)
     # Record the latest mtime across all archive CSVs at startup → detect new writes
     _initial_paths = _csv_override or _find_archive_csvs()
     start_mtime    = (
@@ -515,7 +535,21 @@ def main() -> None:
         # Re-evaluate archive list on every tick to catch newly written files
         live_paths = _csv_override or _find_archive_csvs()
         rows, csv_mtime = _load_results(current_only=current_only, paths=live_paths)
-        snap     = _snapshot(rows, exp_per_model, n_models_total=n_models_total)
+
+        # Sliding window rate: track (time, total_done) across ticks
+        now = time.monotonic()
+        raw_done = sum(1 for _ in rows)  # cheap count without full snapshot
+        _rate_window.append((now, raw_done))
+        window_rate_fps = 0.0
+        if len(_rate_window) >= 2:
+            t0, c0 = _rate_window[0]
+            t1, c1 = _rate_window[-1]
+            dt = t1 - t0
+            if dt >= 1.0 and c1 > c0:
+                window_rate_fps = (c1 - c0) / dt
+
+        snap    = _snapshot(rows, exp_per_model, n_models_total=n_models_total,
+                            n_phases=n_phases, window_rate_fps=window_rate_fps)
         elapsed  = time.monotonic() - start_time
         # "active" if any archive file is newer than the newest one at startup
         csv_active = (csv_mtime is not None and
@@ -525,7 +559,7 @@ def main() -> None:
         _clear()
         _print_report(snap, elapsed, 0 if args.once else args.interval,
                       live_cpu=live_cpu, live_gpu=live_gpu,
-                      csv_active=csv_active)
+                      csv_active=csv_active, n_phases=n_phases)
 
     if args.once:
         _run_once()

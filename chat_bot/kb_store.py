@@ -23,6 +23,7 @@ class FAQEntry:
     question: str
     answer: str
     source: str = ""
+    page_ref: str = ""   # optional app page key (e.g. "import", "review", "rules")
 
 
 @dataclass
@@ -67,7 +68,12 @@ def _load_json_faq(path: Path) -> list[FAQEntry]:
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
     return [
-        FAQEntry(question=item["q"], answer=item["a"], source=path.name)
+        FAQEntry(
+            question=item["q"],
+            answer=item["a"],
+            source=path.name,
+            page_ref=item.get("page", ""),
+        )
         for item in data
         if "q" in item and "a" in item
     ]

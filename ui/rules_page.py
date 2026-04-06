@@ -257,6 +257,29 @@ def render_rules_page(engine):
     nr_prio = st.number_input(t("rules.priority"), value=10, min_value=0, max_value=100, step=1,
                               key="new_rule_prio")
 
+    # ── Preview: count matching transactions ─────────────────────────────────
+    _nr_preview_txs: list = []
+    _nr_preview_count = 0
+    if nr_pattern.strip():
+        try:
+            _nr_preview_txs = tx_svc.get_by_rule_pattern(nr_pattern.strip(), nr_match)
+            _nr_preview_count = len(_nr_preview_txs)
+            if _nr_preview_count > 0:
+                st.info(t("rules.preview_match", n=_nr_preview_count))
+            else:
+                st.caption(t("rules.preview_no_match"))
+        except Exception:
+            st.warning(t("rules.preview_invalid_regex"))
+            _nr_preview_txs = []
+
+    nr_also_apply = False
+    if _nr_preview_count > 0:
+        nr_also_apply = st.checkbox(
+            t("rules.new_rule_also_apply", n=_nr_preview_count),
+            value=True,
+            key="new_rule_also_apply",
+        )
+
     if st.button(t("rules.create_btn"), type="primary", key="new_rule_submit"):
         if not nr_pattern.strip():
             st.error(t("rules.pattern_empty"))
@@ -276,4 +299,13 @@ def render_rules_page(engine):
             else:
                 st.warning(t("rules.existing_updated", pattern=nr_pattern, cat=nr_cat, sub=nr_sub) + ctx_label)
                 logger.info(f"rules_page: updated existing rule pattern={nr_pattern!r} cat={nr_cat!r} ctx={nr_ctx!r}")
+            if nr_also_apply and _nr_preview_txs:
+                for _tx in _nr_preview_txs:
+                    tx_svc.update_category(_tx.id, nr_cat, nr_sub)
+                    if nr_ctx:
+                        tx_svc.update_context(_tx.id, nr_ctx)
+                logger.info(
+                    f"rules_page: applied new rule to {len(_nr_preview_txs)} existing transactions"
+                    f" (pattern={nr_pattern!r})"
+                )
             st.rerun()

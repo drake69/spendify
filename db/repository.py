@@ -20,6 +20,7 @@ from db.models import (
     ImportBatch,
     ImportJob,
     InternalTransferLink,
+    NsiTagMapping,
     ReconciliationLink,
     Transaction,
     UserSettings,
@@ -998,6 +999,44 @@ def get_fallback_categories(session: Session) -> dict[str, tuple[str, str]]:
     if "income" not in fallbacks:
         fallbacks["income"] = ("Altro entrate", "Entrate non classificate")
     return fallbacks
+
+
+# ── NsiTagMapping CRUD (C-08-cascade) ────────────────────────────────────────
+
+def get_nsi_tag_mapping(session: Session) -> dict[str, tuple[str, str]]:
+    """Load the full OSM tag → (category, subcategory) mapping from DB."""
+    rows = session.query(NsiTagMapping).all()
+    return {row.osm_tag: (row.category, row.subcategory) for row in rows}
+
+
+def get_nsi_tag_mapping_hash(session: Session) -> Optional[str]:
+    """Return the taxonomy_hash stored in nsi_tag_mapping, or None if table is empty."""
+    row = session.query(NsiTagMapping).first()
+    return row.taxonomy_hash if row else None
+
+
+def upsert_nsi_tag_mapping_bulk(session: Session, rows: list[dict]) -> None:
+    """Bulk INSERT OR REPLACE into nsi_tag_mapping.
+
+    Each dict must have keys: osm_tag, category, subcategory, taxonomy_hash, updated_at.
+    """
+    from sqlalchemy import text as _text
+    from sqlalchemy.orm import Session as _Session
+    # Use raw SQL for bulk efficiency
+    for row in rows:
+        session.execute(_text(
+            "INSERT OR REPLACE INTO nsi_tag_mapping "
+            "(osm_tag, category, subcategory, taxonomy_hash, updated_at) "
+            "VALUES (:osm_tag, :category, :subcategory, :taxonomy_hash, :updated_at)"
+        ), row)
+    session.flush()
+
+
+def clear_nsi_tag_mapping(session: Session) -> int:
+    """Delete all rows from nsi_tag_mapping. Returns the number of rows deleted."""
+    count = session.query(NsiTagMapping).delete()
+    session.flush()
+    return count
 
 
 # ── Account CRUD ──────────────────────────────────────────────────────────────

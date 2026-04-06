@@ -1,6 +1,6 @@
 """SQLAlchemy ORM models (RF-07).
 
-Twelve tables:
+Thirteen tables:
   import_batch            – one record per imported file
   document_schema         – parsing template (Flow 2 → Flow 1 promotion)
   transaction             – canonical transaction with all fields
@@ -13,6 +13,7 @@ Twelve tables:
   account                 – user-defined bank accounts (stable dedup key)
   description_rule        – bulk description replacement rules (raw_description → cleaned)
   budget_target           – per-category % budget targets (A-02)
+  nsi_tag_mapping         – OSM tag → (category, subcategory) for C-08-cascade NSI bypass
 """
 from __future__ import annotations
 
@@ -104,6 +105,7 @@ def create_tables(engine=None):
     _migrate_add_budget_target(engine)
     _migrate_add_footer_patterns(engine)
     _migrate_add_has_borders(engine)
+    _migrate_add_nsi_tag_mapping(engine)
     _migrate_set_onboarding_done_for_existing_users(engine)  # must run last
     return engine
 
@@ -405,6 +407,21 @@ class BudgetTarget(Base):
     period_type = Column(String(16), default="monthly")       # monthly (future: quarterly, yearly)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, onupdate=lambda: datetime.now(timezone.utc))
+
+
+class NsiTagMapping(Base):
+    """OSM tag → (category, subcategory) mapping for C-08-cascade NSI bypass.
+
+    Built once via NsiTaxonomyService.build() and invalidated when the user
+    taxonomy changes (detected by SHA-256 hash comparison).
+    """
+    __tablename__ = "nsi_tag_mapping"
+
+    osm_tag = Column(String(128), primary_key=True)   # e.g. "shop=supermarket"
+    category = Column(String(128), nullable=False)
+    subcategory = Column(String(128), nullable=False)
+    taxonomy_hash = Column(String(64), nullable=False)  # SHA-256 of taxonomy at build time
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 def _migrate_add_import_job(engine) -> None:
@@ -855,6 +872,21 @@ def _migrate_add_budget_target(engine) -> None:
             'target_pct NUMERIC(5,2) NOT NULL, '
             'period_type VARCHAR(16) DEFAULT "monthly", '
             'created_at DATETIME, '
+            'updated_at DATETIME)'
+        ))
+        conn.commit()
+
+
+def _migrate_add_nsi_tag_mapping(engine) -> None:
+    """Create nsi_tag_mapping table if not present (idempotent, C-08-cascade)."""
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        conn.execute(_text(
+            'CREATE TABLE IF NOT EXISTS nsi_tag_mapping ('
+            'osm_tag VARCHAR(128) PRIMARY KEY, '
+            'category VARCHAR(128) NOT NULL, '
+            'subcategory VARCHAR(128) NOT NULL, '
+            'taxonomy_hash VARCHAR(64) NOT NULL, '
             'updated_at DATETIME)'
         ))
         conn.commit()

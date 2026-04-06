@@ -1,6 +1,6 @@
 # Spendif.ai — Developer Guide
 
-> Version: 3.0 — updated 2026-03-21
+> Version: 3.0 — updated 2026-04-05
 >
 > For user features and quick reference see **[reference_guide.en.md](reference_guide.en.md)**.
 > For detailed technical documentation (DB, pipeline, deployment, etc.) see the `documents/` folder.
@@ -33,8 +33,9 @@
                        │  imports only from services.*
 ┌──────────────────────▼───────────────────────────────┐
 │                  services/                           │
-│  ImportService · TransactionService · RuleService    │
-│  SettingsService · CategoryService · ReviewService  │
+│  ImportService · TransactionService · RuleService         │
+│  SettingsService · CategoryService · NsiTaxonomyService   │
+│  ReviewService · BudgetService                            │
 └──────┬────────────────────────────────────┬──────────┘
        │                                    │
 ┌──────▼──────┐                    ┌────────▼────────┐
@@ -185,6 +186,48 @@ svc.set_onboarding_done()
 svc.apply_default_taxonomy(language)   # 'it' | 'en' | 'fr' | 'de' | 'es'
 ```
 
+### NsiTaxonomyService — OSM tag → taxonomy mapping (C-08-cascade)
+
+`NsiTaxonomyService` builds and maintains the `taxonomy_map`: a dictionary `{osm_tag → (category, subcategory)}` that enables direct LLM bypass for transactions identified via NSI.
+
+```python
+from services.nsi_taxonomy_service import NsiTaxonomyService
+
+svc = NsiTaxonomyService(engine)
+with session_scope() as s:
+    taxonomy_map = svc.get_or_build(s, taxonomy, llm_backend)
+```
+
+**Lifecycle:**
+- Stored in DB table `nsi_tag_mapping` (persistent across restarts)
+- Automatically invalidated if the user's taxonomy changes (SHA-256 hash)
+- First build: LLM call → static fallback from `osm_to_spendifai_map.json`
+- Italian default taxonomy → 14+ tags mapped without LLM (`_static_map()`)
+
+**Developer workflow (when to update `static_rules.json`):**
+```bash
+# After each NSI release or brand addition
+python scripts/build_static_rules.py
+git add core/static_rules.json
+git commit -m "feat(nsi): update static_rules.json — NSI vX"
+```
+Users' `taxonomy_map` is automatically invalidated on the next import.
+
+### CategoryService — categorization cascade
+
+`CategoryService` orchestrates the 5-step cascade for each transaction:
+
+| Step | Source | Condition | `source` |
+|------|--------|-----------|----------|
+| **0** | User rules (`category_rule` DB) | Deterministic pattern match | `rule` |
+| **2** | History (`human_validated=True`) | Confidence ≥ threshold | `history` |
+| **3b** | NSI + `taxonomy_map` | Brand match + `user_country ∈ countries` + osm_tag in map | `nsi` |
+| **3b** | NSI hint | Brand match without bypass | `llm` (hint injected) |
+| **4** | LLM batch | Unresolved transactions | `llm` |
+| **5** | Fallback | No match | `llm` + `to_review=True` |
+
+> **Note on Step 1 (deprecated):** The linguistic rules in `core/static_rules/_it.json` were deprecated in C-08-cascade. They operated on the raw description (payment reference), but `clean_descriptions_batch()` extracts only the counterparty name before categorization, making the regex patterns ineffective. Brands are now better covered by NSI (Step 3b).
+
 ### Onboarding
 
 On the first run with an empty DB, `app.py` shows the onboarding wizard (4 steps: language, owner names, accounts, confirmation). After completing the wizard, `set_onboarding_done()` is called and the app reloads normally.
@@ -286,12 +329,16 @@ chat_bot/
 ├── engine.py           # ChatBotEngine — orchestrator, auto-detect mode
 ├── rag.py              # RAGEngine — TF-IDF retrieval + LLM generation
 ├── faq_classifier.py   # FAQClassifier — deterministic TF-IDF match (zero LLM)
-├── faq_store.py        # Loads FAQ (JSON/MD) and doc chunks
+├── kb_store.py         # Loads FAQ (JSON/MD) and doc chunks
 ├── prompts.json        # System prompts + multi-language no-answer messages
-└── knowledge/<lang>/   # FAQ and docs per language (it, en, de, es, fr, pt)
-    ├── faq.json        # [{"q": "...", "a": "..."}]
-    └── docs/           # .md/.txt files chunked for RAG
+└── knowledge/<lang>/   # FAQ and docs per language (it, en)
+    ├── faq.json        # [{"q": "...", "a": "...", "page": "<page_key>"}] — 150 items
+    └── docs/           # .md/.txt files chunked for RAG (manuals, guides, etc.)
 ```
+
+**Corpus status (2026-04-05):** `knowledge/it/` and `knowledge/en/` populated with 150 Q&A
+(`faq_can_do` + `faq_cannot_do`) and 5 markdown manuals in `docs/`.
+Canonical source: `documents/06_knowledge_base/` — edit there and regenerate.
 
 ### Three modes
 
@@ -300,6 +347,15 @@ chat_bot/
 | `rag_cloud` | Backend = `openai` / `claude` / `openai_compatible` with API key | TF-IDF retrieval → cloud LLM generates answer |
 | `rag_local` | Backend = `local_ollama` / `vllm` | TF-IDF retrieval → local LLM generates answer |
 | `faq_match` | Backend = `local_llama_cpp` or none | Cosine similarity on FAQ, pre-built answer |
+
+**Note:** `ChatBotEngine` is cached in `st.session_state["chatbot"]` and automatically
+invalidated when the LLM backend changes (cleared in `settings_page.py` on save).
+
+### Source display
+
+`kb_store.py` exposes a `page_ref` field (`FAQEntry.page_ref`) containing the app page key
+(e.g. `"import"`, `"review"`). `chat_page.py` renders it as a navigable label (`→ 📥 Import`).
+Doc chunk sources show the filename (`📄 user_guide.md`). Sources without a `page_ref` are suppressed.
 
 ### Project integration
 
@@ -318,14 +374,15 @@ bot = ChatBotEngine(db_engine=engine, lang="en")
 print(bot.mode)       # ChatMode.FAQ_MATCH | RAG_LOCAL | RAG_CLOUD
 response = bot.ask("How do I import a file?")
 print(response.text)
-print(response.sources)  # ["faq.json"] (optional)
+print(response.sources)  # ["import", "review", ...] — page_ref keys
 ```
 
 ### Populating the knowledge base
 
-1. **FAQ:** Add `.json` or `.md` files to `chat_bot/knowledge/<lang>/`
-2. **RAG documents:** Add `.md` or `.txt` files to `chat_bot/knowledge/<lang>/docs/`
-3. Never index sensitive data (credentials, personal data, business strategies)
+1. Edit `documents/06_knowledge_base/faq_can_do.en.json` / `faq_cannot_do.en.json`
+2. Run the conversion script to regenerate `knowledge/{lang}/faq.json`
+3. For manuals: edit `.md` files in `documents/06_knowledge_base/` and copy to `knowledge/en/docs/`
+4. Never index sensitive data (credentials, personal data, business strategies)
 
 ---
 
@@ -359,28 +416,28 @@ The recommended entry point for a full benchmark across all backends and both ph
 
 ```bash
 # macOS / Linux — RECOMMENDED (all backends × pipeline + categorizer)
-bash tests/run_benchmark_full.sh                             # classifier + categorizer, 1 run
-bash tests/run_benchmark_full.sh --benchmark classifier      # classifier only
-bash tests/run_benchmark_full.sh --benchmark both --runs 3   # both phases, 3 runs each
-bash tests/run_benchmark_full.sh --setup-only                # download models only
+bash benchmark/run_benchmark_full.sh                             # classifier + categorizer, 1 run
+bash benchmark/run_benchmark_full.sh --benchmark classifier      # classifier only
+bash benchmark/run_benchmark_full.sh --benchmark both --runs 3   # both phases, 3 runs each
+bash benchmark/run_benchmark_full.sh --setup-only                # download models only
 
 # Windows (PowerShell)
 powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1
 powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -Benchmark both -Runs 3
 
 # llama.cpp only (skip Ollama and vLLM)
-bash tests/run_benchmark_full.sh --skip-ollama --skip-vllm
+bash benchmark/run_benchmark_full.sh --skip-ollama --skip-vllm
 ```
 
-`run_benchmark_full.sh` / `run_benchmark_full.ps1` perform full setup (download missing GGUF models, `ollama pull` missing Ollama models, detect vLLM), then run **classifier** and **categorizer** benchmarks for every active backend. The model list is read from `tests/benchmark_models.csv`. Flags: `--benchmark classifier|categorizer|both`, `--runs N`, `--setup-only`, `--skip-llama/ollama/vllm`, `--vllm-url`, `--ollama-url` (PS1 equivalents: `-Benchmark`, `-Runs`, `-SetupOnly`, `-SkipLlama`, `-SkipOllama`, `-SkipVllm`, `-VllmUrl`, `-OllamaUrl`).
+`run_benchmark_full.sh` / `run_benchmark_full.ps1` perform full setup (download missing GGUF models, `ollama pull` missing Ollama models, detect vLLM), then run **classifier** and **categorizer** benchmarks for every active backend. The model list is read from `benchmark/benchmark_models.csv`. Flags: `--benchmark classifier|categorizer|both`, `--runs N`, `--setup-only`, `--skip-llama/ollama/vllm`, `--vllm-url`, `--ollama-url` (PS1 equivalents: `-Benchmark`, `-Runs`, `-SetupOnly`, `-SkipLlama`, `-SkipOllama`, `-SkipVllm`, `-VllmUrl`, `-OllamaUrl`).
 
 ### Model catalogue (benchmark_models.csv)
 
-`tests/benchmark_models.csv` is the single source of truth for the model list used by all benchmark scripts, replacing hardcoded arrays. Columns: `name`, `gguf_file`, `gguf_repo`, `gguf_hf_url`, `ollama_tag`, `enabled`. A populated `gguf_file` makes the model available on llama.cpp; a populated `ollama_tag` makes it available on Ollama. Set `enabled=false` to skip a model in all scripts. The catalogue contains 11 models (Qwen2.5-1.5B, Gemma2-2B, Qwen3.5-2B, Qwen3.5-4B, Gemma4-E2B Q3+Q4, Llama3.2-3B, Qwen2.5-3B, Phi3-mini, Qwen2.5-7B, Gemma3-12B). vLLM models are not in the CSV — they are auto-detected from the running server at runtime.
+`benchmark/benchmark_models.csv` is the single source of truth for the model list used by all benchmark scripts, replacing hardcoded arrays. Columns: `name`, `gguf_file`, `gguf_repo`, `gguf_hf_url`, `ollama_tag`, `enabled`. A populated `gguf_file` makes the model available on llama.cpp; a populated `ollama_tag` makes it available on Ollama. Set `enabled=false` to skip a model in all scripts. The catalogue contains 11 models (Qwen2.5-1.5B, Gemma2-2B, Qwen3.5-2B, Qwen3.5-4B, Gemma4-E2B Q3+Q4, Llama3.2-3B, Qwen2.5-3B, Phi3-mini, Qwen2.5-7B, Gemma3-12B). vLLM models are not in the CSV — they are auto-detected from the running server at runtime.
 
 ### LLM Benchmark — HW monitoring
 
-The benchmark suite (`tests/benchmark_classifier.py`, `tests/benchmark_categorizer.py`) includes cross-platform GPU monitoring via `tests/hw_monitor.py`. A background thread (`HWMonitor`) samples CPU and GPU utilization every 0.5 s for the duration of each run, replacing the old point-in-time sampling functions.
+The benchmark suite (`benchmark/benchmark_classifier.py`, `benchmark/benchmark_categorizer.py`) includes cross-platform GPU monitoring via `benchmark/hw_monitor.py`. A background thread (`HWMonitor`) samples CPU and GPU utilization every 0.5 s for the duration of each run, replacing the old point-in-time sampling functions.
 
 | Platform | GPU method |
 |----------|-----------|
@@ -391,22 +448,68 @@ The benchmark suite (`tests/benchmark_classifier.py`, `tests/benchmark_categoriz
 
 All GGUF models are now benchmarked regardless of file size (the previous 3 GB filter has been removed).
 
+### Session versioning (bench_guard)
+
+`benchmark/bench_guard.sh` / `bench_guard.ps1` — invoked automatically by `run_benchmark_full` at startup — ensure every benchmark session has a unique version string stamped into the `version` field of all produced CSVs.
+
+| Context | Behaviour |
+|---------|-----------|
+| **Dev machine** (git available) | Regenerates `benchmark/.version` = `YYYYMMDDHHMMSS-<sha7>`. Fresh on every launch, independent of commits. |
+| **Remote bench machine** (no git, `.version` present) | Uses the `.version` written by `bench_push_usb` / `bench_push_ssh`. |
+| **No git + no `.version`** | **Fatal error** with a hint pointing to the deployment scripts. |
+
+This allows the monitor to isolate the current session by filtering on `version` (same SHA+timestamp = same session), without requiring explicit pushes or commits on the dev machine.
+
 ### Benchmark progress monitor
 
-`tests/monitor_benchmark.sh` / `monitor_benchmark.ps1` / `monitor_benchmark.py` show real-time benchmark progress by reading `results_all_runs.csv`. Features: per-model progress bars with elapsed time and ETA, current pipeline phase (classifier/categorizer) detected from the `benchmark_type` column, live CPU/GPU stats via `HWMonitor.sample_once()`, and historical averages from the CSV. Options: `--interval N` (refresh in seconds), `--runs N` (expected runs per model), `--total N` (expected total rows), `--once` (print snapshot and exit), `--all` (show completed models too).
+`benchmark/monitor_benchmark.sh` / `monitor_benchmark.ps1` / `monitor_benchmark.py` show real-time benchmark progress. They read all archive files in `benchmark/results/*.csv` (not `results_all_runs.csv`, which is only produced by the offline aggregator) and filter by the `version` field to isolate the current session. Features: per-model progress bars with elapsed time and ETA, current pipeline phase (classifier/categorizer) detected from the `benchmark_type` column, live CPU/GPU stats via `HWMonitor.sample_once()`, and historical averages from the CSV. Options: `--interval N` (refresh in seconds), `--runs N` (expected runs per model), `--total N` (expected total rows), `--once` (print snapshot and exit), `--all` (show completed models too).
+
+### Categorizer benchmark scenarios (`--scenario`)
+
+The categorizer benchmark supports predefined scenarios that simulate different levels of "warm data" available at categorization time. The scenario controls which deterministic sources are active before the LLM call.
+
+| Scenario | Active warm data | Expected LLM% |
+|---|---|---|
+| `cold` (default) | none | ~70% |
+| `nsi_warm` | NSI + taxonomy_map (52 OSM tags) | ~30-40% |
+| `full_warm` | NSI + history (GT) + rules | <10% |
+| `country_with` | NSI + country ranking | ~30-40% |
+| `country_without` | NSI, no country | ~30-40% |
+| `all` | runs all scenarios in sequence | — |
+
+**New CSV columns** produced per run with scenario: `scenario`, `n_nsi`, `nsi_accuracy`, `nsi_coverage_pct`, `taxonomy_map_hit_pct`.
+
+> **⚠️ Known limitation — taxonomy_map shared across models**
+>
+> The benchmark builds the `taxonomy_map` (OSM tag → category/subcategory) **once per session**, before the model loop, using the static part of `NsiTaxonomyService` (`osm_to_spendifai_map.json`).
+> In the real pipeline, the `taxonomy_map` also includes an LLM-assisted component (`_llm_map`) that varies per model, and is automatically invalidated when the user's taxonomy changes (via SHA-256).
+>
+> **Implications for the user:**
+> - Comparing `nsi_warm` scenarios across different models in the same session may underestimate the advantage of more capable models in the mapping phase.
+> - If the taxonomy changes between benchmark sessions, always relaunch the full session to ensure `taxonomy_map` consistency.
+>
+> **Roadmap:** rebuild the `taxonomy_map` for each tested model (adds ~N seconds per model, trade-off documented in T-09).
+
+**Entry point:**
+```bash
+bash benchmark/run_benchmark_full.sh --scenario nsi_warm
+bash benchmark/run_benchmark_full.sh --scenario all   # all scenarios in sequence
+```
 
 ### Available scripts
 
 | Script | Purpose |
 |--------|---------|
-| `tests/run_benchmark_full.sh` | **ENTRY POINT** (macOS/Linux): all backends × pipeline + categorizer |
-| `tests/run_benchmark_full.ps1` | **ENTRY POINT** (Windows): all backends × pipeline + categorizer |
-| `tests/benchmark_models.csv` | Model catalogue (replaces hardcoded arrays in scripts) |
-| `tests/monitor_benchmark.sh` | Benchmark progress monitor (macOS/Linux) |
-| `tests/monitor_benchmark.ps1` | Benchmark progress monitor (Windows) |
-| `tests/monitor_benchmark.py` | Benchmark progress monitor (cross-platform Python) |
-| `tests/hw_monitor.py` | Background HW monitoring (CPU + GPU, cross-platform) |
-| `tests/diagnose.ps1` | Windows environment diagnostics including GPU detection |
+| `benchmark/run_benchmark_full.sh` | **ENTRY POINT** (macOS/Linux): all backends × pipeline + categorizer |
+| `benchmark/run_benchmark_full.ps1` | **ENTRY POINT** (Windows): all backends × pipeline + categorizer |
+| `benchmark/bench_guard.sh` | Version gate (macOS/Linux): generates/verifies `benchmark/.version` |
+| `benchmark/bench_guard.ps1` | Version gate (Windows): generates/verifies `benchmark\.version` |
+| `benchmark/benchmark_models.csv` | Model catalogue (replaces hardcoded arrays in scripts) |
+| `benchmark/monitor_benchmark.sh` | Benchmark progress monitor (macOS/Linux) |
+| `benchmark/monitor_benchmark.ps1` | Benchmark progress monitor (Windows) |
+| `benchmark/monitor_benchmark.py` | Benchmark progress monitor (cross-platform Python) |
+| `benchmark/hw_monitor.py` | Background HW monitoring (CPU + GPU, cross-platform) |
+| `benchmark/diagnose.ps1` | Windows environment diagnostics including GPU detection |
 
 ### Logging
 
@@ -436,6 +539,11 @@ See [`tests/README.md`](../tests/README.md) for full benchmark documentation.
 | PII sanitization before any remote call | IBANs, cards, tax codes, and names replaced in memory before sending |
 | Service layer as sole access point for UI | Decoupling that allows testing logic independently of Streamlit |
 | Default taxonomy in DB (not YAML) | Multi-language support (it/en/fr/de/es) without additional config files |
+| NSI + `taxonomy_map` for LLM bypass | Known brands (e.g. Esselunga, Q8) categorized deterministically without LLM when `user_country` is confirmed. `nsi_tag_mapping` stored in DB, invalidated by SHA-256 on taxonomy changes. |
+| `LlamaCppBackend.get_context_info()` — `n_ctx_train` fallback | `llama-cpp-python >= 0.3.x` removed `n_ctx_train()`. Code now catches `AttributeError` and falls back to GGUF metadata (`read_gguf_context_length`) or `n_ctx()`. |
+| Match preview in "New rule" form (issue #15) | Before creating a rule, `rules_page.py` calls `tx_svc.get_by_rule_pattern()` and shows how many existing transactions match. If N > 0, a checkbox (default True) lets the user also apply the category to those transactions — same behaviour as the edit-rule form. |
+| Chatbot: `ChatBotEngine` invalidated on backend change | The chatbot is cached in `st.session_state["chatbot"]`. `settings_page.py` clears it on LLM settings save, forcing re-initialisation with the new backend on next visit to the Chat page. |
+| Chatbot: TF-IDF over 150 Q&A + 5 manuals, no vector DB | Total corpus < 1 MB: in-memory TF-IDF is sufficient. A vector DB (Chroma/Qdrant) would only be added if the corpus exceeded ~500 items. Canonical source in `documents/06_knowledge_base/`; `knowledge/{lang}/` is a generated artifact. |
 
 ---
 

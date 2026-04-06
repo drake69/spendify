@@ -245,6 +245,70 @@ _INDEXED_USER_TEMPLATE = (
 )
 
 
+def _containment_score(output_name: str, input_desc: str) -> float:
+    """Score how well output_name is 'contained' within input_desc.
+
+    Uses token-level Jaccard on normalised lowercased words.
+    A high score means every word in the output appears in the input —
+    the classic signal that the LLM correctly extracted a substring.
+    """
+    def tokens(s: str) -> set[str]:
+        s = s.lower()
+        s = "".join(ch if ch.isalnum() or ch.isspace() else " " for ch in s)
+        return set(s.split())
+
+    out_tok = tokens(output_name)
+    in_tok = tokens(input_desc)
+    if not out_tok:
+        return 0.0
+    # Containment: |out ∩ in| / |out|  (how much of the output is in the input)
+    return len(out_tok & in_tok) / len(out_tok)
+
+
+def _reverse_match(
+    unresolved: list[tuple[int, str]],
+    unclaimed_names: list[str],
+    source_name: str,
+    label: str,
+) -> dict[int, str]:
+    """I-17: greedy containment-based reverse matching.
+
+    For each (global_idx, input_description) in `unresolved`, find the best
+    unclaimed output name by containment score.  Assignments are made greedily
+    (highest score first) so each output name is used at most once.
+
+    Returns a dict {global_idx: name} for assignments with score > 0.
+    """
+    # Build all (score, input_idx_in_list, name_idx_in_list) triples
+    scores: list[tuple[float, int, int]] = []
+    for i, (_, inp) in enumerate(unresolved):
+        for j, name in enumerate(unclaimed_names):
+            sc = _containment_score(name, inp)
+            if sc > 0:
+                scores.append((sc, i, j))
+
+    scores.sort(reverse=True)
+
+    assigned_inputs: set[int] = set()
+    assigned_names: set[int] = set()
+    result: dict[int, str] = {}
+
+    for sc, i, j in scores:
+        if i in assigned_inputs or j in assigned_names:
+            continue
+        global_idx, inp = unresolved[i]
+        name = unclaimed_names[j]
+        result[global_idx] = name
+        assigned_inputs.add(i)
+        assigned_names.add(j)
+        logger.debug(
+            f"I-17 reverse-match [{source_name}] {label}: "
+            f"idx={global_idx} score={sc:.2f} {inp!r} → {name!r}"
+        )
+
+    return result
+
+
 def _call_llm_batch(
     descriptions: list[str],
     system_prompt: str,
@@ -296,7 +360,7 @@ def _call_llm_batch(
                 all_results[batch_start + i] = d
             continue
 
-        # Map by idx (anti-shuffle)
+        # Map by idx (anti-shuffle, I-16)
         idx_to_name: dict[int, str] = {}
         for item in results:
             if isinstance(item, dict) and "idx" in item and "name" in item:
@@ -304,6 +368,28 @@ def _call_llm_batch(
             elif isinstance(item, str):
                 # Fallback: old-style flat array (backward compat)
                 pass
+
+        # Collect output names that were not claimed by any idx
+        claimed_idx = set(idx_to_name.keys())
+        unclaimed_names = [
+            str(item["name"])
+            for item in results
+            if isinstance(item, dict) and "name" in item
+            and item.get("idx") not in claimed_idx
+        ]
+
+        # I-17: reverse matching — recover positions where idx was missing/wrong.
+        # For each unresolved input position, pick the unclaimed output name whose
+        # normalised form is most contained within the input description.
+        # Greedy assignment (best score first) avoids duplicate assignments.
+        unresolved = [
+            (batch_start + i, batch[i])
+            for i in range(n)
+            if (batch_start + i) not in claimed_idx
+        ]
+        if unresolved and unclaimed_names:
+            assigned = _reverse_match(unresolved, unclaimed_names, source_name, label)
+            idx_to_name.update(assigned)
 
         for i, d in enumerate(batch):
             global_idx = batch_start + i
@@ -313,10 +399,12 @@ def _call_llm_batch(
             else:
                 all_results[global_idx] = d  # keep original
 
+        n_by_idx = len(claimed_idx & {batch_start + i for i in range(n)})
+        n_by_rev = len(idx_to_name) - n_by_idx
         logger.debug(
             f"clean_descriptions_batch [{source_name}] {label}: "
             f"batch {batch_start}..{batch_start + n} via {backend_used}, "
-            f"{len(idx_to_name)}/{n} mapped by idx"
+            f"{n_by_idx}/{n} by idx, {n_by_rev}/{n} by reverse-match"
         )
 
     return [r if r else descriptions[i] for i, r in enumerate(all_results)]

@@ -21,6 +21,7 @@ from core.normalizer import (
     load_raw_head as _load_raw_head,
 )
 from core.history_engine import HistoryCache
+from services.nsi_taxonomy_service import NsiTaxonomyService
 from core.orchestrator import (
     ImportResult,
     ProcessingConfig,
@@ -195,10 +196,15 @@ class ImportService:
         Duplicate detection uses a per-call session so no open session is needed
         from the caller.
         """
+        nsi_svc = NsiTaxonomyService(self.engine)
         with self._session() as s:
             taxonomy = repository.get_taxonomy_config(s)
             user_rules = repository.get_category_rules(s)
             history_cache = HistoryCache(s)
+            # C-08-cascade: load (or build) NSI taxonomy_map
+            from core.orchestrator import _build_backend
+            _backend_for_nsi = _build_backend(config)
+            taxonomy_map = nsi_svc.get_or_build(s, taxonomy, _backend_for_nsi)
 
         def _existing_checker(tx_ids: list[str]) -> set[str]:
             with self._session() as s:
@@ -216,6 +222,7 @@ class ImportService:
             account_label_override=account_label_override,
             skip_rows_override=skip_rows_override,
             history_cache=history_cache,
+            taxonomy_map=taxonomy_map,
         )
 
     # ── Full-batch import (legacy) ─────────────────────────────────────────────

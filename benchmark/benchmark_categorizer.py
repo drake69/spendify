@@ -50,6 +50,7 @@ from core.orchestrator import ProcessingConfig, _build_backend, load_raw_datafra
 from core.classifier import classify_document
 from core.llm_backends import LlamaCppBackend, DEFAULT_GGUF_MODELS
 from db.taxonomy_defaults import TAXONOMY_DEFAULTS
+from services.nsi_taxonomy_service import NsiTaxonomyService
 
 # ── Paths ─────────────────────────────────────────────────────────────────
 _TESTS_DIR = Path(__file__).resolve().parent
@@ -62,7 +63,7 @@ _RESULTS_ARCHIVE_DIR = _TESTS_DIR / "results"
 _ARCHIVE_CSV_PATH: Path | None = None  # Set by main() before run loop
 
 N_RUNS_DEFAULT = 10
-_FILES_DEFAULT = "*_S_*"
+_FILES_DEFAULT = "*"
 
 # Fallback category names (Italian defaults)
 _FALLBACK_CATEGORIES = {_DEFAULT_FALLBACK_EXPENSE[0], _DEFAULT_FALLBACK_INCOME[0]}
@@ -130,12 +131,17 @@ class CatRunResult:
     fuzzy_accuracy: float       # n_correct_fuzzy / n_transactions
     fallback_rate: float        # n_fallback / n_transactions
     duration_seconds: float
-    cpu_load_avg: float = 0.0      # avg CPU load during file processing
-    gpu_utilization_pct: float = 0.0  # avg GPU utilization % during file processing
-    cleaner_batch_size: int = 30   # batch size used for counterpart extraction
+    cpu_load_avg: float = 0.0
+    gpu_utilization_pct: float = 0.0
+    cleaner_batch_size: int = 30
     error: str = ""
-    # Timing alias (same value as duration_seconds, for cross-script alignment)
     cat_duration_s: float = 0.0
+    # C-08-bench: NSI / cascade metrics
+    scenario: str = "cold"         # cold | nsi_warm | full_warm | country_with | country_without
+    n_nsi: int = 0                 # tx resolved by NSI → taxonomy_map
+    nsi_accuracy: float = 0.0     # exact accuracy among NSI-resolved tx
+    nsi_coverage_pct: float = 0.0 # n_nsi / n_transactions
+    taxonomy_map_hit_pct: float = 0.0  # n_nsi / total NSI matches (map hit rate)
 
 
 @dataclass
@@ -519,6 +525,67 @@ def _write_config_json(meta: dict[str, str], n_runs: int, n_files: int) -> None:
     print(f"[output] Config: {_DOCS_BENCHMARK_DIR / 'cat_benchmark_config.json'}")
 
 
+# ── C-08-bench: warm scenario fixtures ───────────────────────────────────
+
+def _build_real_taxonomy_map(taxonomy: TaxonomyConfig) -> dict[str, tuple[str, str]]:
+    """Build OSM tag → (categoria, sottocategoria) from osm_to_spendifai_map.json.
+
+    Uses the real static mapping file validated against the user's taxonomy — the same
+    logic that NsiTaxonomyService uses as static fallback during onboarding.
+    No DB connection, no LLM call required.
+
+    Replaces the old _SYNTHETIC_TAXONOMY_MAP hardcoded dict.
+    """
+    try:
+        # Bypass __init__ to avoid requiring a DB engine — _collect_osm_tags and
+        # _static_map only use class-level path constants, not self.engine/_Session.
+        svc = NsiTaxonomyService.__new__(NsiTaxonomyService)
+        tags = svc._collect_osm_tags()
+        result = svc._static_map(tags, taxonomy)
+        print(f"[taxonomy_map] Loaded {len(result)} OSM tag mappings from osm_to_spendifai_map.json")
+        return result
+    except Exception as exc:
+        print(f"[WARN] _build_real_taxonomy_map failed: {exc} — warm scenarios will use empty map")
+        return {}
+
+
+class _SyntheticHistoryCache:
+    """Benchmark-only history cache pre-populated from ground truth.
+
+    Mimics the HistoryCache.lookup() interface so it can be passed directly
+    to categorize_batch() without a DB session.
+    """
+
+    def __init__(self, ground_truth: list[GroundTruthRow]) -> None:
+        # description_raw → (category, subcategory) from ground truth
+        self._lookup_dict: dict[str, tuple[str, str]] = {}
+        for row in ground_truth:
+            if row.expected_category and "/" in row.expected_category:
+                cat, sub = row.expected_category.split("/", 1)
+                self._lookup_dict[row.description_raw] = (cat.strip(), sub.strip())
+
+    def lookup(self, description: str) -> tuple[str | None, str | None, float]:
+        pair = self._lookup_dict.get(description)
+        if pair:
+            return pair[0], pair[1], 1.0  # confidence=1.0: ground truth is certain
+        return None, None, 0.0
+
+    @property
+    def _cache(self) -> dict:
+        """Expose internal cache as DescriptionProfile dict — used by get_top_associations_text."""
+        from core.history_engine import DescriptionProfile
+        result = {}
+        for desc, (cat, sub) in self._lookup_dict.items():
+            result[desc] = DescriptionProfile(
+                description=desc,
+                total_validated=5,
+                confidence=1.0,
+                top_category=cat,
+                top_subcategory=sub,
+            )
+        return result
+
+
 # ── Main evaluation ──────────────────────────────────────────────────────
 
 from tests.hw_monitor import HWMonitor
@@ -531,6 +598,11 @@ def _evaluate_file(
     taxonomy: TaxonomyConfig,
     run_id: int,
     cleaner_batch_size: int = 30,
+    scenario: str = "cold",
+    taxonomy_map: dict[str, tuple[str, str]] | None = None,
+    history_cache=None,
+    user_rules: list | None = None,
+    user_country: str | None = None,
 ) -> tuple[CatRunResult, list[CatDetailRow]]:
     """Normalize a file with its ground truth schema, then categorize and compare."""
     filepath = _GENERATED_DIR / entry.filename
@@ -553,6 +625,7 @@ def _evaluate_file(
         fuzzy_accuracy=0.0,
         fallback_rate=0.0,
         duration_seconds=0.0,
+        scenario=scenario,
     )
 
     try:
@@ -611,18 +684,20 @@ def _evaluate_file(
         # Sample HW after cleaner
         # HW sampling handled by background HWMonitor thread
 
-        # 4. Categorize using LLM
+        # 4. Categorize (warm fixtures injected per scenario)
         cat_results = categorize_batch(
             transactions=transactions,
             taxonomy=taxonomy,
-            user_rules=[],
+            user_rules=user_rules or [],
             llm_backend=backend,
             sanitize_config=None,
             fallback_backend=None,
             description_language="it",
             batch_size=20,
             source_name=entry.filename,
-            history_cache=None,
+            history_cache=history_cache,
+            taxonomy_map=taxonomy_map,
+            user_country=user_country,
         )
 
         # Sample HW after categorization
@@ -636,6 +711,8 @@ def _evaluate_file(
         n_history = 0
         n_rule = 0
         n_llm = 0
+        n_nsi = 0
+        n_nsi_correct = 0
         n_categorized = 0
         detail_rows: list[CatDetailRow] = []
 
@@ -664,6 +741,10 @@ def _evaluate_file(
                 n_rule += 1
             elif cr.source == CategorySource.llm:
                 n_llm += 1
+            elif cr.source == CategorySource.nsi:
+                n_nsi += 1
+                if exact:
+                    n_nsi_correct += 1
 
             detail_rows.append(CatDetailRow(
                 run_id=run_id,
@@ -703,6 +784,11 @@ def _evaluate_file(
             cpu_load_avg=hw_stats.cpu_avg,
             gpu_utilization_pct=hw_stats.gpu_avg,
             cleaner_batch_size=cleaner_batch_size,
+            scenario=scenario,
+            n_nsi=n_nsi,
+            nsi_accuracy=n_nsi_correct / n_nsi if n_nsi > 0 else 0.0,
+            nsi_coverage_pct=n_nsi / n_compare if n_compare > 0 else 0.0,
+            taxonomy_map_hit_pct=n_nsi / n_compare if n_compare > 0 else 0.0,
         ), detail_rows
 
     except Exception as e:
@@ -746,6 +832,8 @@ _CSV_HEADER = [
     "n_correct_category", "n_correct_fuzzy",
     "n_fallback", "n_history", "n_rule", "n_llm",
     "cat_exact_accuracy", "cat_fuzzy_accuracy", "cat_fallback_rate",
+    # C-08-bench: NSI / cascade scenario metrics
+    "scenario", "n_nsi", "nsi_accuracy", "nsi_coverage_pct", "taxonomy_map_hit_pct",
     # Common
     "duration_seconds",
     # HW stress (sampled during file processing)
@@ -826,6 +914,12 @@ def _result_to_row(r: CatRunResult) -> list:
         r.n_correct_category, r.n_correct_fuzzy,
         r.n_fallback, r.n_history, r.n_rule, r.n_llm,
         f"{r.category_accuracy:.4f}", f"{r.fuzzy_accuracy:.4f}", f"{r.fallback_rate:.4f}",
+        # C-08-bench: NSI / cascade scenario metrics
+        r.scenario,
+        r.n_nsi,
+        f"{r.nsi_accuracy:.4f}",
+        f"{r.nsi_coverage_pct:.4f}",
+        f"{r.taxonomy_map_hit_pct:.4f}",
         # Common
         f"{r.duration_seconds:.2f}",
         f"{r.cpu_load_avg:.2f}", f"{r.gpu_utilization_pct:.1f}",
@@ -879,6 +973,22 @@ def _init_archive_path() -> Path:
         i += 1
 
 
+def _init_archive_csv() -> None:
+    """Write CSV header to archive file. Called once at startup before the run loop."""
+    if _ARCHIVE_CSV_PATH is None:
+        return
+    with open(_ARCHIVE_CSV_PATH, "w", newline="", encoding="utf-8") as f:
+        csv.writer(f).writerow(_CSV_HEADER)
+
+
+def _append_result_to_archive(result: "CatRunResult") -> None:
+    """Append a single result row to the archive CSV immediately (per-file flush)."""
+    if _ARCHIVE_CSV_PATH is None:
+        return
+    with open(_ARCHIVE_CSV_PATH, "a", newline="", encoding="utf-8") as f:
+        csv.writer(f).writerow(_result_to_row(result))
+
+
 def _write_all_runs_csv(all_results: list[CatRunResult]) -> None:
     """Append new results to shared all-runs CSV in both local and documents repo."""
     for target_dir in (_BENCHMARK_DIR, _DOCS_BENCHMARK_DIR):
@@ -896,14 +1006,9 @@ def _write_all_runs_csv(all_results: list[CatRunResult]) -> None:
                 writer.writerow(_result_to_row(r))
     print(f"[output] All runs (shared): {_DOCS_BENCHMARK_DIR / 'results_all_runs.csv'}")
 
-    # Write to archive (this invocation only — fresh file, not cumulative)
+    # Archive CSV is written incrementally (per-file) via _append_result_to_archive().
     if _ARCHIVE_CSV_PATH is not None:
-        with open(_ARCHIVE_CSV_PATH, "w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow(_CSV_HEADER)
-            for r in all_results:
-                writer.writerow(_result_to_row(r))
-        print(f"[output] Archive: {_ARCHIVE_CSV_PATH}")
+        print(f"[output] Archive: {_ARCHIVE_CSV_PATH}  ({len(all_results)} rows, written incrementally)")
 
 
 def _migrate_csv_header(path: Path) -> None:
@@ -1046,6 +1151,7 @@ def _print_summary(
     total_tx = sum(r.n_transactions for r in all_results)
     total_rule = sum(r.n_rule for r in all_results)
     total_history = sum(r.n_history for r in all_results)
+    total_nsi = sum(r.n_nsi for r in all_results)
     total_llm = sum(r.n_llm for r in all_results)
     total_fallback = sum(r.n_fallback for r in all_results)
 
@@ -1054,6 +1160,10 @@ def _print_summary(
     if total_tx > 0:
         print(f"    Rule:     {total_rule:>6} ({total_rule / total_tx:>6.1%})")
         print(f"    History:  {total_history:>6} ({total_history / total_tx:>6.1%})")
+        if total_nsi > 0:
+            nsi_acc = sum(r.nsi_accuracy * r.n_nsi for r in all_results if r.n_nsi > 0)
+            nsi_acc_avg = nsi_acc / total_nsi if total_nsi > 0 else 0.0
+            print(f"    NSI:      {total_nsi:>6} ({total_nsi / total_tx:>6.1%})  accuracy={nsi_acc_avg:.1%}")
         print(f"    LLM:      {total_llm:>6} ({total_llm / total_tx:>6.1%})")
         print(f"    Fallback: {total_fallback:>6} ({total_fallback / total_tx:>6.1%})")
 
@@ -1123,6 +1233,20 @@ def main() -> None:
                         help="Base URL for Ollama or OpenAI-compatible backends")
     parser.add_argument("--cleaner-batch-size", type=int, default=30,
                         help="Batch size for counterpart extraction (default: 30, use 1 for strict ordering)")
+    parser.add_argument(
+        "--scenario",
+        type=str,
+        default="cold",
+        choices=["cold", "nsi_warm", "full_warm", "country_with", "country_without", "all"],
+        help=(
+            "Benchmark scenario (default: cold). "
+            "cold=no warm data; nsi_warm=NSI+taxonomy_map; "
+            "full_warm=NSI+history+rules; country_with/without=NSI±country ranking; "
+            "all=run all scenarios sequentially."
+        ),
+    )
+    parser.add_argument("--country", type=str, default="IT",
+                        help="ISO country code for country_with scenario (default: IT)")
     args = parser.parse_args()
 
     n_runs = args.runs
@@ -1245,6 +1369,7 @@ def main() -> None:
 
     global _ARCHIVE_CSV_PATH
     _ARCHIVE_CSV_PATH = _init_archive_path()
+    _init_archive_csv()
     print(f"[archive] {_ARCHIVE_CSV_PATH.name}")
 
     print(f"\n[config] Provider: {llm_meta['provider']}")
@@ -1307,83 +1432,137 @@ def main() -> None:
     if _completed:
         print(f"[resume] {len(_completed)} completed steps found in {len(_local_csvs)} local CSVs — skipping them")
 
+    # ── Build warm fixtures per scenario ─────────────────────────────────
+    scenarios_to_run: list[str] = (
+        ["cold", "nsi_warm", "full_warm", "country_with", "country_without"]
+        if args.scenario == "all"
+        else [args.scenario]
+    )
+
+    # Build real taxonomy_map once (used by all warm scenarios)
+    _needs_warm = any(sc != "cold" for sc in scenarios_to_run)
+    _real_taxonomy_map: dict[str, tuple[str, str]] = (
+        _build_real_taxonomy_map(taxonomy) if _needs_warm else {}
+    )
+
+    def _warm_kwargs_for_scenario(sc: str, gt_all: dict[str, list[GroundTruthRow]]) -> dict:
+        """Return kwargs for _evaluate_file based on scenario."""
+        if sc == "cold":
+            return {"taxonomy_map": None, "history_cache": None, "user_rules": [], "user_country": None}
+        if sc in ("nsi_warm", "country_with", "country_without"):
+            return {
+                "taxonomy_map": _real_taxonomy_map,
+                "history_cache": None,
+                "user_rules": [],
+                "user_country": args.country if sc == "country_with" else None,
+            }
+        if sc == "full_warm":
+            # Build combined history from all ground truth entries
+            all_gt: list[GroundTruthRow] = []
+            for rows in gt_all.values():
+                all_gt.extend(rows)
+            return {
+                "taxonomy_map": _real_taxonomy_map,
+                "history_cache": _SyntheticHistoryCache(all_gt),
+                "user_rules": [],
+                "user_country": None,
+            }
+        return {}
+
     # Run benchmark
     all_results: list[CatRunResult] = []
     all_details: list[CatDetailRow] = []
     total_start = time.time()
-    total_steps = n_runs * n_files
+    total_steps = n_runs * n_files * len(scenarios_to_run)
     skipped_steps = 0
     completed_steps = 0
 
-    for run_id in range(1, n_runs + 1):
-        run_results: list[CatRunResult] = []
-        run_start = time.time()
+    for scenario in scenarios_to_run:
+        warm_kwargs = _warm_kwargs_for_scenario(scenario, ground_truth_map)
+        print(f"\n[scenario] {scenario.upper()}")
+        if scenario != "cold":
+            tm = warm_kwargs.get("taxonomy_map")
+            hc = warm_kwargs.get("history_cache")
+            print(f"  taxonomy_map: {len(tm)} OSM tags" if tm else "  taxonomy_map: none")
+            print(f"  history_cache: {len(hc._cache)} descriptions" if hc else "  history_cache: none")
+            if warm_kwargs.get("user_country"):
+                print(f"  country: {warm_kwargs['user_country']}")
 
-        for file_idx, entry in enumerate(manifest, 1):
-            # Check resume key: (run_id, filename, git_commit, git_branch, provider, model)
-            _resume_key = (
-                run_id, entry.filename,
-                str(args.cleaner_batch_size),
-                _LLM_META.get("git_commit", ""),
-                _LLM_META.get("git_branch", ""),
-                _LLM_META.get("provider", ""),
-                _LLM_META.get("model", ""),
-            )
-            if _resume_key in _completed:
-                skipped_steps += 1
+        for run_id in range(1, n_runs + 1):
+            run_results: list[CatRunResult] = []
+            run_start = time.time()
+
+            for file_idx, entry in enumerate(manifest, 1):
+                # Resume key includes scenario
+                _resume_key = (
+                    run_id, entry.filename,
+                    str(args.cleaner_batch_size),
+                    _LLM_META.get("git_commit", ""),
+                    _LLM_META.get("git_branch", ""),
+                    _LLM_META.get("provider", ""),
+                    _LLM_META.get("model", ""),
+                )
+                if scenario == "cold" and _resume_key in _completed:
+                    skipped_steps += 1
+                    completed_steps += 1
+                    continue
+
                 completed_steps += 1
-                continue
+                pct = completed_steps / total_steps
+                elapsed = time.time() - total_start
+                eta = (elapsed / completed_steps) * (total_steps - completed_steps) if completed_steps > 0 else 0
+                eta_min, eta_sec = divmod(int(eta), 60)
+                bar_len = 30
+                filled = int(bar_len * pct)
+                bar = "█" * filled + "░" * (bar_len - filled)
 
-            completed_steps += 1
-            pct = completed_steps / total_steps
-            elapsed = time.time() - total_start
-            eta = (elapsed / completed_steps) * (total_steps - completed_steps) if completed_steps > 0 else 0
-            eta_min, eta_sec = divmod(int(eta), 60)
-            bar_len = 30
-            filled = int(bar_len * pct)
-            bar = "█" * filled + "░" * (bar_len - filled)
+                print(
+                    f"\r  {bar} {pct:5.1%} | "
+                    f"[{scenario}] Run {run_id}/{n_runs} File {file_idx}/{n_files} "
+                    f"| ETA {eta_min:02d}:{eta_sec:02d} | "
+                    f"{entry.filename}",
+                    end="", flush=True,
+                )
 
+                gt = ground_truth_map.get(entry.filename, [])
+                result, details = _evaluate_file(
+                    entry, gt, backend, taxonomy, run_id,
+                    cleaner_batch_size=args.cleaner_batch_size,
+                    scenario=scenario,
+                    **warm_kwargs,
+                )
+                run_results.append(result)
+                all_details.extend(details)
+                _append_result_to_archive(result)
+
+                nsi_info = f" nsi={result.n_nsi}({result.nsi_coverage_pct:.0%})" if result.n_nsi > 0 else ""
+                status = "OK" if not result.error else f"ERR: {result.error[:40]}"
+                print(
+                    f"\r  [{scenario}][Run {run_id}/{n_runs}][File {file_idx}/{n_files}] "
+                    f"{entry.filename} "
+                    f"{result.duration_seconds:.1f}s "
+                    f"exact={result.category_accuracy:.0%} "
+                    f"fuzzy={result.fuzzy_accuracy:.0%} "
+                    f"fb={result.fallback_rate:.0%} "
+                    f"r/h/nsi/l={result.n_rule}/{result.n_history}/{result.n_nsi}/{result.n_llm}"
+                    f"{nsi_info} "
+                    f"[{status}]"
+                    + " " * 10
+                )
+
+            run_duration = time.time() - run_start
+            all_results.extend(run_results)
+
+            n_ok = sum(1 for r in run_results if not r.error)
+            n_err = sum(1 for r in run_results if r.error)
+            avg_exact = sum(r.category_accuracy for r in run_results) / len(run_results) if run_results else 0
+            avg_fuzzy = sum(r.fuzzy_accuracy for r in run_results) / len(run_results) if run_results else 0
             print(
-                f"\r  {bar} {pct:5.1%} | "
-                f"Run {run_id}/{n_runs} File {file_idx}/{n_files} "
-                f"| ETA {eta_min:02d}:{eta_sec:02d} | "
-                f"{entry.filename}",
-                end="", flush=True,
+                f"  --- [{scenario}] Run {run_id} complete: {run_duration:.0f}s, "
+                f"{n_ok} OK / {n_err} errors, "
+                f"exact={avg_exact:.0%}, fuzzy={avg_fuzzy:.0%}"
             )
-
-            gt = ground_truth_map.get(entry.filename, [])
-            result, details = _evaluate_file(entry, gt, backend, taxonomy, run_id,
-                                              cleaner_batch_size=args.cleaner_batch_size)
-            run_results.append(result)
-            all_details.extend(details)
-
-            status = "OK" if not result.error else f"ERR: {result.error[:40]}"
-            print(
-                f"\r  [Run {run_id}/{n_runs}] [File {file_idx}/{n_files}] "
-                f"{entry.filename} "
-                f"{result.duration_seconds:.1f}s "
-                f"exact={result.category_accuracy:.0%} "
-                f"fuzzy={result.fuzzy_accuracy:.0%} "
-                f"fb={result.fallback_rate:.0%} "
-                f"r/h/l={result.n_rule}/{result.n_history}/{result.n_llm} "
-                f"[{status}]"
-                + " " * 20
-            )
-
-        run_duration = time.time() - run_start
-        all_results.extend(run_results)
-
-        # Run summary
-        n_ok = sum(1 for r in run_results if not r.error)
-        n_err = sum(1 for r in run_results if r.error)
-        avg_exact = sum(r.category_accuracy for r in run_results) / len(run_results) if run_results else 0
-        avg_fuzzy = sum(r.fuzzy_accuracy for r in run_results) / len(run_results) if run_results else 0
-        print(
-            f"  --- Run {run_id} complete: {run_duration:.0f}s, "
-            f"{n_ok} OK / {n_err} errors, "
-            f"exact={avg_exact:.0%}, fuzzy={avg_fuzzy:.0%}"
-        )
-        print()
+            print()
 
     total_time = time.time() - total_start
 

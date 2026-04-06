@@ -12,7 +12,7 @@ import re
 from collections import Counter
 from dataclasses import dataclass
 
-from chat_bot.faq_store import FAQEntry
+from chat_bot.kb_store import FAQEntry
 
 
 @dataclass

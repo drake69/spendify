@@ -64,6 +64,7 @@ class CategoryService:
     ) -> list[CategorizationResult]:
         """Categorize a batch of transactions."""
         from core.orchestrator import ProcessingConfig, _build_backend
+        from services.nsi_taxonomy_service import NsiTaxonomyService
         with self._session() as s:
             taxonomy = repository.get_taxonomy_config(s)
             user_rules = repository.get_category_rules(s)
@@ -71,6 +72,10 @@ class CategoryService:
         if backend is None:
             config = self._config_from_settings(settings)
             backend = _build_backend(config)
+        # C-08-cascade: load (or build) NSI taxonomy_map
+        nsi_svc = NsiTaxonomyService(self.engine)
+        with self._session() as s:
+            taxonomy_map = nsi_svc.get_or_build(s, taxonomy, backend)
         return categorize_batch(
             transactions=transactions,
             taxonomy=taxonomy,
@@ -81,6 +86,7 @@ class CategoryService:
             description_language=settings.get("description_language", "it"),
             user_country=settings.get("country", ""),
             progress_callback=progress_callback,
+            taxonomy_map=taxonomy_map,
         )
 
     # ── Internal helpers ──────────────────────────────────────────────────────

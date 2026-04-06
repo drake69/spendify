@@ -1,6 +1,6 @@
 # Spendif.ai — Developer Guide
 
-> Versione: 3.0 — aggiornato 2026-03-21
+> Versione: 3.0 — aggiornato 2026-04-05
 >
 > Per le funzionalità utente e il reference rapido vedi **[reference_guide.md](reference_guide.md)**.
 > Per la documentazione tecnica dettagliata (DB, pipeline, deployment, ecc.) vedi la cartella `documents/`.
@@ -34,8 +34,9 @@
                        │  importa solo da services.*
 ┌──────────────────────▼───────────────────────────────┐
 │                  services/                           │
-│  ImportService · TransactionService · RuleService    │
-│  SettingsService · CategoryService · ReviewService  │
+│  ImportService · TransactionService · RuleService         │
+│  SettingsService · CategoryService · NsiTaxonomyService   │
+│  ReviewService · BudgetService                            │
 └──────┬────────────────────────────────────┬──────────┘
        │                                    │
 ┌──────▼──────┐                    ┌────────▼────────┐
@@ -157,7 +158,7 @@ spendifai/
 │   ├── engine.py           # ChatBotEngine (auto-detect modalità)
 │   ├── rag.py              # RAG: retrieval TF-IDF + generazione LLM
 │   ├── faq_classifier.py   # match deterministico TF-IDF
-│   ├── faq_store.py        # caricamento FAQ e documenti
+│   ├── kb_store.py         # caricamento FAQ e documenti (knowledge base)
 │   └── knowledge/<lang>/   # FAQ e doc per lingua
 ├── api/                    # REST API FastAPI (opzionale)
 │   ├── main.py
@@ -211,9 +212,67 @@ svc.apply_default_taxonomy(language)   # 'it' | 'en' | 'fr' | 'de' | 'es'
 | Chiave | Default | Descrizione |
 |--------|---------|-------------|
 | `language` | `"it"` | Lingua UI (`it`, `en`, `fr`, `de`, `es`) |
-| `country` | `"IT"` | Paese utente ISO 3166-1 alpha-2 (es. `IT`, `CH`, `DE`). Usato da `nsi_lookup.py` per disambiguare brand multinazionali (es. Migros CH vs Migros TR). Migrazione Alembic pendente (C-08-country). |
+| `country` | `""` | Paese utente ISO 3166-1 alpha-2 (es. `IT`, `CH`, `DE`). Usato da `nsi_lookup.py` per disambiguare brand multinazionali e da `NsiTaxonomyService` per il bypass diretto (C-08-cascade). |
 | `llm_backend` | `"local_ollama"` | Backend LLM attivo |
 | `giroconto_mode` | `"neutral"` | Visibilità giroconti (`neutral` / `exclude`) |
+
+### NsiTaxonomyService — mapping OSM tag → tassonomia (C-08-cascade)
+
+`NsiTaxonomyService` costruisce e mantiene la `taxonomy_map`: dizionario `{osm_tag → (category, subcategory)}` che permette il bypass diretto del LLM per le transazioni identificate tramite NSI.
+
+```python
+from services.nsi_taxonomy_service import NsiTaxonomyService
+
+svc = NsiTaxonomyService(engine)
+with session_scope() as s:
+    taxonomy_map = svc.get_or_build(s, taxonomy, llm_backend)
+```
+
+**Lifecycle:**
+- Memorizzata in tabella DB `nsi_tag_mapping` (persistente tra riavvii)
+- Invalidata automaticamente se la tassonomia dell'utente cambia (hash SHA-256)
+- Prima build: LLM call → fallback statico da `osm_to_spendifai_map.json`
+- Tassonomia italiana default → 14+ tag mappati senza LLM (`_static_map()`)
+
+**Workflow developer (quando aggiornare `static_rules.json`):**
+```bash
+# Dopo ogni release NSI o aggiunta brand
+python scripts/build_static_rules.py
+git add core/static_rules.json
+git commit -m "feat(nsi): update static_rules.json — NSI vX"
+```
+Il `taxonomy_map` degli utenti si invalida automaticamente al prossimo import.
+
+### CategoryService — cascata di categorizzazione
+
+`CategoryService` orchestra la cascata a 5 step per ogni transazione:
+
+| Step | Fonte | Condizione | `source` |
+|------|-------|------------|----------|
+| **0** | User rules (`category_rule` DB) | Pattern match deterministico | `rule` |
+| **2** | History (`human_validated=True`) | Confidence ≥ soglia | `history` |
+| **3b** | NSI + `taxonomy_map` | Brand match + `user_country ∈ countries` + osm_tag in map | `nsi` |
+| **3b** | NSI hint | Brand match senza bypass | `llm` (hint iniettato) |
+| **4** | LLM batch | Transazioni non risolte | `llm` |
+| **5** | Fallback | Nessun match | `llm` + `to_review=True` |
+
+> **Nota Step 1 (deprecato):** Le regole linguistiche di `core/static_rules/_it.json` sono state deprecate in C-08-cascade. Operavano sulla descrizione grezza (causale), ma `clean_descriptions_batch()` estrae il solo nome controparte prima della categorizzazione, rendendo le regex inutili. I brand sono ora coperti meglio da NSI (Step 3b).
+
+### `core/description_cleaner.py` — pulizia descrizioni e mapping LLM
+
+`description_cleaner.py` espone `clean_descriptions_batch()`, che invia al LLM un batch di descrizioni grezze e riceve il nome controparte normalizzato per ciascuna. Due meccanismi garantiscono la correttezza del mapping input→output anche quando il modello non rispetta l'ordine.
+
+**I-16 — Mapping via campo `idx`**
+
+Ogni item del batch include un campo `idx` numerico. Il LLM deve restituire lo stesso `idx` nella risposta. Al ritorno, il cleaner riordina i risultati usando `idx` come chiave primaria. Questo copre la quasi totalità dei casi con modelli aderenti allo schema.
+
+**I-17 — Reverse matching post-hoc anti-shuffle** (`_reverse_match()`)
+
+Quando un modello ignora il campo `idx` e restituisce i risultati in ordine errato, I-17 recupera il mapping corretto via containment scoring:
+
+- `_containment_score(output, input)`: Jaccard containment a livello token — `|out ∩ in| / |out|`. Score 1.0 = tutti i token dell'output compaiono nell'input.
+- `_reverse_match()`: assegnazione greedy — ordina tutte le coppie (input, output) per score decrescente, assegna il best match per primo; ogni output è usato al massimo una volta.
+- Si attiva **solo** sulle posizioni non risolte da `idx` (I-16 ha priorità). Zero overhead quando il mapping via `idx` copre tutte le posizioni.
 
 ### Onboarding
 
@@ -316,12 +375,17 @@ chat_bot/
 ├── engine.py           # ChatBotEngine — orchestratore, auto-detect modalità
 ├── rag.py              # RAGEngine — TF-IDF retrieval + generazione LLM
 ├── faq_classifier.py   # FAQClassifier — match deterministico TF-IDF (zero LLM)
-├── faq_store.py        # Caricamento FAQ (JSON/MD) e chunk documenti
+├── kb_store.py         # Caricamento FAQ (JSON/MD) e chunk documenti
 ├── prompts.json        # System prompt + messaggi no-answer multilingua
-└── knowledge/<lang>/   # FAQ e documenti per lingua (it, en, de, es, fr, pt)
-    ├── faq.json        # [{"q": "...", "a": "..."}]
-    └── docs/           # File .md/.txt chunked per RAG
+└── knowledge/<lang>/   # FAQ e documenti per lingua (it, en)
+    ├── faq.json        # [{"q": "...", "a": "...", "page": "<page_key>"}] — 150 item
+    └── docs/           # File .md/.txt chunked per RAG (installazione, guida utente, ecc.)
 ```
+
+**Stato corpus (2026-04-05):** `knowledge/it/` e `knowledge/en/` popolati con 150 Q&A
+(`faq_can_do` + `faq_cannot_do`) e 5 manuali MD in `docs/`
+(installazione, guida utente, configurazione, guida classificazione, reference guide).
+Sorgente canonica: `documents/06_knowledge_base/` — modificare lì e rigenerare con lo script di conversione.
 
 ### Tre modalità
 
@@ -330,6 +394,16 @@ chat_bot/
 | `rag_cloud` | Backend = `openai` / `claude` / `openai_compatible` con API key | Retrieval TF-IDF → LLM cloud genera risposta |
 | `rag_local` | Backend = `local_ollama` / `vllm` | Retrieval TF-IDF → LLM locale genera risposta |
 | `faq_match` | Backend = `local_llama_cpp` o nessuno | Cosine similarity su FAQ, risposta preconfezionata |
+
+**Nota:** `ChatBotEngine` viene cached in `st.session_state["chatbot"]` e reinizializzato
+automaticamente al cambio di backend (invalidato in `settings_page.py` al salvataggio).
+
+### Sorgenti nelle risposte
+
+`kb_store.py` espone il campo `page_ref` (chiave pagina app, es. `"import"`, `"review"`)
+su ogni `FAQEntry`. `chat_page.py` lo converte in etichetta navigabile (`→ 📥 Import`).
+Per i chunk da docs, viene mostrato il filename (`📄 guida_utente.md`). Sorgenti prive
+di `page_ref` e non-doc (es. nomi file interni) vengono soppresse.
 
 ### Integrazione con il progetto
 
@@ -347,15 +421,51 @@ from chat_bot.engine import ChatBotEngine
 bot = ChatBotEngine(db_engine=engine, lang="it")
 print(bot.mode)       # ChatMode.FAQ_MATCH | RAG_LOCAL | RAG_CLOUD
 response = bot.ask("Come importo un file?")
-print(response.text)  # Risposta
-print(response.sources)  # ["faq.json"] (opzionale)
+print(response.text)
+print(response.sources)  # ["import", "review", ...] — page_ref keys
 ```
 
-### Popolare la knowledge base
+### Pipeline RAG (modalità cloud/local)
 
-1. **FAQ:** Aggiungere file `.json` o `.md` in `chat_bot/knowledge/<lang>/`
-2. **Documenti RAG:** Aggiungere file `.md` o `.txt` in `chat_bot/knowledge/<lang>/docs/`
-3. Non indicizzare mai dati sensibili (credenziali, dati personali, strategie di business)
+```
+user question
+  │
+  ├─ _analyze_query()          LLM call 1 — query rewriting
+  │   Riscrive la domanda in forma estesa con sinonimi e termini correlati.
+  │   Restituisce stringa vuota se il messaggio è un puro saluto.
+  │   NON riceve la history — evita context bleed tra domande consecutive.
+  │
+  ├─ se vuoto + (no "?" e len ≤ 30) → greeting response via _call_llm()
+  │
+  ├─ TF-IDF retrieval su query riscritta (top_k=5)
+  │   Corpus: FAQ (tutti i lang) + doc chunks (tutti i lang)
+  │   Indice costruito a startup, in-memory.
+  │
+  └─ _call_llm()               LLM call 2 — answer generation
+      context (top-5) + history (ultimi 3 turni) + domanda originale
+      System prompt: risponde nella lingua della domanda (language guard)
+```
+
+### Limiti noti e soluzioni
+
+| Limite | Causa | Soluzione |
+|--------|-------|-----------|
+| **"Ciao, si paga?"** può essere trattato come saluto | Il modello a volte restituisce `""` per query con saluto iniziale | Fallback: se `""` ma `"?" in question` o `len > 30`, si usa la query raw per il retrieval |
+| **Vocabulary mismatch TF-IDF** ("si paga" ≠ "gratis/costo") | TF-IDF è statistico, non semantico | Query rewriting via LLM espande con sinonimi; FAQ entry con vocabolario diretto degli utenti |
+| **Risposta superficiale** ("vedi docs/X.md") | FAQ entry troppo shallow batte doc chunk nel retrieval | Rimuovere FAQ entry che rimandano a doc già nel corpus; system prompt istruisce il LLM a preferire passi concreti |
+| **Scalabilità** oltre ~5000 entry | TF-IDF O(n) per query | Sostituire con FAISS o ChromaDB; la logica di retrieval è isolata in `_build_index` / `query()` |
+| **FAQ_MATCH senza LLM** non gestisce saluti | Nessun LLM disponibile per _analyze_query | `knowledge/common/greetings.json` con entry per saluto comuni in tutte le lingue |
+| **no_answer in lingua sbagliata** se LLM fallisce completamente | Fallback hardcoded usa `self._lang` (lingua UI) | Second-attempt con domanda originale; hardcoded solo come ultima istanza |
+| **Allucinazione** — il modello inventa passi non nel contesto | GPT-4 e modelli potenti ignorano "ONLY using context" se non abbastanza esplicito | System prompt: "STRICTLY and EXCLUSIVELY", "do NOT add, infer, or invent"; non eliminabile al 100% con prompt engineering |
+
+### Gestione della knowledge base
+
+**Regola principale:** i doc in `knowledge/<lang>/docs/` sono la fonte primaria per contenuto dettagliato. Le FAQ servono per risposte brevi e dirette su fatti stabili, e per coprire il vocabolario degli utenti (varianti di domanda, sinonimi). **Non aggiungere FAQ entry che rimandano a un doc già nel corpus.**
+
+1. Modificare `documents/06_knowledge_base/faq_can_do.it.json` / `faq_cannot_do.it.json`
+2. Eseguire lo script di conversione per rigenerare `knowledge/{lang}/faq.json`
+3. Per i manuali: modificare i `.md` in `sw_artifacts/docs/` e ricopiare in `knowledge/<lang>/docs/` (sia `it` che `en`)
+4. Non indicizzare mai dati sensibili (credenziali, dati personali, strategie di business)
 
 ---
 
@@ -431,20 +541,20 @@ Su una macchina qualsiasi — anche appena clonata — basta un solo comando:
 
 ```bash
 # macOS / Linux — ENTRY POINT consigliato (tutti i backend × pipeline + categorizer)
-bash tests/run_benchmark_full.sh                             # classifier + categorizer, 1 run, tutti i backend
-bash tests/run_benchmark_full.sh --benchmark classifier      # solo classifier
-bash tests/run_benchmark_full.sh --benchmark both --runs 3   # entrambi, 3 run ciascuno
-bash tests/run_benchmark_full.sh --setup-only                # solo download modelli
+bash benchmark/run_benchmark_full.sh                             # classifier + categorizer, 1 run, tutti i backend
+bash benchmark/run_benchmark_full.sh --benchmark classifier      # solo classifier
+bash benchmark/run_benchmark_full.sh --benchmark both --runs 3   # entrambi, 3 run ciascuno
+bash benchmark/run_benchmark_full.sh --setup-only                # solo download modelli
 
 # Windows (PowerShell) — ENTRY POINT consigliato
 powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1
 powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -Benchmark both -Runs 3
 
 # Solo llama.cpp (skip Ollama e vLLM)
-bash tests/run_benchmark_full.sh --skip-ollama --skip-vllm
+bash benchmark/run_benchmark_full.sh --skip-ollama --skip-vllm
 ```
 
-`run_benchmark_full.sh` / `run_benchmark_full.ps1` gestiscono: setup completo (GGUF + Ollama pull + rilevamento vLLM), poi eseguono pipeline e categorizer per ogni backend attivo. La lista modelli è letta da `tests/benchmark_models.csv`.
+`run_benchmark_full.sh` / `run_benchmark_full.ps1` gestiscono: setup completo (GGUF + Ollama pull + rilevamento vLLM), poi eseguono pipeline e categorizer per ogni backend attivo. La lista modelli è letta da `benchmark/benchmark_models.csv`.
 
 ### Setup modelli + Dual benchmark (llama.cpp + Ollama)
 
@@ -454,52 +564,52 @@ Per eseguire un benchmark completo su tutti i backend:
 cd ~/Documents/Progetti/PERSONALE/Spendif.ai/sw_artifacts
 
 # Full benchmark: tutti i backend (llama.cpp + Ollama + vLLM), setup automatico
-bash tests/run_benchmark_full.sh
+bash benchmark/run_benchmark_full.sh
 
 # Solo setup modelli, senza benchmark
-bash tests/run_benchmark_full.sh --setup-only
+bash benchmark/run_benchmark_full.sh --setup-only
 
 # Con più run per ridurre la varianza
-bash tests/run_benchmark_full.sh --runs 3
+bash benchmark/run_benchmark_full.sh --runs 3
 
 # Salta un backend specifico
-bash tests/run_benchmark_full.sh --skip-ollama
-bash tests/run_benchmark_full.sh --skip-vllm
+bash benchmark/run_benchmark_full.sh --skip-ollama
+bash benchmark/run_benchmark_full.sh --skip-vllm
 ```
 
-Il setup scarica automaticamente i modelli GGUF mancanti e fa `ollama pull` per i modelli Ollama. La lista modelli è in `tests/benchmark_models.csv`.
+Il setup scarica automaticamente i modelli GGUF mancanti e fa `ollama pull` per i modelli Ollama. La lista modelli è in `benchmark/benchmark_models.csv`.
 
 ### Comandi manuali (avanzato)
 
 ```bash
 # Singolo modello llama.cpp (n_ctx auto-detect dal GGUF)
-uv run python tests/benchmark_classifier.py --runs 1 --backend local_llama_cpp \
+uv run python benchmark/benchmark_classifier.py --runs 1 --backend local_llama_cpp \
   --model-path ~/.spendifai/models/gemma-3-12b-it-Q4_K_M.gguf
 
 # Forza un n_ctx specifico (limita RAM)
-uv run python tests/benchmark_classifier.py --runs 1 --backend local_llama_cpp \
+uv run python benchmark/benchmark_classifier.py --runs 1 --backend local_llama_cpp \
   --model-path ~/.spendifai/models/gemma-3-12b-it-Q4_K_M.gguf --n-ctx 2048
 
 # Singolo modello Ollama (n_ctx auto-detect via /api/show)
-uv run python tests/benchmark_classifier.py --runs 1 --backend local_ollama --model gemma3:12b
+uv run python benchmark/benchmark_classifier.py --runs 1 --backend local_ollama --model gemma3:12b
 
 # Gemma 4 E2B
-uv run python tests/benchmark_classifier.py --runs 1 --backend local_llama_cpp \
+uv run python benchmark/benchmark_classifier.py --runs 1 --backend local_llama_cpp \
   --model-path ~/.spendifai/models/gemma-4-E2B-it-Q4_K_M.gguf
-uv run python tests/benchmark_classifier.py --runs 1 --backend local_ollama --model gemma4:e2b
+uv run python benchmark/benchmark_classifier.py --runs 1 --backend local_ollama --model gemma4:e2b
 
 # Categorizer con Ollama
-uv run python tests/benchmark_categorizer.py --runs 1 --backend local_ollama --model gemma3:12b
+uv run python benchmark/benchmark_categorizer.py --runs 1 --backend local_ollama --model gemma3:12b
 
 # vLLM (locale o remoto — auto-detect modello e context window)
 vllm serve Qwen/Qwen2.5-3B-Instruct  # in un altro terminale
-uv run python tests/benchmark_classifier.py --runs 1 --backend vllm
+uv run python benchmark/benchmark_classifier.py --runs 1 --backend vllm
 
 # Suite completa (tutti i backend)
-bash tests/run_benchmark_full.sh
+bash benchmark/run_benchmark_full.sh
 ```
 
-Tutti i run scrivono in `tests/generated_files/benchmark/results_all_runs.csv` (append-only). Resume key: `(run_id, filename, commit, branch, provider, model)`.
+Ogni invocazione scrive i propri risultati in `benchmark/results/<YYYYMMDDHHMMSS>-<sha>_<hostname>_<N>.csv` (un file per run, mai sovrascrive). L'aggregatore offline `benchmark/aggregate_results.py` produce `results_all_runs.csv` sommando tutti i file dell'archivio; il monitor legge direttamente i file archivio e non `results_all_runs.csv`.
 
 ### Context window auto-detect
 
@@ -516,11 +626,11 @@ Il benchmark rileva automaticamente la context window ottimale per ogni modello:
 
 ### Catalogo modelli (benchmark_models.csv)
 
-`tests/benchmark_models.csv` è la sorgente unica della lista modelli per tutti gli script di benchmark (sostituisce gli array hardcoded nei vecchi script). Colonne: `name`, `gguf_file`, `gguf_repo`, `gguf_hf_url`, `ollama_tag`, `enabled`. Se `gguf_file` è valorizzato il modello è disponibile su llama.cpp; se `ollama_tag` è valorizzato è disponibile su Ollama. Impostare `enabled=false` per saltare un modello in tutti gli script. Il catalogo contiene 11 modelli (Qwen2.5-1.5B, Gemma2-2B, Qwen3.5-2B, Qwen3.5-4B, Gemma4-E2B Q3+Q4, Llama3.2-3B, Qwen2.5-3B, Phi3-mini, Qwen2.5-7B, Gemma3-12B). I modelli vLLM non sono nel CSV — vengono auto-rilevati dal server al runtime.
+`benchmark/benchmark_models.csv` è la sorgente unica della lista modelli per tutti gli script di benchmark (sostituisce gli array hardcoded nei vecchi script). Colonne: `name`, `gguf_file`, `gguf_repo`, `gguf_hf_url`, `ollama_tag`, `enabled`. Se `gguf_file` è valorizzato il modello è disponibile su llama.cpp; se `ollama_tag` è valorizzato è disponibile su Ollama. Impostare `enabled=false` per saltare un modello in tutti gli script. Il catalogo contiene 11 modelli (Qwen2.5-1.5B, Gemma2-2B, Qwen3.5-2B, Qwen3.5-4B, Gemma4-E2B Q3+Q4, Llama3.2-3B, Qwen2.5-3B, Phi3-mini, Qwen2.5-7B, Gemma3-12B). I modelli vLLM non sono nel CSV — vengono auto-rilevati dal server al runtime.
 
 ### Monitoraggio HW (CPU + GPU)
 
-Il modulo `tests/hw_monitor.py` (`HWMonitor`) campiona CPU e GPU in background ogni 0.5 s durante l'intero run di benchmark, producendo medie più accurate rispetto ai vecchi campioni point-in-time.
+Il modulo `benchmark/hw_monitor.py` (`HWMonitor`) campiona CPU e GPU in background ogni 0.5 s durante l'intero run di benchmark, producendo medie più accurate rispetto ai vecchi campioni point-in-time.
 
 | Piattaforma | Metodo GPU | Note |
 |-------------|-----------|------|
@@ -531,23 +641,37 @@ Il modulo `tests/hw_monitor.py` (`HWMonitor`) campiona CPU e GPU in background o
 
 `benchmark_classifier.py` e `benchmark_categorizer.py` usano `HWMonitor` al posto delle vecchie funzioni inline `_sample_cpu_load()` / `_sample_gpu_utilization()`.
 
+### Versioning sessione (bench_guard)
+
+`benchmark/bench_guard.sh` / `bench_guard.ps1` — eseguiti automaticamente da `run_benchmark_full` all'avvio — garantiscono che ogni sessione di benchmark abbia una stringa di versione univoca nel campo `version` di tutti i CSV prodotti.
+
+| Contesto | Comportamento |
+|----------|---------------|
+| **Macchina dev** (git disponibile) | Rigenera `benchmark/.version` = `YYYYMMDDHHMMSS-<sha7>`. Fresco a ogni lancio, indipendente da commit. |
+| **Macchina remota** (no git, `.version` presente) | Usa il `.version` scritto da `bench_push_usb` / `bench_push_ssh`. |
+| **No git + no `.version`** | **Errore bloccante** con hint sugli script di deployment. |
+
+Questo consente al monitor di isolare la sessione corrente filtrando per `version` (stesso SHA+timestamp → stessa sessione), senza dipendere da push/commit espliciti sulla macchina dev.
+
 ### Monitor avanzamento (monitor_benchmark)
 
-`tests/monitor_benchmark.sh` / `monitor_benchmark.ps1` / `monitor_benchmark.py` mostrano l'avanzamento in tempo reale leggendo `results_all_runs.csv`. Features: progress bar per modello, fase corrente (classifier/categorizer) rilevata dalla colonna `benchmark_type`, statistiche CPU/GPU live via `HWMonitor.sample_once()` e medie storiche dal CSV. Opzioni principali: `--interval N` (refresh in secondi), `--runs N` (run attesi per modello), `--total N` (righe totali attese), `--once` (snapshot e termina), `--all` (mostra anche modelli completati).
+`benchmark/monitor_benchmark.sh` / `monitor_benchmark.ps1` / `monitor_benchmark.py` mostrano l'avanzamento in tempo reale. Leggono tutti i file archivio in `benchmark/results/*.csv` (non `results_all_runs.csv`, che è prodotto solo dall'aggregatore offline) e filtrano per il campo `version` per isolare la sessione corrente. Features: progress bar per modello, fase corrente (classifier/categorizer) rilevata dalla colonna `benchmark_type`, statistiche CPU/GPU live via `HWMonitor.sample_once()` e medie storiche dal CSV. Opzioni principali: `--interval N` (refresh in secondi), `--runs N` (run attesi per modello), `--total N` (righe totali attese), `--once` (snapshot e termina), `--all` (mostra anche modelli completati).
 
 ### Script disponibili
 
 | Script | Scopo |
 |--------|-------|
-| `tests/run_benchmark_full.sh` | **ENTRY POINT** (macOS/Linux): tutti i backend × pipeline + categorizer |
-| `tests/run_benchmark_full.ps1` | **ENTRY POINT** (Windows): tutti i backend × pipeline + categorizer |
-| `tests/cleanup_benchmark.sh` | Pulizia file generati |
-| `tests/benchmark_models.csv` | Catalogo modelli (sostituisce array hardcoded negli script) |
-| `tests/hw_monitor.py` | Monitoraggio HW in background (CPU + GPU cross-platform) |
-| `tests/monitor_benchmark.sh` | Monitor avanzamento benchmark in tempo reale (macOS/Linux) |
-| `tests/monitor_benchmark.ps1` | Monitor avanzamento benchmark in tempo reale (Windows) |
-| `tests/monitor_benchmark.py` | Monitor avanzamento benchmark cross-platform (Python) |
-| `tests/diagnose.ps1` | Diagnostica ambiente Windows (include rilevamento GPU: NVIDIA/AMD/Intel) |
+| `benchmark/run_benchmark_full.sh` | **ENTRY POINT** (macOS/Linux): tutti i backend × pipeline + categorizer |
+| `benchmark/run_benchmark_full.ps1` | **ENTRY POINT** (Windows): tutti i backend × pipeline + categorizer |
+| `benchmark/bench_guard.sh` | Version gate (macOS/Linux): genera/verifica `benchmark/.version` |
+| `benchmark/bench_guard.ps1` | Version gate (Windows): genera/verifica `benchmark\.version` |
+| `benchmark/cleanup_benchmark.sh` | Pulizia file generati |
+| `benchmark/benchmark_models.csv` | Catalogo modelli (sostituisce array hardcoded negli script) |
+| `benchmark/hw_monitor.py` | Monitoraggio HW in background (CPU + GPU cross-platform) |
+| `benchmark/monitor_benchmark.sh` | Monitor avanzamento benchmark in tempo reale (macOS/Linux) |
+| `benchmark/monitor_benchmark.ps1` | Monitor avanzamento benchmark in tempo reale (Windows) |
+| `benchmark/monitor_benchmark.py` | Monitor avanzamento benchmark cross-platform (Python) |
+| `benchmark/diagnose.ps1` | Diagnostica ambiente Windows (include rilevamento GPU: NVIDIA/AMD/Intel) |
 
 ### Logging
 
@@ -577,6 +701,38 @@ Output su console e file simultaneamente (tee). Utile per troubleshooting e conf
 | duration_seconds | ✅ | ✅ |
 | AUTOMATION SCORE | ✅ | ✅ |
 
+### Scenari benchmark categorizer (`--scenario`)
+
+Il benchmark categorizer supporta scenari predefiniti che simulano diversi livelli di "warm data" disponibile al momento della categorizzazione. Lo scenario controlla quali sorgenti deterministiche sono attive prima della chiamata LLM.
+
+| Scenario | Warm data attivo | LLM% atteso |
+|---|---|---|
+| `cold` (default) | nessuno | ~70% |
+| `nsi_warm` | NSI + taxonomy_map (35 OSM tag) | ~30-40% |
+| `full_warm` | NSI + history (GT) + rules | <10% |
+| `country_with` | NSI + country ranking | ~30-40% |
+| `country_without` | NSI, senza country | ~30-40% |
+| `all` | esegue tutti gli scenari in sequenza | — |
+
+**Nuove colonne CSV** prodotte da ogni run con scenario: `scenario`, `n_nsi`, `nsi_accuracy`, `nsi_coverage_pct`, `taxonomy_map_hit_pct`.
+
+> **⚠️ Limitazione nota — taxonomy_map condivisa tra modelli**
+>
+> Il benchmark costruisce la `taxonomy_map` (OSM tag → categoria/sottocategoria) **una sola volta** per sessione, prima del loop sui modelli, usando la parte statica di `NsiTaxonomyService` (`osm_to_spendifai_map.json`).
+> Nella pipeline reale la `taxonomy_map` include anche una componente LLM-assistita (step `_llm_map`) che varia per modello, ed è invalidata automaticamente al cambio della taxonomy dell'utente (via SHA-256).
+>
+> **Implicazioni per l'utente:**
+> - Confrontare scenari `nsi_warm` tra modelli diversi nella stessa sessione può sottostimare il vantaggio dei modelli più capaci nella fase di mapping.
+> - Se si modifica la taxonomy tra sessioni di benchmark, rilanciare sempre l'intera sessione per garantire coerenza della `taxonomy_map`.
+>
+> **Roadmap:** ricostruire la `taxonomy_map` per ogni modello testato (aggiunge ~N secondi per modello, trade-off documentato in T-09).
+
+**Entry point:**
+```bash
+bash benchmark/run_benchmark_full.sh --scenario nsi_warm
+bash benchmark/run_benchmark_full.sh --scenario all   # tutti gli scenari in sequenza
+```
+
 ### Benchmark cross-platform (Mac remoto)
 
 Per confrontare performance tra macchine diverse (es. M1 Max locale vs M4 remoto):
@@ -604,7 +760,7 @@ curl http://localhost:8080/v1/models
 
 ```bash
 # Punta al server remoto via backend openai_compatible
-uv run python tests/benchmark_classifier.py --runs 1 \
+uv run python benchmark/benchmark_classifier.py --runs 1 \
   --backend openai_compatible \
   --base-url http://192.168.x.x:8080/v1 \
   --model gemma-3-12b-it
@@ -680,7 +836,7 @@ python tools/azure_benchmark.py --download --job-id <id>
 
 # 3. Apri PR con i risultati (credenziali git locali, nessun token extra)
 git checkout -b bench/$(date +%Y-%m-%d)-azure-t4
-git add tests/generated_files/benchmark/results_all_runs.csv
+git add benchmark/results_all_runs.csv
 git commit -m "bench: azure T4 results"
 gh pr create --title "bench: Azure T4 results" --body "14 modelli su GPU T4"
 ```
@@ -767,7 +923,7 @@ git push ──────────────────►  merge CSV  �
 **Automazione (pre-push hook opzionale):**
 ```bash
 # .git/hooks/pre-push — auto-include risultati benchmark nel push
-BENCH_CSV="tests/generated_files/benchmark/results_all_runs.csv"
+BENCH_CSV="benchmark/results_all_runs.csv"
 if git diff --name-only HEAD | grep -q "$BENCH_CSV"; then
   echo "Benchmark results included in push"
 fi
@@ -778,12 +934,12 @@ fi
 git clone ...
 git pull                          # prende tutti i risultati storici
 
-bash tests/run_benchmark_full.sh  # resume skippa tutto ciò che esiste,
+bash benchmark/run_benchmark_full.sh  # resume skippa tutto ciò che esiste,
                                   # aggiunge solo il suo HW + commit
 
 # Apri PR con i risultati (mai push diretto su main)
 git checkout -b bench/$(date +%Y-%m-%d)-m1max
-git add tests/generated_files/benchmark/results_all_runs.csv
+git add benchmark/results_all_runs.csv
 git commit -m "bench: add results for M1 Max 64GB"
 gh pr create --title "bench: M1 Max results" --body "Aggiunge risultati benchmark"
 ```
@@ -808,6 +964,12 @@ gh pr create --title "bench: M1 Max results" --body "Aggiunge risultati benchmar
 | PII sanitization prima di ogni chiamata remota | IBAN, carte, codici fiscali e nomi sostituiti in memoria prima dell'invio |
 | Service layer come unica porta d'accesso per la UI | Disaccoppiamento che permette di testare la logica indipendentemente da Streamlit |
 | Tassonomia default nel DB (non in YAML) | Supporto multi-lingua (it/en/fr/de/es) senza file di configurazione aggiuntivi |
+| NSI + `taxonomy_map` per bypass LLM | Brand noti (Esselunga, Q8, …) categorizzati deterministicamente senza LLM se `user_country` confermato. `nsi_tag_mapping` in DB, invalidata da SHA-256 sulla tassonomia. |
+| Skip fogli XLSX aggregate (`_SUMMARY_SHEET_RE`) | I workbook multi-foglio delle banche contengono spesso un foglio riepilogativo ("Riepilogo", "Summary", "Zusammenfassung", …). `detect_best_sheet()` lo esclude selezionando solo il foglio con più righe numeriche. La regex è allineata con `_FOOTER_SUSPECT_KEYWORDS` per le 5 lingue supportate (it/en/fr/de/es). |
+| `LlamaCppBackend.get_context_info()` — fallback `n_ctx_train` | `llama-cpp-python >= 0.3.x` ha rimosso il metodo `n_ctx_train()`. Il codice ora prova `n_ctx_train()`, e in caso di `AttributeError` legge il valore dal metadata GGUF (`read_gguf_context_length`) o usa `n_ctx()` come ultimo fallback. |
+| Preview match nella form "Nuova regola" (issue #15) | Prima di creare una regola, `rules_page.py` chiama `tx_svc.get_by_rule_pattern()` e mostra quante transazioni esistenti corrispondono. Se N > 0 compare un checkbox (default True) per applicare la categoria anche alle transazioni già presenti — stesso comportamento del form di modifica regola. |
+| Chatbot: `ChatBotEngine` invalidato al cambio backend | Il chatbot è cached in `st.session_state["chatbot"]` per evitare reload a ogni interazione. `settings_page.py` cancella la chiave al salvataggio delle impostazioni LLM, forzando la reinizializzazione con il nuovo backend alla prossima apertura della pagina Chat. |
+| Chatbot: TF-IDF su 150 Q&A + 5 manuali, nessun vector DB | Corpus totale < 1 MB: TF-IDF in-memory è sufficiente. Vector DB (Chroma/Qdrant) aggiunto solo se il corpus supera ~500 item. Sorgente canonica in `documents/06_knowledge_base/`; `knowledge/{lang}/` è artifact generato. |
 
 ---
 

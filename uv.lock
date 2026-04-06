@@ -2006,7 +2006,7 @@ wheels = [
 ]
 
 [[package]]
-name = "spendify"
+name = "spendif-ai"
 version = "3.0.0"
 source = { virtual = "." }
 dependencies = [

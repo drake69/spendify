@@ -1,14 +1,697 @@
 [
   {
-    "q": "Come importo un file di transazioni?",
-    "a": "Vai nella pagina Importa, seleziona il file (CSV, Excel o PDF) e clicca su Avvia importazione. Spendif.ai rileverà automaticamente il formato e categorizzerà le transazioni."
+    "q": "Come importo i movimenti della mia banca?",
+    "a": "Vai sulla pagina Import, trascina uno o più file CSV o XLSX nell'area tratteggiata, seleziona per ciascuno il conto bancario associato e clicca Avvia elaborazione. Spendif.AI riconosce il formato automaticamente.",
+    "page": "import"
   },
   {
-    "q": "Quali formati di file sono supportati?",
-    "a": "Spendif.ai supporta file CSV, Excel (.xlsx) e PDF degli estratti conto bancari. Il sistema rileva automaticamente la struttura del file."
+    "q": "Quali formati di file posso importare?",
+    "a": "Spendif.AI accetta file CSV, XLSX e XLS scaricati direttamente dalla tua banca. Puoi importare più file di formati diversi nella stessa sessione.",
+    "page": "import"
   },
   {
-    "q": "Come cambio la categoria di una transazione?",
-    "a": "Puoi modificare la categoria dalla pagina Registro cliccando sulla transazione, oppure dalla pagina Revisione per le transazioni con bassa confidenza."
+    "q": "Posso importare file di banche diverse insieme?",
+    "a": "Sì. Spendif.AI riconosce il formato di ogni file automaticamente. Puoi trascinare insieme file di banche diverse e li processa tutti correttamente.",
+    "page": "import"
+  },
+  {
+    "q": "Ho importato un file due volte per errore. Perdo dati?",
+    "a": "No. Spendif.AI assegna un codice univoco basato sul contenuto di ogni transazione. I duplicati vengono scartati silenziosamente senza alcun intervento manuale.",
+    "page": "import"
+  },
+  {
+    "q": "Come faccio se il file della mia banca ha righe di intestazione prima dei dati?",
+    "a": "Spendif.AI rileva automaticamente dove inizia e dove finisce la tabella dati, rimuovendo le righe di intestazione e i totali in fondo. Solo se il rilevamento automatico fallisce compare il campo Righe da saltare, dove puoi indicare manualmente quante righe ignorare.",
+    "page": "import"
+  },
+  {
+    "q": "Spendif.AI riconosce il formato del file la prima volta?",
+    "a": "Sì. Spendif.AI analizza la struttura del file e calcola un punteggio di confidenza. Se è ≥ 80% procede automaticamente; se è < 80% mostra un form dove puoi verificare e correggere le colonne rilevate. Una volta confermato lo schema, tutte le importazioni successive dello stesso formato saranno automatiche.",
+    "page": "import"
+  },
+  {
+    "q": "Posso vedere un riepilogo di cosa è stato importato?",
+    "a": "Sì. Al termine dell'elaborazione viene mostrato un riepilogo con: numero di righe nel file, transazioni importate, già presenti (duplicate), giroconti rilevati, righe scartate. Per le righe scartate è indicato il motivo (data mancante, importo non parsabile, ecc.).",
+    "page": "import"
+  },
+  {
+    "q": "Posso annullare un'importazione se ho caricato il file sbagliato?",
+    "a": "Sì. Vai su Storico import nella sidebar, trova l'importazione sbagliata e clicca Annulla import. Tutte le transazioni di quel batch vengono eliminate in blocco. Attenzione: l'operazione è irreversibile.",
+    "page": "import"
+  },
+  {
+    "q": "Posso vedere la cronologia di tutte le mie importazioni?",
+    "a": "Sì. Vai su Storico import nella sidebar. Trovi la lista completa di tutte le importazioni con data, file caricato, conto associato e numero di transazioni importate.",
+    "page": "import"
+  },
+  {
+    "q": "Cosa succede se chiudo il browser durante l'importazione?",
+    "a": "L'elaborazione continua in background. Puoi chiudere il browser e riaprirlo quando vuoi: il processo non si interrompe e troverai il risultato quando torni.",
+    "page": "import"
+  },
+  {
+    "q": "Spendif.AI capisce da solo a che categoria appartiene una spesa?",
+    "a": "Sì. Usa un modello AI locale (o cloud se configurato) per categorizzare automaticamente ogni transazione in base alla descrizione. Può usare anche le regole deterministiche che hai creato e lo storico delle tue classificazioni precedenti.",
+    "page": "review"
+  },
+  {
+    "q": "Come funziona la categorizzazione automatica?",
+    "a": "Spendif.AI usa un approccio ibrido: prima controlla le regole deterministiche che hai definito, poi lo storico delle transazioni validate, infine chiama il modello LLM per le transazioni non coperte. Questo garantisce velocità e coerenza.",
+    "page": "review"
+  },
+  {
+    "q": "Posso correggere una categoria assegnata in modo sbagliato?",
+    "a": "Sì. Vai su Review o nel Ledger, trova la transazione, seleziona la categoria corretta dal menu a tendina e salva. Puoi anche scegliere di propagare la correzione a tutte le transazioni simili.",
+    "page": "review"
+  },
+  {
+    "q": "Spendif.AI impara dalle mie correzioni?",
+    "a": "Sì. Ogni transazione che validi diventa parte dello storico. Quando importi nuovi file, le controparti che hai già classificato e validato vengono categorizzate automaticamente dallo storico, senza chiamare l'AI.",
+    "page": "review"
+  },
+  {
+    "q": "Cosa significa la fonte indicata accanto alla categoria (AI, Regola, Manuale, Storico)?",
+    "a": "È il tracking della classificazione: 🧠 AI = categorizzato dal modello LLM, 📏 Regola = categorizzato da una regola deterministica, 👤 Manuale = modificato da te, 📚 Storico = categorizzato in base alle tue validazioni precedenti.",
+    "page": "review"
+  },
+  {
+    "q": "Cosa trovo nella pagina Review?",
+    "a": "La pagina Review mostra tutte le transazioni con il simbolo ⚠️, cioè quelle dove Spendif.AI non era sicuro della classificazione. Per ognuna puoi verificare e correggere la categoria prima di validarla.",
+    "page": "review"
+  },
+  {
+    "q": "Come valido più transazioni in una volta?",
+    "a": "Nella pagina Review (o nel Ledger), seleziona le transazioni di cui sei sicuro e clicca Valida selezionate. Tutte vengono confermate in un colpo solo e il flag ⚠️ viene rimosso.",
+    "page": "review"
+  },
+  {
+    "q": "Cosa significa validare una transazione?",
+    "a": "Validare significa dire a Spendif.AI: ho visto questa spesa e confermo che è corretta. La validazione riguarda la spesa, non necessariamente la categoria — se una regola o l'AI modificano la categoria in seguito, la validazione rimane attiva.",
+    "page": "review"
+  },
+  {
+    "q": "Spendif.AI propone di applicare la categoria a transazioni simili?",
+    "a": "Sì. Dopo la validazione di una transazione, se esistono altre transazioni con la stessa descrizione non ancora categorizzate, compare il suggerimento Applica a N transazioni simili? Puoi accettare o ignorare.",
+    "page": "review"
+  },
+  {
+    "q": "Come correggo la descrizione grezza della banca?",
+    "a": "Nella pagina Review, scorri in fondo e apri il pannello Correggi descrizione in blocco. Incolla la descrizione grezza nel campo Pattern, scrivi la descrizione leggibile e clicca Applica e salva regola. Tutte le transazioni corrispondenti vengono aggiornate.",
+    "page": "review"
+  },
+  {
+    "q": "Cosa fa il pulsante Rielabora con LLM nella pagina Review?",
+    "a": "Riprocessa con il modello AI le transazioni che hanno ancora la descrizione grezza della banca (ad esempio perché durante l'importazione il modello era offline). Utile per recuperare le categorizzazioni mancanti.",
+    "page": "review"
+  },
+  {
+    "q": "Come filtro le transazioni nel Ledger?",
+    "a": "Il Ledger ha filtri per: periodo (con pulsanti rapidi Mese corrente, Mese precedente, Ultimi 3 mesi, Anno corrente, Tutto), conto bancario, categoria e tipo (entrata/uscita). I filtri si applicano subito.",
+    "page": "ledger"
+  },
+  {
+    "q": "Come valido una transazione nel Ledger?",
+    "a": "Nella colonna Validato, clicca la checkbox della transazione. Il salvataggio è immediato, non serve premere Salva. Il flag ⚠️ viene rimosso automaticamente.",
+    "page": "ledger"
+  },
+  {
+    "q": "Come creo una regola direttamente da una transazione nel Ledger?",
+    "a": "Seleziona la riga nella colonna di selezione (📏) e clicca Crea regola e applica. Compare un form pre-compilato con il pattern, la categoria e il contesto. Dopo la conferma la regola si applica retroattivamente a tutte le transazioni corrispondenti.",
+    "page": "ledger"
+  },
+  {
+    "q": "Come segno una transazione come giroconto (bonifico interno)?",
+    "a": "Nel Ledger, nella colonna 🔄 Giroconto, seleziona la checkbox e salva. Puoi anche usare la pagina Modifiche massive per propagare il flag a tutte le transazioni con la stessa descrizione.",
+    "page": "ledger"
+  },
+  {
+    "q": "Posso vedere il testo originale della banca per una transazione?",
+    "a": "Sì. Nel Ledger attiva l'opzione Mostra raw nella seconda riga filtri. Viene aggiunta la colonna Raw description con la descrizione originale della banca, utile per confrontarla con quella elaborata.",
+    "page": "ledger"
+  },
+  {
+    "q": "Come creo una regola di categorizzazione automatica?",
+    "a": "Vai su Regole, scorri in fondo alla sezione Nuova regola manuale. Inserisci il pattern, scegli il tipo (contiene, esatto o espressione regolare), seleziona categoria e sottocategoria, e opzionalmente un contesto e una priorità. Clicca Crea regola.",
+    "page": "rules"
+  },
+  {
+    "q": "Che tipi di regola posso creare?",
+    "a": "Tre tipi: Contiene (la parola appare ovunque nella descrizione), Uguale esatto (la descrizione corrisponde esattamente) ed Espressione regolare (pattern avanzato, es. RATA \\d+/\\d+ per abbinare RATA 3/12).",
+    "page": "rules"
+  },
+  {
+    "q": "Posso applicare tutte le regole a tutte le transazioni in una volta?",
+    "a": "Sì. Nella pagina Regole, usa il pulsante Esegui tutte le regole. Spunta la casella di conferma e clicca: tutte le regole vengono applicate a ogni transazione del ledger. Al termine viene mostrato quante transazioni sono state aggiornate.",
+    "page": "rules"
+  },
+  {
+    "q": "Posso assegnare una priorità alle regole?",
+    "a": "Sì. Ogni regola ha un campo Priorità (0–100). Le regole con priorità più alta vengono applicate prima. Utile quando due regole potrebbero abbinare la stessa transazione.",
+    "page": "rules"
+  },
+  {
+    "q": "Posso modificare o eliminare una regola esistente?",
+    "a": "Sì. Nella pagina Regole, seleziona la regola dal menu a tendina nella sezione Modifica / Elimina regola. Puoi modificare pattern, tipo, categoria, sottocategoria, contesto e priorità, oppure eliminarla. Puoi scegliere se aggiornare anche le transazioni già categorizzate da quella regola.",
+    "page": "rules"
+  },
+  {
+    "q": "Posso assegnare un contesto a una regola (es. Lavoro, Vacanza)?",
+    "a": "Sì. Quando crei o modifichi una regola, puoi selezionare opzionalmente un contesto. Le transazioni che abbinano quella regola vengono automaticamente assegnate al contesto specificato.",
+    "page": "rules"
+  },
+  {
+    "q": "Come cambio la categoria di molte transazioni in una volta?",
+    "a": "Vai su Modifiche massive. Seleziona una transazione di riferimento, scegli 2c Categoria, seleziona la nuova categoria e applica a tutte le transazioni simili. Puoi anche salvare una regola deterministica per i file futuri.",
+    "page": "bulk_edit"
+  },
+  {
+    "q": "Come elimino tutte le transazioni di un conto chiuso?",
+    "a": "Vai su Modifiche massive, sezione Eliminazione massiva da filtro. Imposta il filtro per conto, controlla l'anteprima, digita ELIMINA nel campo di conferma e clicca il pulsante rosso. Attenzione: l'eliminazione è irreversibile.",
+    "page": "bulk_edit"
+  },
+  {
+    "q": "Come assegno un contesto (es. Vacanza) a più transazioni?",
+    "a": "Vai su Modifiche massive. Seleziona una transazione di riferimento, scegli 2b Contesto, seleziona il contesto desiderato e applica alla singola transazione o a tutte quelle con la stessa descrizione.",
+    "page": "bulk_edit"
+  },
+  {
+    "q": "Dove trovo i grafici sulle mie spese?",
+    "a": "Vai su Analytics nella sidebar. Trovi: grafico a torta spese per categoria, andamento mensile entrate/uscite, saldo netto nel tempo. Usa i filtri in alto per restringere a un periodo o a un conto specifico.",
+    "page": "analytics"
+  },
+  {
+    "q": "Posso filtrare i grafici per categoria e sottocategoria?",
+    "a": "Sì. Nella pagina Analytics è disponibile un filtro ad albero con la gerarchia completa contesto / categoria / sottocategoria. Puoi espandere i nodi, selezionare un intero ramo o usare Seleziona tutto / Deseleziona tutto.",
+    "page": "analytics"
+  },
+  {
+    "q": "Posso vedere come Spendif.AI ha imparato ad associare i negozi alle categorie?",
+    "a": "Sì. In Analytics trova la sezione Associazioni controparte → categoria. Per ogni controparte (es. ESSELUNGA, AMAZON) mostra la categoria più frequente, il conteggio delle ricorrenze validate e un indicatore di omogenità (🟢 stabile, 🟡 mista, 🔴 eterogenea).",
+    "page": "analytics"
+  },
+  {
+    "q": "Come vedo una tabella riepilogativa delle mie spese per categoria?",
+    "a": "Vai su Report. La Vista 1 mostra una tabella pivot contesto × categoria × sottocategoria con importo totale per ogni combinazione, percentuale sul totale speso e subtotali per contesto. I giroconti sono esclusi automaticamente.",
+    "page": "report"
+  },
+  {
+    "q": "Posso vedere l'andamento delle spese nel tempo?",
+    "a": "Sì. In Report, Vista 2 — Trend temporale mostra: line chart con l'andamento mensile delle top 10 categorie e stacked bar per la composizione mensile. Ci sono tab separati per spese ed entrate.",
+    "page": "report"
+  },
+  {
+    "q": "Posso esportare i dati in Excel?",
+    "a": "Sì. In Report, Vista 3 — Export Excel, clicca il pulsante per scaricare un file .xlsx con: foglio Riepilogo (tabella pivot completa), foglio Trend (dati mensili per categoria) e un foglio per ogni contesto con il dettaglio delle transazioni.",
+    "page": "report"
+  },
+  {
+    "q": "Posso esportare anche in CSV o HTML?",
+    "a": "Sì. Nella pagina Analytics trovi il pulsante Esporta che genera il file nei formati HTML, CSV o XLSX.",
+    "page": "report"
+  },
+  {
+    "q": "Posso impostare un budget per ogni categoria di spesa?",
+    "a": "Sì. Vai su Budget nella sidebar. Per ogni categoria di spesa puoi inserire una percentuale obiettivo (es. 30% per Abitazione). Il riepilogo in fondo mostra il totale assegnato e la liquidità residua.",
+    "page": "budget"
+  },
+  {
+    "q": "Come verifico se sto rispettando il budget impostato?",
+    "a": "Vai su Budget vs Actual. Per ogni categoria con obiettivo trovi le colonne Target (%) e Actual (%) con un semaforo: 🟢 verde = entro il 5% dell'obiettivo, 🟡 giallo = tra 5% e 10% sopra, 🔴 rosso = più del 10% sopra.",
+    "page": "budget"
+  },
+  {
+    "q": "Posso confrontare il budget con periodi diversi (mese, trimestre, anno)?",
+    "a": "Sì. Nella pagina Budget vs Actual, in alto trovi il selettore di periodo con quattro modalità: Mese, Trimestre, Anno, Custom. Usa le frecce ← e → per navigare nel tempo.",
+    "page": "budget"
+  },
+  {
+    "q": "Come controllo se ho importato tutti i movimenti di tutti i miei conti?",
+    "a": "Vai su Check List nella sidebar. Trovi una tabella con una riga per ogni mese e una colonna per ogni conto. Ogni cella mostra il numero di transazioni importate. Se vedi — significa che non hai dati per quella combinazione mese/conto.",
+    "page": "checklist"
+  },
+  {
+    "q": "Posso scaricare la checklist come file?",
+    "a": "Sì. Nella pagina Check List c'è il pulsante ⬇️ Scarica CSV per esportare la tabella.",
+    "page": "checklist"
+  },
+  {
+    "q": "Quanti conti posso gestire?",
+    "a": "Non c'è un limite. Puoi aggiungere tutti i conti che vuoi: conto corrente, carta di credito, carta di debito, carta prepagata, conto risparmio e contanti.",
+    "page": "settings"
+  },
+  {
+    "q": "Che tipi di conto posso configurare?",
+    "a": "Puoi configurare: Conto corrente, Carta di credito, Carta di debito, Carta prepagata, Conto risparmio e Contanti. Il tipo è obbligatorio perché determina come Spendif.AI interpreta i segni degli importi.",
+    "page": "settings"
+  },
+  {
+    "q": "Posso rinominare un conto bancario dopo averlo creato?",
+    "a": "Sì. Vai su Impostazioni → Conti bancari. Quando rinomini un conto, Spendif.AI ricalcola automaticamente gli identificativi delle transazioni associate. L'operazione è atomica: se qualcosa va storto nessun dato viene modificato.",
+    "page": "settings"
+  },
+  {
+    "q": "I miei dati bancari vengono visti da qualcuno?",
+    "a": "No. Spendif.AI funziona completamente in locale sul tuo computer. I tuoi dati non vengono mai inviati a server esterni. Se usi un backend remoto (OpenAI o Claude), Spendif.AI rimuove automaticamente IBAN, numeri carta, codice fiscale e nome del titolare prima di inviare qualsiasi testo."
+  },
+  {
+    "q": "Devo inserire la password della mia banca?",
+    "a": "No. Spendif.AI non si connette alla tua banca. Lavora con i file CSV o XLSX che scarichi tu stesso dal sito della banca. Non ha mai accesso alle tue credenziali bancarie."
+  },
+  {
+    "q": "Funziona anche senza connessione internet?",
+    "a": "Sì, se usi il backend locale (llama.cpp o Ollama). In quel caso Spendif.AI funziona completamente offline. La connessione è necessaria solo se scegli un backend cloud (OpenAI, Claude, ecc.)."
+  },
+  {
+    "q": "Spendif.AI raccoglie dati anonimi?",
+    "a": "No. Spendif.AI non invia alcun dato a server esterni. Non ci sono telemetrie, analytics o raccolta di dati anonimi. Tutto rimane sul tuo computer."
+  },
+  {
+    "q": "Quale modello AI usa Spendif.AI per la categorizzazione?",
+    "a": "Puoi scegliere: llama.cpp (locale, gratuito, default per nuove installazioni), Ollama (locale, gratuito), OpenAI (GPT-4o, gpt-4o-mini, ecc.), Claude (Anthropic), o qualsiasi provider compatibile con le API OpenAI (Groq, Google AI Studio, ecc.).",
+    "page": "settings"
+  },
+  {
+    "q": "Come configuro il modello AI che voglio usare?",
+    "a": "Vai su Impostazioni → Configurazione LLM. Seleziona il backend, specifica il nome del modello (o seleziona un file .gguf per llama.cpp) e inserisci l'API key se usi un servizio remoto. Poi clicca Test LLM per verificare che tutto funzioni.",
+    "page": "settings"
+  },
+  {
+    "q": "Posso scaricare un modello AI direttamente dall'app?",
+    "a": "Sì. Per llama.cpp: vai su Impostazioni → Configurazione LLM, seleziona un modello suggerito (es. gemma-2-2b-it-Q4_K_M, ~1.6 GB) e clicca Scarica. Per Ollama: inserisci il nome del modello e clicca Pull modello. I modelli llama.cpp vengono salvati in ~/.spendifai/models/.",
+    "page": "settings"
+  },
+  {
+    "q": "Come verifico che il modello AI funzioni correttamente?",
+    "a": "Vai su Impostazioni → Configurazione LLM e clicca Test LLM. Spendif.AI invia un prompt di prova (PAGAMENTO POS FARMACIA) e mostra la risposta del modello con categoria e livello di confidenza. Se qualcosa non va, il messaggio di errore indica se il problema è la connessione, l'API key o il modello.",
+    "page": "settings"
+  },
+  {
+    "q": "Posso usare Spendif.AI su due Mac, uno come server LLM e uno come client?",
+    "a": "Sì. llama.cpp espone un'API HTTP (compatibile OpenAI). Avvia llama-server sul Mac con GPU/RAM maggiore, configura Spendif.AI sull'altro Mac scegliendo backend OpenAI-compatible e inserendo l'URL del server locale. In questo modo usi un unico modello per più installazioni sulla stessa rete.",
+    "page": "settings"
+  },
+  {
+    "q": "Cosa succede al primo avvio di Spendif.AI?",
+    "a": "Appare automaticamente il wizard di configurazione iniziale in 4 step: 1) Lingua della tassonomia, 2) Titolari del conto (nome e varianti), 3) Conti bancari, 4) Conferma e avvio. Non devi cercare nessun menu.",
+    "page": "settings"
+  },
+  {
+    "q": "Perché devo inserire le varianti del mio nome nel wizard?",
+    "a": "Le varianti del nome (es. Mario Rossi, ROSSI MARIO) servono a due scopi: proteggere la tua privacy nei prompt inviati al modello AI (il nome viene rimosso) e riconoscere automaticamente i tuoi bonifici interni tra conti.",
+    "page": "settings"
+  },
+  {
+    "q": "Posso cambiare la lingua della tassonomia dopo l'installazione?",
+    "a": "Sì. Vai su Impostazioni → Reset tassonomia, scegli la nuova lingua e conferma. Le categorie esistenti vengono sostituite con quelle del template scelto. Attenzione: le transazioni già categorizzate mantengono le categorie vecchie.",
+    "page": "taxonomy"
+  },
+  {
+    "q": "Come resetto lo schema di un file se è stato riconosciuto male?",
+    "a": "Vai su Impostazioni → Schema file importati e clicca Cancella tutti gli schemi salvati. Al prossimo import Spendif.AI rianalizza il file da zero e ti chiede di confermare lo schema. Utile se vedi righe scartate con motivo Importo non parsabile.",
+    "page": "settings"
+  },
+  {
+    "q": "Spendif.AI riconosce i bonifici interni tra miei conti?",
+    "a": "Sì. Spendif.AI rileva automaticamente i giroconti (trasferimenti tra tuoi stessi conti) e li esclude dai totali delle spese per evitare il double-counting. Puoi anche marcare manualmente una transazione come giroconto.",
+    "page": "settings"
+  },
+  {
+    "q": "Una transazione appare due volte — una sul conto e una sulla carta. È un problema?",
+    "a": "Spendif.AI gestisce questa riconciliazione carta-conto automaticamente. Se vedi ancora un duplicato, controlla in Review se una delle due transazioni ha l'icona 🔄 (giroconto).",
+    "page": "import"
+  },
+  {
+    "q": "Cosa sono i contesti in Spendif.AI?",
+    "a": "I contesti (es. Quotidianità, Lavoro, Vacanza) permettono di raggruppare le spese per tipo di vita o progetto. Puoi assegnare un contesto a ogni transazione manualmente o tramite regole. I report mostrano le spese suddivise per contesto.",
+    "page": "settings"
+  },
+  {
+    "q": "Come personalizzo i contesti disponibili?",
+    "a": "Vai su Impostazioni. I contesti sono configurabili come lista JSON. Puoi aggiungere, rinominare o rimuovere contesti in base alle tue esigenze.",
+    "page": "settings"
+  },
+  {
+    "q": "Spendif.AI gestisce anche le entrate (stipendio, rimborsi)?",
+    "a": "Sì. Spendif.AI importa e categorizza sia le spese che le entrate. Nelle categorie di tassonomia ci sono categorie di reddito (stipendio, affitto incassato, rimborsi, ecc.). I report mostrano sia entrate che uscite."
+  },
+  {
+    "q": "Spendif.AI gestisce transazioni in valuta straniera?",
+    "a": "Sì. I file di alcune banche includono la colonna valuta (es. USD, GBP). Spendif.AI la rileva e la memorizza. La valuta di default è EUR ma è configurabile per ogni schema di file."
+  },
+  {
+    "q": "Su quali sistemi operativi funziona Spendif.AI?",
+    "a": "Spendif.AI è un'applicazione desktop che funziona su macOS e Windows. Viene avviata tramite browser locale (Streamlit). Non è disponibile come app mobile."
+  },
+  {
+    "q": "Devo creare un account per usare Spendif.AI?",
+    "a": "No. Spendif.AI non richiede registrazione né account. Si installa e si usa direttamente sul tuo computer. Non c'è autenticazione con email, password o social login."
+  },
+  {
+    "q": "Come confronto diversi modelli AI per scegliere il migliore?",
+    "a": "Nella cartella tests/ sono inclusi due script di benchmark: benchmark_pipeline.py misura la qualità del riconoscimento schema, benchmark_categorizer.py misura la qualità della categorizzazione LLM con metriche di accuratezza esatta, fuzzy e tasso di fallback."
+  },
+  {
+    "q": "Posso correggere la descrizione brutta della banca per tutte le occorrenze?",
+    "a": "Sì. In Review, apri Correggi descrizione in blocco, incolla il testo brutto nel campo Pattern e scrivi la versione leggibile. Tutte le transazioni corrispondenti vengono aggiornate e la regola viene salvata per le importazioni future.",
+    "page": "review"
+  },
+  {
+    "q": "Posso stampare un riepilogo delle mie spese?",
+    "a": "Spendif.AI non ha una funzione di stampa diretta, ma puoi esportare in Excel o CSV dalla pagina Report o Analytics, e poi stampare dal foglio di calcolo.",
+    "page": "report"
+  },
+  {
+    "q": "Chi ha fatto questo programma? È un'azienda seria o una persona qualsiasi?",
+    "a": "Spendif.AI è un progetto indipendente sviluppato da un singolo fondatore italiano. Il codice sorgente è pubblico su GitHub (github.com/drake69/spendify). Questo significa che chiunque può ispezionare il codice, verificare che non ci siano backdoor e contribuire al progetto."
+  },
+  {
+    "q": "I miei dati bancari e le mie spese vengono visti da qualcuno?",
+    "a": "No. Spendif.AI salva tutto in locale sul tuo computer. Nessuno — né il produttore né terze parti — ha accesso ai tuoi dati. Se usi un backend LLM cloud (OpenAI, Claude), le descrizioni delle transazioni vengono inviate al provider scelto, ma Spendif.AI rimuove automaticamente IBAN, numeri carta, codice fiscale e nome del titolare prima dell'invio."
+  },
+  {
+    "q": "Le mie informazioni vengono vendute a terzi (pubblicità, marketing, assicurazioni)?",
+    "a": "No. Spendif.AI non invia nessun dato a terzi. Non c'è pubblicità, tracciamento né vendita di dati. I tuoi movimenti bancari restano sul tuo computer."
+  },
+  {
+    "q": "Se smetto di usare Spendif.AI, i miei dati vengono cancellati oppure restano da qualche parte?",
+    "a": "I tuoi dati restano sul tuo computer nel file ledger.db e non vengono mai caricati su server esterni. Se disinstalli Spendif.AI, i file rimangono sul disco finché non li elimini tu. Non c'è nulla da cancellare su server remoti perché non esistono."
+  },
+  {
+    "q": "Il programma funziona anche senza connessione a internet? I dati rimangono solo sul mio computer?",
+    "a": "Sì, se usi il backend LLM locale (llama.cpp o Ollama, che è il default per le nuove installazioni). In quel caso Spendif.AI funziona completamente offline e nessun dato lascia mai il tuo computer. La connessione internet è necessaria solo se scegli OpenAI o Claude come backend."
+  },
+  {
+    "q": "Ho letto che raccoglie dati 'anonimi': cosa significa esattamente? Sono davvero irrintracciabili?",
+    "a": "Spendif.AI non raccoglie nessun tipo di dato — né nominativi né anonimi. Non ci sono telemetrie, analytics né tracking di nessun tipo. Non devi preoccuparti: non esce nulla dal tuo computer (a meno che tu non scelga volontariamente un backend cloud)."
+  },
+  {
+    "q": "Questo software rispetta la legge italiana e il GDPR?",
+    "a": "Sì. Poiché Spendif.AI elabora tutti i dati in locale sul tuo computer senza inviarli a terzi, rispetta il GDPR per design (privacy by design). Non c'è trattamento di dati personali da parte del produttore, quindi non si pone il problema di informative o consensi al trattamento."
+  },
+  {
+    "q": "È gratis adesso, ma per quanto tempo? Possono cominciare a farlo pagare in futuro?",
+    "a": "Spendif.AI è open source (licenza MIT). Il codice è pubblico e gratuito per sempre. Se in futuro venisse introdotta una versione commerciale con funzioni aggiuntive, la versione gratuita open source rimarrebbe disponibile. Non rischi di trovarti bloccato da un cambio di prezzo improvviso."
+  },
+  {
+    "q": "Cosa succede ai miei dati e alla mia storia delle spese se il servizio chiude o va in fallimento?",
+    "a": "Nulla di male. I tuoi dati sono sul tuo computer (file ledger.db) e non dipendono da nessun server. Se il progetto smettesse di essere mantenuto, continueresti ad avere i tuoi dati e potresti usare l'ultima versione funzionante senza problemi."
+  },
+  {
+    "q": "La versione gratuita è davvero utilizzabile, o dopo un po' mi blocca e mi obbliga a pagare?",
+    "a": "La versione gratuita è completamente funzionale senza limiti. Non ci sono blocchi artificiali, limiti di transazioni né funzioni nascoste dietro un paywall. Tutto quello descritto nella documentazione è disponibile gratuitamente."
+  },
+  {
+    "q": "Ci sono costi nascosti (abbonamento automatico, rinnovo, acquisti in-app)?",
+    "a": "No. Spendif.AI non ha abbonamenti, rinnovi automatici né acquisti in-app. L'unico costo eventuale è quello dell'API key se scegli un backend cloud a pagamento come OpenAI (che addebita in base all'uso), ma è una scelta opzionale — il backend locale è gratuito."
+  },
+  {
+    "q": "Perché è gratis? Come guadagnano soldi?",
+    "a": "Spendif.AI è un progetto open source nato per uso personale e poi condiviso pubblicamente. Il modello di business a lungo termine potrebbe includere una versione Pro con funzioni avanzate, ma la base open source rimarrà sempre gratuita."
+  },
+  {
+    "q": "Occupa molto spazio sul computer?",
+    "a": "L'app in sé è leggera (pochi MB). Lo spazio rilevante è quello del modello LLM locale: i modelli consigliati occupano da ~1.5 GB (gemma-2-2b-it-Q4_K_M) a ~8 GB (gemma3:12b). Puoi scegliere un modello più piccolo se lo spazio è un vincolo. Il database con le transazioni cresce lentamente (qualche MB per anno di movimenti)."
+  },
+  {
+    "q": "Si aggiorna da solo? Gli aggiornamenti possono causare problemi?",
+    "a": "No, Spendif.AI non si aggiorna da solo. Gli aggiornamenti vanno installati manualmente (tramite Homebrew su Mac: brew upgrade spendifai, o scaricando la nuova versione). Questo ti dà il controllo completo: non rischi che un aggiornamento automatico cambi il comportamento inaspettatamente."
+  },
+  {
+    "q": "Funziona anche con una connessione internet lenta?",
+    "a": "Sì. Se usi il backend locale (llama.cpp o Ollama), la connessione internet non serve affatto. Se usi OpenAI o Claude, la connessione viene usata solo per le chiamate AI durante l'importazione — non durante la navigazione dell'app."
+  },
+  {
+    "q": "Devo per forza creare un account? Posso usarlo senza registrarmi?",
+    "a": "Puoi usarlo senza creare nessun account. Non serve email, password né registrazione. Al primo avvio compare solo il wizard di configurazione iniziale (lingua, nome titolare, conti) — nessuna creazione di account online."
+  },
+  {
+    "q": "Devo obbligatoriamente dare la mia email, il mio nome, il mio numero di telefono?",
+    "a": "No. Spendif.AI non richiede dati personali di nessun tipo. Nel wizard di configurazione inserisci il nome del titolare del conto (usato solo per riconoscere i tuoi bonifici interni e proteggere la privacy nei prompt), ma non viene trasmesso da nessuna parte."
+  },
+  {
+    "q": "Se dimentico la password, come la recupero?",
+    "a": "Spendif.AI non ha una password. Non c'è autenticazione, quindi non puoi dimenticare nulla. L'app si apre direttamente senza login."
+  },
+  {
+    "q": "Capisce da solo se una spesa è 'alimentari', 'benzina', 'salute' ecc., o lo devo scegliere io ogni volta?",
+    "a": "Capisce da solo. Spendif.AI usa un modello AI per categorizzare automaticamente ogni transazione in base alla descrizione. Con le regole deterministiche e lo storico delle tue validazioni, nel tempo la maggior parte delle spese viene categorizzata senza nessun intervento manuale.",
+    "page": "review"
+  },
+  {
+    "q": "Se faccio un bonifico a mio figlio, lo conta come spesa o lo riconosce come trasferimento interno?",
+    "a": "Dipende. Se il destinatario è un tuo conto (es. conto deposito), Spendif.AI lo rileva come giroconto e lo esclude dai totali delle spese. Se è un bonifico a un'altra persona, viene contato come uscita. Puoi sempre marcarlo manualmente come giroconto nel Ledger.",
+    "page": "ledger"
+  },
+  {
+    "q": "Posso inserire anche le entrate (stipendio, affitto che incasso, rimborsi)?",
+    "a": "Sì. Spendif.AI importa e categorizza sia spese che entrate. Le categorie di reddito includono stipendio, affitto incassato, rimborsi e altro. I report mostrano entrate e uscite separatamente."
+  },
+  {
+    "q": "Gestisce anche le spese ricorrenti automatiche (abbonamenti, utenze, mutuo, affitto)?",
+    "a": "Sì. Le spese ricorrenti vengono importate automaticamente dai file movimenti della banca. Puoi creare una regola deterministica per categorizzarle sempre allo stesso modo (es. NETFLIX → Abbonamenti → Streaming, ENEL → Utenze → Elettricità). Non è necessario fare nulla di manuale ogni mese.",
+    "page": "rules"
+  },
+  {
+    "q": "Posso inserire spese in valuta straniera (euro, dollari, sterline)?",
+    "a": "Sì. Se il file della tua banca include la colonna valuta, Spendif.AI la rileva e la memorizza. La valuta di default è EUR ma è configurabile. Le transazioni in valuta straniera vengono importate con il valore così come appare nel file della banca."
+  },
+  {
+    "q": "Quante banche o carte posso collegare contemporaneamente?",
+    "a": "Non c'è un limite. Puoi aggiungere tutti i conti che vuoi: conto corrente, carta di credito, carta di debito, carta prepagata, conto risparmio e contanti. Ogni conto è indipendente e i dati vengono unificati nel Ledger.",
+    "page": "settings"
+  },
+  {
+    "q": "Mi dice in modo chiaro dove vanno i miei soldi ogni mese?",
+    "a": "Sì. Vai su Report → Vista 1 (tabella pivot). Vedi subito quanto hai speso per categoria nel mese selezionato, con percentuali sul totale. Puoi anche usare Analytics per il grafico a torta immediato.",
+    "page": "report"
+  },
+  {
+    "q": "Posso vedere quanto ho speso in una certa categoria (es. ristoranti) nell'ultimo anno?",
+    "a": "Sì. Vai su Report, imposta il filtro periodo su Anno (o un intervallo personalizzato) e guarda la riga della categoria che ti interessa. Puoi anche usare il filtro ad albero in Analytics per selezionare solo quella categoria.",
+    "page": "report"
+  },
+  {
+    "q": "Posso confrontare le spese di questo mese con quelle del mese scorso o dell'anno scorso?",
+    "a": "Sì. In Report → Vista 2 — Trend temporale, vedi il line chart con l'andamento mensile per categoria. Puoi confrontare visivamente mesi o anni. Per un confronto numerico preciso, esporta in Excel e usa le funzioni di foglio di calcolo.",
+    "page": "report"
+  },
+  {
+    "q": "Mi avvisa se sto spendendo troppo rispetto a un budget che ho fissato io?",
+    "a": "Sì. Imposta le percentuali obiettivo in Budget, poi vai su Budget vs Actual. Per ogni categoria con obiettivo vedi un semaforo: 🟢 verde = entro il 5% del target, 🟡 giallo = tra 5% e 10% sopra, 🔴 rosso = più del 10% sopra.",
+    "page": "budget"
+  },
+  {
+    "q": "Mi dice quanti soldi mi restano a fine mese, tenendo conto delle spese fisse?",
+    "a": "Sì. In Budget vs Actual trovi la riga metriche con: Entrate, Uscite, Liquidità (entrate − uscite) e % liquidità rispetto alle entrate. Rappresenta il saldo del periodo selezionato.",
+    "page": "budget"
+  },
+  {
+    "q": "I grafici e le tabelle sono comprensibili anche per chi non è abituato ai numeri?",
+    "a": "Sì. I grafici in Analytics (torta, andamento) e i semafori in Budget vs Actual sono progettati per essere leggibili a colpo d'occhio. I colori (verde/giallo/rosso) e le percentuali danno informazioni immediate senza bisogno di analisi complesse.",
+    "page": "analytics"
+  },
+  {
+    "q": "Posso esportare i dati o un riepilogo in PDF o Excel per portarlo al commercialista o per archivio?",
+    "a": "Sì per Excel: in Report → Vista 3 scarichi un file .xlsx completo con riepilogo, trend e dettaglio per contesto. No per PDF direttamente: non c'è un pulsante Esporta PDF, ma puoi stampare la pagina del browser in PDF dal sistema operativo (Cmd+P su Mac, Ctrl+P su Windows).",
+    "page": "report"
+  },
+  {
+    "q": "Posso impostare un obiettivo di risparmio (es. 'voglio mettere da parte 200 € al mese')?",
+    "a": "In modo parziale. Spendif.AI gestisce obiettivi espressi come percentuale delle entrate per ogni categoria (es. max 30% per Abitazione). Non c'è un campo per inserire un obiettivo di risparmio in euro assoluti. Per monitorare '200 € al mese di risparmio', puoi usare la metrica Liquidità in Budget vs Actual.",
+    "page": "budget"
+  },
+  {
+    "q": "Mi dice se sono in linea con il mio obiettivo di risparmio o se sto andando fuori budget?",
+    "a": "Sì. In Budget vs Actual i semafori mostrano per ogni categoria se sei entro o oltre il target percentuale. Il bar chart affiancato target vs actual rende immediato vedere dove sei in linea e dove sforzi.",
+    "page": "budget"
+  },
+  {
+    "q": "Mi aiuta a capire dove potrei tagliare le spese senza dirmi cosa fare?",
+    "a": "Sì. Il Report pivot mostra le percentuali di spesa per categoria, i semafori di Budget vs Actual segnalano le categorie fuori target, e il trend temporale mostra se una spesa è in crescita. L'app ti mostra i dati — sei tu a decidere dove tagliare.",
+    "page": "report"
+  },
+  {
+    "q": "C'è un'assistenza in italiano? È una persona reale o solo un chatbot?",
+    "a": "La documentazione ufficiale è completamente in italiano (guida utente, guida di configurazione, guida alla classificazione). Per supporto diretto puoi aprire un issue su GitHub (github.com/drake69/spendify). Un chatbot di supporto basato su questa documentazione è in sviluppo."
+  },
+  {
+    "q": "Esistono video tutorial o guide in italiano facili da capire?",
+    "a": "Sono disponibili guide testuali complete in italiano (guida_utente.md, configurazione.md, guida_classificazione.md) nella cartella docs/. Video tutorial non sono ancora disponibili ma sono in roadmap."
+  },
+  {
+    "q": "Non potrei fare la stessa cosa con un foglio Excel o con un quaderno?",
+    "a": "Tecnicamente sì, ma con un effort molto maggiore. Spendif.AI automatizza le parti ripetitive: riconosce automaticamente il formato dei file della banca, categorizza con AI le transazioni, deduplica gli import, traccia i giroconti e genera report pivot con trend temporali. Con Excel devi fare tutto a mano ogni mese."
+  },
+  {
+    "q": "Se non mi piace, posso portare tutti i miei dati su un altro programma senza ricominciare da capo?",
+    "a": "Sì. Puoi esportare tutte le transazioni in CSV o XLSX da Analytics. Il database è un file SQLite standard (ledger.db) che puoi leggere con qualsiasi strumento compatibile. Non sei bloccato."
+  },
+  {
+    "q": "Mio figlio / mia figlia o qualcuno di più esperto di tecnologia potrebbe aiutarmi a configurarlo facilmente?",
+    "a": "Sì. Il wizard di onboarding guida passo per passo la configurazione iniziale in 4 step (lingua, nome, conti, conferma). La documentazione è in italiano e dettagliata. Un utente esperto può configurare l'app in 10-15 minuti."
+  },
+  {
+    "q": "Quanto tempo ci vuole per capire se Spendif.AI mi fa risparmiare tempo nella categorizzazione?",
+    "a": "La prova seria richiede 15-20 minuti la prima volta: importi il tuo estratto conto, lasci che Spendif.AI categorizzi automaticamente, poi scorri la pagina Review e correggi le poche voci sbagliate. Dal secondo mese in poi il sistema ricorda le tue correzioni e si migliora da solo — la revisione diventa sempre più rapida. Molti utenti si rendono conto del valore già nel primo import, quando vedono categorizzate automaticamente l'80-90% delle transazioni senza aver fatto nulla.",
+    "page": "settings"
+  },
+  {
+    "q": "Devo controllare le transazioni una ad una ogni volta?",
+    "a": "No. Spendif.AI mostra solo le transazioni che hanno bisogno della tua attenzione: quelle categorizzate con bassa confidenza o mai viste prima. Le transazioni che il sistema riconosce già — brand noti, spese ricorrenti, regole che hai impostato — vengono approvate automaticamente e non compaiono nella coda di revisione. Con il tempo la coda si svuota sempre di più: la maggior parte degli utenti arriva a dover revisionare meno del 10% delle transazioni importate ogni mese.",
+    "page": "review"
+  },
+  {
+    "q": "Spendif.AI si collega automaticamente alla mia banca per scaricare i movimenti?",
+    "a": "No. Spendif.AI non si connette mai alla tua banca. Non usa Open Banking, PSD2 né API bancarie. Devi scaricare manualmente il file movimenti (CSV o XLSX) dal sito della tua banca e importarlo nell'app. Questo garantisce che le tue credenziali bancarie non siano mai esposte."
+  },
+  {
+    "q": "Esiste un'app mobile per iPhone o Android?",
+    "a": "No, al momento non esiste un'app mobile. Spendif.AI è un'applicazione desktop che funziona su macOS e Windows tramite browser locale. Un'app mobile potrebbe essere sviluppata in futuro, ma non è nella roadmap immediata."
+  },
+  {
+    "q": "Posso sincronizzare i dati tra più dispositivi (telefono + computer)?",
+    "a": "No. Spendif.AI è un'app locale: i dati restano sul tuo computer nel file ledger.db. Non c'è sincronizzazione cloud. Se vuoi accedere agli stessi dati su più computer, puoi copiare manualmente il file del database."
+  },
+  {
+    "q": "Posso avere un account condiviso con mio marito / mia moglie / il mio partner?",
+    "a": "No. Spendif.AI non supporta multi-utente né account condivisi. Un'installazione gestisce un set di conti di un singolo utente. La condivisione dei dati richiede di condividere fisicamente il file del database."
+  },
+  {
+    "q": "Posso importare un estratto conto in PDF?",
+    "a": "No, al momento Spendif.AI non supporta l'importazione di file PDF. Accetta solo CSV, XLSX e XLS. Se la tua banca fornisce solo PDF, devi scaricare il formato CSV o XLSX (quasi tutte le banche italiane li offrono). Il supporto PDF è in valutazione per versioni future.",
+    "page": "import"
+  },
+  {
+    "q": "Posso fotografare uno scontrino e Spendif.AI lo legge automaticamente?",
+    "a": "No. Spendif.AI non supporta l'acquisizione tramite fotocamera né l'OCR di scontrini o ricevute. Lavora esclusivamente con file di movimenti bancari in formato CSV o XLSX."
+  },
+  {
+    "q": "Spendif.AI mi manda notifiche sul telefono quando supero il budget?",
+    "a": "No. Spendif.AI non invia notifiche push al telefono. È un'app desktop e mostra i semafori di budget (🔴 rosso = oltre il 10% del target) solo quando apri la pagina Budget vs Actual nell'applicazione."
+  },
+  {
+    "q": "Spendif.AI mi avvisa quando sta per arrivare una scadenza (bolletta, abbonamento, rata)?",
+    "a": "No. Spendif.AI non ha un sistema di promemoria o alert automatici per scadenze. Puoi vedere le spese ricorrenti nel Ledger e nei Report, ma non riceverai avvisi proattivi."
+  },
+  {
+    "q": "Spendif.AI mi manda un riepilogo settimanale o mensile via email?",
+    "a": "No. Spendif.AI non invia email né report automatici. Per avere un riepilogo devi aprire l'app e consultare la pagina Report o esportare manualmente il file Excel."
+  },
+  {
+    "q": "Spendif.AI gestisce i miei investimenti, azioni o portafoglio titoli?",
+    "a": "No. Spendif.AI è uno strumento di gestione delle spese personali e del budget familiare. Non gestisce portafogli titoli, azioni, fondi, criptovalute né investimenti di nessun tipo."
+  },
+  {
+    "q": "Posso usare Spendif.AI per la contabilità della mia azienda o partita IVA?",
+    "a": "No. Spendif.AI è progettato per le finanze personali, non per la contabilità aziendale. Non genera fatture, non gestisce IVA, non produce registri contabili fiscali né è conforme ai requisiti della contabilità d'impresa."
+  },
+  {
+    "q": "Posso accedere con il mio account Google o Facebook?",
+    "a": "No. Spendif.AI non richiede alcun account e non supporta social login. Si installa e si usa direttamente sul tuo computer senza registrazione."
+  },
+  {
+    "q": "Posso proteggere Spendif.AI con un PIN, una password o l'impronta digitale?",
+    "a": "No. Spendif.AI non ha una schermata di blocco o autenticazione integrata. Per proteggere i tuoi dati puoi usare la cifratura del disco del sistema operativo (FileVault su Mac, BitLocker su Windows) o proteggere la cartella con le credenziali di sistema.",
+    "page": "settings"
+  },
+  {
+    "q": "Posso pianificare una spesa futura grande (es. vacanza, auto) e vedere quanto tempo ci vuole per risparmiare?",
+    "a": "No. Spendif.AI non ha una funzione di pianificazione obiettivi di risparmio per spese future. Puoi monitorare il budget corrente per categoria, ma non calcola piani di accumulo nel tempo.",
+    "page": "budget"
+  },
+  {
+    "q": "Spendif.AI è disponibile in lingue diverse dall'italiano?",
+    "a": "Al momento la tassonomia è disponibile in italiano. Il supporto per altre lingue europee (inglese, spagnolo, francese, tedesco) è in roadmap ma non ancora disponibile.",
+    "page": "settings"
+  },
+  {
+    "q": "Spendif.AI può scaricare automaticamente i file dalla banca senza che io faccia nulla?",
+    "a": "No. L'importazione richiede che tu scarichi manualmente il file movimenti dal sito della tua banca e lo trascini nell'app. Non ci sono download automatici, webhook bancari né integrazioni con home banking.",
+    "page": "import"
+  },
+  {
+    "q": "Spendif.AI fa backup automatici dei miei dati su cloud?",
+    "a": "No. I dati sono salvati solo in locale nel file ledger.db. Spendif.AI non fa backup automatici. Per mettere al sicuro i tuoi dati devi fare backup manuali del file del database (es. copiarlo su un disco esterno o su un servizio cloud personale come iCloud o Dropbox)."
+  },
+  {
+    "q": "Se cancello delle transazioni per errore posso recuperarle?",
+    "a": "No. Le eliminazioni in Spendif.AI sono irreversibili. Ti consigliamo di fare un backup manuale del file ledger.db prima di eseguire eliminazioni massive. L'unica eccezione è l'annullamento di un import tramite Storico import, ma solo se non hai eseguito altre operazioni dopo."
+  },
+  {
+    "q": "Se smetto di usare Spendif.AI, posso portare i dati su un altro programma?",
+    "a": "Sì per l'export: puoi esportare le transazioni in CSV o XLSX. No per l'import diretto: non esiste un connettore ufficiale per importare dati da Spendif.AI in altri software di personal finance. Il database SQLite è accessibile direttamente se sei uno sviluppatore."
+  },
+  {
+    "q": "Se qualcuno mi ruba il telefono o il computer, può vedere le mie spese e i miei conti?",
+    "a": "Spendif.AI non ha una schermata di blocco o autenticazione integrata. Se qualcuno ha accesso fisico al tuo computer e l'app è accessibile, può vedere i tuoi dati. Per proteggere le tue informazioni usa la cifratura del disco del sistema operativo: FileVault su Mac (Preferenze di Sistema → Sicurezza → FileVault) o BitLocker su Windows. In questo modo i dati restano inaccessibili senza la tua password di sistema.",
+    "page": "settings"
+  },
+  {
+    "q": "È possibile proteggere l'accesso con un PIN, una password o l'impronta digitale?",
+    "a": "No. Spendif.AI non ha un sistema di autenticazione integrato (PIN, password app, Touch ID o Face ID). La protezione va gestita a livello di sistema operativo: usa la cifratura del disco (FileVault/BitLocker) e il blocco schermo automatico del computer.",
+    "page": "settings"
+  },
+  {
+    "q": "Posso usare Spendif.AI contemporaneamente su più dispositivi (telefono + computer)?",
+    "a": "No. Spendif.AI è un'app desktop locale. Non c'è sincronizzazione cloud: ogni installazione ha il suo database separato. Puoi usarlo su più computer copiando manualmente il file ledger.db, ma non c'è sincronizzazione automatica tra dispositivi. App mobile non disponibile."
+  },
+  {
+    "q": "Posso accedere con il mio account Google o Facebook senza creare una nuova password?",
+    "a": "No. Spendif.AI non supporta social login (Google, Facebook, Apple, ecc.) perché non ha un sistema di autenticazione. L'app non richiede nessun account — si apre direttamente."
+  },
+  {
+    "q": "Posso avere un account condiviso con mio marito / mia moglie / il mio partner?",
+    "a": "No. Spendif.AI non supporta multi-utente né account condivisi in tempo reale. Se vuoi gestire finanze di coppia, l'unica opzione è lavorare sullo stesso computer con lo stesso database, o condividere il file ledger.db manualmente. Non c'è collaborazione online."
+  },
+  {
+    "q": "Devo inserire ogni spesa a mano, o si collega automaticamente al mio conto bancario o alla mia carta?",
+    "a": "Non si collega automaticamente alla banca. Devi scaricare manualmente il file movimenti (CSV o XLSX) dal sito della tua banca e importarlo in Spendif.AI. Non usa Open Banking, PSD2 né API bancarie. Una volta importato il file, tutto il resto (categorizzazione, regole, report) è automatico."
+  },
+  {
+    "q": "Posso fotografare gli scontrini e li legge da solo, o devo riscrivere tutto?",
+    "a": "No. Spendif.AI non supporta l'acquisizione di scontrini tramite fotocamera né OCR di ricevute. Lavora esclusivamente con file di movimenti bancari. Le spese in contanti non appaiono sui file bancari e non possono essere importate automaticamente."
+  },
+  {
+    "q": "Mi manda notifiche sul telefono? Posso scegliere quali ricevere e quali no?",
+    "a": "No. Spendif.AI è un'app desktop e non invia notifiche push al telefono. Non c'è un'app mobile né un sistema di alert. Le informazioni su budget e spese sono disponibili solo aprendo l'applicazione."
+  },
+  {
+    "q": "Mi avvisa quando sta per arrivare una scadenza (bolletta, abbonamento, rata)?",
+    "a": "No. Spendif.AI non ha un sistema di promemoria per scadenze future. Puoi vedere le spese ricorrenti passate nel Ledger e nei Report, ma non riceverai avvisi proattivi per bollette o rate in arrivo."
+  },
+  {
+    "q": "Mi manda un riepilogo settimanale o mensile senza che io debba aprire l'app?",
+    "a": "No. Spendif.AI non invia email, SMS né report automatici. Per ricevere un riepilogo devi aprire l'app e consultare la pagina Report, oppure esportare manualmente il file Excel."
+  },
+  {
+    "q": "Se ricevo un pagamento insolito o molto alto, me lo segnala?",
+    "a": "No. Spendif.AI non ha un sistema di rilevamento anomalie in tempo reale né alert su transazioni sospette o insolite. Puoi vedere eventuali transazioni anomale consultando il Ledger manualmente."
+  },
+  {
+    "q": "Posso pianificare una spesa grande futura (es. vacanza, auto, ristrutturazione) e vedere quanto tempo ci vuole per raggiungere la cifra?",
+    "a": "No. Spendif.AI non ha una funzione di pianificazione per obiettivi di risparmio futuri o accumulo verso una cifra target. È focalizzato sull'analisi della spesa storica e sul monitoraggio del budget corrente, non sulla proiezione futura.",
+    "page": "budget"
+  },
+  {
+    "q": "Se commetto un errore e cancello delle spese, posso recuperarle?",
+    "a": "No. Le eliminazioni in Spendif.AI sono irreversibili. Non esiste un cestino o una funzione di undo per le eliminazioni. Prima di eliminare grandi quantità di dati, fai sempre un backup manuale del file ledger.db (lo trovi nella cartella di installazione)."
+  },
+  {
+    "q": "Posso fare un bonifico o un pagamento direttamente dall'app?",
+    "a": "No. Spendif.AI è uno strumento di analisi e categorizzazione delle spese, non un'app bancaria. Non può eseguire operazioni sul conto: nessun bonifico, nessun pagamento, nessuna ricarica. Per pagare devi usare la tua banca normalmente."
+  },
+  {
+    "q": "Esiste una comunità di utenti (forum, gruppo) dove posso fare domande in italiano?",
+    "a": "Al momento non esiste una community ufficiale (forum, gruppo Telegram o Discord). Per segnalare problemi o fare domande puoi aprire un issue su GitHub (github.com/drake69/spendify). Una community di supporto è in valutazione per il futuro."
+  },
+  {
+    "q": "Spendif.ai si paga? Quanto costa?",
+    "a": "Spendif.AI è completamente gratuito e open source (licenza MIT). Non ci sono abbonamenti, costi nascosti né acquisti in-app. Il codice è pubblico per sempre.",
+    "page": ""
+  },
+  {
+    "q": "È a pagamento o gratuito?",
+    "a": "Gratuito e open source. Nessun costo, nessun abbonamento, nessuna versione premium.",
+    "page": ""
   }
 ]

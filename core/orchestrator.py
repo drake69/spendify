@@ -620,6 +620,7 @@ def process_file(
     account_label_override: Optional[str] = None,  # user-selected account name; overrides LLM-assigned label
     skip_rows_override: Optional[int] = None,  # user-confirmed skip_rows from UI; takes precedence over schema
     history_cache=None,  # Optional[HistoryCache] — pre-loaded history for batch categorization
+    taxonomy_map: Optional[dict] = None,  # C-08-cascade: {osm_tag: (category, subcategory)} or None
 ) -> ImportResult:
     """
     Process a single file through Flow 1 or Flow 2.
@@ -1074,6 +1075,7 @@ def process_file(
         progress_callback=_cat_cb,
         source_name=filename,
         history_cache=history_cache,
+        taxonomy_map=taxonomy_map,
     )
     cat_map = {tx["id"]: result for tx, result in zip(to_categorize, cat_results)}
 

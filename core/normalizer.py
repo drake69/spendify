@@ -483,15 +483,38 @@ def detect_skip_rows(
     return skip, certain, border_region
 
 
+_SUMMARY_SHEET_RE = re.compile(
+    r'summary|résumé|resume|zusammenfassung|resumen|récapitulatif|'
+    r'totale|totali|total|totaux|'
+    r'riepilogo|récapitulatif|übersicht|'
+    r'saldo|balance|solde',
+    re.IGNORECASE,
+)
+"""Regex that matches XLSX sheet names typically containing aggregate/summary data.
+
+Banks often export multi-sheet workbooks where one sheet holds individual
+transactions (e.g. "Movimenti", "Transactions") and another holds totals
+(e.g. "Riepilogo", "Summary", "Zusammenfassung").  `detect_best_sheet()`
+skips any sheet whose name matches this pattern to avoid importing aggregate
+rows as individual transactions.
+
+Coverage (aligned with `_FOOTER_SUSPECT_KEYWORDS`):
+  it: totale / totali / riepilogo / saldo
+  en: summary / total / balance
+  fr: résumé / resume / totaux / solde / récapitulatif
+  de: zusammenfassung / übersicht
+  es: resumen / total
+"""
+
+
 def detect_best_sheet(workbook) -> str:
     """Select the sheet with the most numeric columns and rows,
-    excluding sheets whose name matches summary patterns."""
-    summary_re = re.compile(r'summary|totale|riepilogo', re.IGNORECASE)
+    excluding aggregate/summary sheets (matched by `_SUMMARY_SHEET_RE`)."""
     best_sheet = None
     best_score = -1
 
     for name in workbook.sheetnames:
-        if summary_re.search(name):
+        if _SUMMARY_SHEET_RE.search(name):
             continue
         ws = workbook[name]
         rows = list(ws.iter_rows(values_only=True))

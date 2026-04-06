@@ -16,7 +16,7 @@ from enum import Enum
 from pathlib import Path
 
 from chat_bot.faq_classifier import ClassifierResult, FAQClassifier
-from chat_bot.faq_store import load_documents, load_faq
+from chat_bot.kb_store import load_documents, load_faq
 from chat_bot.rag import RAGEngine, RAGResult
 
 logger = logging.getLogger(__name__)
@@ -52,9 +52,8 @@ class ChatBotEngine:
         self._lang = lang
         self._prompts = json.loads(_PROMPTS_PATH.read_text(encoding="utf-8"))
 
-        # load knowledge base
-        self._faq_entries = load_faq(lang)
-        self._doc_chunks = load_documents(lang)
+        # load knowledge base — all available languages so any query language works
+        self._faq_entries, self._doc_chunks = _load_all_knowledge()
 
         # always build FAQ classifier (zero cost)
         self._classifier = FAQClassifier(self._faq_entries) if self._faq_entries else None
@@ -70,14 +69,25 @@ class ChatBotEngine:
     def mode(self) -> ChatMode:
         return self._mode
 
-    def ask(self, question: str) -> ChatResponse:
-        """Answer a user question using the best available mode."""
+    def ask(
+        self,
+        question: str,
+        history: list[dict[str, str]] | None = None,
+    ) -> ChatResponse:
+        """Answer a user question using the best available mode.
+
+        Args:
+            question: The current user question.
+            history: Optional list of previous turns as
+                     ``[{"role": "user"|"assistant", "content": "..."}]``.
+                     Passed to RAG so the model can resolve follow-up questions.
+        """
         question = question.strip()
         if not question:
             return ChatResponse(text=self._no_answer(), mode=self._mode)
 
         if self._mode in (ChatMode.RAG_CLOUD, ChatMode.RAG_LOCAL):
-            return self._ask_rag(question)
+            return self._ask_rag(question, history=history)
         return self._ask_faq(question)
 
     # ── mode detection ───────────────────────────────────────────────
@@ -124,14 +134,18 @@ class ChatBotEngine:
 
     # ── ask implementations ──────────────────────────────────────────
 
-    def _ask_rag(self, question: str) -> ChatResponse:
+    def _ask_rag(
+        self,
+        question: str,
+        history: list[dict[str, str]] | None = None,
+    ) -> ChatResponse:
         """Answer using RAG (cloud or local)."""
         if self._rag is None:
             self._rag = self._build_rag()
         if self._rag is None:
             # fallback to FAQ if backend construction fails
             return self._ask_faq(question)
-        result: RAGResult = self._rag.query(question)
+        result: RAGResult = self._rag.query(question, history=history)
         return ChatResponse(
             text=result.answer,
             mode=self._mode,
@@ -200,3 +214,16 @@ class ChatBotEngine:
     def _no_answer(self) -> str:
         no_answer = self._prompts.get("no_answer", {})
         return no_answer.get(self._lang, no_answer.get("en", "No answer available."))
+
+
+def _load_all_knowledge() -> tuple[list, list]:
+    """Load FAQ entries and doc chunks from all available language directories."""
+    from pathlib import Path
+    knowledge_dir = Path(__file__).parent / "knowledge"
+    faq_entries: list = []
+    doc_chunks: list = []
+    for lang_dir in sorted(knowledge_dir.iterdir()):
+        if lang_dir.is_dir():
+            faq_entries.extend(load_faq(lang_dir.name))
+            doc_chunks.extend(load_documents(lang_dir.name))
+    return faq_entries, doc_chunks

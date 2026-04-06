@@ -692,9 +692,16 @@ class LlamaCppBackend(LLMBackend):
         return None
 
     def get_context_info(self) -> dict | None:
+        n_ctx_train = None
+        try:
+            n_ctx_train = self._llm.n_ctx_train()
+        except AttributeError:
+            # llama-cpp-python >= 0.3.x removed n_ctx_train(); fall back to
+            # the value parsed from GGUF metadata or the active context size.
+            n_ctx_train = LlamaCppBackend.read_gguf_context_length(self._model_path) or self._llm.n_ctx()
         return {
             "n_ctx": self._llm.n_ctx(),
-            "n_ctx_train": self._llm.n_ctx_train(),
+            "n_ctx_train": n_ctx_train,
         }
 
     @property

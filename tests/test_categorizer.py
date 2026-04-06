@@ -1,4 +1,9 @@
-"""Unit tests for core/categorizer.py — static rules and cascade logic."""
+"""Unit tests for core/categorizer.py — user rules and cascade logic.
+
+Note: Step 1 (static language rules, _it.json) has been deprecated in C-08-cascade.
+  Brand matching is now handled by the NSI taxonomy_map bypass (Step 3b).
+  TestStaticRules has been removed accordingly.
+"""
 from decimal import Decimal
 
 import pytest
@@ -7,7 +12,6 @@ from core.categorizer import (
     CategoryRule,
     TaxonomyConfig,
     categorize_transaction,
-    _apply_static_rules,
 )
 from core.models import CategorySource, Confidence
 
@@ -25,21 +29,6 @@ def minimal_taxonomy():
             "Altro entrate": ["Entrate non classificate"],
         },
     )
-
-
-class TestStaticRules:
-    def test_supermarket_match(self):
-        result = _apply_static_rules("pagamento esselunga via roma", is_expense=True)
-        assert result is not None
-        assert result[0] == "Alimentari"
-
-    def test_fuel_match(self):
-        result = _apply_static_rules("Q8 CARBURANTE 28/03", is_expense=True)
-        assert result is not None
-        assert result[0] == "Trasporti"
-
-    def test_no_match_returns_none(self):
-        assert _apply_static_rules("xyzzy unknown merchant 123", is_expense=True) is None
 
 
 class TestCategoryRule:
@@ -85,16 +74,23 @@ class TestCategorizationCascade:
         assert result.source == CategorySource.rule
         assert result.confidence == Confidence.high
 
-    def test_static_rule_fallback(self, minimal_taxonomy):
+    def test_no_rule_no_llm_falls_to_review(self, minimal_taxonomy):
+        """Without user rules and without LLM, any transaction falls to Altro/to_review.
+
+        Step 1 (static rules) was deprecated in C-08-cascade; brand matching is
+        now handled by NSI taxonomy_map (Step 3b).  With no taxonomy_map and no LLM
+        the cascade ends at the fallback.
+        """
         result = categorize_transaction(
-            description="carburante eni",
+            description="Esselunga",
             amount=Decimal("-60.00"),
             doc_type="bank_account",
             taxonomy=minimal_taxonomy,
             user_rules=[],
             llm_backend=None,
         )
-        assert result.category == "Trasporti"
+        assert result.category == "Altro"
+        assert result.to_review is True
 
     def test_fallback_to_altro_no_llm(self, minimal_taxonomy):
         result = categorize_transaction(

@@ -77,3 +77,4 @@ class CategorySource(str, Enum):
     llm = "llm"
     manual = "manual"
     history = "history"
+    nsi = "nsi"   # C-08-cascade: NSI brand → taxonomy_map direct match

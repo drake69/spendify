@@ -44,6 +44,8 @@ SKIP_LLAMA=false
 SKIP_OLLAMA=false
 SKIP_VLLM=false
 SETUP_ONLY=false
+SCENARIO=""       # categorizer-only: cold|nsi_warm|full_warm|country_with|country_without|all
+COUNTRY=""        # categorizer-only: ISO country for country_with scenario
 EXTRA_ARGS=()
 
 while [[ $# -gt 0 ]]; do
@@ -56,6 +58,8 @@ while [[ $# -gt 0 ]]; do
         --skip-ollama) SKIP_OLLAMA=true; shift ;;
         --skip-vllm)   SKIP_VLLM=true; shift ;;
         --setup-only)  SETUP_ONLY=true; shift ;;
+        --scenario)    SCENARIO="$2"; shift 2 ;;   # categorizer only
+        --country)     COUNTRY="$2"; shift 2 ;;    # categorizer only
         *)             EXTRA_ARGS+=("$1"); shift ;;
     esac
 done
@@ -66,7 +70,7 @@ mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/benchmark_full_$(date '+%Y%m%d_%H%M%S').log"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
-SW_VERSION=$(cat "benchmark/.version" 2>/dev/null || git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+SW_VERSION=$(bash benchmark/bench_guard.sh) || exit 1
 
 echo "════════════════════════════════════════════════════════════"
 echo "  SPENDIFY FULL BENCHMARK  —  $(date '+%Y-%m-%d %H:%M:%S')"
@@ -371,7 +375,14 @@ run_phase() {
     echo "────────────────────────────────────────────────────────────"
     echo "  [step $STEP] [$phase] $label"
     echo "────────────────────────────────────────────────────────────"
+    # --scenario and --country are categorizer-only args; don't pass to classifier
+    local SCENARIO_ARGS=()
+    if [ "$phase" = "categorizer" ]; then
+        [ -n "$SCENARIO" ] && SCENARIO_ARGS+=(--scenario "$SCENARIO")
+        [ -n "$COUNTRY"  ] && SCENARIO_ARGS+=(--country "$COUNTRY")
+    fi
     $PYTHON "$script" --runs "$RUNS" "$@" \
+        ${SCENARIO_ARGS[@]+"${SCENARIO_ARGS[@]}"} \
         ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"} || \
         echo "  [WARN] $label [$phase] failed — skipping"
 }
