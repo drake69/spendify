@@ -683,8 +683,23 @@ def _evaluate_file(
             sanitize_config=None,
         )
 
-        # Sample HW after cleaner
-        # HW sampling handled by background HWMonitor thread
+        # 3c. Patch synthetic history cache with cleaned descriptions.
+        #     _SyntheticHistoryCache is built from description_raw (GT), but
+        #     categorize_batch receives the LLM-cleaned description (merchant name).
+        #     We pair by position (same row order) to add clean→category mappings.
+        if history_cache is not None and isinstance(history_cache, _SyntheticHistoryCache):
+            n_patched = 0
+            for i, tx in enumerate(transactions):
+                if i >= len(ground_truth):
+                    break
+                gt_row = ground_truth[i]
+                clean_desc = tx.get("description", "")
+                if clean_desc and gt_row.expected_category and "/" in gt_row.expected_category:
+                    cat, sub = gt_row.expected_category.split("/", 1)
+                    history_cache._lookup_dict[clean_desc] = (cat.strip(), sub.strip())
+                    n_patched += 1
+            if n_patched:
+                print(f"  [history_cache] patched {n_patched} clean descriptions for {entry.filename}")
 
         # 4. Categorize (warm fixtures injected per scenario)
         cat_results = categorize_batch(
