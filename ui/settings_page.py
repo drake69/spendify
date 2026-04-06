@@ -668,7 +668,7 @@ def render_settings_page(engine):
         openai_key      = settings.get("openai_api_key", "")
         openai_model    = settings.get("openai_model", "gpt-4o-mini")
         anthropic_key   = settings.get("anthropic_api_key", "")
-        anthropic_model = settings.get("anthropic_model", "claude-3-5-haiku-20241022")
+        anthropic_model = settings.get("anthropic_model", "claude-3-5-haiku-latest")
 
     elif backend == "local_ollama":
         col_url, col_model = st.columns([2, 1])
@@ -702,7 +702,7 @@ def render_settings_page(engine):
         openai_key = settings.get("openai_api_key", "")
         openai_model = settings.get("openai_model", "gpt-4o-mini")
         anthropic_key = settings.get("anthropic_api_key", "")
-        anthropic_model = settings.get("anthropic_model", "claude-3-5-haiku-20241022")
+        anthropic_model = settings.get("anthropic_model", "claude-3-5-haiku-latest")
 
     elif backend == "openai":
         col_key, col_model = st.columns([2, 1])
@@ -728,7 +728,7 @@ def render_settings_page(engine):
         ollama_url = settings.get("ollama_base_url", "http://localhost:11434")
         ollama_model = settings.get("ollama_model", "gemma3:12b")
         anthropic_key = settings.get("anthropic_api_key", "")
-        anthropic_model = settings.get("anthropic_model", "claude-3-5-haiku-20241022")
+        anthropic_model = settings.get("anthropic_model", "claude-3-5-haiku-latest")
 
     elif backend == "claude":
         col_key, col_model = st.columns([2, 1])
@@ -742,7 +742,7 @@ def render_settings_page(engine):
         with col_model:
             anthropic_model = st.text_input(
                 t("settings.anthropic.model"),
-                value=settings.get("anthropic_model", "claude-3-5-haiku-20241022"),
+                value=settings.get("anthropic_model", "claude-3-5-haiku-latest"),
                 key="_wgt_claude_model",
                 on_change=_autodetect_ctx_claude,
             )
@@ -788,7 +788,7 @@ def render_settings_page(engine):
         openai_key      = settings.get("openai_api_key", "")
         openai_model    = settings.get("openai_model", "gpt-4o-mini")
         anthropic_key   = settings.get("anthropic_api_key", "")
-        anthropic_model = settings.get("anthropic_model", "claude-3-5-haiku-20241022")
+        anthropic_model = settings.get("anthropic_model", "claude-3-5-haiku-latest")
 
     if backend != "openai_compatible":
         compat_base_url = settings.get("compat_base_url", "")

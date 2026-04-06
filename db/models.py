@@ -59,7 +59,7 @@ DEFAULT_USER_SETTINGS = {
     "openai_api_key": "",
     "openai_model": "gpt-4o-mini",
     "anthropic_api_key": "",
-    "anthropic_model": "claude-3-5-haiku-20241022",
+    "anthropic_model": "claude-3-5-haiku-latest",
     "compat_base_url": "",
     "compat_api_key": "",
     "compat_model": "",
