@@ -1228,7 +1228,7 @@ def main() -> None:
     parser.add_argument("--n-ctx", type=int, default=0,
                         help="Context window size in tokens for llama-cpp (0 = auto-detect from GGUF, default: 0)")
     parser.add_argument("--model", type=str, default=None,
-                        help="Model name override (e.g. 'phi3:3.8b', 'gpt-4o-mini', 'claude-3-5-haiku-20241022')")
+                        help="Model name override (e.g. 'phi3:3.8b', 'gpt-4o-mini', 'claude-3-5-haiku-latest')")
     parser.add_argument("--api-key", type=str, default=None,
                         help="API key for remote backends (OpenAI, Claude, OpenAI-compatible)")
     parser.add_argument("--base-url", type=str, default=None,

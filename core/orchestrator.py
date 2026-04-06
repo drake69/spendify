@@ -109,7 +109,7 @@ class ProcessingConfig:
     ollama_model: str = "gemma3:12b"
     openai_model: str = "gpt-4o-mini"
     openai_api_key: str = ""
-    claude_model: str = "claude-3-5-haiku-20241022"
+    claude_model: str = "claude-3-5-haiku-latest"
     anthropic_api_key: str = ""
     # OpenAI-compatible (Groq, Together AI, Google AI Studio, …)
     compat_base_url: str = ""
