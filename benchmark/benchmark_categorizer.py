@@ -578,7 +578,9 @@ class _SyntheticHistoryCache:
         for desc, (cat, sub) in self._lookup_dict.items():
             result[desc] = DescriptionProfile(
                 description=desc,
+                associations=[],
                 total_validated=5,
+                homogeneity=1.0,
                 confidence=1.0,
                 top_category=cat,
                 top_subcategory=sub,
@@ -1484,7 +1486,7 @@ def main() -> None:
             tm = warm_kwargs.get("taxonomy_map")
             hc = warm_kwargs.get("history_cache")
             print(f"  taxonomy_map: {len(tm)} OSM tags" if tm else "  taxonomy_map: none")
-            print(f"  history_cache: {len(hc._cache)} descriptions" if hc else "  history_cache: none")
+            print(f"  history_cache: {len(hc._lookup_dict)} descriptions" if hc else "  history_cache: none")
             if warm_kwargs.get("user_country"):
                 print(f"  country: {warm_kwargs['user_country']}")
 
