@@ -114,72 +114,181 @@ echo "[ok] uv $(uv --version)"
 echo ""
 echo "── [2/4] Checking Python environment..."
 
-# GPU detection — determines which llama-cpp-python wheel to install
-# Result: GPU_BACKEND = metal | cuda | rocm | cpu
+# GPU detection — always run, determines GPU_BACKEND for VRAM sizing and llama wheel
+# Result: GPU_BACKEND = metal | cuda | rocm | vulkan | cpu
 #         GPU_LABEL   = human-readable description
 #         CU_TAG      = wheel tag (cu121..cu125, only for cuda)
 GPU_BACKEND="cpu"
 GPU_LABEL="CPU-only"
 CU_TAG=""
-if [ "$SKIP_LLAMA" = false ]; then
-    if [ "$(uname)" = "Darwin" ] && [ "$(uname -m)" = "arm64" ]; then
-        GPU_BACKEND="metal"
-        GPU_LABEL="Apple Silicon (Metal)"
-    elif command -v nvidia-smi &>/dev/null; then
-        _CUDA_VER=$(nvidia-smi 2>/dev/null | grep -oE 'CUDA Version: [0-9]+\.[0-9]+' | grep -oE '[0-9]+\.[0-9]+' | head -1)
-        _GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1 | xargs)
-        if [ -n "$_CUDA_VER" ]; then
-            _CUDA_MAJOR=$(echo "$_CUDA_VER" | cut -d. -f1)
-            _CUDA_MINOR=$(echo "$_CUDA_VER" | cut -d. -f2)
-            _CUDA_NUM="${_CUDA_MAJOR}${_CUDA_MINOR}"
-            # Map to closest supported wheel tag (≤ detected CUDA version)
-            CU_TAG="cu121"
-            for _v in 125 124 123 122 121; do
-                if [ "$_CUDA_NUM" -ge "$_v" ] 2>/dev/null; then
-                    CU_TAG="cu${_v}"; break
-                fi
-            done
-            GPU_BACKEND="cuda"
-            GPU_LABEL="NVIDIA $_GPU_NAME (CUDA $_CUDA_VER → wheel: $CU_TAG)"
-        else
-            GPU_BACKEND="cuda"
-            CU_TAG="cu121"
-            GPU_LABEL="NVIDIA (CUDA version unknown → wheel: $CU_TAG)"
-        fi
-    elif command -v rocm-smi &>/dev/null; then
-        GPU_BACKEND="rocm"
-        _ROCM_VER=$(rocm-smi --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+' | head -1)
-        GPU_LABEL="AMD ROCm${_ROCM_VER:+ $_ROCM_VER} (build from source)"
+if [ "$(uname)" = "Darwin" ] && [ "$(uname -m)" = "arm64" ]; then
+    GPU_BACKEND="metal"
+    GPU_LABEL="Apple Silicon (Metal)"
+elif command -v nvidia-smi &>/dev/null; then
+    _CUDA_VER=$(nvidia-smi 2>/dev/null | grep -oE 'CUDA Version: [0-9]+\.[0-9]+' | grep -oE '[0-9]+\.[0-9]+' | head -1)
+    _GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1 | xargs)
+    if [ -n "$_CUDA_VER" ]; then
+        _CUDA_MAJOR=$(echo "$_CUDA_VER" | cut -d. -f1)
+        _CUDA_MINOR=$(echo "$_CUDA_VER" | cut -d. -f2)
+        _CUDA_NUM="${_CUDA_MAJOR}${_CUDA_MINOR}"
+        # Map to closest supported wheel tag (≤ detected CUDA version)
+        CU_TAG="cu121"
+        for _v in 125 124 123 122 121; do
+            if [ "$_CUDA_NUM" -ge "$_v" ] 2>/dev/null; then
+                CU_TAG="cu${_v}"; break
+            fi
+        done
+        GPU_BACKEND="cuda"
+        GPU_LABEL="NVIDIA $_GPU_NAME (CUDA $_CUDA_VER → wheel: $CU_TAG)"
+    else
+        GPU_BACKEND="cuda"
+        CU_TAG="cu121"
+        GPU_LABEL="NVIDIA (CUDA version unknown → wheel: $CU_TAG)"
     fi
-    echo "[gpu] $GPU_LABEL"
+elif command -v rocm-smi &>/dev/null; then
+    GPU_BACKEND="rocm"
+    _ROCM_VER=$(rocm-smi --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+' | head -1)
+    GPU_LABEL="AMD ROCm${_ROCM_VER:+ $_ROCM_VER} (build from source)"
+elif command -v vulkaninfo &>/dev/null && vulkaninfo --summary 2>/dev/null | grep -qi "deviceName.*AMD\|deviceName.*Radeon"; then
+    GPU_BACKEND="vulkan"
+    _VK_GPU=$(vulkaninfo --summary 2>/dev/null | grep -i "deviceName" | head -1 | sed 's/.*= *//')
+    GPU_LABEL="AMD Vulkan: ${_VK_GPU:-unknown} (build from source)"
 fi
+echo "[gpu] $GPU_LABEL"
 
-# Install deps + llama-cpp-python with correct GPU wheel
-uv sync --no-install-package llama-cpp-python --quiet
+# Install deps (exclude llama-cpp-python — installed separately to preserve GPU builds)
+uv sync --no-install-package llama-cpp-python --inexact --quiet
+
+# Reinstall llama-cpp-python if uv sync removed it or if GPU backend doesn't match
 if [ "$SKIP_LLAMA" = false ]; then
-    case "$GPU_BACKEND" in
-        metal)
-            echo "[setup] Installing llama-cpp-python (Metal — standard PyPI wheel)..."
-            uv pip install "llama-cpp-python>=0.3.0" --quiet
-            ;;
-        cuda)
-            echo "[setup] Installing llama-cpp-python ($CU_TAG GPU wheel)..."
-            UV_EXTRA_INDEX_URL="https://abetlen.github.io/llama-cpp-python/whl/$CU_TAG" \
+    _LLAMA_OK=false
+    if $PYTHON -c "import llama_cpp" 2>/dev/null; then
+        LLAMA_VER=$($PYTHON -c "import llama_cpp; print(llama_cpp.__version__)" 2>/dev/null || echo "unknown")
+        _SO_DIR=$($PYTHON -c "import llama_cpp, os; print(os.path.dirname(llama_cpp.__file__))" 2>/dev/null || echo "")
+        _LIB_DIR="${_SO_DIR}/lib"
+        [ ! -d "$_LIB_DIR" ] && _LIB_DIR="$_SO_DIR"
+        # Check for backend-specific shared libs (.so on Linux, .dylib on macOS).
+        # Must check BOTH extensions — macOS uses .dylib, Linux uses .so.
+        _has_lib() { [ -f "$_LIB_DIR/$1.so" ] || [ -f "$_LIB_DIR/$1.dylib" ]; }
+        case "$GPU_BACKEND" in
+            metal)  _has_lib libggml-metal  && _LLAMA_OK=true ;;
+            cuda)   _has_lib libggml-cuda   && _LLAMA_OK=true ;;
+            vulkan) _has_lib libggml-vulkan && _LLAMA_OK=true ;;
+            rocm)   _has_lib libggml-cuda   && _LLAMA_OK=true ;;
+            *)      _LLAMA_OK=true ;;  # CPU — any build is fine
+        esac
+        if [ "$_LLAMA_OK" = true ]; then
+            echo "[ok] llama-cpp-python $LLAMA_VER (${GPU_BACKEND} support verified)"
+        else
+            echo ""
+            echo "[WARN] llama-cpp-python $LLAMA_VER is installed but LACKS ${GPU_BACKEND} support."
+            echo "       The benchmark will run on CPU only unless you reinstall."
+            echo ""
+            read -r -p "Reinstall llama-cpp-python with ${GPU_BACKEND} support? [y/N] " _REPLY
+            [[ "$_REPLY" =~ ^[Yy]$ ]] || { echo "[skip] Keeping current build — benchmark will use CPU"; _LLAMA_OK=true; }
+        fi
+    fi
+    if [ "$_LLAMA_OK" = false ]; then
+        case "$GPU_BACKEND" in
+            metal)
+                echo "[setup] Installing llama-cpp-python (Metal — standard PyPI wheel)..."
                 uv pip install "llama-cpp-python>=0.3.0" --quiet
-            ;;
-        rocm)
-            echo "[setup] Building llama-cpp-python from source (HIPBLAS/ROCm)..."
-            CMAKE_ARGS="-DGGML_HIPBLAS=on" uv pip install \
-                "llama-cpp-python>=0.3.0" --no-binary llama-cpp-python --quiet
-            ;;
-        *)
-            echo "[setup] Installing llama-cpp-python (CPU wheel)..."
-            UV_EXTRA_INDEX_URL="https://abetlen.github.io/llama-cpp-python/whl/cpu" \
-                uv pip install "llama-cpp-python>=0.3.0" --quiet
-            ;;
-    esac
+                ;;
+            cuda)
+                echo "[setup] Installing llama-cpp-python ($CU_TAG GPU wheel)..."
+                UV_EXTRA_INDEX_URL="https://abetlen.github.io/llama-cpp-python/whl/$CU_TAG" \
+                    uv pip install "llama-cpp-python>=0.3.0" --quiet
+                ;;
+            rocm)
+                echo "[setup] Building llama-cpp-python from source (HIPBLAS/ROCm)..."
+                CMAKE_ARGS="-DGGML_HIPBLAS=on" uv pip install \
+                    "llama-cpp-python>=0.3.0" --no-binary llama-cpp-python --quiet
+                ;;
+            vulkan)
+                echo "[setup] Building llama-cpp-python from source (Vulkan)..."
+                CMAKE_ARGS="-DGGML_VULKAN=ON" uv pip install \
+                    "llama-cpp-python>=0.3.0" --no-binary llama-cpp-python --no-cache-dir --quiet
+                ;;
+            *)
+                echo "[setup] Installing llama-cpp-python (CPU wheel)..."
+                UV_EXTRA_INDEX_URL="https://abetlen.github.io/llama-cpp-python/whl/cpu" \
+                    uv pip install "llama-cpp-python>=0.3.0" --quiet
+                ;;
+        esac
+    fi
 fi
 echo "[ok] Python env ready"
+
+# ── Detect available RAM and GPU memory for model size filtering ─────────
+SYSTEM_RAM_MB=0
+    if [ "$(uname)" = "Darwin" ]; then
+        SYSTEM_RAM_MB=$(( $(sysctl -n hw.memsize) / 1048576 ))
+    elif [ -f /proc/meminfo ]; then
+        SYSTEM_RAM_MB=$(awk '/MemTotal/ {printf "%d", $2/1024}' /proc/meminfo)
+    fi
+    # Size limit: VRAM for NVIDIA, 75% unified RAM for Metal, RAM/2 for CPU
+    case "$GPU_BACKEND" in
+        metal)
+            # Apple Silicon: unified memory — GPU and CPU share the same pool
+            MAX_MODEL_MB=$(( SYSTEM_RAM_MB * 3 / 4 ))
+            [ "$SYSTEM_RAM_MB" -gt 0 ] && \
+                echo "[check] Unified RAM: $((SYSTEM_RAM_MB / 1024)) GB → max model: $((MAX_MODEL_MB / 1024)) GB"
+            ;;
+        cuda)
+            # NVIDIA: use VRAM as the bottleneck
+            _VRAM_MB=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null \
+                       | head -1 | tr -d ' ')
+            if [ -n "$_VRAM_MB" ] && [ "$_VRAM_MB" -gt 0 ] 2>/dev/null; then
+                MAX_MODEL_MB=$_VRAM_MB
+                echo "[check] System RAM: $((SYSTEM_RAM_MB / 1024)) GB, GPU VRAM: $((_VRAM_MB / 1024)) GB → max model: $((MAX_MODEL_MB / 1024)) GB"
+            else
+                MAX_MODEL_MB=$(( SYSTEM_RAM_MB / 2 ))
+                echo "[check] System RAM: $((SYSTEM_RAM_MB / 1024)) GB → max model: $((MAX_MODEL_MB / 1024)) GB (VRAM unknown)"
+            fi
+            ;;
+        rocm)
+            # AMD ROCm: use VRAM as the bottleneck (like NVIDIA/cuda)
+            _VRAM_MB=$(rocm-smi --showmeminfo vram --csv 2>/dev/null \
+                       | awk -F, 'NR>1 && $1+0==$1 {print int($2/1048576); exit}')
+            if [ -z "$_VRAM_MB" ] || [ "$_VRAM_MB" -le 0 ] 2>/dev/null; then
+                # Fallback: try rocm-smi --showmeminfo vram (non-CSV, MiB lines)
+                _VRAM_MB=$(rocm-smi --showmeminfo vram 2>/dev/null \
+                           | grep -i 'total' | grep -oE '[0-9]+' | head -1)
+            fi
+            if [ -n "$_VRAM_MB" ] && [ "$_VRAM_MB" -gt 0 ] 2>/dev/null; then
+                MAX_MODEL_MB=$_VRAM_MB
+                echo "[check] System RAM: $((SYSTEM_RAM_MB / 1024)) GB, GPU VRAM: $((_VRAM_MB / 1024)) GB → max model: $((MAX_MODEL_MB / 1024)) GB"
+            else
+                MAX_MODEL_MB=$(( SYSTEM_RAM_MB / 2 ))
+                echo "[check] System RAM: $((SYSTEM_RAM_MB / 1024)) GB → max model: $((MAX_MODEL_MB / 1024)) GB (ROCm VRAM unknown)"
+            fi
+            ;;
+        vulkan)
+            # AMD Vulkan: VRAM = first memoryHeaps[0] size (DEVICE_LOCAL)
+            # Format: "size   = 8321499136 (0x...) (7.75 GiB)"
+            _VRAM_BYTES=$(vulkaninfo 2>/dev/null \
+                       | awk '/memoryHeaps\[0\]:/{found=1; next} found && /size/{print $3; exit}' \
+                       || true)
+            if [ -n "$_VRAM_BYTES" ] && [ "$_VRAM_BYTES" -gt 0 ] 2>/dev/null; then
+                _VRAM_MB=$(( _VRAM_BYTES / 1048576 ))
+            else
+                _VRAM_MB=""
+            fi
+            if [ -n "$_VRAM_MB" ] && [ "$_VRAM_MB" -gt 0 ] 2>/dev/null; then
+                MAX_MODEL_MB=$_VRAM_MB
+                echo "[check] System RAM: $((SYSTEM_RAM_MB / 1024)) GB, GPU VRAM: $((_VRAM_MB / 1024)) GB → max model: $((MAX_MODEL_MB / 1024)) GB"
+            else
+                MAX_MODEL_MB=$(( SYSTEM_RAM_MB / 2 ))
+                echo "[check] System RAM: $((SYSTEM_RAM_MB / 1024)) GB → max model: $((MAX_MODEL_MB / 1024)) GB (Vulkan VRAM unknown)"
+            fi
+            ;;
+        *)
+            # CPU-only: conservative RAM/2 heuristic
+            MAX_MODEL_MB=$(( SYSTEM_RAM_MB / 2 ))
+            [ "$SYSTEM_RAM_MB" -gt 0 ] && \
+                echo "[check] System RAM: $((SYSTEM_RAM_MB / 1024)) GB → max model: $((MAX_MODEL_MB / 1024)) GB"
+            ;;
+    esac
 
 # ── Step 3a: llama.cpp — download missing GGUF ───────────────────────────
 if [ "$SKIP_LLAMA" = false ]; then
@@ -188,11 +297,14 @@ if [ "$SKIP_LLAMA" = false ]; then
     mkdir -p "$MODELS_DIR"
 
     # _hf_download <repo_id> <filename> --local-dir <dir>
-    # Usa direttamente l'API Python di huggingface_hub — non dipende da
-    # entry point CLI (huggingface-cli) che può mancare o cambiare path.
+    # NOTE: uses $PYTHON (direct .venv/bin/python) instead of "uv run python".
+    # "uv run" triggers an implicit "uv sync" that replaces the GPU-compiled
+    # llama-cpp-python wheel with the CPU-only one from the lockfile.
+    # On macOS this was invisible (PyPI wheel already includes Metal), but on
+    # Linux with CUDA/Vulkan/ROCm it silently killed GPU acceleration.
     _hf_download() {
         local repo_id="$1" filename="$2" local_dir="$4"
-        uv run python - "$repo_id" "$filename" "$local_dir" <<'PYEOF'
+        $PYTHON - "$repo_id" "$filename" "$local_dir" <<'PYEOF'
 import sys, os, requests
 from pathlib import Path
 from tqdm import tqdm
@@ -226,41 +338,6 @@ tmp.rename(dest)
 print(f"  → {dest}")
 PYEOF
     }
-
-    # Detect available RAM and GPU memory for model size filtering
-    SYSTEM_RAM_MB=0
-    if [ "$(uname)" = "Darwin" ]; then
-        SYSTEM_RAM_MB=$(( $(sysctl -n hw.memsize) / 1048576 ))
-    elif [ -f /proc/meminfo ]; then
-        SYSTEM_RAM_MB=$(awk '/MemTotal/ {printf "%d", $2/1024}' /proc/meminfo)
-    fi
-    # Size limit: VRAM for NVIDIA, 75% unified RAM for Metal, RAM/2 for CPU
-    case "$GPU_BACKEND" in
-        metal)
-            # Apple Silicon: unified memory — GPU and CPU share the same pool
-            MAX_MODEL_MB=$(( SYSTEM_RAM_MB * 3 / 4 ))
-            [ "$SYSTEM_RAM_MB" -gt 0 ] && \
-                echo "[check] Unified RAM: $((SYSTEM_RAM_MB / 1024)) GB → max model: $((MAX_MODEL_MB / 1024)) GB"
-            ;;
-        cuda)
-            # NVIDIA: use VRAM as the bottleneck
-            _VRAM_MB=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null \
-                       | head -1 | tr -d ' ')
-            if [ -n "$_VRAM_MB" ] && [ "$_VRAM_MB" -gt 0 ] 2>/dev/null; then
-                MAX_MODEL_MB=$_VRAM_MB
-                echo "[check] System RAM: $((SYSTEM_RAM_MB / 1024)) GB, GPU VRAM: $((_VRAM_MB / 1024)) GB → max model: $((MAX_MODEL_MB / 1024)) GB"
-            else
-                MAX_MODEL_MB=$(( SYSTEM_RAM_MB / 2 ))
-                echo "[check] System RAM: $((SYSTEM_RAM_MB / 1024)) GB → max model: $((MAX_MODEL_MB / 1024)) GB (VRAM unknown)"
-            fi
-            ;;
-        *)
-            # CPU / ROCm: conservative RAM/2 heuristic
-            MAX_MODEL_MB=$(( SYSTEM_RAM_MB / 2 ))
-            [ "$SYSTEM_RAM_MB" -gt 0 ] && \
-                echo "[check] System RAM: $((SYSTEM_RAM_MB / 1024)) GB → max model: $((MAX_MODEL_MB / 1024)) GB"
-            ;;
-    esac
 
     GGUF_DOWNLOADED=0
     GGUF_SKIPPED=0
@@ -366,7 +443,8 @@ echo "  SETUP SUMMARY"
 USE_LLAMA=false
 USE_OLLAMA=false
 USE_VLLM=false
-[ "$SKIP_LLAMA" = false ] && ls "$MODELS_DIR"/*.gguf 2>/dev/null | grep -q . && USE_LLAMA=true
+# --skip-llama skips only the install/download step, not the backend itself
+ls "$MODELS_DIR"/*.gguf 2>/dev/null | grep -q . && USE_LLAMA=true
 [ "$SKIP_OLLAMA" = false ] && USE_OLLAMA=true
 [ "$SKIP_VLLM" = false ] && [ -n "$VLLM_MODEL" ] && USE_VLLM=true
 
