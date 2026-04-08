@@ -230,6 +230,80 @@ jobs:
               });
             }
 
+  security:
+    name: Security scanning (SAST + deps)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      # ── Bandit (Python SAST) ──────────────────────────────
+      - name: Install Bandit
+        run: uv pip install bandit[toml]
+
+      - name: Run Bandit — code injection & security checks
+        run: |
+          uv run bandit -r core/ services/ db/ api/ chat_bot/ quarantine/ support/ \
+            -c pyproject.toml \
+            -f json -o bandit-report.json \
+            || true
+          # Pretty-print summary and fail on HIGH severity
+          uv run bandit -r core/ services/ db/ api/ chat_bot/ quarantine/ support/ \
+            -c pyproject.toml \
+            -ll -ii
+          # -ll = only HIGH severity, -ii = only HIGH confidence → hard gate
+
+      - name: Upload Bandit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bandit-report
+          path: bandit-report.json
+          retention-days: 30
+
+      # ── Semgrep (OWASP / broader SAST) ───────────────────
+      - name: Run Semgrep — OWASP top-10 rules
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/python
+            p/owasp-top-ten
+            p/security-audit
+        env:
+          SEMGREP_RULES: p/python p/owasp-top-ten p/security-audit
+
+      # ── pip-audit (known CVEs in dependencies) ───────────
+      - name: Install pip-audit
+        run: uv pip install pip-audit
+
+      - name: Run pip-audit — dependency vulnerabilities
+        run: |
+          uv run pip-audit \
+            --requirement <(uv pip freeze) \
+            --format json --output pip-audit-report.json \
+            || true
+          uv run pip-audit \
+            --requirement <(uv pip freeze) \
+            --strict
+
+      - name: Upload pip-audit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pip-audit-report
+          path: pip-audit-report.json
+          retention-days: 30
+
   installer-validate:
     name: Installer validation (syntax + compose)
     runs-on: ubuntu-latest
