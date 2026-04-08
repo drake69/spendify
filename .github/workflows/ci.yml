@@ -304,6 +304,31 @@ jobs:
           path: pip-audit-report.json
           retention-days: 30
 
+      # ── ShellCheck (bash injection / script quality) ─────
+      - name: Install ShellCheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Run ShellCheck on installer scripts
+        run: |
+          shellcheck --severity=warning \
+            installer/install.sh \
+            installer/uninstall.sh \
+            benchmark/run_benchmark_full.sh \
+            docker/benchmark_entrypoint.sh
+
+      # ── Trivy (Docker image vulnerabilities) ────────────
+      - name: Build Docker image for scanning
+        run: docker build -f docker/Dockerfile -t spendify:scan .
+
+      - name: Run Trivy — container vulnerability scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: 'spendify:scan'
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+
   installer-validate:
     name: Installer validation (syntax + compose)
     runs-on: ubuntu-latest

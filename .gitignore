@@ -1,6 +1,26 @@
+# Python
 __pycache__/
 .venv/
 venv
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project
 /llm_cache
 /backup
 /da_cancellare
@@ -24,3 +44,6 @@ my_secrets.py
 # NSI raw data (large downloaded datasets — not in git)
 nsi/
 
+
+# Local symlink to documents repo (never commit)
+rsvd_docs
