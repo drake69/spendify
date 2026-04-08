@@ -46,6 +46,11 @@ class LLMBackend(ABC):
     def name(self) -> str:
         ...
 
+    @property
+    def model_id(self) -> str:
+        """Specific model identifier (e.g. 'gemma-2-2b-it-Q4_K_M')."""
+        return getattr(self, "model", "")
+
     # ── Token usage tracking ──────────────────────────────────────────────
     # last_usage: populated after each complete_structured() call.
     # cumulative_usage: accumulated across multiple calls (reset with reset_cumulative_usage).
@@ -541,6 +546,8 @@ DEFAULT_GGUF_MODELS = {
 class LlamaCppBackend(LLMBackend):
     """Local LLM backend using llama-cpp-python. No external service needed."""
 
+    DEFAULT_N_CTX_CAP = 16384  # 16K — 2.3× observed p100 (7K) from benchmark data
+
     def __init__(
         self,
         model_path: str | None = None,
@@ -552,8 +559,9 @@ class LlamaCppBackend(LLMBackend):
         Args:
             model_path: Path to a .gguf file. None = auto-detect from ~/.spendifai/models/.
             n_ctx: Context window size in tokens.
-                   0 (default) = auto-detect from GGUF metadata (model's native max),
-                   falling back to 4096 if detection fails.
+                   0 (default) = auto-detect from GGUF metadata, capped at DEFAULT_N_CTX_CAP
+                   to avoid wasting memory on oversized KV caches.
+                   Explicit positive values are used as-is (no cap).
             n_gpu_layers: GPU layers to offload (-1 = all).
         """
         try:
@@ -571,7 +579,8 @@ class LlamaCppBackend(LLMBackend):
                 f"Scarica un modello GGUF dalla pagina Impostazioni (Scarica modello)."
             )
         if n_ctx == 0:
-            n_ctx = LlamaCppBackend.read_gguf_context_length(model_path) or 4096
+            detected = LlamaCppBackend.read_gguf_context_length(model_path) or 4096
+            n_ctx = min(detected, self.DEFAULT_N_CTX_CAP)
         self._model_path = model_path
         self._llm = Llama(
             model_path=model_path,
@@ -870,7 +879,7 @@ def call_with_fallback(
             result = backend.complete_structured(
                 system_prompt, user_prompt, json_schema, temperature
             )
-            return result, backend.name
+            return result, backend.model_id
         except LLMValidationError as exc:
             logger.warning(f"Backend {backend.name} failed: {exc}")
     return None, "quarantine"
