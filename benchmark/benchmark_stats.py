@@ -477,6 +477,9 @@ def print_summary_table(df: pd.DataFrame, group_cols: list[str]) -> None:
 
     # Aggregate classifier
     clf = df[df["benchmark_type"] == "classifier"]
+    clf_raw_counts = clf.groupby(group_cols, dropna=False).agg(
+        clf_n_raw=("duration_seconds", "count"),
+    ).reset_index() if not clf.empty else pd.DataFrame()
     clf_stats = clf.groupby(group_cols, dropna=False).agg(
         clf_n=("duration_seconds", "count"),
         clf_amount=("amount_accuracy", "mean"),
@@ -485,10 +488,17 @@ def print_summary_table(df: pd.DataFrame, group_cols: list[str]) -> None:
         clf_s_schema=("duration_seconds", "mean"),
         clf_tok_s=("tokens_per_second", "mean"),
     ).reset_index() if not clf.empty else pd.DataFrame()
+    if not clf_stats.empty and not clf_raw_counts.empty:
+        clf_stats = pd.merge(clf_stats, clf_raw_counts, on=group_cols, how="left")
 
     # Aggregate categorizer (with trimming)
     cat = df[df["benchmark_type"] == "categorizer"]
     if not cat.empty:
+        # Raw count before trimming (= files actually run)
+        cat_raw_counts = cat.groupby(group_cols, dropna=False).agg(
+            cat_n_raw=("duration_seconds", "count"),
+        ).reset_index()
+
         trimmed_frames = []
         for _key, _grp in cat.groupby(group_cols, dropna=False):
             _grp = _grp.copy()
@@ -507,6 +517,8 @@ def print_summary_table(df: pd.DataFrame, group_cols: list[str]) -> None:
             cat_s_10tx=("sec_per_10tx", "mean"),
             cat_tok_s=("tokens_per_second", "mean"),
         ).reset_index()
+        # Merge raw counts
+        cat_stats = pd.merge(cat_stats, cat_raw_counts, on=group_cols, how="left")
     else:
         cat_stats = pd.DataFrame()
 
@@ -535,18 +547,29 @@ def print_summary_table(df: pd.DataFrame, group_cols: list[str]) -> None:
 
         # Classifier
         clf_n = int(row.get("clf_n", 0)) if pd.notna(row.get("clf_n")) else 0
-        r["Clf N"] = str(clf_n) if clf_n > 0 else "—"
+        clf_n_raw = int(row.get("clf_n_raw", 0)) if pd.notna(row.get("clf_n_raw")) else 0
+        if clf_n > 0:
+            r["Clf N"] = f"{clf_n}/{clf_n_raw}" if clf_n < clf_n_raw else str(clf_n)
+        else:
+            r["Clf N"] = "—"
         r["Amt %"] = format_pct(row.get("clf_amount")) if clf_n > 0 else "—"
         r["s/schema"] = format_num(row.get("clf_s_schema")) if clf_n > 0 else "—"
 
         # Categorizer
         cat_n = int(row.get("cat_n", 0)) if pd.notna(row.get("cat_n")) else 0
+        cat_n_raw = int(row.get("cat_n_raw", 0)) if pd.notna(row.get("cat_n_raw")) else 0
         cat_exact_val = row.get("cat_exact")
         cat_exact_std = row.get("cat_exact_std", float("nan"))
         hw = ci95_half_width(cat_exact_std, cat_n) if cat_n >= 2 else 0.0
 
         sig = "" if cat_n >= MIN_N_SIGNIFICANT else " ⚠" if cat_n > 0 else ""
-        r["Cat N"] = f"{cat_n}{sig}" if cat_n > 0 else "—"
+        if cat_n > 0:
+            if cat_n < cat_n_raw:
+                r["Cat N"] = f"{cat_n}/{cat_n_raw}{sig}"
+            else:
+                r["Cat N"] = f"{cat_n}{sig}"
+        else:
+            r["Cat N"] = "—"
 
         if cat_n > 0 and pd.notna(cat_exact_val):
             if hw > 0:
