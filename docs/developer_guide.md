@@ -631,7 +631,7 @@ bash benchmark/run_benchmark_full.sh --max-files 8
 
 **Fase 2 — Full (50 file)**: solo i 2 modelli selezionati, tutti i 50 file per risultati statisticamente robusti.
 
-**Gestione spazio disco**: i GGUF vengono scaricati in `~/.spendifai/models/`. Se dopo un run lo spazio libero scende sotto 16 GB, il modello appena usato viene cancellato automaticamente (verrà riscaricato al prossimo lancio se necessario). Il filtro RAM (`RAM × 3/4`) skippa modelli troppo grandi per la macchina.
+**Gestione spazio disco (download just-in-time)**: i GGUF **non** vengono scaricati tutti in anticipo. Per ogni modello il flusso è: (1) verifica disco ≥ 16GB + size modello, (2) download just-in-time se non presente, (3) run benchmark, (4) cleanup se disco < 16GB dopo il run, (5) prossimo modello. Questo permette di testare l'intero catalogo (11 modelli, ~35GB) anche su macchine con soli 20-25GB liberi. Il filtro RAM (`RAM × 3/4`) skippa modelli troppo grandi per la memoria.
 
 **File di tracking**: `benchmark/benchmark_plan.csv` traccia il completamento per macchina × modello × backend × fase. Colonne: `machine, model, backend, phase, n_files_target, status, exact_pct, fuzzy_pct, err_pct, fb_pct, s_per_10tx, notes`. Status: `todo` → `running` → `done` / `skip` / `blocked`.
 

@@ -592,7 +592,7 @@ The benchmark is organized in two phases:
 
 **Phase 2 — Full (50 files)**: only the 2 selected models, all 50 files for statistically robust results.
 
-**Disk space management**: GGUF models are downloaded to `~/.spendifai/models/`. After each run, if free disk space drops below 16 GB, the model just used is automatically deleted (re-downloaded on next launch if needed). The RAM filter (`RAM × 3/4`) skips models too large for the machine.
+**Disk space management (just-in-time download)**: GGUF models are **not** bulk-downloaded upfront. For each model the flow is: (1) check disk ≥ 16GB + model size, (2) download just-in-time if not present, (3) run benchmark, (4) cleanup if disk < 16GB after run, (5) next model. This allows testing the full catalog (11 models, ~35GB) even on machines with only 20-25GB free. The RAM filter (`RAM × 3/4`) skips models too large for available memory.
 
 **Tracking**: `benchmark/benchmark_plan.csv` tracks completion per machine × model × phase. `benchmark/machine_names.csv` maps technical hostnames to friendly names.
 

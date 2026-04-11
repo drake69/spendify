@@ -159,9 +159,12 @@ cat <<'EOF'
   GESTIONE SPAZIO DISCO
 ──────────────────────────────────────────────────────────────────────────────
 
-  I modelli GGUF vengono scaricati in ~/.spendifai/models/
-  Dopo ogni run, se lo spazio libero è < 16 GB il modello viene cancellato.
-  Al prossimo lancio verrà riscaricato se necessario.
+  I modelli GGUF NON vengono scaricati tutti in anticipo.
+  Per ogni modello: check disco → download → run → cleanup → next.
+  - Pre-check: serve 16 GB + size modello liberi
+  - Dopo il run: se disco < 16 GB, il GGUF viene cancellato
+  - Al prossimo lancio verrà riscaricato se necessario
+  - Funziona anche con soli 20-25 GB liberi su disco
 
 ══════════════════════════════════════════════════════════════════════════════
 EOF
