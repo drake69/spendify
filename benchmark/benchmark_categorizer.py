@@ -151,6 +151,23 @@ class CatRunResult:
     nsi_accuracy: float = 0.0     # exact accuracy among NSI-resolved tx
     nsi_coverage_pct: float = 0.0 # n_nsi / n_transactions
     taxonomy_map_hit_pct: float = 0.0  # n_nsi / total NSI matches (map hit rate)
+    # Per-direction breakdown (expense vs income)
+    n_expense: int = 0
+    n_income: int = 0
+    n_expense_correct: int = 0
+    n_income_correct: int = 0
+    n_expense_correct_fuzzy: int = 0
+    n_income_correct_fuzzy: int = 0
+    n_expense_fallback: int = 0
+    n_income_fallback: int = 0
+    expense_exact_accuracy: float = 0.0
+    income_exact_accuracy: float = 0.0
+    expense_fuzzy_accuracy: float = 0.0
+    income_fuzzy_accuracy: float = 0.0
+    # Token usage
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
 
 
 @dataclass
@@ -433,46 +450,14 @@ def _collect_llm_metadata(config: ProcessingConfig, backend) -> dict[str, str]:
             meta["family"] = "?"
 
     # ── Runtime HW (where Spendif.ai runs) ────────────────────────────────
-    import platform
-    meta["runtime_os"] = f"{platform.system()} {platform.release()} {platform.machine()}"
-    meta["runtime_hostname"] = __import__("socket").gethostname()
-    meta["runtime_gpu_ram_gb"] = ""  # filled after ram and gpu are detected
-    try:
-        import subprocess as _sp
-        ver = _sp.check_output(["sw_vers", "-productVersion"], text=True).strip()
-        meta["runtime_os"] = f"macOS {ver}"
-    except Exception:
-        meta["runtime_os"] = platform.platform()
-    try:
-        import subprocess as _sp
-        cpu = _sp.check_output(
-            ["sysctl", "-n", "machdep.cpu.brand_string"], text=True
-        ).strip()
-        meta["runtime_cpu"] = cpu
-    except Exception:
-        meta["runtime_cpu"] = platform.processor() or "unknown"
-    try:
-        import subprocess as _sp
-        ram_bytes = int(_sp.check_output(["sysctl", "-n", "hw.memsize"], text=True).strip())
-        meta["runtime_ram_gb"] = str(round(ram_bytes / (1024**3)))
-    except Exception:
-        meta["runtime_ram_gb"] = "?"
-    try:
-        import subprocess as _sp
-        gpu_info = _sp.check_output(
-            ["system_profiler", "SPDisplaysDataType"], text=True
-        )
-        for line in gpu_info.splitlines():
-            if "Chipset Model" in line:
-                meta["runtime_gpu"] = line.split(":")[-1].strip()
-                break
-        for line in gpu_info.splitlines():
-            if "Total Number of Cores" in line:
-                meta["runtime_gpu_cores"] = line.split(":")[-1].strip()
-                break
-    except Exception:
-        meta["runtime_gpu"] = "?"
-        meta["runtime_gpu_cores"] = "?"
+    from hw_detect import detect_hw
+    _hw = detect_hw()
+    meta["runtime_os"] = _hw["runtime_os"]
+    meta["runtime_hostname"] = _hw["runtime_hostname"]
+    meta["runtime_cpu"] = _hw["runtime_cpu"]
+    meta["runtime_ram_gb"] = _hw["runtime_ram_gb"]
+    meta["runtime_gpu"] = _hw["runtime_gpu"]
+    meta["runtime_gpu_cores"] = _hw["runtime_gpu_cores"]
     meta["runtime_gpu_ram_gb"] = _detect_gpu_ram_gb(
         meta.get("runtime_cpu", ""),
         meta.get("runtime_ram_gb", "0")
@@ -682,6 +667,9 @@ def _evaluate_file(
         n_tx = len(transactions)
 
         # 3b. Clean descriptions: extract counterpart name (as in production)
+        # Reset cumulative token counter before categorizer LLM calls
+        if hasattr(backend, 'reset_cumulative_usage'):
+            backend.reset_cumulative_usage()
         from core.description_cleaner import clean_descriptions_batch
         transactions = clean_descriptions_batch(
             transactions,
@@ -740,6 +728,11 @@ def _evaluate_file(
         n_nsi = 0
         n_nsi_correct = 0
         n_categorized = 0
+        # Per-direction counters
+        n_expense = n_income = 0
+        n_expense_correct = n_income_correct = 0
+        n_expense_correct_fuzzy = n_income_correct_fuzzy = 0
+        n_expense_fallback = n_income_fallback = 0
         detail_rows: list[CatDetailRow] = []
 
         for i in range(n_compare):
@@ -752,6 +745,13 @@ def _evaluate_file(
             exact = _category_exact_match(cr, expected)
             fuzzy = _category_fuzzy_match(cr, expected)
 
+            # Determine direction from transaction amount
+            try:
+                _amt = float(str(transactions[i].get("amount", 0)).replace(",", "."))
+            except (ValueError, TypeError):
+                _amt = 0.0
+            is_expense = _amt < 0
+
             if exact:
                 n_correct += 1
             if fuzzy:
@@ -760,6 +760,24 @@ def _evaluate_file(
                 n_fallback += 1
             else:
                 n_categorized += 1
+
+            # Per-direction tracking
+            if is_expense:
+                n_expense += 1
+                if exact:
+                    n_expense_correct += 1
+                if fuzzy:
+                    n_expense_correct_fuzzy += 1
+                if is_fb:
+                    n_expense_fallback += 1
+            else:
+                n_income += 1
+                if exact:
+                    n_income_correct += 1
+                if fuzzy:
+                    n_income_correct_fuzzy += 1
+                if is_fb:
+                    n_income_fallback += 1
 
             if cr.source == CategorySource.history:
                 n_history += 1
@@ -815,6 +833,23 @@ def _evaluate_file(
             nsi_accuracy=n_nsi_correct / n_nsi if n_nsi > 0 else 0.0,
             nsi_coverage_pct=n_nsi / n_compare if n_compare > 0 else 0.0,
             taxonomy_map_hit_pct=n_nsi / n_compare if n_compare > 0 else 0.0,
+            # Per-direction breakdown
+            n_expense=n_expense,
+            n_income=n_income,
+            n_expense_correct=n_expense_correct,
+            n_income_correct=n_income_correct,
+            n_expense_correct_fuzzy=n_expense_correct_fuzzy,
+            n_income_correct_fuzzy=n_income_correct_fuzzy,
+            n_expense_fallback=n_expense_fallback,
+            n_income_fallback=n_income_fallback,
+            expense_exact_accuracy=n_expense_correct / n_expense if n_expense > 0 else 0.0,
+            income_exact_accuracy=n_income_correct / n_income if n_income > 0 else 0.0,
+            expense_fuzzy_accuracy=n_expense_correct_fuzzy / n_expense if n_expense > 0 else 0.0,
+            income_fuzzy_accuracy=n_income_correct_fuzzy / n_income if n_income > 0 else 0.0,
+            # Token usage (cleaner + categorizer combined)
+            prompt_tokens=backend.cumulative_usage.get("prompt_tokens", 0) if hasattr(backend, "cumulative_usage") else 0,
+            completion_tokens=backend.cumulative_usage.get("completion_tokens", 0) if hasattr(backend, "cumulative_usage") else 0,
+            total_tokens=backend.cumulative_usage.get("total_tokens", 0) if hasattr(backend, "cumulative_usage") else 0,
         ), detail_rows
 
     except Exception as e:
@@ -860,6 +895,13 @@ _CSV_HEADER = [
     "cat_exact_accuracy", "cat_fuzzy_accuracy", "cat_fallback_rate",
     # C-08-bench: NSI / cascade scenario metrics
     "scenario", "n_nsi", "nsi_accuracy", "nsi_coverage_pct", "taxonomy_map_hit_pct",
+    # Per-direction breakdown
+    "n_expense", "n_income",
+    "n_expense_correct", "n_income_correct",
+    "n_expense_correct_fuzzy", "n_income_correct_fuzzy",
+    "n_expense_fallback", "n_income_fallback",
+    "expense_exact_accuracy", "income_exact_accuracy",
+    "expense_fuzzy_accuracy", "income_fuzzy_accuracy",
     # Common
     "duration_seconds",
     # HW stress (sampled during file processing)
@@ -946,12 +988,19 @@ def _result_to_row(r: CatRunResult) -> list:
         f"{r.nsi_accuracy:.4f}",
         f"{r.nsi_coverage_pct:.4f}",
         f"{r.taxonomy_map_hit_pct:.4f}",
+        # Per-direction breakdown
+        r.n_expense, r.n_income,
+        r.n_expense_correct, r.n_income_correct,
+        r.n_expense_correct_fuzzy, r.n_income_correct_fuzzy,
+        r.n_expense_fallback, r.n_income_fallback,
+        f"{r.expense_exact_accuracy:.4f}", f"{r.income_exact_accuracy:.4f}",
+        f"{r.expense_fuzzy_accuracy:.4f}", f"{r.income_fuzzy_accuracy:.4f}",
         # Common
         f"{r.duration_seconds:.2f}",
         f"{r.cpu_load_avg:.2f}", f"{r.gpu_utilization_pct:.1f}",
         # Token usage
-        0, 0, 0,  # prompt_tokens, completion_tokens, total_tokens
-        "0",      # tokens_per_second
+        r.prompt_tokens, r.completion_tokens, r.total_tokens,
+        f"{r.total_tokens / r.duration_seconds:.1f}" if r.duration_seconds > 0 and r.total_tokens > 0 else "0",
         # Phase 0 → LLM → merge traceability (empty for categorizer rows)
         "", "", "",  # phase0_sign_convention, phase0_debit_col, phase0_credit_col
         "", "", "",  # llm_debit_col, llm_credit_col, llm_invert_sign
@@ -1193,6 +1242,23 @@ def _print_summary(
         print(f"    LLM:      {total_llm:>6} ({total_llm / total_tx:>6.1%})")
         print(f"    Fallback: {total_fallback:>6} ({total_fallback / total_tx:>6.1%})")
 
+    # Per-direction breakdown
+    total_expense = sum(r.n_expense for r in all_results)
+    total_income = sum(r.n_income for r in all_results)
+    if total_expense > 0 or total_income > 0:
+        print()
+        print(f"  Direction breakdown:")
+        if total_expense > 0:
+            exp_exact = sum(r.n_expense_correct for r in all_results)
+            exp_fuzzy = sum(r.n_expense_correct_fuzzy for r in all_results)
+            exp_fb = sum(r.n_expense_fallback for r in all_results)
+            print(f"    Expense:  {total_expense:>6} tx | exact={exp_exact / total_expense:.1%} fuzzy={exp_fuzzy / total_expense:.1%} fallback={exp_fb / total_expense:.1%}")
+        if total_income > 0:
+            inc_exact = sum(r.n_income_correct for r in all_results)
+            inc_fuzzy = sum(r.n_income_correct_fuzzy for r in all_results)
+            inc_fb = sum(r.n_income_fallback for r in all_results)
+            print(f"    Income:   {total_income:>6} tx | exact={inc_exact / total_income:.1%} fuzzy={inc_fuzzy / total_income:.1%} fallback={inc_fb / total_income:.1%}")
+
     # Classify metrics by variability
     deterministic = [r for r in global_rows if r["cv_pct"] == 0.0]
     variable = [r for r in global_rows if r["cv_pct"] > 0.0]
@@ -1245,6 +1311,8 @@ def main() -> None:
                         help=f"Number of runs (default: {N_RUNS_DEFAULT})")
     parser.add_argument("--files", type=str, default=_FILES_DEFAULT,
                         help=f"Glob pattern to filter files (default: {_FILES_DEFAULT})")
+    parser.add_argument("--max-files", type=int, default=None,
+                        help="Max number of files to process (e.g. 8 for quick scan)")
     parser.add_argument("--backend", type=str, default=None,
                         help="LLM backend override (e.g. 'local_llama_cpp', 'local_ollama')")
     parser.add_argument("--model-path", type=str, default=None,
@@ -1331,6 +1399,8 @@ def main() -> None:
     elif backend_override == "vllm":
         vllm_url = base_url_override or "http://localhost:8000/v1"
         print(f"\n[check] Backend: vllm ({vllm_url})")
+    elif backend_override == "vllm_offline":
+        print(f"\n[check] Backend: vllm_offline (in-process, model={model_override or '?'})")
     else:
         print(f"\n[check] Backend: {backend_override} (skipping Ollama check)")
 
@@ -1340,6 +1410,19 @@ def main() -> None:
 
     # Load manifest and ground truth
     manifest = _load_manifest(file_pattern)
+    if args.max_files and len(manifest) > args.max_files:
+        # Select 1 file per doc_type × format, then fill remaining slots
+        seen_types: set[tuple[str, str]] = set()
+        selected: list = []
+        remainder: list = []
+        for entry in manifest:
+            key = (entry.doc_type, entry.fmt)
+            if key not in seen_types:
+                seen_types.add(key)
+                selected.append(entry)
+            else:
+                remainder.append(entry)
+        manifest = (selected + remainder)[:args.max_files]
     if not manifest:
         print(f"ERROR: No files matched pattern '{file_pattern}'")
         sys.exit(1)
@@ -1373,6 +1456,7 @@ def main() -> None:
         config.claude_model = model_override
         config.compat_model = model_override
         config.vllm_model = model_override
+        config.vllm_offline_model = model_override
     if api_key_override:
         if backend_override == "openai":
             config.openai_api_key = api_key_override
@@ -1445,12 +1529,16 @@ def main() -> None:
                 for _row in _reader:
                     if _row.get("benchmark_type", "") not in ("categorizer", "full"):
                         continue  # skip classifier rows
+                    # Resume key usa acc_group invece di git_commit
+                    from accuracy_groups import commit_to_group
+                    _acc_group = commit_to_group(
+                        _row.get("git_commit", ""), strict=False
+                    )
                     _key = (
                         int(_row.get("run_id", 0)),
                         _row.get("filename", ""),
                         str(_row.get("cleaner_batch_size", "30")),
-                        _row.get("git_commit", ""),
-                        _row.get("git_branch", ""),
+                        _acc_group,
                         _row.get("provider", ""),
                         _row.get("model", ""),
                     )
@@ -1570,12 +1658,14 @@ def main() -> None:
                     n_cross = len(hc._lookup_dict) if hc else 0
                     print(f"  [{entry.filename}] cross_warm cache: {n_cross} descriptions from other files")
 
-                # Resume key includes scenario
+                # Resume key usa acc_group per cross-commit equivalence
+                from accuracy_groups import commit_to_group
                 _resume_key = (
                     run_id, entry.filename,
                     str(args.cleaner_batch_size),
-                    _LLM_META.get("git_commit", ""),
-                    _LLM_META.get("git_branch", ""),
+                    commit_to_group(
+                        _LLM_META.get("git_commit", ""), strict=False
+                    ),
                     _LLM_META.get("provider", ""),
                     _LLM_META.get("model", ""),
                 )

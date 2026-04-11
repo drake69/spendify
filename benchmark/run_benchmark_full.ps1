@@ -20,6 +20,7 @@
 #   .\benchmark\run_benchmark_full.ps1 -SkipLlama
 #   .\benchmark\run_benchmark_full.ps1 -SkipOllama
 #   .\benchmark\run_benchmark_full.ps1 -SkipVllm
+#   .\benchmark\run_benchmark_full.ps1 -SkipVllmOffline
 #   .\benchmark\run_benchmark_full.ps1 -SetupOnly
 
 param(
@@ -31,7 +32,9 @@ param(
     [switch]$SkipLlama,
     [switch]$SkipOllama,
     [switch]$SkipVllm,
+    [switch]$SkipVllmOffline,
     [switch]$SetupOnly,
+    [int]$MaxFiles       = 0,
     [string[]]$ExtraArgs = @()
 )
 
@@ -86,7 +89,13 @@ function Get-CsvModels {
         if ($null -eq $header) { $header = $line -split ','; continue }
         if ($line -match '^\s*#' -or $line -match '^\s*$') { continue }
         $fields = $line -split ','
-        if ($fields[-1].Trim() -ne 'true') { continue }
+        # Find 'enabled' column by header index, not by position
+        $enabledIdx = [array]::IndexOf($header, 'enabled')
+        if ($enabledIdx -ge 0 -and $enabledIdx -lt $fields.Count) {
+            if ($fields[$enabledIdx].Trim() -ne 'true') { continue }
+        } else {
+            continue  # no enabled column → skip
+        }
         $obj = [ordered]@{}
         for ($i = 0; $i -lt $header.Count; $i++) {
             $obj[$header[$i].Trim()] = if ($i -lt $fields.Count) { $fields[$i].Trim() } else { "" }
@@ -143,6 +152,17 @@ if (-not $SkipLlama) {
     } elseif (Get-Command rocm-smi -ErrorAction SilentlyContinue) {
         $GpuBackend = "rocm"
         $GpuLabel   = "AMD ROCm (build from source)"
+    } elseif (Get-Command vulkaninfo -ErrorAction SilentlyContinue) {
+        try {
+            $vkSummary = & vulkaninfo --summary 2>&1 | Where-Object { $_ -is [string] -or $_.GetType().Name -ne 'ErrorRecord' }
+            $vkGpu = ($vkSummary | Select-String "deviceName" | Select-Object -First 1) -replace '.*=\s*', ''
+            if ($vkGpu -match "AMD|Radeon") {
+                $GpuBackend = "vulkan"
+                $GpuLabel   = "AMD Vulkan: $vkGpu (build from source)"
+            }
+        } catch {
+            # vulkaninfo failed (no driver, registry warnings) — skip silently
+        }
     }
     Write-Host "[gpu] $GpuLabel"
 }
@@ -159,25 +179,67 @@ if (-not $SkipLlama) {
         Write-Host "[ok] Visual C++ Redistributable installed"
     }
     Write-Host "[setup] Syncing deps (excluding llama-cpp-python)..."
-    uv sync --no-install-package llama-cpp-python --quiet
-    switch ($GpuBackend) {
-        "cuda" {
-            Write-Host "[setup] Installing llama-cpp-python ($CuTag GPU wheel)..."
-            $env:UV_EXTRA_INDEX_URL = "https://abetlen.github.io/llama-cpp-python/whl/$CuTag"
-            uv pip install "llama-cpp-python>=0.3.0" --quiet
-            $env:UV_EXTRA_INDEX_URL = ""
+    uv sync --no-install-package llama-cpp-python --inexact --quiet
+    # Reinstall llama-cpp-python if uv sync removed it or if GPU backend doesn't match
+    $llamaInstalled = $false
+    $llamaBackendOk = $false
+    try {
+        $llamaVer = & $Python -c "import llama_cpp; print(llama_cpp.__version__)" 2>$null
+        if ($LASTEXITCODE -eq 0 -and $llamaVer) { $llamaInstalled = $true }
+    } catch { }
+    if ($llamaInstalled) {
+        # Verify GPU backend coherence via DLL strings
+        $llamaDir = & $Python -c "import llama_cpp, os; print(os.path.dirname(llama_cpp.__file__))" 2>$null
+        $libDir = Join-Path $llamaDir "lib"
+        if (-not (Test-Path $libDir)) { $libDir = $llamaDir }
+        $llamaBackendOk = switch ($GpuBackend) {
+            "cuda"   { Test-Path (Join-Path $libDir "ggml-cuda.dll") }
+            "vulkan" { Test-Path (Join-Path $libDir "ggml-vulkan.dll") }
+            "rocm"   { Test-Path (Join-Path $libDir "ggml-cuda.dll") }
+            default  { $true }  # CPU — always ok
         }
-        "rocm" {
-            Write-Host "[setup] Building llama-cpp-python from source (HIPBLAS/ROCm)..."
-            $env:CMAKE_ARGS = "-DGGML_HIPBLAS=on"
-            uv pip install "llama-cpp-python>=0.3.0" --no-binary llama-cpp-python --quiet
-            $env:CMAKE_ARGS = ""
+        if ($llamaBackendOk) {
+            Write-Host "[ok] llama-cpp-python $llamaVer already installed ($GpuBackend support verified) — skipping reinstall"
+        } else {
+            Write-Host ""
+            Write-Host "[WARN] llama-cpp-python $llamaVer is installed but LACKS $GpuBackend support."
+            Write-Host "       The benchmark will run on CPU only unless you reinstall."
+            Write-Host ""
+            $reply = Read-Host "Reinstall llama-cpp-python with $GpuBackend support? [y/N]"
+            if ($reply -match '^[Yy]$') {
+                $llamaBackendOk = $false
+            } else {
+                Write-Host "[skip] Keeping current llama-cpp-python — benchmark will use CPU"
+                $llamaBackendOk = $true
+            }
         }
-        default {
-            Write-Host "[setup] Installing llama-cpp-python (CPU wheel)..."
-            $env:UV_EXTRA_INDEX_URL = "https://abetlen.github.io/llama-cpp-python/whl/cpu"
-            uv pip install "llama-cpp-python>=0.3.0" --quiet
-            $env:UV_EXTRA_INDEX_URL = ""
+    }
+    if (-not $llamaInstalled -or -not $llamaBackendOk) {
+        switch ($GpuBackend) {
+            "cuda" {
+                Write-Host "[setup] Installing llama-cpp-python ($CuTag GPU wheel)..."
+                $env:UV_EXTRA_INDEX_URL = "https://abetlen.github.io/llama-cpp-python/whl/$CuTag"
+                uv pip install "llama-cpp-python>=0.3.0" --quiet
+                $env:UV_EXTRA_INDEX_URL = ""
+            }
+            "rocm" {
+                Write-Host "[setup] Building llama-cpp-python from source (HIPBLAS/ROCm)..."
+                $env:CMAKE_ARGS = "-DGGML_HIPBLAS=on"
+                uv pip install "llama-cpp-python>=0.3.0" --no-binary llama-cpp-python --quiet
+                $env:CMAKE_ARGS = ""
+            }
+            "vulkan" {
+                Write-Host "[setup] Building llama-cpp-python from source (Vulkan)..."
+                $env:CMAKE_ARGS = "-DGGML_VULKAN=ON"
+                uv pip install "llama-cpp-python>=0.3.0" --no-binary llama-cpp-python --quiet
+                $env:CMAKE_ARGS = ""
+            }
+            default {
+                Write-Host "[setup] Installing llama-cpp-python (CPU wheel)..."
+                $env:UV_EXTRA_INDEX_URL = "https://abetlen.github.io/llama-cpp-python/whl/cpu"
+                uv pip install "llama-cpp-python>=0.3.0" --quiet
+                $env:UV_EXTRA_INDEX_URL = ""
+            }
         }
     }
 } else {
@@ -212,11 +274,11 @@ if (-not $SkipLlama) {
             $MaxModelMB = $vramMB
             Write-Host "[check] System RAM: $([math]::Round($SystemRamMB / 1024)) GB, GPU VRAM: $([math]::Round($vramMB / 1024)) GB → max model: $([math]::Round($MaxModelMB / 1024)) GB"
         } else {
-            $MaxModelMB = [math]::Round($SystemRamMB / 2)
+            $MaxModelMB = [math]::Round($SystemRamMB * 3 / 4)
             Write-Host "[check] System RAM: $([math]::Round($SystemRamMB / 1024)) GB → max model: $([math]::Round($MaxModelMB / 1024)) GB (VRAM unknown)"
         }
     } else {
-        $MaxModelMB = [math]::Round($SystemRamMB / 2)
+        $MaxModelMB = [math]::Round($SystemRamMB * 3 / 4)
         Write-Host "[check] System RAM: $([math]::Round($SystemRamMB / 1024)) GB → max model: $([math]::Round($MaxModelMB / 1024)) GB"
     }
 
@@ -305,6 +367,9 @@ if (-not $SkipOllama) {
     Write-Host "-- [3b/4] Ollama setup — skipped (-SkipOllama)"
 }
 
+$UseVllmOffline      = $false
+$VllmOfflineModCount = 0
+
 # ── Step 3c: vLLM — detect model ─────────────────────────────────────────
 if (-not $SkipVllm) {
     Write-Host ""
@@ -326,14 +391,46 @@ if (-not $SkipVllm) {
     Write-Host "-- [3c/4] vLLM — skipped (-SkipVllm)"
 }
 
+# ── Step 3d: vLLM offline — check importability ──────────────────────────
+if (-not $SkipVllmOffline) {
+    Write-Host ""
+    Write-Host "-- [3d/5] vLLM offline — checking availability..."
+    try {
+        $vllmCheck = & $Python -c "import vllm; import torch; assert torch.cuda.is_available(); print('ok')" 2>&1
+    } catch {
+        $vllmCheck = "No module"
+    }
+    if ($LASTEXITCODE -eq 0 -and $vllmCheck -match 'ok') {
+        # Count rows with vllm_model set
+        $csvRows = Import-Csv $ModelsCsv
+        $VllmOfflineModCount = ($csvRows | Where-Object { $_.vllm_model -and $_.enabled -eq 'true' }).Count
+        if ($VllmOfflineModCount -gt 0) {
+            Write-Host "[ok] vllm importable + CUDA available — $VllmOfflineModCount models with vllm_model set"
+            $UseVllmOffline = $true
+        } else {
+            Write-Host "[warn] nessun modello con colonna vllm_model in $ModelsCsv — skipping"
+        }
+    } else {
+        if (-not ($vllmCheck -match 'No module')) {
+            Write-Host "[skip] vllm installato ma CUDA non disponibile"
+        } else {
+            Write-Host "[skip] vllm non installato (pip install vllm — solo Linux/CUDA)"
+        }
+    }
+} else {
+    Write-Host ""
+    Write-Host "-- [3d/5] vLLM offline — skipped (-SkipVllmOffline)"
+}
+
 # ── Setup summary ─────────────────────────────────────────────────────────
 Write-Host ""
 Write-Host "════════════════════════════════════════════════════════════"
 Write-Host "  SETUP SUMMARY"
-Write-Host "  llama.cpp  : $(if ($UseLlama)  { 'enabled' } else { 'DISABLED' })"
-Write-Host "  Ollama     : $(if ($UseOllama) { 'enabled' } else { 'DISABLED' })"
-Write-Host "  vLLM       : $(if ($UseVllm)   { "enabled ($VllmModel)" } else { 'DISABLED' })"
-Write-Host "  GPU        : $GpuLabel"
+Write-Host "  llama.cpp    : $(if ($UseLlama)        { 'enabled' } else { 'DISABLED' })"
+Write-Host "  Ollama       : $(if ($UseOllama)       { 'enabled' } else { 'DISABLED' })"
+Write-Host "  vLLM         : $(if ($UseVllm)         { "enabled ($VllmModel)" } else { 'DISABLED' })"
+Write-Host "  vLLM offline : $(if ($UseVllmOffline)  { "enabled ($VllmOfflineModCount models)" } else { 'DISABLED' })"
+Write-Host "  GPU          : $GpuLabel"
 Write-Host "════════════════════════════════════════════════════════════"
 
 if ($SetupOnly) {
@@ -342,7 +439,7 @@ if ($SetupOnly) {
     Stop-Transcript | Out-Null; exit 0
 }
 
-if (-not $UseLlama -and -not $UseOllama -and -not $UseVllm) {
+if (-not $UseLlama -and -not $UseOllama -and -not $UseVllm -and -not $UseVllmOffline) {
     Write-Host "ERROR: No active backends. Aborting."
     Stop-Transcript | Out-Null; exit 1
 }
@@ -360,6 +457,7 @@ function Invoke-Phase {
     Write-Host "  [step $($script:Step)] [$Phase] $Label"
     Write-Host "────────────────────────────────────────────────────────────"
     $allArgs = @($script, "--runs", $Runs) + $BenchArgs + $ExtraArgs
+    if ($MaxFiles -gt 0) { $allArgs += @("--max-files", $MaxFiles) }
     # PS 5.1: $ErrorActionPreference="Stop" turns stderr of native commands into
     # NativeCommandError and kills the script. Lower to Continue for this call only.
     $savedEAP = $ErrorActionPreference
@@ -455,6 +553,19 @@ if ($UseVllm) {
     Write-Host "║  BACKEND: vLLM                                          ║"
     Write-Host "╚══════════════════════════════════════════════════════════╝"
     Invoke-BothPhases "vLLM: $VllmModel" @("--backend","vllm","--model",$VllmModel,"--base-url",$VllmUrl)
+}
+
+# ── vLLM offline (in-process, no server) ─────────────────────────────────
+if ($UseVllmOffline) {
+    Write-Host ""
+    Write-Host "╔══════════════════════════════════════════════════════════╗"
+    Write-Host "║  BACKEND: vLLM offline (in-process)                     ║"
+    Write-Host "╚══════════════════════════════════════════════════════════╝"
+    foreach ($m in $AllModels) {
+        if ([string]::IsNullOrWhiteSpace($m.vllm_model)) { continue }
+        if ($m.enabled -ne 'true') { Write-Host "  [SKIP] $($m.name) — disabled"; continue }
+        Invoke-BothPhases "vLLM offline: $($m.name) ($($m.vllm_model))" @("--backend","vllm_offline","--model",$m.vllm_model)
+    }
 }
 
 # ── Copy results back if UNC ──────────────────────────────────────────────

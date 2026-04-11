@@ -4,6 +4,9 @@
 #   --include='benchmark/benchmark_models.csv'
 # perché rsync applica la prima regola che fa match.
 
+# ── Stale copies (da rsync/scp precedenti) ────────────────────────────────
+192.168.195.98/
+
 # ── Git e IDE ──────────────────────────────────────────────────────────────
 .git/
 .gitignore

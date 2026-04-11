@@ -226,6 +226,8 @@ Users' `taxonomy_map` is automatically invalidated on the next import.
 | **4** | LLM batch | Unresolved transactions | `llm` |
 | **5** | Fallback | No match | `llm` + `to_review=True` |
 
+Each LLM-categorized transaction records the specific model in the `category_model` field (e.g. `gemma-2-2b-it-Q4_K_M`). The field is cleared when the source changes to `rule` or `manual`.
+
 > **Note on Step 1 (deprecated):** The linguistic rules in `core/static_rules/_it.json` were deprecated in C-08-cascade. They operated on the raw description (payment reference), but `clean_descriptions_batch()` extracts only the counterparty name before categorization, making the regex patterns ineffective. Brands are now better covered by NSI (Step 3b).
 
 ### Onboarding
@@ -284,6 +286,57 @@ The auto mode selects the strategy based on backend and model size:
 | Step 1 fails | **Abort** — cannot proceed without document type |
 | Step 2 fails | **Phase 0 fallback** — attempts parsing with deterministic rules |
 | Step 3 fails | **Defaults** — `fill_llm_defaults()` applies defaults; `confidence` set to `low` |
+
+---
+
+## 5b. Token usage tracking
+
+Every LLM call (all backends: llama.cpp, Ollama, OpenAI, Claude) is logged to the `llm_usage_log` table for statistical analysis of token consumption.
+
+### Table schema
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `backend` | String(30) | `local_llama_cpp`, `ollama`, `openai`, `claude` |
+| `model_id` | String(120) | Model identifier (e.g. `gemma-2-2b-it-Q4_K_M`) |
+| `caller` | String(30) | Calling module: `categorizer`, `classifier`, `description_cleaner`, `normalizer` |
+| `step` | String(60) | Phase: `step1_identity`, `step2_mapping`, `step3_semantic`, `batch_expense`, `batch_income`, `footer_detect` |
+| `source_name` | String(256) | Source file name for traceability |
+| `batch_size` | Integer | Number of items in the batch |
+| `prompt_tokens` | Integer | Input tokens |
+| `completion_tokens` | Integer | Output tokens |
+| `total_tokens` | Integer | Sum of input + output |
+| `n_ctx` | Integer | Configured context window (local backends only) |
+| `duration_ms` | Integer | Inference time in milliseconds |
+
+### Architecture
+
+- **`call_with_fallback()`** (`core/llm_backends.py`): accepts `caller`, `step`, `source_name`, `batch_size` parameters. After each successful call, persists the log via `_log_usage_to_db()` (best-effort, never blocking).
+- **Pre-call token check** (LlamaCppBackend only): before sending the prompt, tokenizes the input with `self._llm.tokenize()` and verifies at least 256 tokens remain for the output. If the budget is insufficient, raises `LLMValidationError` with a diagnostic message.
+
+### Statistics queries
+
+`db/repository.py` exposes:
+
+- **`get_token_usage_stats(backend, model_id, caller)`** — descriptive statistics (count, mean, std, p50, p95, p99, CI 95%) grouped by (backend, model, caller).
+- **`get_adaptive_n_ctx_cap(session, model_id, min_observations=1000)`** — returns the maximum CI-95% upper-bound of `total_tokens` across all `(caller, step)` groups that have ≥ `min_observations` rows for the given model. The result is rounded up to the next 1024 multiple (floor: 2048). Returns `None` when insufficient data.
+
+### Adaptive n_ctx cap
+
+The context window cap adapts automatically to real production usage:
+
+1. **Cold start** (< 1000 observations per caller/step): `LlamaCppBackend` uses the static `DEFAULT_N_CTX_CAP` (16 384 tokens, ~2.3× the p100 observed during benchmarks).
+2. **Convergence** (≥ 1000 observations): the backend queries `get_adaptive_n_ctx_cap()` at model load time and uses `min(gguf_native, adaptive_cap)` as the context window. The adaptive cap is the max CI-95% upper-bound of `total_tokens` across all caller/step combinations, ensuring the single KV cache covers the worst-case caller.
+3. **Stratification** — the CI is computed per `(caller, step)` group, capturing the different prompt sizes of each pipeline phase (e.g. `classifier/step1_identity` vs `categorizer/batch_expense`).
+4. **Safety** — the adaptive cap is always ≥ 2048 tokens. If the DB is unavailable, the static cap is used silently.
+
+```sql
+-- Example: consumption by phase
+SELECT caller, step, COUNT(*) as n,
+       ROUND(AVG(total_tokens)) as avg_tokens,
+       MAX(total_tokens) as max_tokens
+FROM llm_usage_log GROUP BY caller, step;
+```
 
 ---
 
@@ -426,7 +479,16 @@ powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1
 powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -Benchmark both -Runs 3
 
 # llama.cpp only (skip Ollama and vLLM)
-bash benchmark/run_benchmark_full.sh --skip-ollama --skip-vllm
+bash benchmark/run_benchmark_full.sh --skip-ollama --skip-vllm --skip-vllm-offline
+
+# Skip dependency sync (use existing venv, useful with custom-compiled libraries)
+bash benchmark/run_benchmark_full.sh --skip-sync
+
+# Quick scan: 8 files (1 per doc_type × format), all enabled models
+bash benchmark/run_benchmark_full.sh --max-files 8
+
+# Windows quick scan
+# powershell -ExecutionPolicy Bypass -File benchmark\run_benchmark_full.ps1 -MaxFiles 8
 ```
 
 `run_benchmark_full.sh` / `run_benchmark_full.ps1` perform full setup (download missing GGUF models, `ollama pull` missing Ollama models, detect vLLM), then run **classifier** and **categorizer** benchmarks for every active backend. The model list is read from `benchmark/benchmark_models.csv`. Flags: `--benchmark classifier|categorizer|both`, `--runs N`, `--setup-only`, `--skip-llama/ollama/vllm`, `--vllm-url`, `--ollama-url` (PS1 equivalents: `-Benchmark`, `-Runs`, `-SetupOnly`, `-SkipLlama`, `-SkipOllama`, `-SkipVllm`, `-VllmUrl`, `-OllamaUrl`).
@@ -522,6 +584,74 @@ bash benchmark/run_benchmark_full.sh --scenario nsi_warm
 bash benchmark/run_benchmark_full.sh --scenario all   # all scenarios in sequence
 ```
 
+### Multi-machine benchmarking
+
+The benchmark is organized in two phases:
+
+**Phase 1 — Quick scan (8 files)**: 1 file per `doc_type × format` combination (8 types), all enabled models (11 models: Qwen 2.5/3.5, Gemma 4, Phi4-mini, Nemotron-Mini, Mistral-7B, DeepSeek-R1). Used to select max 2 models. Estimate: ~3h on GPU, ~6-8h on CPU.
+
+**Phase 2 — Full (50 files)**: only the 2 selected models, all 50 files for statistically robust results.
+
+**Disk space management**: GGUF models are downloaded to `~/.spendifai/models/`. After each run, if free disk space drops below 16 GB, the model just used is automatically deleted (re-downloaded on next launch if needed). The RAM filter (`RAM × 3/4`) skips models too large for the machine.
+
+**Tracking**: `benchmark/benchmark_plan.csv` tracks completion per machine × model × phase. `benchmark/machine_names.csv` maps technical hostnames to friendly names.
+
+### Ollama backend limitations
+
+Ollama supports JSON structured output via `format: json_schema`, but fails with complex schemas (the classifier's ~20-field single-step schema returns empty responses). The `OllamaBackend` now detects `model_size_bytes` via `/api/show` to enable multi-step classification (3 smaller schemas) for small models, which may improve success rates. However, Ollama is currently **skipped by default** in the benchmark (`SKIP_OLLAMA=true`) — use llama.cpp instead. Ollama remains available in the app as an optional backend.
+
+### Accuracy equivalence across commits
+
+Not all commits modify the classification/categorization pipeline. Commits that only touch infra, docs, CI, or performance produce **identical accuracy results**. Benchmark results are comparable only between commits in the same equivalence group.
+
+The full table is in [`benchmark/ACCURACY_EQUIVALENCE.md`](../benchmark/ACCURACY_EQUIVALENCE.md).
+
+**Rule of thumb**: a commit is an _accuracy boundary_ if it touches `core/categorizer.py`, `core/classifier.py`, `core/description_cleaner.py`, `core/normalizer.py`, `core/sanitizer.py`, or `core/nsi_lookup.py`. All commits between two consecutive boundaries are equivalent.
+
+**Usage in the stats script**:
+
+```bash
+# Stats grouped by equivalence group (not individual commits)
+python benchmark/benchmark_stats.py --by-group
+
+# Stats by individual commit (useful for debugging, not for accuracy comparison)
+python benchmark/benchmark_stats.py --by-commit
+
+# Stats by hardware platform
+python benchmark/benchmark_stats.py --by-group --by-host
+```
+
+**Note on `164bcac` (n_ctx cap)**: this commit doesn't change classification logic, but caps `n_ctx` to 16K. Without the cap, models with large context windows (e.g. Qwen 3.5, 262K) allocate huge KV caches → underutilized GPU → truncated outputs → artificially higher fallback rates.
+
+### Custom-compiled library protection
+
+When you manually compile a GPU-specific library (e.g. `llama-cpp-python` with Vulkan or ROCm), `uv sync` may overwrite it with the PyPI version (CPU-only). The benchmark has a three-level protection mechanism:
+
+1. **Automatic gate**: before syncing, the script does a dry-run. If `uv sync` would touch a custom library listed in `benchmark/.custom_packages`, it asks for interactive confirmation (`Proceed? [y/N]`). If denied, the sync is skipped.
+
+2. **Backup/restore with version comparison**: if the sync proceeds, custom libraries are backed up. After sync:
+   - If uv **removed** the library → restore backup
+   - If uv **downgraded** (lower version) → restore backup (custom build wins)
+   - If uv **upgraded** (same or higher version) → keep uv's version
+
+3. **`--skip-sync`**: skips `uv sync` entirely. Recommended on machines with working custom GPU builds (e.g. Linux + Vulkan).
+
+**File `benchmark/.custom_packages`**: list of packages to protect (one per line). Add any manually compiled library.
+
+### GPU detection
+
+The script automatically detects the GPU backend in priority order:
+
+| Priority | Backend | Condition |
+|----------|---------|-----------|
+| 1 | Metal | macOS + Apple Silicon |
+| 2 | CUDA | `nvidia-smi` present |
+| 3 | ROCm | `rocm-smi` + `rocminfo` + CDNA GPU (gfx9xx, MI series) |
+| 4 | Vulkan | `vulkaninfo` + AMD/Radeon GPU |
+| 5 | CPU | fallback |
+
+**Note**: AMD consumer GPUs (Radeon RX) have `rocm-smi` installed but don't support ROCm for compute. The script verifies that `rocminfo` is present and that the GPU is CDNA (gfx9xx) before selecting ROCm. RDNA GPUs (gfx10xx, gfx11xx) fall through to Vulkan.
+
 ### Available scripts
 
 | Script | Purpose |
@@ -530,7 +660,11 @@ bash benchmark/run_benchmark_full.sh --scenario all   # all scenarios in sequenc
 | `benchmark/run_benchmark_full.ps1` | **ENTRY POINT** (Windows): all backends × pipeline + categorizer |
 | `benchmark/bench_guard.sh` | Version gate (macOS/Linux): generates/verifies `benchmark/.version` |
 | `benchmark/bench_guard.ps1` | Version gate (Windows): generates/verifies `benchmark\.version` |
-| `benchmark/benchmark_models.csv` | Model catalogue (replaces hardcoded arrays in scripts) |
+| `benchmark/benchmark_models.csv` | Model catalogue — single source of truth for all scripts |
+| `benchmark/benchmark_stats.py` | Accuracy stats per phase and model (`--by-commit`, `--by-group`, `--by-host`) |
+| `benchmark/accuracy_groups.py` | Commit → accuracy equivalence group mapping (must be updated on every commit) |
+| `benchmark/ACCURACY_EQUIVALENCE.md` | Equivalence group table (which commits produce comparable results) |
+| `benchmark/.custom_packages` | Custom-compiled packages to protect from `uv sync` |
 | `benchmark/monitor_benchmark.sh` | Benchmark progress monitor (macOS/Linux) |
 | `benchmark/monitor_benchmark.ps1` | Benchmark progress monitor (Windows) |
 | `benchmark/monitor_benchmark.py` | Benchmark progress monitor (cross-platform Python) |

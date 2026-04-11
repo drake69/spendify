@@ -102,6 +102,36 @@ class OllamaBackend(LLMBackend):
         self.base_url = (base_url or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")).rstrip("/")
         self.model = model or os.getenv("OLLAMA_MODEL", "gemma3:12b")
         self.timeout = timeout
+        # Fetch model size from Ollama /api/show for classifier mode auto-detection
+        self.model_size_bytes = self._fetch_model_size()
+
+    def _fetch_model_size(self) -> int:
+        """Query /api/show for model size (bytes). Returns 0 on failure.
+
+        Uses details.parameter_size ('4.7B') to estimate GGUF file size,
+        since Ollama doesn't expose the raw file size directly.
+        """
+        try:
+            resp = self._requests.post(
+                f"{self.base_url}/api/show",
+                json={"model": self.model},
+                timeout=5,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            # details.parameter_size → "4.7B", "9.7B", etc.
+            details = data.get("details", {})
+            param_str = details.get("parameter_size", "")
+            if param_str:
+                # Parse "4.7B" → 4.7, multiply by ~0.5 bytes/param for Q4
+                num = float(param_str.replace("B", "").replace("b", "").strip())
+                quant = details.get("quantization_level", "Q4_K_M")
+                # Rough estimate: Q3 ≈ 0.44 bytes/param, Q4 ≈ 0.56, Q8 ≈ 1.0
+                bpp = 0.44 if "Q3" in quant else 0.56 if "Q4" in quant else 1.0
+                return int(num * 1e9 * bpp)
+            return 0
+        except Exception:
+            return 0
 
     @property
     def is_remote(self) -> bool:
@@ -135,11 +165,16 @@ class OllamaBackend(LLMBackend):
             )
             resp.raise_for_status()
             data = resp.json()
-            content = data["response"]
+            content = data.get("response", "")
             self._set_usage(
                 data.get("prompt_eval_count", 0),
                 data.get("eval_count", 0),
             )
+            if not content or not content.strip():
+                raise LLMValidationError(
+                    "OllamaBackend: empty response from model "
+                    f"(done_reason={data.get('done_reason', '?')})"
+                )
             result = json.loads(content)
             _validate_required(result, json_schema)
             return result
@@ -506,6 +541,142 @@ class VllmBackend(LLMBackend):
             return False
 
 
+# ── vLLM offline (local, no server required) ─────────────────────────────────
+
+class VllmOfflineBackend(LLMBackend):
+    """vLLM offline backend — uses the vLLM ``LLM`` class directly (no HTTP server).
+
+    Loads the model in-process on first call (lazy).  Supports guided JSON
+    decoding via ``GuidedDecodingParams`` and native request batching:
+    call ``complete_structured_batch()`` to submit N prompts in one shot.
+
+    Requirements:
+        pip install vllm          # CUDA Linux only
+    """
+
+    def __init__(
+        self,
+        model: str,
+        tensor_parallel_size: int = 1,
+        gpu_memory_utilization: float = 0.90,
+        max_model_len: int | None = None,
+        dtype: str = "auto",
+    ):
+        self.model = model
+        self._tensor_parallel_size = tensor_parallel_size
+        self._gpu_memory_utilization = gpu_memory_utilization
+        self._max_model_len = max_model_len
+        self._dtype = dtype
+        self._llm = None  # lazy init
+
+    def _ensure_loaded(self):
+        if self._llm is not None:
+            return
+        try:
+            from vllm import LLM
+        except ImportError as exc:
+            raise LLMValidationError(
+                "vllm non installato. Esegui: pip install vllm"
+            ) from exc
+        kwargs: dict[str, Any] = dict(
+            model=self.model,
+            tensor_parallel_size=self._tensor_parallel_size,
+            gpu_memory_utilization=self._gpu_memory_utilization,
+            dtype=self._dtype,
+        )
+        if self._max_model_len:
+            kwargs["max_model_len"] = self._max_model_len
+        self._llm = LLM(**kwargs)
+        logger.info(f"VllmOfflineBackend: modello '{self.model}' caricato.")
+
+    @property
+    def is_remote(self) -> bool:
+        return False
+
+    @property
+    def name(self) -> str:
+        return "vllm_offline"
+
+    def _make_sampling_params(self, json_schema: dict[str, Any], temperature: float):
+        from vllm import SamplingParams
+        from vllm.sampling_params import GuidedDecodingParams
+        return SamplingParams(
+            temperature=temperature,
+            max_tokens=4096,
+            guided_decoding=GuidedDecodingParams(json=json_schema),
+        )
+
+    def complete_structured(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        json_schema: dict[str, Any],
+        temperature: float = 0.0,
+    ) -> dict[str, Any]:
+        results = self.complete_structured_batch(
+            [(system_prompt, user_prompt)], json_schema, temperature
+        )
+        return results[0]
+
+    def complete_structured_batch(
+        self,
+        prompts: list[tuple[str, str]],
+        json_schema: dict[str, Any],
+        temperature: float = 0.0,
+    ) -> list[dict[str, Any]]:
+        """Submit N (system, user) prompt pairs in one batched generate() call.
+
+        Returns a list of dicts in the same order as ``prompts``.
+        Raises LLMValidationError if any output cannot be parsed.
+        """
+        self._reset_usage()
+        self._ensure_loaded()
+
+        sampling_params = self._make_sampling_params(json_schema, temperature)
+
+        # Build chat-formatted prompts using the model's tokenizer template
+        tokenizer = self._llm.get_tokenizer()
+        formatted: list[str] = []
+        for sys_p, usr_p in prompts:
+            messages = [
+                {"role": "system", "content": sys_p},
+                {"role": "user",   "content": usr_p},
+            ]
+            formatted.append(
+                tokenizer.apply_chat_template(
+                    messages, tokenize=False, add_generation_prompt=True
+                )
+            )
+
+        try:
+            outputs = self._llm.generate(formatted, sampling_params)
+        except Exception as exc:
+            raise LLMValidationError(f"VllmOfflineBackend.generate error: {exc}") from exc
+
+        results = []
+        total_prompt = total_completion = 0
+        for out in outputs:
+            text = out.outputs[0].text
+            total_prompt     += len(out.prompt_token_ids or [])
+            total_completion += len(out.outputs[0].token_ids or [])
+            try:
+                results.append(json.loads(text))
+            except json.JSONDecodeError as exc:
+                raise LLMValidationError(
+                    f"VllmOfflineBackend: JSON non valido: {text[:200]!r}"
+                ) from exc
+
+        self._set_usage(total_prompt, total_completion)
+        return results
+
+    def is_available(self) -> bool:
+        try:
+            import vllm  # noqa: F401
+            return True
+        except ImportError:
+            return False
+
+
 # ── llama.cpp (local, no external service) ────────────────────────────────────
 
 # Suggested GGUF models for the download UI
@@ -559,8 +730,10 @@ class LlamaCppBackend(LLMBackend):
         Args:
             model_path: Path to a .gguf file. None = auto-detect from ~/.spendifai/models/.
             n_ctx: Context window size in tokens.
-                   0 (default) = auto-detect from GGUF metadata, capped at DEFAULT_N_CTX_CAP
-                   to avoid wasting memory on oversized KV caches.
+                   0 (default) = auto-detect from GGUF metadata, capped at an
+                   adaptive value derived from historical token usage (CI-95%
+                   upper-bound, requires ≥1000 observations per caller/step),
+                   falling back to DEFAULT_N_CTX_CAP when insufficient data.
                    Explicit positive values are used as-is (no cap).
             n_gpu_layers: GPU layers to offload (-1 = all).
         """
@@ -580,7 +753,9 @@ class LlamaCppBackend(LLMBackend):
             )
         if n_ctx == 0:
             detected = LlamaCppBackend.read_gguf_context_length(model_path) or 4096
-            n_ctx = min(detected, self.DEFAULT_N_CTX_CAP)
+            adaptive = self._adaptive_cap_from_db(model_path)
+            cap = adaptive if adaptive else self.DEFAULT_N_CTX_CAP
+            n_ctx = min(detected, cap)
         self._model_path = model_path
         self._llm = Llama(
             model_path=model_path,
@@ -591,6 +766,27 @@ class LlamaCppBackend(LLMBackend):
             flash_attn=True,    # faster attention on Metal (Apple Silicon)
             verbose=False,
         )
+
+    @staticmethod
+    def _adaptive_cap_from_db(model_path: str) -> int | None:
+        """Best-effort adaptive n_ctx cap from historical token usage.
+
+        Queries LlmUsageLog for the given model and returns the max CI-95%
+        upper-bound of total_tokens across all caller/step combinations
+        that have ≥1000 observations.  Returns None when the DB is not
+        available or there are not enough observations yet.
+        """
+        try:
+            from db.models import get_engine
+            from db.repository import get_adaptive_n_ctx_cap
+            from sqlalchemy.orm import Session as _Session
+
+            model_id = Path(model_path).stem
+            engine = get_engine()
+            with _Session(engine) as session:
+                return get_adaptive_n_ctx_cap(session, model_id=model_id)
+        except Exception:
+            return None
 
     @staticmethod
     def _default_model_path() -> str:
@@ -799,6 +995,22 @@ class LlamaCppBackend(LLMBackend):
             # was trained with, then run raw completion with grammar enforcement.
             prompt = self._render_prompt(system_prompt, user_prompt)
 
+            # ── Pre-call token check ──────────────────────────────────────
+            _MIN_OUTPUT_TOKENS = 256
+            _MAX_TOKENS_DEFAULT = 2048
+            input_tokens = self._llm.tokenize(prompt.encode("utf-8"))
+            n_input = len(input_tokens)
+            n_ctx = self._llm.n_ctx()
+            n_available = n_ctx - n_input
+            if n_available < _MIN_OUTPUT_TOKENS:
+                raise LLMValidationError(
+                    f"LlamaCppBackend: prompt troppo lungo ({n_input} token) per "
+                    f"context window ({n_ctx}). Disponibili solo {n_available} token "
+                    f"per l'output (minimo {_MIN_OUTPUT_TOKENS}). "
+                    f"Ridurre batch_size o aumentare n_ctx."
+                )
+            effective_max_tokens = min(_MAX_TOKENS_DEFAULT, n_available)
+
             # Sampling params aligned with Ollama defaults for deterministic output
             response = self._llm.create_completion(
                 prompt=prompt,
@@ -807,7 +1019,7 @@ class LlamaCppBackend(LLMBackend):
                 top_p=0.9,
                 top_k=40,
                 repeat_penalty=1.1,
-                max_tokens=2048,
+                max_tokens=effective_max_tokens,
                 stop=["<|im_end|>", "<end_of_turn>", "</s>", "<|eot_id|>"],
             )
             usage = response.get("usage", {})
@@ -850,6 +1062,8 @@ class BackendFactory:
             return LlamaCppBackend(**kwargs)
         elif backend_name == "vllm":
             return VllmBackend(**kwargs)
+        elif backend_name == "vllm_offline":
+            return VllmOfflineBackend(**kwargs)
         else:
             raise ValueError(f"Unknown backend: {backend_name}")
 
@@ -868,21 +1082,79 @@ def call_with_fallback(
     json_schema: dict[str, Any],
     temperature: float = 0.0,
     fallback: LLMBackend | None = None,
+    caller: str = "",
+    step: str | None = None,
+    source_name: str | None = None,
+    batch_size: int | None = None,
 ) -> tuple[dict[str, Any] | None, str]:
     """
     Try primary backend; on failure try fallback (OllamaBackend).
     Returns (result_dict, backend_name_used) or (None, 'quarantine').
+    Logs token usage to DB when caller is provided.
     """
+    import time
+
     for backend in filter(None, [primary, fallback]):
         try:
             logger.debug(f"Attempting LLM completion with backend: {backend.name}")
+            t0 = time.monotonic()
             result = backend.complete_structured(
                 system_prompt, user_prompt, json_schema, temperature
             )
+            duration_ms = int((time.monotonic() - t0) * 1000)
+
+            # Persist token usage
+            if caller:
+                _log_usage_to_db(
+                    backend=backend,
+                    caller=caller,
+                    step=step,
+                    source_name=source_name,
+                    batch_size=batch_size,
+                    duration_ms=duration_ms,
+                )
+
             return result, backend.model_id
         except LLMValidationError as exc:
             logger.warning(f"Backend {backend.name} failed: {exc}")
     return None, "quarantine"
+
+
+def _log_usage_to_db(
+    *,
+    backend: LLMBackend,
+    caller: str,
+    step: str | None,
+    source_name: str | None,
+    batch_size: int | None,
+    duration_ms: int | None,
+) -> None:
+    """Best-effort persistence of token usage — never raises."""
+    try:
+        from db.models import get_engine, LlmUsageLog
+        from sqlalchemy.orm import Session as _Session
+
+        ctx_info = backend.get_context_info() or {}
+        n_ctx = ctx_info.get("n_ctx")
+
+        engine = get_engine()
+        with _Session(engine) as session:
+            session.add(LlmUsageLog(
+                backend=backend.name,
+                model_id=backend.model_id,
+                caller=caller,
+                step=step,
+                source_name=source_name,
+                batch_size=batch_size,
+                prompt_tokens=backend.last_usage.get("prompt_tokens", 0),
+                completion_tokens=backend.last_usage.get("completion_tokens", 0),
+                total_tokens=backend.last_usage.get("total_tokens", 0),
+                n_ctx=n_ctx,
+                duration_ms=duration_ms,
+            ))
+            session.commit()
+    except Exception as exc:
+        logger.debug(f"Failed to log LLM usage: {exc}")
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

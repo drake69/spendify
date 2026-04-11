@@ -34,6 +34,12 @@ echo "── SYSTEM"
 echo "  Hostname : $(hostname)"
 echo "  OS       : $(uname -srm)"
 if [ "$(uname)" = "Darwin" ]; then
+    _CPU=$(sysctl -n machdep.cpu.brand_string 2>/dev/null || echo "?")
+else
+    _CPU=$(grep -m1 "model name" /proc/cpuinfo 2>/dev/null | cut -d: -f2 | xargs || echo "?")
+fi
+echo "  CPU      : $_CPU"
+if [ "$(uname)" = "Darwin" ]; then
     RAM_MB=$(( $(sysctl -n hw.memsize) / 1048576 ))
 elif [ -f /proc/meminfo ]; then
     RAM_MB=$(awk '/MemTotal/ {printf "%d", $2/1024}' /proc/meminfo)
@@ -255,6 +261,72 @@ else
         echo "  Model    : ${VLLM_MODEL:-(none)}"
     else
         echo "  Status   : NOT REACHABLE"
+    fi
+
+    # ── vLLM offline ──
+    echo ""
+    echo "  ── vLLM offline (in-process)"
+    VLLM_OFFLINE_OK=false
+    VLLM_OFFLINE_REASON=""
+    if [ -f "$PYTHON" ]; then
+        VLLM_CHECK=$($PYTHON -c "
+import sys
+try:
+    import vllm
+except ImportError:
+    print('not_installed'); sys.exit(0)
+try:
+    import torch
+    if not torch.cuda.is_available():
+        print('no_cuda'); sys.exit(0)
+except ImportError:
+    print('no_torch'); sys.exit(0)
+print('ok')
+" 2>/dev/null || echo "error")
+        case "$VLLM_CHECK" in
+            ok)
+                VLLM_OFFLINE_OK=true
+                VLLM_OFFLINE_REASON="importable + CUDA available"
+                ;;
+            not_installed)
+                VLLM_OFFLINE_REASON="vllm NOT INSTALLED (pip install vllm — Linux/CUDA only)"
+                ;;
+            no_cuda)
+                VLLM_OFFLINE_REASON="vllm installed but CUDA NOT AVAILABLE"
+                ;;
+            no_torch)
+                VLLM_OFFLINE_REASON="torch not installed"
+                ;;
+            *)
+                VLLM_OFFLINE_REASON="check failed"
+                ;;
+        esac
+    else
+        VLLM_OFFLINE_REASON="venv not found"
+    fi
+
+    if [ "$VLLM_OFFLINE_OK" = true ]; then
+        echo "  Status   : available ($VLLM_OFFLINE_REASON)"
+        VLLM_OFF_COUNT=0
+        printf "  %-30s %7s  %-6s  %s\n" "Model" "Size" "Status" "HF Model ID"
+        echo "  ──────────────────────────────────────────────────────────────────────"
+        while IFS= read -r row; do
+            name=$(_csv_field "$row" "$CSV_HEADER" "name")
+            vllm_model=$(_csv_field "$row" "$CSV_HEADER" "vllm_model")
+            size=$(_csv_field "$row" "$CSV_HEADER" "size_mb")
+            enabled=$(_csv_field "$row" "$CSV_HEADER" "enabled")
+            [ -z "$vllm_model" ] && continue
+            if [ "$enabled" != "true" ]; then
+                printf "  %-30s %6sM  %-6s  %s\n" "$name" "$size" "skip" "$vllm_model"
+            else
+                printf "  %-30s %6sM  %-6s  %s\n" "$name" "$size" "ready" "$vllm_model"
+                VLLM_OFF_COUNT=$((VLLM_OFF_COUNT + 1))
+            fi
+        done < <(tail -n +2 "$MODELS_CSV" | grep -v '^#' | grep -v '^[[:space:]]*$')
+        echo "  ──────────────────────────────────────────────────────────────────────"
+        echo "  Ready: $VLLM_OFF_COUNT"
+    else
+        echo "  Status   : UNAVAILABLE — $VLLM_OFFLINE_REASON"
     fi
 fi
 

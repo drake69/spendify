@@ -10,9 +10,10 @@
 #   vLLM: auto-detected at runtime from the server (/v1/models)
 #
 # Auto-detects active backends:
-#   llama.cpp  — always, if GGUF files are present (downloads missing ones)
-#   Ollama     — if localhost:11434 is reachable (pulls missing models)
-#   vLLM       — if localhost:8000/v1/models is reachable
+#   llama.cpp     — always, if GGUF files are present (downloads missing ones)
+#   Ollama        — if localhost:11434 is reachable (pulls missing models)
+#   vLLM          — if localhost:8000/v1/models is reachable (server mode)
+#   vLLM offline  — if `import vllm` succeeds + CUDA available (in-process, no server)
 #
 # Usage:
 #   bash benchmark/run_benchmark_full.sh                           # both phases, 1 run
@@ -24,6 +25,7 @@
 #   bash benchmark/run_benchmark_full.sh --skip-llama
 #   bash benchmark/run_benchmark_full.sh --skip-ollama
 #   bash benchmark/run_benchmark_full.sh --skip-vllm
+#   bash benchmark/run_benchmark_full.sh --skip-vllm-offline
 #   bash benchmark/run_benchmark_full.sh --setup-only             # setup without running
 #
 # Estimated time: ~10-20h for all backends × 10 models × 50 files × 2 phases
@@ -41,23 +43,29 @@ RUNS=1
 VLLM_URL="http://localhost:8000/v1"
 OLLAMA_URL="http://localhost:11434"
 SKIP_LLAMA=false
-SKIP_OLLAMA=false
+SKIP_OLLAMA=true   # Ollama non supporta schema complessi del classifier — usa llama.cpp
 SKIP_VLLM=false
+SKIP_VLLM_OFFLINE=false
+SKIP_SYNC=false
 SETUP_ONLY=false
 SCENARIO=""       # categorizer-only: cold|nsi_warm|full_warm|country_with|country_without|all
 COUNTRY=""        # categorizer-only: ISO country for country_with scenario
+MAX_FILES=""      # limit files per model (e.g. 8 for quick scan)
 EXTRA_ARGS=()
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --benchmark)   BENCHMARK="$2"; shift 2 ;;
         --runs)        RUNS="$2"; shift 2 ;;
+        --max-files)   MAX_FILES="$2"; shift 2 ;;
         --vllm-url)    VLLM_URL="$2"; shift 2 ;;
         --ollama-url)  OLLAMA_URL="$2"; shift 2 ;;
-        --skip-llama)  SKIP_LLAMA=true; shift ;;
-        --skip-ollama) SKIP_OLLAMA=true; shift ;;
-        --skip-vllm)   SKIP_VLLM=true; shift ;;
-        --setup-only)  SETUP_ONLY=true; shift ;;
+        --skip-llama)         SKIP_LLAMA=true; shift ;;
+        --skip-ollama)        SKIP_OLLAMA=true; shift ;;
+        --skip-vllm)          SKIP_VLLM=true; shift ;;
+        --skip-vllm-offline)  SKIP_VLLM_OFFLINE=true; shift ;;
+        --setup-only)         SETUP_ONLY=true; shift ;;
+        --skip-sync)          SKIP_SYNC=true; shift ;;
         --scenario)    SCENARIO="$2"; shift 2 ;;   # categorizer only
         --country)     COUNTRY="$2"; shift 2 ;;    # categorizer only
         *)             EXTRA_ARGS+=("$1"); shift ;;
@@ -145,7 +153,9 @@ elif command -v nvidia-smi &>/dev/null; then
         CU_TAG="cu121"
         GPU_LABEL="NVIDIA (CUDA version unknown → wheel: $CU_TAG)"
     fi
-elif command -v rocm-smi &>/dev/null; then
+elif command -v rocm-smi &>/dev/null && command -v rocminfo &>/dev/null && rocminfo 2>/dev/null | grep -q "gfx9"; then
+    # ROCm backend only if rocminfo works AND GPU is CDNA/gfx9xx (MI series).
+    # RDNA GPUs (gfx10xx, gfx11xx) have rocm-smi but ROCm compute doesn't work → use Vulkan.
     GPU_BACKEND="rocm"
     _ROCM_VER=$(rocm-smi --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+' | head -1)
     GPU_LABEL="AMD ROCm${_ROCM_VER:+ $_ROCM_VER} (build from source)"
@@ -156,8 +166,138 @@ elif command -v vulkaninfo &>/dev/null && vulkaninfo --summary 2>/dev/null | gre
 fi
 echo "[gpu] $GPU_LABEL"
 
-# Install deps (exclude llama-cpp-python — installed separately to preserve GPU builds)
-uv sync --no-install-package llama-cpp-python --inexact --quiet
+# Install deps — protect custom-compiled packages from uv sync.
+# Strategy:
+#   1. Backup all packages listed in benchmark/.custom_packages (with version)
+#   2. Run uv sync (may remove/downgrade custom packages)
+#   3. Compare: if uv installed a LOWER version → restore backup (custom build wins)
+#              if uv installed same or HIGHER  → keep uv's version (upgrade wins)
+#              if uv removed it entirely       → restore backup
+_CUSTOM_BACKUP=".venv/_custom_backup"
+_SITE_PKGS=$($PYTHON -c "import site; print(site.getsitepackages()[0])" 2>/dev/null || echo "")
+_CUSTOM_LIST="benchmark/.custom_packages"
+
+# Extract version from dist-info dir name: "llama_cpp_python-0.3.19.dist-info" → "0.3.19"
+_pkg_version() {
+    local pkg_under="$1"
+    local search_dir="${2:-$_SITE_PKGS}"
+    local di=$(ls -d "${search_dir}/${pkg_under}-"*.dist-info 2>/dev/null | head -1)
+    [ -z "$di" ] && echo "" && return
+    basename "$di" | sed "s/^${pkg_under}-//" | sed 's/\.dist-info$//'
+}
+
+# Compare versions: returns 0 if v1 >= v2, 1 if v1 < v2
+_version_ge() {
+    [ "$1" = "$2" ] && return 0
+    local sorted_first
+    sorted_first=$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -1)
+    [ "$sorted_first" = "$2" ]
+}
+
+_backup_custom() {
+    [ -z "$_SITE_PKGS" ] && return
+    [ -f "$_CUSTOM_LIST" ] || return
+    rm -rf "$_CUSTOM_BACKUP"
+    mkdir -p "$_CUSTOM_BACKUP"
+    local n=0
+    while IFS= read -r pkg; do
+        [ -z "$pkg" ] || [[ "$pkg" == \#* ]] && continue
+        local pkg_under=$(echo "$pkg" | tr '-' '_')
+        local ver=$(_pkg_version "$pkg_under")
+        [ -z "$ver" ] && continue  # not installed, nothing to protect
+        # Copy package dir + dist-info + .libs
+        for d in "$_SITE_PKGS/${pkg_under}" \
+                 "$_SITE_PKGS/${pkg_under}-${ver}.dist-info" \
+                 "$_SITE_PKGS/${pkg_under}.libs"; do
+            [ -e "$d" ] && cp -a "$d" "$_CUSTOM_BACKUP/"
+        done
+        echo "$pkg_under=$ver" >> "$_CUSTOM_BACKUP/_versions"
+        n=$((n + 1))
+    done < "$_CUSTOM_LIST"
+    [ "$n" -gt 0 ] && echo "[sync] Backed up $n custom package(s)"
+}
+
+_restore_if_downgraded() {
+    [ -f "$_CUSTOM_BACKUP/_versions" ] || return
+    local restored=0 kept=0
+    while IFS='=' read -r pkg_under old_ver || [ -n "$pkg_under" ]; do
+        [ -z "$pkg_under" ] && continue
+        [ -z "$old_ver" ] && continue
+        local new_ver
+        new_ver=$(_pkg_version "$pkg_under" "$_SITE_PKGS")
+        local action=""
+        if [ -z "$new_ver" ]; then
+            action="removed → restore"
+        elif _version_ge "$new_ver" "$old_ver"; then
+            action="upgraded ${old_ver}→${new_ver} → keep"
+            kept=$((kept + 1))
+            continue
+        else
+            action="downgraded ${old_ver}→${new_ver} → restore"
+        fi
+        echo "[sync] $pkg_under: $action"
+        # Remove whatever uv put in
+        rm -rf "$_SITE_PKGS/${pkg_under}" \
+               "$_SITE_PKGS/${pkg_under}-"*.dist-info \
+               "$_SITE_PKGS/${pkg_under}.libs"
+        # Restore backup
+        for d in "$_CUSTOM_BACKUP/${pkg_under}" \
+                 "$_CUSTOM_BACKUP/${pkg_under}-${old_ver}.dist-info" \
+                 "$_CUSTOM_BACKUP/${pkg_under}.libs"; do
+            [ -e "$d" ] && cp -a "$d" "$_SITE_PKGS/"
+        done
+        restored=$((restored + 1))
+    done < "$_CUSTOM_BACKUP/_versions"
+    rm -rf "$_CUSTOM_BACKUP"
+    [ "$restored" -gt 0 ] && echo "[sync] Restored $restored custom package(s)"
+    [ "$kept" -gt 0 ] && echo "[sync] Kept $kept uv-upgraded package(s)"
+}
+
+if [ "$SKIP_SYNC" = true ]; then
+    echo "[sync] Skipped (--skip-sync) — using existing venv as-is"
+else
+    # Dry-run: check if uv sync would change custom packages
+    _backup_custom
+    if [ -f "$_CUSTOM_BACKUP/_versions" ]; then
+        # Check what uv wants to do (dry-run)
+        _dry_output=$(uv sync --inexact --dry-run 2>&1 || true)
+        _would_change=false
+        while IFS='=' read -r _pkg _ver || [ -n "$_pkg" ]; do
+            [ -z "$_pkg" ] && continue
+            # Convert underscores to hyphens for pip/uv naming
+            _pkg_hyph=$(echo "$_pkg" | tr '_' '-')
+            if echo "$_dry_output" | grep -qi "$_pkg_hyph"; then
+                _would_change=true
+                break
+            fi
+        done < "$_CUSTOM_BACKUP/_versions"
+        if [ "$_would_change" = true ]; then
+            echo ""
+            echo "[WARN] uv sync would modify custom-compiled packages:"
+            while IFS='=' read -r _pkg _ver || [ -n "$_pkg" ]; do
+                [ -z "$_pkg" ] && continue
+                _pkg_hyph=$(echo "$_pkg" | tr '_' '-')
+                echo "$_dry_output" | grep -i "$_pkg_hyph" | sed 's/^/         /'
+            done < "$_CUSTOM_BACKUP/_versions"
+            echo ""
+            read -r -p "Proceed with uv sync? (backup/restore will protect custom builds) [y/N] " _reply
+            if [[ ! "$_reply" =~ ^[Yy]$ ]]; then
+                echo "[sync] Aborted — using existing venv. Use --skip-sync to skip permanently."
+                rm -rf "$_CUSTOM_BACKUP"
+            else
+                uv sync --inexact --quiet
+                _restore_if_downgraded
+            fi
+        else
+            # No custom packages affected, just sync
+            uv sync --inexact --quiet
+            rm -rf "$_CUSTOM_BACKUP"
+        fi
+    else
+        # No custom packages to protect
+        uv sync --inexact --quiet
+    fi
+fi
 
 # Reinstall llama-cpp-python if uv sync removed it or if GPU backend doesn't match
 if [ "$SKIP_LLAMA" = false ]; then
@@ -242,7 +382,7 @@ SYSTEM_RAM_MB=0
                 MAX_MODEL_MB=$_VRAM_MB
                 echo "[check] System RAM: $((SYSTEM_RAM_MB / 1024)) GB, GPU VRAM: $((_VRAM_MB / 1024)) GB → max model: $((MAX_MODEL_MB / 1024)) GB"
             else
-                MAX_MODEL_MB=$(( SYSTEM_RAM_MB / 2 ))
+                MAX_MODEL_MB=$(( SYSTEM_RAM_MB * 3 / 4 ))
                 echo "[check] System RAM: $((SYSTEM_RAM_MB / 1024)) GB → max model: $((MAX_MODEL_MB / 1024)) GB (VRAM unknown)"
             fi
             ;;
@@ -259,7 +399,7 @@ SYSTEM_RAM_MB=0
                 MAX_MODEL_MB=$_VRAM_MB
                 echo "[check] System RAM: $((SYSTEM_RAM_MB / 1024)) GB, GPU VRAM: $((_VRAM_MB / 1024)) GB → max model: $((MAX_MODEL_MB / 1024)) GB"
             else
-                MAX_MODEL_MB=$(( SYSTEM_RAM_MB / 2 ))
+                MAX_MODEL_MB=$(( SYSTEM_RAM_MB * 3 / 4 ))
                 echo "[check] System RAM: $((SYSTEM_RAM_MB / 1024)) GB → max model: $((MAX_MODEL_MB / 1024)) GB (ROCm VRAM unknown)"
             fi
             ;;
@@ -278,13 +418,13 @@ SYSTEM_RAM_MB=0
                 MAX_MODEL_MB=$_VRAM_MB
                 echo "[check] System RAM: $((SYSTEM_RAM_MB / 1024)) GB, GPU VRAM: $((_VRAM_MB / 1024)) GB → max model: $((MAX_MODEL_MB / 1024)) GB"
             else
-                MAX_MODEL_MB=$(( SYSTEM_RAM_MB / 2 ))
+                MAX_MODEL_MB=$(( SYSTEM_RAM_MB * 3 / 4 ))
                 echo "[check] System RAM: $((SYSTEM_RAM_MB / 1024)) GB → max model: $((MAX_MODEL_MB / 1024)) GB (Vulkan VRAM unknown)"
             fi
             ;;
         *)
             # CPU-only: conservative RAM/2 heuristic
-            MAX_MODEL_MB=$(( SYSTEM_RAM_MB / 2 ))
+            MAX_MODEL_MB=$(( SYSTEM_RAM_MB * 3 / 4 ))
             [ "$SYSTEM_RAM_MB" -gt 0 ] && \
                 echo "[check] System RAM: $((SYSTEM_RAM_MB / 1024)) GB → max model: $((MAX_MODEL_MB / 1024)) GB"
             ;;
@@ -339,36 +479,10 @@ print(f"  → {dest}")
 PYEOF
     }
 
-    GGUF_DOWNLOADED=0
-    GGUF_SKIPPED=0
-    while IFS= read -r row; do
-        gguf_file=$(_csv_field "$row" "$CSV_HEADER" "gguf_file")
-        gguf_repo=$(_csv_field "$row" "$CSV_HEADER" "gguf_repo")
-        name=$(_csv_field "$row" "$CSV_HEADER" "name")
-        size_mb=$(_csv_field "$row" "$CSV_HEADER" "size_mb")
-        [ -z "$gguf_file" ] && continue   # no GGUF for this model
-
-        # Skip models too large for available RAM
-        if [ -n "$size_mb" ] && [ "$MAX_MODEL_MB" -gt 0 ] && [ "$size_mb" -gt "$MAX_MODEL_MB" ]; then
-            echo "[SKIP] $name ($gguf_file, ${size_mb}MB) — exceeds RAM limit (${MAX_MODEL_MB}MB)"
-            continue
-        fi
-
-        dest="$MODELS_DIR/$gguf_file"
-        if [ -f "$dest" ]; then
-            GGUF_SKIPPED=$((GGUF_SKIPPED + 1))
-        else
-            echo "[download] $gguf_file  (from $gguf_repo)"
-            if _hf_download "$gguf_repo" "$gguf_file" --local-dir "$MODELS_DIR"; then
-                GGUF_DOWNLOADED=$((GGUF_DOWNLOADED + 1))
-            else
-                echo "[WARN] Failed to download $gguf_file from $gguf_repo — skipping"
-            fi
-        fi
-    done < <(_read_models_csv)
-
+    # No bulk download — models are downloaded just-in-time in the run loop (step 4).
+    # This avoids saturating disk on machines with limited space.
     GGUF_TOTAL=$(ls -1 "$MODELS_DIR"/*.gguf 2>/dev/null | wc -l | tr -d ' ')
-    echo "[ok] $GGUF_TOTAL GGUF models in $MODELS_DIR ($GGUF_DOWNLOADED downloaded, $GGUF_SKIPPED already present)"
+    echo "[ok] $GGUF_TOTAL GGUF models already in $MODELS_DIR (others will be downloaded on demand)"
 else
     echo ""
     echo "── [3a/4] llama.cpp setup — skipped (--skip-llama)"
@@ -436,6 +550,39 @@ else
     echo "── [3c/4] vLLM — skipped (--skip-vllm)"
 fi
 
+# ── Step 3d: vLLM offline — detect importability ─────────────────────────
+VLLM_OFFLINE_MODELS_COUNT=0
+if [ "$SKIP_VLLM_OFFLINE" = false ]; then
+    echo ""
+    echo "── [3d/5] vLLM offline — checking availability..."
+    if $PYTHON -c "import vllm; import torch; assert torch.cuda.is_available()" 2>/dev/null; then
+        # Count rows with vllm_model column non-empty
+        VLLM_OFFLINE_MODELS_COUNT=$(tail -n +2 "$MODELS_CSV" | grep -v '^#' | grep -v '^[[:space:]]*$' | \
+            awk -F',' -v hdr="$(head -1 "$MODELS_CSV")" '
+            BEGIN {
+                n=split(hdr,cols,",")
+                for(i=1;i<=n;i++) if(cols[i]=="vllm_model") idx=i
+            }
+            { if(idx && $idx != "" && $(NF-1)=="true") c++ }
+            END { print c+0 }' || echo "0")
+        echo "[ok] vllm importable + CUDA available — $VLLM_OFFLINE_MODELS_COUNT models with vllm_model set"
+        [ "$VLLM_OFFLINE_MODELS_COUNT" -eq 0 ] && {
+            echo "[warn] nessun modello con colonna vllm_model in $MODELS_CSV — skipping"
+            SKIP_VLLM_OFFLINE=true
+        }
+    else
+        if ! $PYTHON -c "import vllm" 2>/dev/null; then
+            echo "[skip] vllm non installato (pip install vllm — solo Linux/CUDA)"
+        else
+            echo "[skip] vllm installato ma CUDA non disponibile"
+        fi
+        SKIP_VLLM_OFFLINE=true
+    fi
+else
+    echo ""
+    echo "── [3d/5] vLLM offline — skipped (--skip-vllm-offline)"
+fi
+
 # ── Setup summary ─────────────────────────────────────────────────────────
 echo ""
 echo "════════════════════════════════════════════════════════════"
@@ -443,14 +590,17 @@ echo "  SETUP SUMMARY"
 USE_LLAMA=false
 USE_OLLAMA=false
 USE_VLLM=false
+USE_VLLM_OFFLINE=false
 # --skip-llama skips only the install/download step, not the backend itself
 ls "$MODELS_DIR"/*.gguf 2>/dev/null | grep -q . && USE_LLAMA=true
 [ "$SKIP_OLLAMA" = false ] && USE_OLLAMA=true
 [ "$SKIP_VLLM" = false ] && [ -n "$VLLM_MODEL" ] && USE_VLLM=true
+[ "$SKIP_VLLM_OFFLINE" = false ] && [ "$VLLM_OFFLINE_MODELS_COUNT" -gt 0 ] && USE_VLLM_OFFLINE=true
 
-[ "$USE_LLAMA"  = true ] && echo "  llama.cpp  : enabled" || echo "  llama.cpp  : DISABLED"
-[ "$USE_OLLAMA" = true ] && echo "  Ollama     : enabled" || echo "  Ollama     : DISABLED"
-[ "$USE_VLLM"   = true ] && echo "  vLLM       : enabled ($VLLM_MODEL)" || echo "  vLLM       : DISABLED"
+[ "$USE_LLAMA"        = true ] && echo "  llama.cpp    : enabled" || echo "  llama.cpp    : DISABLED"
+[ "$USE_OLLAMA"       = true ] && echo "  Ollama       : enabled" || echo "  Ollama       : DISABLED"
+[ "$USE_VLLM"         = true ] && echo "  vLLM         : enabled ($VLLM_MODEL)" || echo "  vLLM         : DISABLED"
+[ "$USE_VLLM_OFFLINE" = true ] && echo "  vLLM offline : enabled ($VLLM_OFFLINE_MODELS_COUNT models)" || echo "  vLLM offline : DISABLED"
 echo "  GPU        : $GPU_LABEL"
 echo "════════════════════════════════════════════════════════════"
 
@@ -460,7 +610,7 @@ if [ "$SETUP_ONLY" = true ]; then
     exit 0
 fi
 
-if [ "$USE_LLAMA" = false ] && [ "$USE_OLLAMA" = false ] && [ "$USE_VLLM" = false ]; then
+if [ "$USE_LLAMA" = false ] && [ "$USE_OLLAMA" = false ] && [ "$USE_VLLM" = false ] && [ "$USE_VLLM_OFFLINE" = false ]; then
     echo "ERROR: No active backends. Aborting."
     exit 1
 fi
@@ -485,7 +635,10 @@ run_phase() {
         [ -n "$SCENARIO" ] && SCENARIO_ARGS+=(--scenario "$SCENARIO")
         [ -n "$COUNTRY"  ] && SCENARIO_ARGS+=(--country "$COUNTRY")
     fi
+    local MAX_FILES_ARGS=()
+    [ -n "$MAX_FILES" ] && MAX_FILES_ARGS+=(--max-files "$MAX_FILES")
     $PYTHON "$script" --runs "$RUNS" "$@" \
+        ${MAX_FILES_ARGS[@]+"${MAX_FILES_ARGS[@]}"} \
         ${SCENARIO_ARGS[@]+"${SCENARIO_ARGS[@]}"} \
         ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"} || \
         echo "  [WARN] $label [$phase] failed — skipping"
@@ -512,13 +665,15 @@ if [ "$USE_LLAMA" = true ]; then
     echo "║  BACKEND: llama.cpp                                     ║"
     echo "╚══════════════════════════════════════════════════════════╝"
 
+    _MIN_DISK_MB=16384  # 16 GB minimum free space
+
     while IFS= read -r row; do
         gguf_file=$(_csv_field "$row" "$CSV_HEADER" "gguf_file")
+        gguf_repo=$(_csv_field "$row" "$CSV_HEADER" "gguf_repo")
         name=$(_csv_field "$row" "$CSV_HEADER" "name")
         size_mb=$(_csv_field "$row" "$CSV_HEADER" "size_mb")
         [ -z "$gguf_file" ] && continue
         gguf="$MODELS_DIR/$gguf_file"
-        [ ! -f "$gguf" ] && { echo "  [SKIP] $name — file not found: $gguf_file"; continue; }
 
         # Skip models too large for available RAM
         if [ -n "$size_mb" ] && [ "$MAX_MODEL_MB" -gt 0 ] && [ "$size_mb" -gt "$MAX_MODEL_MB" ]; then
@@ -526,6 +681,23 @@ if [ "$USE_LLAMA" = true ]; then
             continue
         fi
 
+        # ── Just-in-time download ─────────────────────────────────
+        if [ ! -f "$gguf" ]; then
+            # Check disk space before download: need 16 GB + model size
+            _free_mb=$(df -m "$MODELS_DIR" | awk 'NR==2 {print $4}')
+            _need_mb=$(( _MIN_DISK_MB + ${size_mb:-0} ))
+            if [ -n "$_free_mb" ] && [ "$_free_mb" -lt "$_need_mb" ] 2>/dev/null; then
+                echo "  [SKIP] $name — not enough disk space (${_free_mb}MB free, need ${_need_mb}MB)"
+                continue
+            fi
+            echo "[download] $name ($gguf_file from $gguf_repo)"
+            if ! _hf_download "$gguf_repo" "$gguf_file" --local-dir "$MODELS_DIR"; then
+                echo "  [WARN] Failed to download $gguf_file — skipping"
+                continue
+            fi
+        fi
+
+        # ── Context check ─────────────────────────────────────────
         n_ctx=$($PYTHON -c "
 from core.llm_backends import LlamaCppBackend
 ctx = LlamaCppBackend.read_gguf_context_length('$gguf')
@@ -536,13 +708,24 @@ print(ctx or 0)
             continue
         fi
 
+        # ── Run benchmark ─────────────────────────────────────────
         run_both "llama.cpp: $name ($gguf_file)" \
             --backend local_llama_cpp --model-path "$gguf"
 
+        # ── Post-run cleanup ──────────────────────────────────────
         delete_after=$(_csv_field "$row" "$CSV_HEADER" "delete_after")
         if [ "$delete_after" = "true" ] && [ -f "$gguf" ]; then
             echo "[delete] $name — removing $gguf_file (delete_after=true)"
             rm -f "$gguf"
+        fi
+
+        # Auto-cleanup: delete model if disk space < 16 GB
+        if [ -f "$gguf" ]; then
+            _free_mb=$(df -m "$MODELS_DIR" | awk 'NR==2 {print $4}')
+            if [ -n "$_free_mb" ] && [ "$_free_mb" -lt "$_MIN_DISK_MB" ] 2>/dev/null; then
+                echo "[cleanup] Disk space low (${_free_mb}MB free < ${_MIN_DISK_MB}MB) — removing $gguf_file"
+                rm -f "$gguf"
+            fi
         fi
     done < <(_read_models_csv)
 fi
@@ -566,7 +749,7 @@ if [ "$USE_OLLAMA" = true ]; then
     done < <(_read_models_csv)
 fi
 
-# ── vLLM ──────────────────────────────────────────────────────────────────
+# ── vLLM (server) ─────────────────────────────────────────────────────────
 if [ "$USE_VLLM" = true ]; then
     echo ""
     echo "╔══════════════════════════════════════════════════════════╗"
@@ -574,6 +757,25 @@ if [ "$USE_VLLM" = true ]; then
     echo "╚══════════════════════════════════════════════════════════╝"
     run_both "vLLM: $VLLM_MODEL" \
         --backend vllm --model "$VLLM_MODEL" --base-url "$VLLM_URL"
+fi
+
+# ── vLLM offline (in-process, no server) ──────────────────────────────────
+if [ "$USE_VLLM_OFFLINE" = true ]; then
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════╗"
+    echo "║  BACKEND: vLLM offline (in-process)                     ║"
+    echo "╚══════════════════════════════════════════════════════════╝"
+
+    while IFS= read -r row; do
+        vllm_model=$(_csv_field "$row" "$CSV_HEADER" "vllm_model")
+        name=$(_csv_field "$row" "$CSV_HEADER" "name")
+        enabled=$(_csv_field "$row" "$CSV_HEADER" "enabled")
+        [ -z "$vllm_model" ] && continue
+        [ "$enabled" != "true" ] && { echo "  [SKIP] $name — disabled"; continue; }
+
+        run_both "vLLM offline: $name ($vllm_model)" \
+            --backend vllm_offline --model "$vllm_model"
+    done < <(_read_models_csv)
 fi
 
 # ── Done ──────────────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 # Spendif.ai — Developer Guide
 
-> Versione: 3.0 — aggiornato 2026-04-05
+> Versione: 3.1 — aggiornato 2026-04-09
 >
 > Per le funzionalità utente e il reference rapido vedi **[reference_guide.md](reference_guide.md)**.
 > Per la documentazione tecnica dettagliata (DB, pipeline, deployment, ecc.) vedi la cartella `documents/`.
@@ -256,6 +256,8 @@ Il `taxonomy_map` degli utenti si invalida automaticamente al prossimo import.
 | **4** | LLM batch | Transazioni non risolte | `llm` |
 | **5** | Fallback | Nessun match | `llm` + `to_review=True` |
 
+Ogni transazione categorizzata via LLM registra il modello specifico nel campo `category_model` (es. `gemma-2-2b-it-Q4_K_M`). Il campo viene azzerato quando la fonte cambia a `rule` o `manual`.
+
 > **Nota Step 1 (deprecato):** Le regole linguistiche di `core/static_rules/_it.json` sono state deprecate in C-08-cascade. Operavano sulla descrizione grezza (causale), ma `clean_descriptions_batch()` estrae il solo nome controparte prima della categorizzazione, rendendo le regex inutili. I brand sono ora coperti meglio da NSI (Step 3b).
 
 ### `core/description_cleaner.py` — pulizia descrizioni e mapping LLM
@@ -333,6 +335,57 @@ La logica auto seleziona il modo in base al backend e alla dimensione del modell
 
 ---
 
+## 5b. Token usage tracking
+
+Ogni chiamata LLM (tutti i backend: llama.cpp, Ollama, OpenAI, Claude) viene registrata nella tabella `llm_usage_log` per analisi statistica del consumo di token.
+
+### Schema tabella
+
+| Colonna | Tipo | Descrizione |
+|---------|------|-------------|
+| `backend` | String(30) | `local_llama_cpp`, `ollama`, `openai`, `claude` |
+| `model_id` | String(120) | Identificativo modello (es. `gemma-2-2b-it-Q4_K_M`) |
+| `caller` | String(30) | Modulo chiamante: `categorizer`, `classifier`, `description_cleaner`, `normalizer` |
+| `step` | String(60) | Fase: `step1_identity`, `step2_mapping`, `step3_semantic`, `batch_expense`, `batch_income`, `footer_detect` |
+| `source_name` | String(256) | Nome file sorgente per tracciabilità |
+| `batch_size` | Integer | Numero di item nel batch |
+| `prompt_tokens` | Integer | Token di input |
+| `completion_tokens` | Integer | Token di output |
+| `total_tokens` | Integer | Somma input + output |
+| `n_ctx` | Integer | Finestra di contesto configurata (solo backend locali) |
+| `duration_ms` | Integer | Tempo di inferenza in millisecondi |
+
+### Architettura
+
+- **`call_with_fallback()`** (`core/llm_backends.py`): accetta i parametri `caller`, `step`, `source_name`, `batch_size`. Dopo ogni chiamata riuscita, persiste il log tramite `_log_usage_to_db()` (best-effort, mai bloccante).
+- **Pre-call token check** (solo `LlamaCppBackend`): prima di inviare il prompt, tokenizza l'input con `self._llm.tokenize()` e verifica che rimangano almeno 256 token per l'output. Se il budget è insufficiente, lancia `LLMValidationError` con messaggio diagnostico.
+
+### Query statistiche
+
+`db/repository.py` espone:
+
+- **`get_token_usage_stats(backend, model_id, caller)`** — statistiche descrittive (count, mean, std, p50, p95, p99, CI 95%) raggruppate per (backend, model, caller).
+- **`get_adaptive_n_ctx_cap(session, model_id, min_observations=1000)`** — ritorna il massimo CI-95% upper-bound dei `total_tokens` su tutti i gruppi `(caller, step)` con ≥ `min_observations` righe per il modello dato. Il risultato è arrotondato in su al prossimo multiplo di 1024 (floor: 2048). Ritorna `None` se i dati sono insufficienti.
+
+### Cap adattivo n_ctx
+
+La finestra di contesto si adatta automaticamente all'utilizzo reale in produzione:
+
+1. **Cold start** (< 1000 osservazioni per caller/step): `LlamaCppBackend` usa il cap statico `DEFAULT_N_CTX_CAP` (16 384 token, ~2.3× il p100 osservato nel benchmark).
+2. **Convergenza** (≥ 1000 osservazioni): il backend interroga `get_adaptive_n_ctx_cap()` al caricamento del modello e usa `min(gguf_nativo, cap_adattivo)` come finestra di contesto. Il cap adattivo è il massimo CI-95% upper-bound dei `total_tokens` su tutte le combinazioni caller/step, garantendo che la singola KV cache copra il worst-case.
+3. **Stratificazione** — il CI è calcolato per gruppo `(caller, step)`, catturando le diverse dimensioni di prompt di ogni fase della pipeline (es. `classifier/step1_identity` vs `categorizer/batch_expense`).
+4. **Safety** — il cap adattivo è sempre ≥ 2048 token. Se il DB non è disponibile, il cap statico viene usato silenziosamente.
+
+```sql
+-- Esempio: consumo per fase
+SELECT caller, step, COUNT(*) as n,
+       ROUND(AVG(total_tokens)) as avg_tokens,
+       MAX(total_tokens) as max_tokens
+FROM llm_usage_log GROUP BY caller, step;
+```
+
+---
+
 ## 6. Coupling gate (CI)
 
 `tools/coupling_check.py` analizza staticamente tutti i file `ui/` e verifica che non importino da `core.*`, `db.*`, `support.*`.
@@ -394,6 +447,8 @@ Sorgente canonica: `documents/06_knowledge_base/` — modificare lì e rigenerar
 | `rag_cloud` | Backend = `openai` / `claude` / `openai_compatible` con API key | Retrieval TF-IDF → LLM cloud genera risposta |
 | `rag_local` | Backend = `local_ollama` / `vllm` | Retrieval TF-IDF → LLM locale genera risposta |
 | `faq_match` | Backend = `local_llama_cpp` o nessuno | Cosine similarity su FAQ, risposta preconfezionata |
+
+> **Nota:** `vllm_offline` è un backend esclusivo del benchmark (in-process, Linux/CUDA) e **non** è selezionabile come backend app in Impostazioni. Nell'app il backend vLLM esposto all'utente è sempre `vllm` (server OpenAI-compatible).
 
 **Nota:** `ChatBotEngine` viene cached in `st.session_state["chatbot"]` e reinizializzato
 automaticamente al cambio di backend (invalidato in `settings_page.py` al salvataggio).
@@ -547,14 +602,92 @@ bash benchmark/run_benchmark_full.sh --benchmark both --runs 3   # entrambi, 3 r
 bash benchmark/run_benchmark_full.sh --setup-only                # solo download modelli
 
 # Windows (PowerShell) — ENTRY POINT consigliato
-powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1
-powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1 -Benchmark both -Runs 3
+powershell -ExecutionPolicy Bypass -File .\benchmark\run_benchmark_full.ps1
+powershell -ExecutionPolicy Bypass -File .\benchmark\run_benchmark_full.ps1 -Benchmark both -Runs 3
 
-# Solo llama.cpp (skip Ollama e vLLM)
-bash benchmark/run_benchmark_full.sh --skip-ollama --skip-vllm
+# Solo llama.cpp (skip Ollama, vLLM e vLLM offline)
+bash benchmark/run_benchmark_full.sh --skip-ollama --skip-vllm --skip-vllm-offline
+
+# Solo vLLM offline (Linux/CUDA — no server, no GGUF download)
+bash benchmark/run_benchmark_full.sh --skip-llama --skip-ollama --skip-vllm
+
+# Skip dependency sync (usa venv esistente, utile con librerie compilate custom)
+bash benchmark/run_benchmark_full.sh --skip-sync
 ```
 
 `run_benchmark_full.sh` / `run_benchmark_full.ps1` gestiscono: setup completo (GGUF + Ollama pull + rilevamento vLLM), poi eseguono pipeline e categorizer per ogni backend attivo. La lista modelli è letta da `benchmark/benchmark_models.csv`.
+
+### Piano di benchmarking multi-macchina
+
+Il benchmarking si articola in due fasi:
+
+**Fase 1 — Quick scan (8 file)**: 1 file per ogni combinazione `doc_type × format` (8 tipi), tutti i modelli abilitati (11 modelli: Qwen 2.5/3.5, Gemma 4, Phi4-mini, Nemotron-Mini, Mistral-7B, DeepSeek-R1). Serve per scegliere max 2 modelli. Stima: ~3h su GPU, ~6-8h su CPU.
+
+```bash
+bash benchmark/run_benchmark_full.sh --max-files 8
+# Windows:
+# powershell -ExecutionPolicy Bypass -File benchmark\run_benchmark_full.ps1 -MaxFiles 8
+```
+
+**Fase 2 — Full (50 file)**: solo i 2 modelli selezionati, tutti i 50 file per risultati statisticamente robusti.
+
+**Gestione spazio disco**: i GGUF vengono scaricati in `~/.spendifai/models/`. Se dopo un run lo spazio libero scende sotto 16 GB, il modello appena usato viene cancellato automaticamente (verrà riscaricato al prossimo lancio se necessario). Il filtro RAM (`RAM × 3/4`) skippa modelli troppo grandi per la macchina.
+
+**File di tracking**: `benchmark/benchmark_plan.csv` traccia il completamento per macchina × modello × backend × fase. Colonne: `machine, model, backend, phase, n_files_target, status, exact_pct, fuzzy_pct, err_pct, fb_pct, s_per_10tx, notes`. Status: `todo` → `running` → `done` / `skip` / `blocked`.
+
+**Nomi macchine**: `benchmark/machine_names.csv` mappa hostname tecnici a nomi amichevoli. Aggiungere una riga per ogni nuova macchina bench:
+
+```csv
+hostname,machine_name
+Luigis-MacBook-Pro.local,Mac Luigi
+junone,Junone
+```
+
+Lo script `benchmark_stats.py --by-host` usa automaticamente i nomi amichevoli.
+
+**Flusso collection risultati**:
+
+1. Copiare i CSV dalla macchina bench → `benchmark/results/`
+2. Aggiungere hostname → nome in `machine_names.csv` (se nuovo)
+3. Lanciare `python benchmark/benchmark_stats.py --by-group --by-host`
+4. Aggiornare `benchmark_plan.csv` con i KPI
+
+### Protezione librerie compilate custom
+
+Quando si compila manualmente una libreria GPU-specific (es. `llama-cpp-python` con Vulkan o ROCm), `uv sync` potrebbe sovrascriverla con la versione PyPI (CPU-only). Il benchmark ha un meccanismo di protezione a tre livelli:
+
+1. **Gate automatico**: prima del sync, lo script fa un dry-run. Se `uv sync` toccherebbe una libreria custom elencata in `benchmark/.custom_packages`, chiede conferma interattiva (`Proceed? [y/N]`). Se l'utente rifiuta, il sync viene saltato.
+
+2. **Backup/restore con confronto versioni**: se il sync procede, le librerie custom vengono backuppate. Dopo il sync:
+   - Se uv ha **rimosso** la libreria → ripristina il backup
+   - Se uv ha **downgradato** (versione minore) → ripristina il backup (build custom vince)
+   - Se uv ha **aggiornato** (versione uguale o maggiore) → tiene quella di uv
+
+3. **`--skip-sync`**: salta completamente `uv sync`, usa il venv così com'è. Consigliato su macchine con build GPU custom già funzionanti (es. Linux + Vulkan).
+
+**File `benchmark/.custom_packages`**: lista dei pacchetti da proteggere (uno per riga). Aggiungere qualsiasi libreria compilata manualmente:
+
+```
+# benchmark/.custom_packages
+llama_cpp_python
+vllm
+torch
+triton
+```
+
+### Rilevamento GPU
+
+Lo script rileva automaticamente il backend GPU in ordine di priorità:
+
+| Priorità | Backend | Condizione |
+|----------|---------|------------|
+| 1 | Metal | macOS + Apple Silicon |
+| 2 | CUDA | `nvidia-smi` presente |
+| 3 | ROCm | `rocm-smi` + `rocminfo` + GPU CDNA (gfx9xx, serie MI) |
+| 4 | Vulkan | `vulkaninfo` + GPU AMD/Radeon |
+| 5 | CPU | fallback |
+
+**Nota**: GPU AMD consumer (Radeon RX) hanno `rocm-smi` installato ma non supportano ROCm per compute. Lo script verifica che `rocminfo` sia presente e che la GPU sia CDNA (gfx9xx) prima di selezionare ROCm. Le Radeon RDNA (gfx10xx, gfx11xx) cadono su Vulkan.
 
 ### Setup modelli + Dual benchmark (llama.cpp + Ollama)
 
@@ -575,6 +708,7 @@ bash benchmark/run_benchmark_full.sh --runs 3
 # Salta un backend specifico
 bash benchmark/run_benchmark_full.sh --skip-ollama
 bash benchmark/run_benchmark_full.sh --skip-vllm
+bash benchmark/run_benchmark_full.sh --skip-vllm-offline
 ```
 
 Il setup scarica automaticamente i modelli GGUF mancanti e fa `ollama pull` per i modelli Ollama. La lista modelli è in `benchmark/benchmark_models.csv`.
@@ -601,9 +735,19 @@ uv run python benchmark/benchmark_classifier.py --runs 1 --backend local_ollama 
 # Categorizer con Ollama
 uv run python benchmark/benchmark_categorizer.py --runs 1 --backend local_ollama --model gemma3:12b
 
-# vLLM (locale o remoto — auto-detect modello e context window)
+# vLLM server (locale o remoto — auto-detect modello e context window)
 vllm serve Qwen/Qwen2.5-3B-Instruct  # in un altro terminale
 uv run python benchmark/benchmark_classifier.py --runs 1 --backend vllm
+
+# vLLM offline (Linux/CUDA — in-process, nessun server, usa HF model ID da benchmark_models.csv)
+# Richiede: pip install vllm && GPU CUDA disponibile
+uv run python benchmark/benchmark_classifier.py --runs 1 \
+  --backend vllm_offline --model Qwen/Qwen2.5-3B-Instruct
+uv run python benchmark/benchmark_categorizer.py --runs 1 \
+  --backend vllm_offline --model google/gemma-3-4b-it
+
+# Diagnostica ambiente (prima di eseguire benchmark)
+bash benchmark/bench_report.sh
 
 # Suite completa (tutti i backend)
 bash benchmark/run_benchmark_full.sh
@@ -620,13 +764,28 @@ Il benchmark rileva automaticamente la context window ottimale per ogni modello:
 | llama.cpp | Legge `llama.context_length` dall'header GGUF (senza caricare i pesi) |
 | Ollama | Chiama `/api/show` e legge il context del modello |
 | OpenAI / Claude | Lookup statico (`_KNOWN_CONTEXT`: gpt-4o=128k, claude-3-5=200k, …) |
-| vLLM | Interroga `/v1/models` |
+| vLLM (server) | Interroga `/v1/models` |
+| vLLM offline | Usa `max_tokens=4096` (fisso) via `SamplingParams`; il context del modello è gestito internamente da vLLM |
 
 `--n-ctx 0` (default) = auto-detect. Imposta un valore esplicito per limitare l'uso di RAM.
 
 ### Catalogo modelli (benchmark_models.csv)
 
-`benchmark/benchmark_models.csv` è la sorgente unica della lista modelli per tutti gli script di benchmark (sostituisce gli array hardcoded nei vecchi script). Colonne: `name`, `gguf_file`, `gguf_repo`, `gguf_hf_url`, `ollama_tag`, `enabled`. Se `gguf_file` è valorizzato il modello è disponibile su llama.cpp; se `ollama_tag` è valorizzato è disponibile su Ollama. Impostare `enabled=false` per saltare un modello in tutti gli script. Il catalogo contiene 11 modelli (Qwen2.5-1.5B, Gemma2-2B, Qwen3.5-2B, Qwen3.5-4B, Gemma4-E2B Q3+Q4, Llama3.2-3B, Qwen2.5-3B, Phi3-mini, Qwen2.5-7B, Gemma3-12B). I modelli vLLM non sono nel CSV — vengono auto-rilevati dal server al runtime.
+`benchmark/benchmark_models.csv` è la sorgente unica della lista modelli per tutti gli script di benchmark. Colonne:
+
+| Colonna | Descrizione |
+|---------|-------------|
+| `name` | Nome breve del modello (es. `Qwen3.5-4B`) |
+| `gguf_file` | Nome file GGUF — se valorizzato, il modello è disponibile su llama.cpp |
+| `gguf_repo` | Repository HuggingFace del GGUF (es. `bartowski/Qwen_Qwen3.5-4B-GGUF`) |
+| `gguf_hf_url` | URL diretto al file GGUF su HuggingFace (download) |
+| `ollama_tag` | Tag Ollama (es. `qwen3.5:4b`) — se valorizzato, il modello è disponibile su Ollama |
+| `vllm_model` | HF model ID per vLLM offline (es. `Qwen/Qwen2.5-3B-Instruct`) — se vuoto, il modello non è eseguito con vllm_offline |
+| `size_mb` | Dimensione approssimativa in MB (usata per il filtro RAM) |
+| `enabled` | `true`/`false` — se `false`, il modello è saltato in tutti gli script |
+| `delete_after` | `true`/`false` — se `true`, il file GGUF viene eliminato dopo il run |
+
+Il catalogo contiene 20 modelli: Qwen3.5 (0.8B–35B), Gemma4 (E2B–31B), Llama3.2-3B, Phi4-mini e Phi4-14B, nelle varianti Q3 e Q4. I modelli vLLM server non sono nel CSV — vengono auto-rilevati dal server in esecuzione tramite `/v1/models` al momento del benchmark.
 
 ### Monitoraggio HW (CPU + GPU)
 
@@ -653,6 +812,30 @@ Il modulo `benchmark/hw_monitor.py` (`HWMonitor`) campiona CPU e GPU in backgrou
 
 Questo consente al monitor di isolare la sessione corrente filtrando per `version` (stesso SHA+timestamp → stessa sessione), senza dipendere da push/commit espliciti sulla macchina dev.
 
+### Limitazioni backend Ollama
+
+Ollama supporta output JSON strutturato via `format: json_schema`, ma fallisce con schema complessi (lo schema single-step del classifier, ~20 campi, restituisce risposte vuote). L'`OllamaBackend` ora rileva `model_size_bytes` via `/api/show` per abilitare la classificazione multi-step (3 schema più piccoli) sui modelli piccoli, migliorando il tasso di successo. Tuttavia Ollama è **skippato di default** nel benchmark (`SKIP_OLLAMA=true`) — usare llama.cpp. Ollama resta disponibile nell'app come backend opzionale.
+
+### Equivalenza di accuratezza tra commit
+
+Non tutti i commit modificano la pipeline di classificazione/categorizzazione. Commit che toccano solo infra, docs, CI o performance producono **risultati di accuratezza identici**. I risultati di benchmark sono confrontabili solo tra commit dello stesso gruppo di equivalenza.
+
+La tabella completa è in [`benchmark/ACCURACY_EQUIVALENCE.md`](../benchmark/ACCURACY_EQUIVALENCE.md).
+
+**Regola pratica**: un commit è un _accuracy boundary_ se tocca `core/categorizer.py`, `core/classifier.py`, `core/description_cleaner.py`, `core/normalizer.py`, `core/sanitizer.py` o `core/nsi_lookup.py`. Tutti i commit tra due boundary consecutivi sono equivalenti.
+
+**Uso nello script di statistiche**:
+
+```bash
+# Statistiche raggruppate per gruppo di equivalenza (non per commit singolo)
+python benchmark/benchmark_stats.py --by-group
+
+# Statistiche per commit singolo (utile per debug, non per confronto accuratezza)
+python benchmark/benchmark_stats.py --by-commit
+```
+
+**Nota su `164bcac` (cap n_ctx)**: questo commit non cambia la logica di classificazione, ma limita `n_ctx` a 16K. Senza il cap, modelli con context window grande (es. Qwen 3.5, 262K) allocano KV cache enormi → GPU sottoutilizzata → output troncati → fallback artificialmente più alti. In pratica, risultati pre-cap e post-cap nello stesso gruppo possono divergere sui modelli Qwen.
+
 ### Monitor avanzamento (monitor_benchmark)
 
 `benchmark/monitor_benchmark.sh` / `monitor_benchmark.ps1` / `monitor_benchmark.py` mostrano l'avanzamento in tempo reale. Leggono tutti i file archivio in `benchmark/results/*.csv` (non `results_all_runs.csv`, che è prodotto solo dall'aggregatore offline) e filtrano per il campo `version` per isolare la sessione corrente. Features: progress bar per modello, fase corrente (classifier/categorizer) rilevata dalla colonna `benchmark_type`, statistiche CPU/GPU live via `HWMonitor.sample_once()` e medie storiche dal CSV. Opzioni principali: `--interval N` (refresh in secondi), `--runs N` (run attesi per modello), `--total N` (righe totali attese), `--once` (snapshot e termina), `--all` (mostra anche modelli completati).
@@ -665,12 +848,17 @@ Questo consente al monitor di isolare la sessione corrente filtrando per `versio
 | `benchmark/run_benchmark_full.ps1` | **ENTRY POINT** (Windows): tutti i backend × pipeline + categorizer |
 | `benchmark/bench_guard.sh` | Version gate (macOS/Linux): genera/verifica `benchmark/.version` |
 | `benchmark/bench_guard.ps1` | Version gate (Windows): genera/verifica `benchmark\.version` |
+| `benchmark/bench_report.sh` | Report diagnostico ambiente: backend disponibili, modelli, GPU, RAM — non modifica nulla |
 | `benchmark/cleanup_benchmark.sh` | Pulizia file generati |
-| `benchmark/benchmark_models.csv` | Catalogo modelli (sostituisce array hardcoded negli script) |
+| `benchmark/benchmark_models.csv` | Catalogo modelli — sorgente unica per tutti gli script |
 | `benchmark/hw_monitor.py` | Monitoraggio HW in background (CPU + GPU cross-platform) |
 | `benchmark/monitor_benchmark.sh` | Monitor avanzamento benchmark in tempo reale (macOS/Linux) |
 | `benchmark/monitor_benchmark.ps1` | Monitor avanzamento benchmark in tempo reale (Windows) |
 | `benchmark/monitor_benchmark.py` | Monitor avanzamento benchmark cross-platform (Python) |
+| `benchmark/benchmark_stats.py` | Statistiche di accuratezza per fase e modello (`--by-commit`, `--by-group`, `--by-host`) |
+| `benchmark/benchmark_plan.csv` | Tracking completamento benchmark per macchina × modello × fase |
+| `benchmark/machine_names.csv` | Mapping hostname tecnici → nomi amichevoli (usato da stats `--by-host`) |
+| `benchmark/ACCURACY_EQUIVALENCE.md` | Tabella gruppi di equivalenza commit (quali commit producono risultati confrontabili) |
 | `benchmark/diagnose.ps1` | Diagnostica ambiente Windows (include rilevamento GPU: NVIDIA/AMD/Intel) |
 
 ### Logging

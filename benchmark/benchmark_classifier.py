@@ -379,47 +379,15 @@ def _collect_llm_metadata(config: ProcessingConfig, backend) -> dict[str, str]:
             meta["family"] = "?"
 
     # ── Runtime HW (where Spendif.ai runs) ────────────────────────────────
-    import platform
-    meta["runtime_os"] = f"{platform.system()} {platform.release()} {platform.machine()}"
-    meta["runtime_hostname"] = __import__("socket").gethostname()
-    meta["runtime_gpu_ram_gb"] = ""  # filled after ram and gpu are detected
-    try:
-        import subprocess as _sp
-        ver = _sp.check_output(["sw_vers", "-productVersion"], text=True).strip()
-        meta["runtime_os"] = f"macOS {ver}"
-    except Exception:
-        meta["runtime_os"] = platform.platform()
-    try:
-        import subprocess as _sp
-        cpu = _sp.check_output(
-            ["sysctl", "-n", "machdep.cpu.brand_string"], text=True
-        ).strip()
-        meta["runtime_cpu"] = cpu
-    except Exception:
-        meta["runtime_cpu"] = platform.processor() or "unknown"
-    try:
-        import subprocess as _sp
-        ram_bytes = int(_sp.check_output(["sysctl", "-n", "hw.memsize"], text=True).strip())
-        meta["runtime_ram_gb"] = str(round(ram_bytes / (1024**3)))
-    except Exception:
-        meta["runtime_ram_gb"] = "?"
-    try:
-        import subprocess as _sp
-        gpu_info = _sp.check_output(
-            ["system_profiler", "SPDisplaysDataType"], text=True
-        )
-        for line in gpu_info.splitlines():
-            if "Chipset Model" in line:
-                meta["runtime_gpu"] = line.split(":")[-1].strip()
-                break
-        for line in gpu_info.splitlines():
-            if "Total Number of Cores" in line:
-                meta["runtime_gpu_cores"] = line.split(":")[-1].strip()
-                break
-    except Exception:
-        meta["gpu"] = "?"
-        meta["runtime_gpu"] = "?"
-        meta["runtime_gpu_cores"] = "?"
+    from hw_detect import detect_hw
+    _hw = detect_hw()
+    meta["runtime_os"] = _hw["runtime_os"]
+    meta["runtime_hostname"] = _hw["runtime_hostname"]
+    meta["runtime_cpu"] = _hw["runtime_cpu"]
+    meta["runtime_ram_gb"] = _hw["runtime_ram_gb"]
+    meta["runtime_gpu"] = _hw["runtime_gpu"]
+    meta["runtime_gpu_cores"] = _hw["runtime_gpu_cores"]
+    meta["runtime_gpu_ram_gb"] = ""  # filled after gpu detection
     meta["runtime_gpu_ram_gb"] = _detect_gpu_ram_gb(
         meta.get("runtime_cpu", ""),
         meta.get("runtime_ram_gb", "0")
@@ -1205,6 +1173,8 @@ def main() -> None:
                         help=f"Number of runs (default: {N_RUNS_DEFAULT})")
     parser.add_argument("--files", type=str, default=None,
                         help="Glob pattern to filter files (e.g. 'CC-1*')")
+    parser.add_argument("--max-files", type=int, default=None,
+                        help="Max number of files to process (e.g. 8 for quick scan)")
     parser.add_argument("--backend", type=str, default=None,
                         help="LLM backend override (e.g. 'local_llama_cpp', 'local_ollama')")
     parser.add_argument("--model-path", type=str, default=None,
@@ -1274,6 +1244,8 @@ def main() -> None:
     elif backend_override == "vllm":
         vllm_url = base_url_override or "http://localhost:8000/v1"
         print(f"\n[check] Backend: vllm ({vllm_url})")
+    elif backend_override == "vllm_offline":
+        print(f"\n[check] Backend: vllm_offline (in-process, model={model_override or '?'})")
     else:
         print(f"\n[check] Backend: {backend_override} (skipping Ollama check)")
 
@@ -1283,6 +1255,20 @@ def main() -> None:
 
     # Load manifest and ground truth
     manifest = _load_manifest(file_pattern)
+    if args.max_files and len(manifest) > args.max_files:
+        # Select 1 file per doc_type × format, then fill remaining slots
+        seen_types: set[tuple[str, str]] = set()
+        selected: list = []
+        remainder: list = []
+        for entry in manifest:
+            key = (entry.doc_type, entry.fmt)
+            if key not in seen_types:
+                seen_types.add(key)
+                selected.append(entry)
+            else:
+                remainder.append(entry)
+        # Fill up to max_files from remainder
+        manifest = (selected + remainder)[:args.max_files]
     if not manifest:
         print(f"ERROR: No files matched pattern '{file_pattern}'")
         sys.exit(1)
@@ -1312,6 +1298,7 @@ def main() -> None:
         config.claude_model = model_override
         config.compat_model = model_override
         config.vllm_model = model_override
+        config.vllm_offline_model = model_override
     if api_key_override:
         if backend_override == "openai":
             config.openai_api_key = api_key_override
@@ -1388,11 +1375,16 @@ def main() -> None:
                 for _row in _reader:
                     if _row.get("benchmark_type", "") not in ("classifier", "full"):
                         continue  # skip categorizer rows
+                    # Resume key usa acc_group invece di git_commit
+                    # così risultati di commit equivalenti vengono riusati.
+                    from accuracy_groups import commit_to_group
+                    _acc_group = commit_to_group(
+                        _row.get("git_commit", ""), strict=False
+                    )
                     _key = (
                         int(_row.get("run_id", 0)),
                         _row.get("filename", ""),
-                        _row.get("git_commit", ""),
-                        _row.get("git_branch", ""),
+                        _acc_group,
                         _row.get("provider", ""),
                         _row.get("model", ""),
                     )
@@ -1415,11 +1407,13 @@ def main() -> None:
         run_start = time.time()
 
         for file_idx, entry in enumerate(manifest, 1):
-            # Check resume key: (run_id, filename, git_commit, git_branch, provider, model)
+            # Check resume key: usa acc_group per cross-commit equivalence
+            from accuracy_groups import commit_to_group
             _resume_key = (
                 run_id, entry.filename,
-                _LLM_META.get("git_commit", ""),
-                _LLM_META.get("git_branch", ""),
+                commit_to_group(
+                    _LLM_META.get("git_commit", ""), strict=False
+                ),
                 _LLM_META.get("provider", ""),
                 _LLM_META.get("model", ""),
             )
