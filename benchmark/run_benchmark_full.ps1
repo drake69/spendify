@@ -282,49 +282,10 @@ if (-not $SkipLlama) {
         Write-Host "[check] System RAM: $([math]::Round($SystemRamMB / 1024)) GB → max model: $([math]::Round($MaxModelMB / 1024)) GB"
     }
 
-    foreach ($m in $models) {
-        if ([string]::IsNullOrWhiteSpace($m.gguf_file)) { continue }
-
-        # Skip models too large for available RAM
-        $sizeMB = 0
-        if ($m.PSObject.Properties.Name -contains 'size_mb' -and $m.size_mb) {
-            $sizeMB = [int]$m.size_mb
-        }
-        if ($sizeMB -gt 0 -and $sizeMB -gt $MaxModelMB) {
-            Write-Host "[SKIP] $($m.name) ($($m.gguf_file), ${sizeMB}MB) — exceeds RAM limit (${MaxModelMB}MB)"
-            continue
-        }
-
-        $dest = Join-Path $ModelsDir $m.gguf_file
-        if (Test-Path $dest) {
-            $localSizeMB = [math]::Round((Get-Item $dest).Length / 1MB)
-            Write-Host "[ok]       $($m.name)  ($localSizeMB MB) — already present"
-            $skipped++
-            continue
-        }
-        Write-Host "[download] $($m.name)  ($($m.gguf_file))..."
-        $url  = $m.gguf_hf_url
-        $temp = "$dest.downloading"
-        try {
-            try {
-                Import-Module BitsTransfer -ErrorAction Stop
-                Start-BitsTransfer -Source $url -Destination $temp -DisplayName $m.gguf_file
-            } catch {
-                Invoke-WebRequest -Uri $url -OutFile $temp -UseBasicParsing
-            }
-            Move-Item $temp $dest -Force
-            $sizeMB = [math]::Round((Get-Item $dest).Length / 1MB)
-            Write-Host "[ok]       $($m.gguf_file) downloaded ($sizeMB MB)"
-            $downloaded++
-        } catch {
-            Write-Host "[WARN] Failed to download $($m.gguf_file): $_"
-            if (Test-Path $temp) { Remove-Item $temp -Force -ErrorAction SilentlyContinue }
-        }
-    }
-
+    # No bulk download — models are downloaded just-in-time in the run loop (step 4).
     $ggufFiles = @(Get-ChildItem "$ModelsDir\*.gguf" -ErrorAction SilentlyContinue)
-    Write-Host "[ok] $($ggufFiles.Count) GGUF models in $ModelsDir ($downloaded downloaded, $skipped already present)"
-    if ($ggufFiles.Count -gt 0) { $UseLlama = $true }
+    Write-Host "[ok] $($ggufFiles.Count) GGUF models already in $ModelsDir (others downloaded on demand)"
+    $UseLlama = $true
 } else {
     Write-Host ""
     Write-Host "-- [3a/4] llama.cpp setup — skipped (-SkipLlama)"
@@ -489,10 +450,11 @@ if ($UseLlama) {
     Write-Host "║  BACKEND: llama.cpp                                     ║"
     Write-Host "╚══════════════════════════════════════════════════════════╝"
 
+    $MinDiskMB = 16384  # 16 GB minimum free space
+
     foreach ($m in $AllModels) {
         if ([string]::IsNullOrWhiteSpace($m.gguf_file)) { continue }
         $gguf = Join-Path $ModelsDir $m.gguf_file
-        if (-not (Test-Path $gguf)) { Write-Host "  [SKIP] $($m.name) — file not found"; continue }
 
         # Skip models too large for available RAM
         $mSizeMB = 0
@@ -502,6 +464,38 @@ if ($UseLlama) {
             continue
         }
 
+        # ── Just-in-time download ─────────────────────────────────
+        if (-not (Test-Path $gguf)) {
+            # Check disk space before download: need 16 GB + model size
+            $drive = (Get-Item $ModelsDir -ErrorAction SilentlyContinue).PSDrive
+            $freeMB = 0
+            if ($drive) { $freeMB = [math]::Round($drive.Free / 1MB) }
+            $needMB = $MinDiskMB + $mSizeMB
+            if ($freeMB -gt 0 -and $freeMB -lt $needMB) {
+                Write-Host "  [SKIP] $($m.name) — not enough disk space (${freeMB}MB free, need ${needMB}MB)"
+                continue
+            }
+            Write-Host "[download] $($m.name) ($($m.gguf_file))..."
+            $url  = $m.gguf_hf_url
+            $temp = "$gguf.downloading"
+            try {
+                try {
+                    Import-Module BitsTransfer -ErrorAction Stop
+                    Start-BitsTransfer -Source $url -Destination $temp -DisplayName $m.gguf_file
+                } catch {
+                    Invoke-WebRequest -Uri $url -OutFile $temp -UseBasicParsing
+                }
+                Move-Item $temp $gguf -Force
+                $dlSizeMB = [math]::Round((Get-Item $gguf).Length / 1MB)
+                Write-Host "[ok]       $($m.gguf_file) downloaded ($dlSizeMB MB)"
+            } catch {
+                Write-Host "  [WARN] Failed to download $($m.gguf_file): $_"
+                if (Test-Path $temp) { Remove-Item $temp -Force -ErrorAction SilentlyContinue }
+                continue
+            }
+        }
+
+        # ── Context check ─────────────────────────────────────────
         $nCtx = 0
         try {
             $nCtx = [int](& $Python -c "
@@ -515,13 +509,26 @@ print(ctx or 0)
             continue
         }
 
+        # ── Run benchmark ─────────────────────────────────────────
         Invoke-BothPhases "llama.cpp: $($m.name) ($($m.gguf_file))" @("--backend","local_llama_cpp","--model-path",$gguf)
 
+        # ── Post-run cleanup ──────────────────────────────────────
         $deleteAfter = $false
         if ($m.PSObject.Properties.Name -contains 'delete_after') { $deleteAfter = $m.delete_after -eq 'true' }
         if ($deleteAfter -and (Test-Path $gguf)) {
             Write-Host "[delete] $($m.name) — removing $($m.gguf_file) (delete_after=true)"
             Remove-Item $gguf -Force
+        }
+
+        # Auto-cleanup: delete model if disk space < 16 GB
+        if (Test-Path $gguf) {
+            $drive = (Get-Item $ModelsDir -ErrorAction SilentlyContinue).PSDrive
+            $freeMB = 0
+            if ($drive) { $freeMB = [math]::Round($drive.Free / 1MB) }
+            if ($freeMB -gt 0 -and $freeMB -lt $MinDiskMB) {
+                Write-Host "[cleanup] Disk space low (${freeMB}MB free < ${MinDiskMB}MB) — removing $($m.gguf_file)"
+                Remove-Item $gguf -Force
+            }
         }
     }
 }
