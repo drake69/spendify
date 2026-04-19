@@ -11,7 +11,7 @@ from services.review_service import ReviewService
 from services.rule_service import RuleService
 from services.settings_service import SettingsService
 from services.transaction_service import TransactionService
-from support.formatting import format_amount_display, format_date_display, format_raw_amount_display
+from support.formatting import format_amount_display, format_date_display, format_raw_amount_display, strftime_to_momentjs
 from support.logging import setup_logging
 from ui.i18n import t
 
@@ -70,6 +70,7 @@ def render_review_page(engine):
     all_categories = taxonomy.all_expense_categories + taxonomy.all_income_categories
     settings = cfg_svc.get_all()
     _date_fmt = settings.get("date_display_format", "%d/%m/%Y")
+    _date_fmt_js = strftime_to_momentjs(_date_fmt)
     _dec = settings.get("amount_decimal_sep", ",")
     _thou = settings.get("amount_thousands_sep", ".")
 
@@ -138,7 +139,7 @@ def render_review_page(engine):
         hide_index=True,
         column_config={
             "sel": st.column_config.CheckboxColumn("✔", width=40),
-            t("ledger.col.date"): st.column_config.DateColumn(t("ledger.col.date"), format=_date_fmt, width="small"),
+            t("ledger.col.date"): st.column_config.DateColumn(t("ledger.col.date"), format=_date_fmt_js, width="small"),
             t("ledger.col.income"): st.column_config.NumberColumn(t("ledger.col.income"), format="%.2f"),
             t("ledger.col.expense"): st.column_config.NumberColumn(t("ledger.col.expense"), format="%.2f"),
             t("ledger.col.context"): st.column_config.SelectboxColumn(

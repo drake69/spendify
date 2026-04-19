@@ -11,7 +11,7 @@ import streamlit as st
 from services.rule_service import RuleService
 from services.settings_service import SettingsService
 from services.transaction_service import TransactionService
-from support.formatting import format_amount_display, format_date_display
+from support.formatting import format_amount_display, format_date_display, strftime_to_momentjs
 from support.logging import setup_logging
 from ui.i18n import t
 
@@ -36,6 +36,7 @@ def render_registry_page(engine):
     taxonomy = cfg_svc.get_taxonomy()
 
     _date_fmt = settings.get("date_display_format", "%d/%m/%Y")
+    _date_fmt_js = strftime_to_momentjs(_date_fmt)
     _dec = settings.get("amount_decimal_sep", ",")
     _thou = settings.get("amount_thousands_sep", ".")
     giroconto_mode = settings.get("giroconto_mode", "neutral")
@@ -178,7 +179,7 @@ def render_registry_page(engine):
     m4.metric(t("ledger.metric.expenses"),     format_amount_display(float(abs(expense_t)), _dec, _thou))
 
     # ── Sort (U-05: sort on full dataset before pagination) ────────────────
-    _sort_col, _sort_pg = st.columns([2, 3])
+    _sort_col, _sort_pg, _pg2 = st.columns([2, 2, 3])
     with _sort_col:
         _sort_options = {
             t("ledger.sort.date_desc"): ("date", True),
@@ -240,7 +241,7 @@ def render_registry_page(engine):
         {
             "_id":           tx.id,
             "_sel":          False,
-            t("ledger.col.date"):          tx.date,  # U-06: keep as date/datetime for correct sorting
+            t("ledger.col.date"):          pd.to_datetime(tx.date).date() if tx.date else None,  # U-06: keep as date for correct sorting
             t("ledger.col.description"):   (tx.description or "")[:80],
             **({t("ledger.col.raw"): (tx.raw_description or "")[:80]} if show_raw else {}),
             t("ledger.col.income"):        float(tx.amount) if float(tx.amount) > 0 else None,
@@ -264,7 +265,7 @@ def render_registry_page(engine):
     _col_cfg: dict = {
         "_id":            None,
         "_sel":           st.column_config.CheckboxColumn("📏", width=40),
-        t("ledger.col.date"):           st.column_config.DateColumn(t("ledger.col.date"),          format=_date_fmt, width="small"),
+        t("ledger.col.date"):           st.column_config.DateColumn(t("ledger.col.date"),          format=_date_fmt_js, width="small"),
         t("ledger.col.description"):    st.column_config.TextColumn(t("ledger.col.description"),  disabled=True),
         t("ledger.col.income"):         st.column_config.NumberColumn(t("ledger.col.income"),     disabled=True, format="%.2f", width="small"),
         t("ledger.col.expense"):        st.column_config.NumberColumn(t("ledger.col.expense"),    disabled=True, format="%.2f", width="small"),

@@ -576,7 +576,7 @@ def render_settings_page(engine):
         llama_cpp_n_ctx = st.number_input(
             t("settings.llama_cpp.n_ctx"),
             min_value=512,
-            max_value=131072,
+            max_value=1048576,
             step=512,
             help=t("settings.llama_cpp.n_ctx_help"),
             key="_wgt_llama_n_ctx",
@@ -797,6 +797,177 @@ def render_settings_page(engine):
 
     st.divider()
 
+    # ── Modello categorizzazione (opzionale, separato dal classifier) ─────────
+    st.subheader(t("settings.cat_backend_title"))
+
+    _cat_enabled = bool(settings.get("cat_llm_backend", ""))
+    cat_use_separate = st.toggle(
+        t("settings.cat_backend_toggle"),
+        value=_cat_enabled,
+        help=t("settings.cat_backend_toggle_help"),
+    )
+
+    # Defaults for cat_* variables — used in save even when toggle is off
+    cat_backend = ""
+    cat_ollama_url = ""
+    cat_ollama_model = ""
+    cat_openai_key = ""
+    cat_openai_model = ""
+    cat_anthropic_key = ""
+    cat_anthropic_model = ""
+    cat_compat_base_url = ""
+    cat_compat_api_key = ""
+    cat_compat_model = ""
+    cat_llama_cpp_model_path = ""
+    cat_llama_cpp_n_gpu_layers = "-1"
+    cat_llama_cpp_n_ctx = 0
+
+    if cat_use_separate:
+        st.caption(t("settings.cat_backend_caption"))
+
+        cat_backend_label = st.selectbox(
+            t("settings.cat_backend_label"),
+            list(_BACKEND_OPTIONS.keys()),
+            index=list(_BACKEND_OPTIONS.keys()).index(
+                _key_for(_BACKEND_OPTIONS, settings.get("cat_llm_backend", "local_llama_cpp"))
+            ),
+            key="cat_backend_select",
+        )
+        cat_backend = _BACKEND_OPTIONS[cat_backend_label]
+
+        if cat_backend == "local_llama_cpp":
+            from core.llm_backends import LlamaCppBackend
+            cat_llama_cpp_model_path = st.text_input(
+                t("settings.llama_cpp.model_path"),
+                value=settings.get("cat_llama_cpp_model_path", ""),
+                placeholder=t("settings.llama_cpp.model_path_placeholder"),
+                key="_wgt_cat_llama_path",
+            )
+            cat_llama_cpp_n_gpu_layers = st.text_input(
+                t("settings.llama_cpp.gpu_layers"),
+                value=settings.get("cat_llama_cpp_n_gpu_layers", "-1"),
+                key="_wgt_cat_llama_gpu",
+            )
+            if "_wgt_cat_llama_n_ctx" not in st.session_state:
+                _raw_cat_ctx = int(settings.get("cat_llama_cpp_n_ctx", "0"))
+                st.session_state["_wgt_cat_llama_n_ctx"] = max(_raw_cat_ctx, 512) if _raw_cat_ctx else 4096
+            cat_llama_cpp_n_ctx = st.number_input(
+                t("settings.llama_cpp.n_ctx"),
+                min_value=512, max_value=1048576, step=512,
+                key="_wgt_cat_llama_n_ctx",
+            )
+            local_models = LlamaCppBackend.list_local_models()
+            if local_models:
+                def _on_cat_local_model_select():
+                    idx = st.session_state.get("_wgt_cat_llama_local_select")
+                    if idx is not None:
+                        m = local_models[idx]
+                        st.session_state["_wgt_cat_llama_path"] = m["path"]
+                        ctx = LlamaCppBackend.read_gguf_context_length(m["path"])
+                        if ctx:
+                            st.session_state["_wgt_cat_llama_n_ctx"] = ctx
+
+                local_labels = [f"{m['name']}  ({m['size_gb']} GB)" for m in local_models]
+                st.selectbox(
+                    t("settings.llama_cpp.select_local"),
+                    options=range(len(local_models)),
+                    format_func=lambda i: local_labels[i],
+                    index=None,
+                    placeholder=t("settings.llama_cpp.select_local_placeholder"),
+                    key="_wgt_cat_llama_local_select",
+                    on_change=_on_cat_local_model_select,
+                    label_visibility="collapsed",
+                )
+            if st.button(t("settings.test_llm_btn"), key="test_cat_llama_cpp"):
+                test_kwargs = {}
+                if cat_llama_cpp_model_path:
+                    test_kwargs["model_path"] = cat_llama_cpp_model_path
+                try:
+                    n_gpu = int(cat_llama_cpp_n_gpu_layers)
+                except ValueError:
+                    n_gpu = -1
+                test_kwargs["n_gpu_layers"] = n_gpu
+                test_kwargs["n_ctx"] = int(cat_llama_cpp_n_ctx)
+                _do_llm_test(cat_backend, **test_kwargs)
+
+        elif cat_backend == "local_ollama":
+            cc1, cc2 = st.columns([2, 1])
+            with cc1:
+                cat_ollama_url = st.text_input(
+                    t("settings.ollama.url"),
+                    value=settings.get("cat_ollama_base_url", "") or ollama_url,
+                    key="_wgt_cat_ollama_url",
+                )
+            with cc2:
+                cat_ollama_model = st.text_input(
+                    t("settings.ollama.model"),
+                    value=settings.get("cat_ollama_model", "") or ollama_model,
+                    key="_wgt_cat_ollama_model",
+                )
+            if st.button(t("settings.test_llm_btn"), key="test_cat_ollama"):
+                _do_llm_test(cat_backend, cat_ollama_url, cat_ollama_model)
+
+        elif cat_backend == "openai":
+            cc1, cc2 = st.columns([2, 1])
+            with cc1:
+                cat_openai_key = st.text_input(
+                    t("settings.openai.api_key"), type="password",
+                    value=settings.get("cat_openai_api_key", "") or openai_key,
+                    key="_wgt_cat_openai_key",
+                )
+            with cc2:
+                cat_openai_model = st.text_input(
+                    t("settings.openai.model"),
+                    value=settings.get("cat_openai_model", "") or openai_model,
+                    key="_wgt_cat_openai_model",
+                )
+            if st.button(t("settings.test_llm_btn"), key="test_cat_openai"):
+                _do_llm_test(cat_backend, api_key=cat_openai_key, model=cat_openai_model)
+
+        elif cat_backend == "claude":
+            cc1, cc2 = st.columns([2, 1])
+            with cc1:
+                cat_anthropic_key = st.text_input(
+                    t("settings.anthropic.api_key"), type="password",
+                    value=settings.get("cat_anthropic_api_key", "") or anthropic_key,
+                    key="_wgt_cat_anthropic_key",
+                )
+            with cc2:
+                cat_anthropic_model = st.text_input(
+                    t("settings.anthropic.model"),
+                    value=settings.get("cat_anthropic_model", "") or anthropic_model,
+                    key="_wgt_cat_anthropic_model",
+                )
+            if st.button(t("settings.test_llm_btn"), key="test_cat_claude"):
+                _do_llm_test(cat_backend, api_key=cat_anthropic_key, model=cat_anthropic_model)
+
+        elif cat_backend == "openai_compatible":
+            cc1, cc2, cc3 = st.columns([2, 2, 1])
+            with cc1:
+                cat_compat_base_url = st.text_input(
+                    t("settings.compat.base_url"),
+                    value=settings.get("cat_compat_base_url", "") or compat_base_url,
+                    key="_wgt_cat_compat_url",
+                )
+            with cc2:
+                cat_compat_api_key = st.text_input(
+                    t("settings.compat.api_key"), type="password",
+                    value=settings.get("cat_compat_api_key", "") or compat_api_key,
+                    key="_wgt_cat_compat_key",
+                )
+            with cc3:
+                cat_compat_model = st.text_input(
+                    t("settings.compat.model"),
+                    value=settings.get("cat_compat_model", "") or compat_model,
+                    key="_wgt_cat_compat_model",
+                )
+            if st.button(t("settings.test_llm_btn"), key="test_cat_compat"):
+                _do_llm_test(cat_backend, base_url=cat_compat_base_url, api_key=cat_compat_api_key, model=cat_compat_model)
+    else:
+        st.info(t("settings.cat_backend_same"))
+
+    st.divider()
+
     # ── Profili rapidi (sezione nascosta per power user) ─────────────────────
     with st.expander(t("settings.power_user_title"), expanded=False):
         st.caption(t("settings.power_user_caption"))
@@ -841,6 +1012,20 @@ def render_settings_page(engine):
             "force_schema_import":   "true" if force_schema_import else "false",
             "max_transaction_amount": str(int(max_tx_amount)),
             "contexts":               json.dumps(_ctx_clean, ensure_ascii=False),
+            # Categorizer-specific backend
+            "cat_llm_backend":            cat_backend,
+            "cat_ollama_base_url":        cat_ollama_url,
+            "cat_ollama_model":           cat_ollama_model,
+            "cat_openai_api_key":         cat_openai_key,
+            "cat_openai_model":           cat_openai_model,
+            "cat_anthropic_api_key":      cat_anthropic_key,
+            "cat_anthropic_model":        cat_anthropic_model,
+            "cat_compat_base_url":        cat_compat_base_url,
+            "cat_compat_api_key":         cat_compat_api_key,
+            "cat_compat_model":           cat_compat_model,
+            "cat_llama_cpp_model_path":   cat_llama_cpp_model_path,
+            "cat_llama_cpp_n_gpu_layers": str(cat_llama_cpp_n_gpu_layers),
+            "cat_llama_cpp_n_ctx":        str(int(cat_llama_cpp_n_ctx)),
         })
 
         st.session_state["giroconto_mode"] = _GIROCONTO_OPTIONS[giroconto_label]
