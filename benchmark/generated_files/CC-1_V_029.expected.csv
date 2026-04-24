@@ -1,5 +1,5 @@
 row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_category
-1,2026-01-03,-450.26,"Pagam. POS - PAGAMENTO POS 450,26 EUR DEL 03.01.2026 A (ITA) FUNSIDE VOMERO",expense,false,Istruzione/Rette scolastiche
+1,2026-01-03,-450.26,"Pagam. POS - PAGAMENTO POS 450,26 EUR DEL 03.01.2026 A (ITA) FUNSIDE VOMERO",expense,false,Svago e tempo libero/Libri / riviste
 2,2026-01-05,-165.61,"Pagam. POS - PAGAMENTO POS 165,61 EUR DEL 05.01.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
 3,2026-01-05,-110.93,Disposizione - RIF:213374365 BEN. CONDOMINIO RESIDENZA MARE,expense,false,Casa/Energia elettrica
 4,2026-01-05,210.44,Bonif. v/fav. - RIF:218539788 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
@@ -12,10 +12,10 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 11,2026-01-15,-114.30,RICARICA HYPE DA CONTO 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 12,2026-01-18,-5.32,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 13,2026-01-20,-30.85,PAGAMENTO CONTACTLESS CARTA **** 8648 ENILIVE CORSICO,expense,false,Trasporti/Carburante
-14,2026-01-20,-263.34,PAGAMENTO CONTACTLESS CARTA **** 5868 UBIK EUR,expense,false,Istruzione/Rette scolastiche
+14,2026-01-20,-263.34,PAGAMENTO CONTACTLESS CARTA **** 5868 UBIK EUR,expense,false,Svago e tempo libero/Libri / riviste
 15,2026-01-21,-10.64,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 16,2026-01-21,-587.30,Disposizione - RIF:214959837 BEN. VERDI ROSA AIUTO NIPOTE,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-17,2026-01-25,-86.00,PAGAMENTO CONTACTLESS CARTA **** 9578 VALMANO,expense,false,Altro/Spese non classificate
+17,2026-01-25,-86.00,PAGAMENTO CONTACTLESS CARTA **** 9578 VALMANO,expense,false,Abbigliamento/Altro abbigliamento
 18,2026-01-27,2145.27,ACCREDITO STIPENDIO MESE DI GENNAIO 2026,income,false,Lavoro dipendente/Stipendio
 19,2026-01-27,2100.51,Bonif. v/fav. - RIF:213200824 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
 20,2026-01-27,2059.24,ACCREDITO STIPENDIO MESE DI GENNAIO 2026,income,false,Lavoro dipendente/Stipendio
@@ -51,33 +51,33 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 50,2026-01-31,-606.47,GIROCONTO DA CC 0123456 A CC 0075849,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 51,2026-02-02,-41.79,PAGAMENTO CONTACTLESS CARTA **** 8335 SAN MARCO PETROLI,expense,false,Trasporti/Carburante
 52,2026-02-03,-104.92,"Pagam. POS - PAGAMENTO POS 104,92 EUR DEL 03.02.2026 A (ITA) LEROY MERLIN ITALIA",expense,false,Casa/Energia elettrica
-53,2026-02-04,-9.30,PAGAMENTO CONTACTLESS CARTA **** 3381 DESPAR CAGLIARI,expense,false,Alimentari/Spesa supermercato
+53,2026-02-04,-9.30,PAGAMENTO CONTACTLESS CARTA **** 3381 DESPAR CAGLIARI,expense,false,Alimentari/Altro alimentari
 54,2026-02-05,-86.82,PAGAMENTO CONTACTLESS CARTA **** 1925 LAFARMACIA. TIBURTINA,expense,false,Salute/Farmaci
 55,2026-02-05,51.61,Bonif. v/fav. - RIF:217216069 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
 56,2026-02-05,390.88,Bonif. v/fav. - RIF:213770923 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
 57,2026-02-07,416.00,Bonif. v/fav. - RIF:217432790 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
 58,2026-02-08,-7.99,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-59,2026-02-09,-82.73,"Pagam. POS - PAGAMENTO POS 82,73 EUR DEL 09.02.2026 A (ITA) IKEA RESTAURANT",expense,false,Ristorazione/Ristorante
-60,2026-02-11,-637.47,PAGAMENTO CONTACTLESS CARTA **** 1685 MONDADORI FIRENZE,expense,false,Istruzione/Rette scolastiche
+59,2026-02-09,-82.73,"Pagam. POS - PAGAMENTO POS 82,73 EUR DEL 09.02.2026 A (ITA) IKEA RESTAURANT",expense,false,Ristorazione/Asporto / delivery
+60,2026-02-11,-637.47,PAGAMENTO CONTACTLESS CARTA **** 1685 MONDADORI FIRENZE,expense,false,Svago e tempo libero/Libri / riviste
 61,2026-02-11,-39.99,Disposizione - RIF:210155112 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
 62,2026-02-12,139.64,Bonif. v/fav. - RIF:211351890 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
 63,2026-02-14,174.67,Bonif. v/fav. - RIF:218166533 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
 64,2026-02-14,-548.22,Disposizione - RIF:219900081 BEN. VERDI ROSA AIUTO NIPOTE,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 65,2026-02-14,-164.90,Disposizione - RIF:219365801 BEN. RICARICA REVOLUT LAURA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-66,2026-02-15,-27.02,PAGAMENTO CONTACTLESS CARTA **** 4800 WYCON COSMETICS ROZZANO,expense,false,Altro/Spese non classificate
+66,2026-02-15,-27.02,PAGAMENTO CONTACTLESS CARTA **** 4800 WYCON COSMETICS ROZZANO,expense,false,Cura personale/Cosmetici e igiene
 67,2026-02-15,150.16,Bonif. v/fav. - RIF:211594125 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
 68,2026-02-15,-301.42,Disposizione - RIF:211792114 BEN. ROSSI MARCO P.IVA GIROCONTO,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 69,2026-02-15,-420.52,Disposizione - RIF:217213774 BEN. CONTO ARANCIO ACCANTONAMENTO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
-70,2026-02-18,-73.68,"Pagam. POS - PAGAMENTO POS 73,68 EUR DEL 18.02.2026 A (ITA) MINI MIX GENOVA",expense,false,Alimentari/Spesa supermercato
+70,2026-02-18,-73.68,"Pagam. POS - PAGAMENTO POS 73,68 EUR DEL 18.02.2026 A (ITA) MINI MIX GENOVA",expense,false,Alimentari/Altro alimentari
 71,2026-02-18,-16.08,PAGAMENTO CONTACTLESS CARTA **** 8273 PARAFARMACIA CONAD,expense,false,Salute/Farmaci
 72,2026-02-19,200.63,Bonif. v/fav. - RIF:217804749 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
 73,2026-02-20,-61.69,Disposizione - RIF:212028659 BEN. RICARICA REVOLUT LAURA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-74,2026-02-22,-243.65,PAGAMENTO CONTACTLESS CARTA **** 4185 DENTALPRO LIVORNO,expense,false,Salute/Farmaci
+74,2026-02-22,-243.65,PAGAMENTO CONTACTLESS CARTA **** 4185 DENTALPRO LIVORNO,expense,false,Salute/Dentista
 75,2026-02-24,-49.39,"Pagam. POS - PAGAMENTO POS 49,39 EUR DEL 24.02.2026 A (ITA) DISTRIBUTORE ENI",expense,false,Trasporti/Carburante
 76,2026-02-25,-159.47,PAGAMENTO CONTACTLESS CARTA **** 3186 MIGROSS,expense,false,Alimentari/Spesa supermercato
 77,2026-02-26,-95.84,Addebito SDD - HERA COMM S.R.L. ACQUA,expense,false,Casa/Energia elettrica
 78,2026-02-26,-102.47,Addebito SDD - ENEL SERVIZIO ELETTRICO NAZ.,expense,false,Casa/Energia elettrica
-79,2026-02-27,-99.56,PAGAMENTO CONTACTLESS CARTA **** 1273 THUN,expense,false,Altro/Spese non classificate
+79,2026-02-27,-99.56,PAGAMENTO CONTACTLESS CARTA **** 1273 THUN,expense,false,Regali e donazioni/Regali
 80,2026-02-27,2125.21,ACCREDITO STIPENDIO MESE DI FEBBRAIO 2026,income,false,Lavoro dipendente/Stipendio
 81,2026-02-27,2059.03,ACCREDITO STIPENDIO MESE DI FEBBRAIO 2026,income,false,Lavoro dipendente/Stipendio
 82,2026-02-27,2136.75,ACCREDITO STIPENDIO MESE DI FEBBRAIO 2026,income,false,Lavoro dipendente/Stipendio

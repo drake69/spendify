@@ -117,6 +117,7 @@ Spendif.ai tracks two **distinct** pieces of information for each transaction:
 |---------|-------|---------|
 | **Validation** | `human_validated` | "I have seen this expense and confirm it is correct (not anomalous)." It is the approval of the **expense**, not the category. |
 | **Classification source** | `category_source` | "Who assigned the latest category." Values: AI, Rule, Manual, History. |
+| **Classification model** | `category_model` | "Which specific LLM model categorized this." E.g. `gemma-2-2b-it-Q4_K_M`. Empty when source = Rule or Manual. |
 
 **Key rule:** the two fields are independent. When a rule or the AI reclassifies a transaction, the source changes but the validation **is not touched**. Only an explicit click on the "Validated" checkbox (unchecking it) can remove the validation.
 

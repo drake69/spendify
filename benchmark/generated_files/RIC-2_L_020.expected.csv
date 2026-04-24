@@ -1,15 +1,15 @@
 row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_category
 1,2026-01-01,-10.35,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-2,2026-01-01,-26.83,PAGAMENTO CONTACTLESS CARTA **** 4738 BREWDOG LINGOTTO,expense,false,Ristorazione/Ristorante
+2,2026-01-01,-26.83,PAGAMENTO CONTACTLESS CARTA **** 4738 BREWDOG LINGOTTO,expense,false,Ristorazione/Bar / caffè
 3,2026-01-01,-18.00,"Pagam. POS - PAGAMENTO POS 18,00 EUR DEL 01.01.2026 A (ITA) TIGROS",expense,false,Alimentari/Spesa supermercato
 4,2026-01-01,-52.13,PAGAMENTO CONTACTLESS CARTA **** 4834 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
-5,2026-01-01,-12.53,"Pagam. POS - PAGAMENTO POS 12,53 EUR DEL 01.01.2026 A (ITA) LA PIADINERIA VERONA",expense,false,Ristorazione/Ristorante
-6,2026-01-01,-67.00,PAGAMENTO CONTACTLESS CARTA **** 7297 BOTTEGA VERDE,expense,false,Altro/Spese non classificate
+5,2026-01-01,-12.53,"Pagam. POS - PAGAMENTO POS 12,53 EUR DEL 01.01.2026 A (ITA) LA PIADINERIA VERONA",expense,false,Ristorazione/Asporto / delivery
+6,2026-01-01,-67.00,PAGAMENTO CONTACTLESS CARTA **** 7297 BOTTEGA VERDE,expense,false,Cura personale/Cosmetici e igiene
 7,2026-01-01,-138.56,"Pagam. POS - PAGAMENTO POS 138,56 EUR DEL 01.01.2026 A (ITA) MPREIS",expense,false,Alimentari/Spesa supermercato
 8,2026-01-01,193.56,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-9,2026-01-02,-33.69,"Pagam. POS - PAGAMENTO POS 33,69 EUR DEL 02.01.2026 A (ITA) NATURA",expense,false,Altro/Spese non classificate
+9,2026-01-02,-33.69,"Pagam. POS - PAGAMENTO POS 33,69 EUR DEL 02.01.2026 A (ITA) NATURA",expense,false,Regali e donazioni/Regali
 10,2026-01-02,-14.38,"Pagam. POS - PAGAMENTO POS 14,38 EUR DEL 02.01.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-11,2026-01-02,-88.28,PAGAMENTO CONTACTLESS CARTA **** 7679 WYCON COSMETICS,expense,false,Altro/Spese non classificate
+11,2026-01-02,-88.28,PAGAMENTO CONTACTLESS CARTA **** 7679 WYCON COSMETICS,expense,false,Cura personale/Cosmetici e igiene
 12,2026-01-02,-60.71,Addebito SDD - TELEPASS S.P.A. PEDAGGI,expense,false,Trasporti/Carburante
 13,2026-01-02,-14.23,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 14,2026-01-02,-5.62,"Pagam. POS - PAGAMENTO POS 5,62 EUR DEL 02.01.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
@@ -35,85 +35,85 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 34,2026-01-05,-5.43,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 35,2026-01-05,200.00,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 36,2026-01-05,63.70,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-37,2026-01-06,-153.56,PAGAMENTO CONTACTLESS CARTA **** 4520 IL FORNAIO ROMA,expense,false,Alimentari/Spesa supermercato
+37,2026-01-06,-153.56,PAGAMENTO CONTACTLESS CARTA **** 4520 IL FORNAIO ROMA,expense,false,Alimentari/Mercato / freschi
 38,2026-01-06,-13.49,"Pagam. POS - PAGAMENTO POS 13,49 EUR DEL 06.01.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 39,2026-01-06,186.90,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 40,2026-01-07,-72.27,"Pagam. POS - PAGAMENTO POS 72,27 EUR DEL 07.01.2026 A (ITA) TRENITALIA S.P.A.",expense,false,Trasporti/Carburante
-41,2026-01-07,-93.33,PAGAMENTO CONTACTLESS CARTA **** 5715 WYCON COSMETICS,expense,false,Altro/Spese non classificate
+41,2026-01-07,-93.33,PAGAMENTO CONTACTLESS CARTA **** 5715 WYCON COSMETICS,expense,false,Cura personale/Cosmetici e igiene
 42,2026-01-07,-31.32,"Pagam. POS - PAGAMENTO POS 31,32 EUR DEL 07.01.2026 A (ITA) MIGROSS BARI",expense,false,Alimentari/Spesa supermercato
 43,2026-01-07,-6.73,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 44,2026-01-07,-179.12,"Pagam. POS - PAGAMENTO POS 179,12 EUR DEL 07.01.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
-45,2026-01-07,-99.35,PAGAMENTO CONTACTLESS CARTA **** 7005 PETMARK PRATI,expense,false,Altro/Spese non classificate
+45,2026-01-07,-99.35,PAGAMENTO CONTACTLESS CARTA **** 7005 PETMARK PRATI,expense,false,Animali domestici/Cibo
 46,2026-01-07,282.51,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-47,2026-01-08,-24.31,"Pagam. POS - PAGAMENTO POS 24,31 EUR DEL 08.01.2026 A (ITA) PETMARK",expense,false,Altro/Spese non classificate
+47,2026-01-08,-24.31,"Pagam. POS - PAGAMENTO POS 24,31 EUR DEL 08.01.2026 A (ITA) PETMARK",expense,false,Animali domestici/Cibo
 48,2026-01-08,-28.93,"Pagam. POS - PAGAMENTO POS 28,93 EUR DEL 08.01.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
 49,2026-01-08,-43.96,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
 50,2026-01-08,-11.33,AMAZON.IT MARKETPLACE - ORDINE 402-212821058,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 51,2026-01-08,-34.30,"Pagam. POS - PAGAMENTO POS 34,30 EUR DEL 08.01.2026 A (ITA) VEGA CARBURANTI PERUGIA",expense,false,Trasporti/Carburante
-52,2026-01-08,-71.14,PAGAMENTO CONTACTLESS CARTA **** 5123 COLOURS & BEAUTY VENEZIA,expense,false,Altro/Spese non classificate
+52,2026-01-08,-71.14,PAGAMENTO CONTACTLESS CARTA **** 5123 COLOURS & BEAUTY VENEZIA,expense,false,Abbigliamento/Altro abbigliamento
 53,2026-01-09,-29.63,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
 54,2026-01-09,-13.11,"Pagam. POS - PAGAMENTO POS 13,11 EUR DEL 09.01.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 55,2026-01-09,-84.86,"Pagam. POS - PAGAMENTO POS 84,86 EUR DEL 09.01.2026 A (ITA) ITALO NTV S.P.A.",expense,false,Trasporti/Carburante
 56,2026-01-09,-46.09,"Pagam. POS - PAGAMENTO POS 46,09 EUR DEL 09.01.2026 A (ITA) ROSSOPOMODORO",expense,false,Ristorazione/Ristorante
 57,2026-01-09,262.11,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 58,2026-01-09,127.94,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-59,2026-01-10,-29.85,PAGAMENTO CONTACTLESS CARTA **** 7130 MAXI ZOO,expense,false,Altro/Spese non classificate
+59,2026-01-10,-29.85,PAGAMENTO CONTACTLESS CARTA **** 7130 MAXI ZOO,expense,false,Animali domestici/Cibo
 60,2026-01-10,-20.34,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
-61,2026-01-10,-37.29,"Pagam. POS - PAGAMENTO POS 37,29 EUR DEL 10.01.2026 A (ITA) VALMANO",expense,false,Altro/Spese non classificate
+61,2026-01-10,-37.29,"Pagam. POS - PAGAMENTO POS 37,29 EUR DEL 10.01.2026 A (ITA) VALMANO",expense,false,Abbigliamento/Altro abbigliamento
 62,2026-01-10,-164.65,PAGAMENTO CONTACTLESS CARTA **** 2734 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
 63,2026-01-11,-44.97,"Pagam. POS - PAGAMENTO POS 44,97 EUR DEL 11.01.2026 A (ITA) EWA NAPOLI",expense,false,Trasporti/Carburante
 64,2026-01-11,-71.86,"Pagam. POS - PAGAMENTO POS 71,86 EUR DEL 11.01.2026 A (ITA) ENERGAS",expense,false,Trasporti/Carburante
 65,2026-01-12,-47.58,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
 66,2026-01-12,-22.62,"Pagam. POS - PAGAMENTO POS 22,62 EUR DEL 12.01.2026 A (ITA) PENNY",expense,false,Alimentari/Spesa supermercato
 67,2026-01-12,-77.39,"Pagam. POS - PAGAMENTO POS 77,39 EUR DEL 12.01.2026 A (ITA) PIZZERIA NAPOLI",expense,false,Ristorazione/Ristorante
-68,2026-01-12,-72.33,"Pagam. POS - PAGAMENTO POS 72,33 EUR DEL 12.01.2026 A (ITA) IKEA RESTAURANT",expense,false,Ristorazione/Ristorante
-69,2026-01-12,-61.74,PAGAMENTO CONTACTLESS CARTA **** 4530 HISTOIRE D'OR,expense,false,Altro/Spese non classificate
+68,2026-01-12,-72.33,"Pagam. POS - PAGAMENTO POS 72,33 EUR DEL 12.01.2026 A (ITA) IKEA RESTAURANT",expense,false,Ristorazione/Asporto / delivery
+69,2026-01-12,-61.74,PAGAMENTO CONTACTLESS CARTA **** 4530 HISTOIRE D'OR,expense,false,Abbigliamento/Altro abbigliamento
 70,2026-01-12,-37.63,"Pagam. POS - PAGAMENTO POS 37,63 EUR DEL 12.01.2026 A (ITA) B-PETROL",expense,false,Trasporti/Carburante
 71,2026-01-12,-75.79,"Pagam. POS - PAGAMENTO POS 75,79 EUR DEL 12.01.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
 72,2026-01-12,-64.59,"Pagam. POS - PAGAMENTO POS 64,59 EUR DEL 12.01.2026 A (ITA) PIZZERIA NAPOLI",expense,false,Ristorazione/Ristorante
 73,2026-01-12,-53.13,"Pagam. POS - PAGAMENTO POS 53,13 EUR DEL 12.01.2026 A (ITA) VEGA CARBURANTI OVEST",expense,false,Trasporti/Carburante
 74,2026-01-13,-106.33,"Pagam. POS - PAGAMENTO POS 106,33 EUR DEL 13.01.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
 75,2026-01-13,-7.01,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-76,2026-01-14,-15.14,"Pagam. POS - PAGAMENTO POS 15,14 EUR DEL 14.01.2026 A (ITA) BEFED",expense,false,Ristorazione/Ristorante
+76,2026-01-14,-15.14,"Pagam. POS - PAGAMENTO POS 15,14 EUR DEL 14.01.2026 A (ITA) BEFED",expense,false,Ristorazione/Bar / caffè
 77,2026-01-14,-13.33,"Pagam. POS - PAGAMENTO POS 13,33 EUR DEL 14.01.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-78,2026-01-14,-46.25,"Pagam. POS - PAGAMENTO POS 46,25 EUR DEL 14.01.2026 A (ITA) COMPRO ORO",expense,false,Altro/Spese non classificate
+78,2026-01-14,-46.25,"Pagam. POS - PAGAMENTO POS 46,25 EUR DEL 14.01.2026 A (ITA) COMPRO ORO",expense,false,Abbigliamento/Altro abbigliamento
 79,2026-01-14,-52.64,PAGAMENTO CONTACTLESS CARTA **** 8969 ENERPETROLI CAGLIARI,expense,false,Trasporti/Carburante
 80,2026-01-14,-29.10,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
 81,2026-01-14,69.09,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 82,2026-01-15,-5.04,"Pagam. POS - PAGAMENTO POS 5,04 EUR DEL 15.01.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-83,2026-01-15,-41.19,"Pagam. POS - PAGAMENTO POS 41,19 EUR DEL 15.01.2026 A (ITA) TACO BELL",expense,false,Ristorazione/Ristorante
-84,2026-01-15,-47.28,PAGAMENTO CONTACTLESS CARTA **** 5252 OAKBERRY AÇAÍ BOWLS ASSAGO,expense,false,Ristorazione/Ristorante
+83,2026-01-15,-41.19,"Pagam. POS - PAGAMENTO POS 41,19 EUR DEL 15.01.2026 A (ITA) TACO BELL",expense,false,Ristorazione/Asporto / delivery
+84,2026-01-15,-47.28,PAGAMENTO CONTACTLESS CARTA **** 5252 OAKBERRY AÇAÍ BOWLS ASSAGO,expense,false,Ristorazione/Asporto / delivery
 85,2026-01-15,-54.09,PAGAMENTO CONTACTLESS CARTA **** 3967 B-PETROL,expense,false,Trasporti/Carburante
 86,2026-01-15,-61.53,"Pagam. POS - PAGAMENTO POS 61,53 EUR DEL 15.01.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
-87,2026-01-15,-51.02,PAGAMENTO CONTACTLESS CARTA **** 5330 ALE-HOP,expense,false,Altro/Spese non classificate
+87,2026-01-15,-51.02,PAGAMENTO CONTACTLESS CARTA **** 5330 ALE-HOP,expense,false,Regali e donazioni/Regali
 88,2026-01-15,-72.06,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
 89,2026-01-16,-13.29,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-90,2026-01-16,-50.24,"Pagam. POS - PAGAMENTO POS 50,24 EUR DEL 16.01.2026 A (ITA) STROILI ORO",expense,false,Altro/Spese non classificate
+90,2026-01-16,-50.24,"Pagam. POS - PAGAMENTO POS 50,24 EUR DEL 16.01.2026 A (ITA) STROILI ORO",expense,false,Abbigliamento/Altro abbigliamento
 91,2026-01-16,-12.26,"Pagam. POS - PAGAMENTO POS 12,26 EUR DEL 16.01.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 92,2026-01-17,-35.62,"Pagam. POS - PAGAMENTO POS 35,62 EUR DEL 17.01.2026 A (ITA) AUTOGRILL",expense,false,Ristorazione/Ristorante
 93,2026-01-17,-76.15,"Pagam. POS - PAGAMENTO POS 76,15 EUR DEL 17.01.2026 A (ITA) TRENITALIA S.P.A.",expense,false,Trasporti/Carburante
 94,2026-01-17,-5.92,AMAZON.IT MARKETPLACE - ORDINE 402-213219121,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 95,2026-01-17,-104.83,"Pagam. POS - PAGAMENTO POS 104,83 EUR DEL 17.01.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
 96,2026-01-18,-40.09,"Pagam. POS - PAGAMENTO POS 40,09 EUR DEL 18.01.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
-97,2026-01-18,-87.31,"Pagam. POS - PAGAMENTO POS 87,31 EUR DEL 18.01.2026 A (ITA) PETMARK CENTRO COMMERCIALE LE GRANGE",expense,false,Altro/Spese non classificate
+97,2026-01-18,-87.31,"Pagam. POS - PAGAMENTO POS 87,31 EUR DEL 18.01.2026 A (ITA) PETMARK CENTRO COMMERCIALE LE GRANGE",expense,false,Animali domestici/Cibo
 98,2026-01-18,-10.45,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 99,2026-01-18,-19.75,"Pagam. POS - PAGAMENTO POS 19,75 EUR DEL 18.01.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
-100,2026-01-18,-19.50,"Pagam. POS - PAGAMENTO POS 19,50 EUR DEL 18.01.2026 A (ITA) ALL'ANTICO VINAIO PADOVA",expense,false,Ristorazione/Ristorante
-101,2026-01-19,-30.59,"Pagam. POS - PAGAMENTO POS 30,59 EUR DEL 19.01.2026 A (ITA) WYCON COSMETICS",expense,false,Altro/Spese non classificate
-102,2026-01-19,-52.09,PAGAMENTO CONTACTLESS CARTA **** 7022 IKEA RESTAURANT,expense,false,Ristorazione/Ristorante
+100,2026-01-18,-19.50,"Pagam. POS - PAGAMENTO POS 19,50 EUR DEL 18.01.2026 A (ITA) ALL'ANTICO VINAIO PADOVA",expense,false,Ristorazione/Asporto / delivery
+101,2026-01-19,-30.59,"Pagam. POS - PAGAMENTO POS 30,59 EUR DEL 19.01.2026 A (ITA) WYCON COSMETICS",expense,false,Cura personale/Cosmetici e igiene
+102,2026-01-19,-52.09,PAGAMENTO CONTACTLESS CARTA **** 7022 IKEA RESTAURANT,expense,false,Ristorazione/Asporto / delivery
 103,2026-01-19,-10.07,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-104,2026-01-19,-45.91,PAGAMENTO CONTACTLESS CARTA **** 4394 POKE HOUSE,expense,false,Ristorazione/Ristorante
+104,2026-01-19,-45.91,PAGAMENTO CONTACTLESS CARTA **** 4394 POKE HOUSE,expense,false,Ristorazione/Asporto / delivery
 105,2026-01-20,-84.37,"Pagam. POS - PAGAMENTO POS 84,37 EUR DEL 20.01.2026 A (ITA) DISTRIBUTORE ENI",expense,false,Trasporti/Carburante
 106,2026-01-20,-6.01,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 107,2026-01-20,-65.61,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
-108,2026-01-20,-64.42,PAGAMENTO CONTACTLESS CARTA **** 2577 ALE-HOP SAN GIULIANO MILANESE,expense,false,Altro/Spese non classificate
+108,2026-01-20,-64.42,PAGAMENTO CONTACTLESS CARTA **** 2577 ALE-HOP SAN GIULIANO MILANESE,expense,false,Regali e donazioni/Regali
 109,2026-01-20,-119.46,"Pagam. POS - PAGAMENTO POS 119,46 EUR DEL 20.01.2026 A (ITA) EKOM ROMA",expense,false,Alimentari/Spesa supermercato
 110,2026-01-20,69.01,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 111,2026-01-20,169.77,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 112,2026-01-20,186.93,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 113,2026-01-21,-65.80,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
-114,2026-01-21,-13.17,"Pagam. POS - PAGAMENTO POS 13,17 EUR DEL 21.01.2026 A (ITA) HISTOIRE D'OR BARI",expense,false,Altro/Spese non classificate
-115,2026-01-21,-76.80,PAGAMENTO CONTACTLESS CARTA **** 7846 PRIMOR,expense,false,Altro/Spese non classificate
+114,2026-01-21,-13.17,"Pagam. POS - PAGAMENTO POS 13,17 EUR DEL 21.01.2026 A (ITA) HISTOIRE D'OR BARI",expense,false,Abbigliamento/Altro abbigliamento
+115,2026-01-21,-76.80,PAGAMENTO CONTACTLESS CARTA **** 7846 PRIMOR,expense,false,Cura personale/Cosmetici e igiene
 116,2026-01-21,-8.89,"Pagam. POS - PAGAMENTO POS 8,89 EUR DEL 21.01.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 117,2026-01-21,-53.08,"Pagam. POS - PAGAMENTO POS 53,08 EUR DEL 21.01.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
 118,2026-01-22,-7.17,AMAZON.IT MARKETPLACE - ORDINE 402-217270280,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
@@ -130,8 +130,8 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 129,2026-01-23,103.78,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 130,2026-01-25,-11.50,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 131,2026-01-25,-38.94,PAGAMENTO CONTACTLESS CARTA **** 2848 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
-132,2026-01-25,-37.01,PAGAMENTO CONTACTLESS CARTA **** 6491 WOK TO WALK,expense,false,Ristorazione/Ristorante
-133,2026-01-25,-33.16,"Pagam. POS - PAGAMENTO POS 33,16 EUR DEL 25.01.2026 A (ITA) THUN",expense,false,Altro/Spese non classificate
+132,2026-01-25,-37.01,PAGAMENTO CONTACTLESS CARTA **** 6491 WOK TO WALK,expense,false,Ristorazione/Asporto / delivery
+133,2026-01-25,-33.16,"Pagam. POS - PAGAMENTO POS 33,16 EUR DEL 25.01.2026 A (ITA) THUN",expense,false,Regali e donazioni/Regali
 134,2026-01-25,-5.59,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 135,2026-01-25,285.80,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 136,2026-01-26,-87.72,"Pagam. POS - PAGAMENTO POS 87,72 EUR DEL 26.01.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
@@ -143,7 +143,7 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 142,2026-01-28,-6.40,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 143,2026-01-28,-60.39,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
 144,2026-01-28,-11.85,"Pagam. POS - PAGAMENTO POS 11,85 EUR DEL 28.01.2026 A (ITA) COOP LOMBARDIA",expense,false,Altro/Spese non classificate
-145,2026-01-29,-61.45,PAGAMENTO CONTACTLESS CARTA **** 9342 FLOWER BURGER PARMA,expense,false,Ristorazione/Ristorante
+145,2026-01-29,-61.45,PAGAMENTO CONTACTLESS CARTA **** 9342 FLOWER BURGER PARMA,expense,false,Ristorazione/Asporto / delivery
 146,2026-01-29,-46.18,"Pagam. POS - PAGAMENTO POS 46,18 EUR DEL 29.01.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
 147,2026-01-29,103.30,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 148,2026-01-30,-7.02,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
@@ -163,22 +163,22 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 162,2026-02-02,-10.15,"Pagam. POS - PAGAMENTO POS 10,15 EUR DEL 02.02.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
 163,2026-02-02,253.43,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 164,2026-02-03,-61.24,"Pagam. POS - PAGAMENTO POS 61,24 EUR DEL 03.02.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
-165,2026-02-03,-92.38,PAGAMENTO CONTACTLESS CARTA **** 2481 L'ISOLA DEI TESORI SESTO SAN GIOVANNI,expense,false,Altro/Spese non classificate
+165,2026-02-03,-92.38,PAGAMENTO CONTACTLESS CARTA **** 2481 L'ISOLA DEI TESORI SESTO SAN GIOVANNI,expense,false,Animali domestici/Cibo
 166,2026-02-03,-81.05,"Pagam. POS - PAGAMENTO POS 81,05 EUR DEL 03.02.2026 A (ITA) ENILIVE CENTRO",expense,false,Trasporti/Carburante
 167,2026-02-03,-88.56,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
-168,2026-02-03,-35.08,"Pagam. POS - PAGAMENTO POS 35,08 EUR DEL 03.02.2026 A (ITA) EXKI VIMODRONE",expense,false,Ristorazione/Ristorante
+168,2026-02-03,-35.08,"Pagam. POS - PAGAMENTO POS 35,08 EUR DEL 03.02.2026 A (ITA) EXKI VIMODRONE",expense,false,Ristorazione/Asporto / delivery
 169,2026-02-03,119.06,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 170,2026-02-04,-9.58,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 171,2026-02-04,-42.44,"Pagam. POS - PAGAMENTO POS 42,44 EUR DEL 04.02.2026 A (ITA) EWA",expense,false,Trasporti/Carburante
-172,2026-02-04,-96.88,"Pagam. POS - PAGAMENTO POS 96,88 EUR DEL 04.02.2026 A (ITA) BLUESPIRIT CAGLIARI",expense,false,Altro/Spese non classificate
+172,2026-02-04,-96.88,"Pagam. POS - PAGAMENTO POS 96,88 EUR DEL 04.02.2026 A (ITA) BLUESPIRIT CAGLIARI",expense,false,Abbigliamento/Altro abbigliamento
 173,2026-02-04,-90.81,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
-174,2026-02-04,-72.62,"Pagam. POS - PAGAMENTO POS 72,62 EUR DEL 04.02.2026 A (ITA) BILLY TACOS CATANIA",expense,false,Ristorazione/Ristorante
+174,2026-02-04,-72.62,"Pagam. POS - PAGAMENTO POS 72,62 EUR DEL 04.02.2026 A (ITA) BILLY TACOS CATANIA",expense,false,Ristorazione/Asporto / delivery
 175,2026-02-04,-13.45,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 176,2026-02-04,144.02,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 177,2026-02-04,254.78,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-178,2026-02-05,-35.70,PAGAMENTO CONTACTLESS CARTA **** 6014 WYCON COSMETICS,expense,false,Altro/Spese non classificate
-179,2026-02-05,-69.89,PAGAMENTO CONTACTLESS CARTA **** 2003 MALVÓN COLOGNO MONZESE,expense,false,Ristorazione/Ristorante
-180,2026-02-05,-75.43,PAGAMENTO CONTACTLESS CARTA **** 3621 STROILI ORO,expense,false,Altro/Spese non classificate
+178,2026-02-05,-35.70,PAGAMENTO CONTACTLESS CARTA **** 6014 WYCON COSMETICS,expense,false,Cura personale/Cosmetici e igiene
+179,2026-02-05,-69.89,PAGAMENTO CONTACTLESS CARTA **** 2003 MALVÓN COLOGNO MONZESE,expense,false,Ristorazione/Asporto / delivery
+180,2026-02-05,-75.43,PAGAMENTO CONTACTLESS CARTA **** 3621 STROILI ORO,expense,false,Abbigliamento/Altro abbigliamento
 181,2026-02-05,-7.45,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 182,2026-02-06,-83.56,PAGAMENTO CONTACTLESS CARTA **** 6582 FRANCO MANCA VENEZIA,expense,false,Ristorazione/Ristorante
 183,2026-02-06,-7.38,"Pagam. POS - PAGAMENTO POS 7,38 EUR DEL 06.02.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
@@ -186,31 +186,31 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 185,2026-02-07,-14.86,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 186,2026-02-07,-52.41,"Pagam. POS - PAGAMENTO POS 52,41 EUR DEL 07.02.2026 A (ITA) TIGRE AMICO OVEST",expense,false,Alimentari/Spesa supermercato
 187,2026-02-08,-29.73,"Pagam. POS - PAGAMENTO POS 29,73 EUR DEL 08.02.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
-188,2026-02-08,-47.17,"Pagam. POS - PAGAMENTO POS 47,17 EUR DEL 08.02.2026 A (ITA) EXKI VENEZIA",expense,false,Ristorazione/Ristorante
+188,2026-02-08,-47.17,"Pagam. POS - PAGAMENTO POS 47,17 EUR DEL 08.02.2026 A (ITA) EXKI VENEZIA",expense,false,Ristorazione/Asporto / delivery
 189,2026-02-08,-5.60,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-190,2026-02-08,-76.82,"Pagam. POS - PAGAMENTO POS 76,82 EUR DEL 08.02.2026 A (ITA) L'ISOLA DEI TESORI",expense,false,Altro/Spese non classificate
+190,2026-02-08,-76.82,"Pagam. POS - PAGAMENTO POS 76,82 EUR DEL 08.02.2026 A (ITA) L'ISOLA DEI TESORI",expense,false,Animali domestici/Cibo
 191,2026-02-08,-6.83,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-192,2026-02-08,-53.77,PAGAMENTO CONTACTLESS CARTA **** 5239 O'TACOS ROMA,expense,false,Ristorazione/Ristorante
+192,2026-02-08,-53.77,PAGAMENTO CONTACTLESS CARTA **** 5239 O'TACOS ROMA,expense,false,Ristorazione/Asporto / delivery
 193,2026-02-09,-13.33,"Pagam. POS - PAGAMENTO POS 13,33 EUR DEL 09.02.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-194,2026-02-09,-9.38,PAGAMENTO CONTACTLESS CARTA **** 3221 COMPRO ORO PORTA NUOVA,expense,false,Altro/Spese non classificate
+194,2026-02-09,-9.38,PAGAMENTO CONTACTLESS CARTA **** 3221 COMPRO ORO PORTA NUOVA,expense,false,Abbigliamento/Altro abbigliamento
 195,2026-02-09,221.03,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-196,2026-02-10,-6.64,PAGAMENTO CONTACTLESS CARTA **** 3633 IKEA CAFÉ,expense,false,Ristorazione/Ristorante
+196,2026-02-10,-6.64,PAGAMENTO CONTACTLESS CARTA **** 3633 IKEA CAFÉ,expense,false,Ristorazione/Bar / caffè
 197,2026-02-10,-48.77,"Pagam. POS - PAGAMENTO POS 48,77 EUR DEL 10.02.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
 198,2026-02-10,-7.19,"Pagam. POS - PAGAMENTO POS 7,19 EUR DEL 10.02.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-199,2026-02-10,-47.13,"Pagam. POS - PAGAMENTO POS 47,13 EUR DEL 10.02.2026 A (ITA) BLUESPIRIT",expense,false,Altro/Spese non classificate
+199,2026-02-10,-47.13,"Pagam. POS - PAGAMENTO POS 47,13 EUR DEL 10.02.2026 A (ITA) BLUESPIRIT",expense,false,Abbigliamento/Altro abbigliamento
 200,2026-02-10,-43.97,"Pagam. POS - PAGAMENTO POS 43,97 EUR DEL 10.02.2026 A (ITA) EGO",expense,false,Trasporti/Carburante
 201,2026-02-10,-5.46,"Pagam. POS - PAGAMENTO POS 5,46 EUR DEL 10.02.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
-202,2026-02-11,-53.70,PAGAMENTO CONTACTLESS CARTA **** 6104 WYCON COSMETICS LIVORNO,expense,false,Altro/Spese non classificate
+202,2026-02-11,-53.70,PAGAMENTO CONTACTLESS CARTA **** 6104 WYCON COSMETICS LIVORNO,expense,false,Cura personale/Cosmetici e igiene
 203,2026-02-11,-11.10,"Pagam. POS - PAGAMENTO POS 11,10 EUR DEL 11.02.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-204,2026-02-11,-21.23,"Pagam. POS - PAGAMENTO POS 21,23 EUR DEL 11.02.2026 A (ITA) BILLY TACOS",expense,false,Ristorazione/Ristorante
+204,2026-02-11,-21.23,"Pagam. POS - PAGAMENTO POS 21,23 EUR DEL 11.02.2026 A (ITA) BILLY TACOS",expense,false,Ristorazione/Asporto / delivery
 205,2026-02-11,-11.30,"Pagam. POS - PAGAMENTO POS 11,30 EUR DEL 11.02.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 206,2026-02-11,141.36,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 207,2026-02-11,259.58,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-208,2026-02-12,-78.36,"Pagam. POS - PAGAMENTO POS 78,36 EUR DEL 12.02.2026 A (ITA) PANS & COMPANY",expense,false,Ristorazione/Ristorante
+208,2026-02-12,-78.36,"Pagam. POS - PAGAMENTO POS 78,36 EUR DEL 12.02.2026 A (ITA) PANS & COMPANY",expense,false,Ristorazione/Asporto / delivery
 209,2026-02-12,-42.67,PAGAMENTO CONTACTLESS CARTA **** 2096 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
 210,2026-02-12,-87.73,Disposizione - RIF:212745884 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
-211,2026-02-12,-81.88,PAGAMENTO CONTACTLESS CARTA **** 5189 SPIZZICO,expense,false,Ristorazione/Ristorante
-212,2026-02-12,-35.16,PAGAMENTO CONTACTLESS CARTA **** 3732 BOTTEGA VERDE,expense,false,Altro/Spese non classificate
+211,2026-02-12,-81.88,PAGAMENTO CONTACTLESS CARTA **** 5189 SPIZZICO,expense,false,Ristorazione/Asporto / delivery
+212,2026-02-12,-35.16,PAGAMENTO CONTACTLESS CARTA **** 3732 BOTTEGA VERDE,expense,false,Cura personale/Cosmetici e igiene
 213,2026-02-12,120.17,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 214,2026-02-12,186.89,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 215,2026-02-13,-39.68,PAGAMENTO CONTACTLESS CARTA **** 3852 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
@@ -218,39 +218,39 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 217,2026-02-13,-9.96,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 218,2026-02-13,-8.29,"Pagam. POS - PAGAMENTO POS 8,29 EUR DEL 13.02.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 219,2026-02-13,-7.89,"Pagam. POS - PAGAMENTO POS 7,89 EUR DEL 13.02.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-220,2026-02-13,-67.05,PAGAMENTO CONTACTLESS CARTA **** 6254 WYCON COSMETICS CENTRO COMM. IL LEONE,expense,false,Altro/Spese non classificate
+220,2026-02-13,-67.05,PAGAMENTO CONTACTLESS CARTA **** 6254 WYCON COSMETICS CENTRO COMM. IL LEONE,expense,false,Cura personale/Cosmetici e igiene
 221,2026-02-13,-51.76,"Pagam. POS - PAGAMENTO POS 51,76 EUR DEL 13.02.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
 222,2026-02-13,-69.87,PAGAMENTO CONTACTLESS CARTA **** 3316 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
 223,2026-02-13,-173.64,"Pagam. POS - PAGAMENTO POS 173,64 EUR DEL 13.02.2026 A (ITA) MD VIMODRONE",expense,false,Alimentari/Spesa supermercato
 224,2026-02-13,205.79,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 225,2026-02-14,-91.68,Addebito SDD - GENERALI ITALIA POLIZZA VITA,expense,false,Altro/Spese non classificate
-226,2026-02-14,-71.24,PAGAMENTO CONTACTLESS CARTA **** 9228 COLOURS & BEAUTY LINGOTTO,expense,false,Altro/Spese non classificate
+226,2026-02-14,-71.24,PAGAMENTO CONTACTLESS CARTA **** 9228 COLOURS & BEAUTY LINGOTTO,expense,false,Abbigliamento/Altro abbigliamento
 227,2026-02-14,-10.82,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-228,2026-02-14,-76.56,PAGAMENTO CONTACTLESS CARTA **** 7824 STARBUCKS RESERVE BOLOGNA,expense,false,Ristorazione/Ristorante
+228,2026-02-14,-76.56,PAGAMENTO CONTACTLESS CARTA **** 7824 STARBUCKS RESERVE BOLOGNA,expense,false,Ristorazione/Bar / caffè
 229,2026-02-14,172.24,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 230,2026-02-15,-97.67,"Pagam. POS - PAGAMENTO POS 97,67 EUR DEL 15.02.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
-231,2026-02-15,-53.79,"Pagam. POS - PAGAMENTO POS 53,79 EUR DEL 15.02.2026 A (ITA) POKE HOUSE PRATI",expense,false,Ristorazione/Ristorante
+231,2026-02-15,-53.79,"Pagam. POS - PAGAMENTO POS 53,79 EUR DEL 15.02.2026 A (ITA) POKE HOUSE PRATI",expense,false,Ristorazione/Asporto / delivery
 232,2026-02-15,-5.99,AMAZON.IT MARKETPLACE - ORDINE 402-210148226,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-233,2026-02-15,-98.84,"Pagam. POS - PAGAMENTO POS 98,84 EUR DEL 15.02.2026 A (ITA) NATURA NAPOLI",expense,false,Altro/Spese non classificate
+233,2026-02-15,-98.84,"Pagam. POS - PAGAMENTO POS 98,84 EUR DEL 15.02.2026 A (ITA) NATURA NAPOLI",expense,false,Regali e donazioni/Regali
 234,2026-02-15,-14.31,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 235,2026-02-15,142.22,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 236,2026-02-16,-69.70,"Pagam. POS - PAGAMENTO POS 69,70 EUR DEL 16.02.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
 237,2026-02-16,-75.47,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
 238,2026-02-16,-125.18,"Pagam. POS - PAGAMENTO POS 125,18 EUR DEL 16.02.2026 A (ITA) FAMILA CAGLIARI",expense,false,Alimentari/Spesa supermercato
 239,2026-02-16,-11.54,"Pagam. POS - PAGAMENTO POS 11,54 EUR DEL 16.02.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-240,2026-02-16,-91.04,PAGAMENTO CONTACTLESS CARTA **** 5501 BLUESPIRIT,expense,false,Altro/Spese non classificate
+240,2026-02-16,-91.04,PAGAMENTO CONTACTLESS CARTA **** 5501 BLUESPIRIT,expense,false,Abbigliamento/Altro abbigliamento
 241,2026-02-17,-28.23,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
 242,2026-02-17,-63.78,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
-243,2026-02-17,-47.14,PAGAMENTO CONTACTLESS CARTA **** 6930 IKEA BISTRO,expense,false,Ristorazione/Ristorante
+243,2026-02-17,-47.14,PAGAMENTO CONTACTLESS CARTA **** 6930 IKEA BISTRO,expense,false,Ristorazione/Asporto / delivery
 244,2026-02-17,-73.78,"Pagam. POS - PAGAMENTO POS 73,78 EUR DEL 17.02.2026 A (ITA) RETITALIA SAN GIULIANO MILANESE",expense,false,Trasporti/Carburante
 245,2026-02-17,230.59,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 246,2026-02-18,-7.12,"Pagam. POS - PAGAMENTO POS 7,12 EUR DEL 18.02.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 247,2026-02-18,-36.96,Disposizione - RIF:215352593 BEN. OFFICINA MECCANICA BRAMBILLA,expense,false,Trasporti/Carburante
 248,2026-02-18,-14.68,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 249,2026-02-18,-83.77,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
-250,2026-02-19,-80.01,"Pagam. POS - PAGAMENTO POS 80,01 EUR DEL 19.02.2026 A (ITA) ALL'ANTICO VINAIO VIMODRONE",expense,false,Ristorazione/Ristorante
-251,2026-02-19,-24.23,"Pagam. POS - PAGAMENTO POS 24,23 EUR DEL 19.02.2026 A (ITA) HISTOIRE D'OR PRATI",expense,false,Altro/Spese non classificate
-252,2026-02-19,-46.48,PAGAMENTO CONTACTLESS CARTA **** 9160 BEFED PORTA NUOVA,expense,false,Ristorazione/Ristorante
+250,2026-02-19,-80.01,"Pagam. POS - PAGAMENTO POS 80,01 EUR DEL 19.02.2026 A (ITA) ALL'ANTICO VINAIO VIMODRONE",expense,false,Ristorazione/Asporto / delivery
+251,2026-02-19,-24.23,"Pagam. POS - PAGAMENTO POS 24,23 EUR DEL 19.02.2026 A (ITA) HISTOIRE D'OR PRATI",expense,false,Abbigliamento/Altro abbigliamento
+252,2026-02-19,-46.48,PAGAMENTO CONTACTLESS CARTA **** 9160 BEFED PORTA NUOVA,expense,false,Ristorazione/Bar / caffè
 253,2026-02-19,-11.45,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 254,2026-02-20,-14.63,AMAZON.IT MARKETPLACE - ORDINE 402-215061106,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 255,2026-02-20,-6.95,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
@@ -262,7 +262,7 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 261,2026-02-20,150.45,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 262,2026-02-21,-75.58,"Pagam. POS - PAGAMENTO POS 75,58 EUR DEL 21.02.2026 A (ITA) METANO TIBURTINA",expense,false,Trasporti/Carburante
 263,2026-02-21,-101.43,"Pagam. POS - PAGAMENTO POS 101,43 EUR DEL 21.02.2026 A (ITA) CONAD SUPERSTORE",expense,false,Alimentari/Spesa supermercato
-264,2026-02-21,-48.77,PAGAMENTO CONTACTLESS CARTA **** 5763 WYCON COSMETICS FLAMINIO,expense,false,Altro/Spese non classificate
+264,2026-02-21,-48.77,PAGAMENTO CONTACTLESS CARTA **** 5763 WYCON COSMETICS FLAMINIO,expense,false,Cura personale/Cosmetici e igiene
 265,2026-02-21,-66.22,"Pagam. POS - PAGAMENTO POS 66,22 EUR DEL 21.02.2026 A (ITA) STAZIONE Q8",expense,false,Trasporti/Carburante
 266,2026-02-21,-10.75,AMAZON.IT MARKETPLACE - ORDINE 402-218304601,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 267,2026-02-21,226.47,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
@@ -270,8 +270,8 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 269,2026-02-22,-51.30,PAGAMENTO CONTACTLESS CARTA **** 9193 ENERGAS MODENA,expense,false,Trasporti/Carburante
 270,2026-02-22,-13.32,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 271,2026-02-22,50.67,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-272,2026-02-23,-28.28,PAGAMENTO CONTACTLESS CARTA **** 6779 PETMARK,expense,false,Altro/Spese non classificate
-273,2026-02-23,-34.23,PAGAMENTO CONTACTLESS CARTA **** 5262 PITAYA,expense,false,Ristorazione/Ristorante
+272,2026-02-23,-28.28,PAGAMENTO CONTACTLESS CARTA **** 6779 PETMARK,expense,false,Animali domestici/Cibo
+273,2026-02-23,-34.23,PAGAMENTO CONTACTLESS CARTA **** 5262 PITAYA,expense,false,Ristorazione/Asporto / delivery
 274,2026-02-23,-5.48,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 275,2026-02-23,-176.04,"Pagam. POS - PAGAMENTO POS 176,04 EUR DEL 23.02.2026 A (ITA) CONAD OVEST",expense,false,Alimentari/Spesa supermercato
 276,2026-02-23,-5.08,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
@@ -285,17 +285,17 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 284,2026-02-25,285.37,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 285,2026-02-25,115.06,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 286,2026-02-26,-25.93,"Pagam. POS - PAGAMENTO POS 25,93 EUR DEL 26.02.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
-287,2026-02-26,-15.96,"Pagam. POS - PAGAMENTO POS 15,96 EUR DEL 26.02.2026 A (ITA) THE COFFEE OVEST",expense,false,Ristorazione/Ristorante
-288,2026-02-26,-88.09,"Pagam. POS - PAGAMENTO POS 88,09 EUR DEL 26.02.2026 A (ITA) HISTOIRE D'OR GENOVA",expense,false,Altro/Spese non classificate
+287,2026-02-26,-15.96,"Pagam. POS - PAGAMENTO POS 15,96 EUR DEL 26.02.2026 A (ITA) THE COFFEE OVEST",expense,false,Ristorazione/Bar / caffè
+288,2026-02-26,-88.09,"Pagam. POS - PAGAMENTO POS 88,09 EUR DEL 26.02.2026 A (ITA) HISTOIRE D'OR GENOVA",expense,false,Abbigliamento/Altro abbigliamento
 289,2026-02-26,-11.49,"Pagam. POS - PAGAMENTO POS 11,49 EUR DEL 26.02.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 290,2026-02-26,-79.20,"Pagam. POS - PAGAMENTO POS 79,20 EUR DEL 26.02.2026 A (ITA) COOP LOMBARDIA",expense,false,Altro/Spese non classificate
 291,2026-02-26,-19.48,PAGAMENTO CONTACTLESS CARTA **** 9086 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
 292,2026-02-26,290.58,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 293,2026-02-27,-77.85,PAGAMENTO CONTACTLESS CARTA **** 7491 MIGROSS,expense,false,Alimentari/Spesa supermercato
 294,2026-02-27,-56.09,Addebito SDD - TELEPASS S.P.A. PEDAGGI,expense,false,Trasporti/Carburante
-295,2026-02-27,-72.31,PAGAMENTO CONTACTLESS CARTA **** 1585 L'ISOLA DEI TESORI VOMERO,expense,false,Altro/Spese non classificate
+295,2026-02-27,-72.31,PAGAMENTO CONTACTLESS CARTA **** 1585 L'ISOLA DEI TESORI VOMERO,expense,false,Animali domestici/Cibo
 296,2026-02-28,-14.44,AMAZON.IT MARKETPLACE - ORDINE 402-210735785,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-297,2026-02-28,-25.62,"Pagam. POS - PAGAMENTO POS 25,62 EUR DEL 28.02.2026 A (ITA) THUN",expense,false,Altro/Spese non classificate
+297,2026-02-28,-25.62,"Pagam. POS - PAGAMENTO POS 25,62 EUR DEL 28.02.2026 A (ITA) THUN",expense,false,Regali e donazioni/Regali
 298,2026-02-28,-11.40,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 299,2026-02-28,-9.79,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 300,2026-02-28,263.84,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata

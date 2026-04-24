@@ -235,7 +235,8 @@ The default choice for **new installations**: no external service needed. Spendi
 |---|---|---|
 | **Free RAM** | 4 GB (3B models) | 8 GB (7B models) |
 | **CPU** | Any x86-64 or ARM64 from the last 5 years | Apple Silicon (M1+) or CPU with AVX2 |
-| **GPU** | Not required | Apple Metal or CUDA (3-5x speed-up) |
+| **GPU** | Not required | Apple Metal or CUDA/ROCm (3-5x speed-up) |
+| **VRAM** | — (CPU-only or unified memory) | >= model size (e.g. 8 GB for 7B Q4) |
 | **Disk** | 2.5 GB per model | 5-7 GB per 7B model |
 
 > **Note:** If your hardware does not meet the minimum requirements, use a remote backend (OpenAI, Claude) — see sections 9.2 and 9.3.
@@ -274,7 +275,11 @@ The **Local models** section shows the `.gguf` files present in the models folde
 |---|---|---|
 | **Model path** | *(first .gguf in `~/.spendifai/models/`)* | Path to the `.gguf` file to use |
 
-> **Note:** llama.cpp automatically supports GPU acceleration on Apple Silicon (Metal) and CUDA. If the model does not support the `system` role, Spendif.ai automatically merges the system prompt into the user prompt.
+> **Note:** llama.cpp automatically supports GPU acceleration on Apple Silicon (Metal), CUDA (NVIDIA), and ROCm (AMD). If the model does not support the `system` role, Spendif.ai automatically merges the system prompt into the user prompt.
+
+> **Automatic VRAM-based model selection:** on first launch, Spendif.ai detects available VRAM via `nvidia-smi` (NVIDIA) or `rocm-smi` (AMD). On systems with a discrete GPU, the auto-downloaded model is sized to fit the VRAM, not system RAM, avoiding unnecessary downloads of oversized models. On macOS (unified memory) VRAM equals RAM.
+
+> **Token usage tracking:** every LLM call is logged to the `llm_usage_log` table with input/output tokens, duration, backend, processing phase (`caller`/`step`), and source file name. This enables analysis of actual token consumption and convergence toward an optimal `n_ctx` value based on mean ± 95% confidence interval, stratified by bank, language, and processing phase. For local llama.cpp, a pre-call check verifies the prompt fits within the context window, preventing silent truncation.
 
 ---
 

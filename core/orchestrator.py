@@ -119,12 +119,31 @@ class ProcessingConfig:
     llama_cpp_model_path: str = ""
     llama_cpp_n_gpu_layers: int = -1
     llama_cpp_n_ctx: int = 0   # 0 = auto-detect from GGUF metadata at load time
-    # vLLM (local or remote)
+    # vLLM (local or remote, OpenAI-compatible server)
     vllm_base_url: str = "http://localhost:8000/v1"
     vllm_model: str = ""
     vllm_api_key: str = "EMPTY"
+    # vLLM offline (in-process, no server — Linux/CUDA only)
+    vllm_offline_model: str = ""                # HF model ID or local path
+    vllm_offline_tensor_parallel: int = 1       # number of GPUs for tensor parallelism
+    vllm_offline_gpu_memory_utilization: float = 0.90
     # Classifier mode: "auto" (detect from model size), "single" (1 LLM call), "multi_step" (3 calls)
     classifier_mode: str = "auto"
+
+    # Categorizer-specific backend (empty = same as classifier)
+    cat_llm_backend: str = ""
+    cat_ollama_base_url: str = ""
+    cat_ollama_model: str = ""
+    cat_openai_model: str = ""
+    cat_openai_api_key: str = ""
+    cat_claude_model: str = ""
+    cat_anthropic_api_key: str = ""
+    cat_compat_base_url: str = ""
+    cat_compat_api_key: str = ""
+    cat_compat_model: str = ""
+    cat_llama_cpp_model_path: str = ""
+    cat_llama_cpp_n_gpu_layers: int = -1
+    cat_llama_cpp_n_ctx: int = 0
 
 
 @dataclass
@@ -181,6 +200,11 @@ def _build_backend(config: ProcessingConfig) -> LLMBackend:
         kwargs["base_url"] = config.vllm_base_url
         kwargs["model"] = config.vllm_model
         kwargs["api_key"] = config.vllm_api_key
+    elif config.llm_backend == "vllm_offline":
+        kwargs.pop("timeout", None)
+        kwargs["model"] = config.vllm_offline_model
+        kwargs["tensor_parallel_size"] = config.vllm_offline_tensor_parallel
+        kwargs["gpu_memory_utilization"] = config.vllm_offline_gpu_memory_utilization
     return BackendFactory.create(config.llm_backend, **kwargs)
 
 
@@ -193,6 +217,43 @@ def _get_fallback_backend(config: ProcessingConfig) -> Optional[OllamaBackend]:
     if backend.is_available():
         return backend
     return None
+
+
+def _build_categorizer_backend(config: ProcessingConfig) -> Optional[LLMBackend]:
+    """Build a separate LLM backend for categorization, or None to reuse the classifier backend."""
+    if not config.cat_llm_backend:
+        return None
+    kwargs: dict[str, Any] = {"timeout": config.llm_timeout_s}
+    if config.cat_llm_backend == "local_ollama":
+        kwargs["base_url"] = config.cat_ollama_base_url or config.ollama_base_url
+        kwargs["model"] = config.cat_ollama_model or config.ollama_model
+    elif config.cat_llm_backend == "openai":
+        kwargs["model"] = config.cat_openai_model or config.openai_model
+        kwargs["api_key"] = config.cat_openai_api_key or config.openai_api_key
+    elif config.cat_llm_backend == "claude":
+        kwargs["model"] = config.cat_claude_model or config.claude_model
+        kwargs["api_key"] = config.cat_anthropic_api_key or config.anthropic_api_key
+    elif config.cat_llm_backend == "openai_compatible":
+        kwargs["base_url"] = config.cat_compat_base_url or config.compat_base_url
+        kwargs["api_key"] = config.cat_compat_api_key or config.compat_api_key
+        kwargs["model"] = config.cat_compat_model or config.compat_model
+    elif config.cat_llm_backend == "local_llama_cpp":
+        kwargs.pop("timeout", None)
+        path = config.cat_llama_cpp_model_path or config.llama_cpp_model_path
+        if path:
+            kwargs["model_path"] = path
+        kwargs["n_gpu_layers"] = config.cat_llama_cpp_n_gpu_layers if config.cat_llama_cpp_model_path else config.llama_cpp_n_gpu_layers
+        kwargs["n_ctx"] = config.cat_llama_cpp_n_ctx if config.cat_llama_cpp_model_path else config.llama_cpp_n_ctx
+    elif config.cat_llm_backend == "vllm":
+        kwargs["base_url"] = config.vllm_base_url
+        kwargs["model"] = config.vllm_model
+        kwargs["api_key"] = config.vllm_api_key
+    elif config.cat_llm_backend == "vllm_offline":
+        kwargs.pop("timeout", None)
+        kwargs["model"] = config.vllm_offline_model
+        kwargs["tensor_parallel_size"] = config.vllm_offline_tensor_parallel
+        kwargs["gpu_memory_utilization"] = config.vllm_offline_gpu_memory_utilization
+    return BackendFactory.create(config.cat_llm_backend, **kwargs)
 
 
 def load_raw_dataframe(
@@ -524,6 +585,7 @@ def _normalize_df_with_schema(
             "subcategory": None,
             "category_confidence": None,
             "category_source": None,
+            "category_model": None,
             "reconciled": False,
             "to_review": False,
             "transfer_pair_id": None,
@@ -648,6 +710,9 @@ def process_file(
     logger.info(f"process_file: loading {filename} ({len(raw_bytes)} bytes)")
     backend = _build_backend(config)
     fallback = _get_fallback_backend(config)
+    cat_backend = _build_categorizer_backend(config) or backend
+    if cat_backend is not backend:
+        logger.info(f"process_file: using separate categorizer backend ({config.cat_llm_backend})")
 
     # Load raw data
     _progress(0.0)
@@ -1066,7 +1131,7 @@ def process_file(
         transactions=to_categorize,
         taxonomy=taxonomy,
         user_rules=user_rules,
-        llm_backend=backend,
+        llm_backend=cat_backend,
         sanitize_config=config.sanitize_config,
         fallback_backend=fallback,
         confidence_threshold=config.confidence_threshold,
@@ -1108,6 +1173,7 @@ def process_file(
             tx["subcategory"] = result.subcategory
             tx["category_confidence"] = result.confidence.value
             tx["category_source"] = result.source.value
+            tx["category_model"] = result.model_name or None
             tx["to_review"] = result.to_review
             tx["human_validated"] = False
 

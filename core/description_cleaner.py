@@ -339,6 +339,10 @@ def _call_llm_batch(
             user_prompt=user_prompt,
             json_schema=_INDEXED_RESPONSE_SCHEMA,
             fallback=fallback_backend,
+            caller="description_cleaner",
+            step=f"batch_{label}",
+            source_name=source_name,
+            batch_size=n,
         )
 
         if result is None:

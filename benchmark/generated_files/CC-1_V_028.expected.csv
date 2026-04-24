@@ -1,5 +1,5 @@
 row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_category
-1,2026-01-05,-53.52,"Pagam. POS - PAGAMENTO POS 53,52 EUR DEL 05.01.2026 A (ITA) VALMANO PALERMO",expense,false,Altro/Spese non classificate
+1,2026-01-05,-53.52,"Pagam. POS - PAGAMENTO POS 53,52 EUR DEL 05.01.2026 A (ITA) VALMANO PALERMO",expense,false,Abbigliamento/Altro abbigliamento
 2,2026-01-14,386.67,Bonif. v/fav. - RIF:213846483 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
 3,2026-01-14,-84.15,RICARICA HYPE DA CONTO 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 4,2026-01-15,-22.15,"Pagam. POS - PAGAMENTO POS 22,15 EUR DEL 15.01.2026 A (ITA) DR. MAX BERGAMO",expense,false,Salute/Farmaci
@@ -22,14 +22,14 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 21,2026-01-27,2065.42,Bonif. v/fav. - RIF:216963691 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
 22,2026-01-27,2144.35,ACCREDITO STIPENDIO MESE DI GENNAIO 2026,income,false,Lavoro dipendente/Stipendio
 23,2026-01-27,2069.93,Bonif. v/fav. - RIF:214953273 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
-24,2026-01-28,-724.28,PAGAMENTO CONTACTLESS CARTA **** 7354 MONDADORI,expense,false,Istruzione/Rette scolastiche
+24,2026-01-28,-724.28,PAGAMENTO CONTACTLESS CARTA **** 7354 MONDADORI,expense,false,Svago e tempo libero/Libri / riviste
 25,2026-02-01,-109.03,"Pagam. POS - PAGAMENTO POS 109,03 EUR DEL 01.02.2026 A (ITA) TIGRE",expense,false,Alimentari/Spesa supermercato
 26,2026-02-03,-183.45,RICARICA HYPE DA CONTO 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 27,2026-02-08,-713.24,Disposizione - RIF:215733098 BEN. VERDI ROSA AIUTO NIPOTE,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 28,2026-02-13,-9.96,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
-29,2026-02-14,-73.05,"Pagam. POS - PAGAMENTO POS 73,05 EUR DEL 14.02.2026 A (ITA) FLOWER BURGER VENEZIA",expense,false,Ristorazione/Ristorante
+29,2026-02-14,-73.05,"Pagam. POS - PAGAMENTO POS 73,05 EUR DEL 14.02.2026 A (ITA) FLOWER BURGER VENEZIA",expense,false,Ristorazione/Asporto / delivery
 30,2026-02-17,-69.65,Addebito SDD - ENI PLENITUDE GAS E LUCE,expense,false,Casa/Energia elettrica
-31,2026-02-18,-157.93,"Pagam. POS - PAGAMENTO POS 157,93 EUR DEL 18.02.2026 A (ITA) MCFIT",expense,false,Svago e tempo libero/Cinema / teatro / eventi
+31,2026-02-18,-157.93,"Pagam. POS - PAGAMENTO POS 157,93 EUR DEL 18.02.2026 A (ITA) MCFIT",expense,false,Svago e tempo libero/Sport e palestra
 32,2026-02-22,165.21,Bonif. v/fav. - RIF:218057391 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
 33,2026-02-27,2074.37,ACCREDITO STIPENDIO MESE DI FEBBRAIO 2026,income,false,Lavoro dipendente/Stipendio
 34,2026-02-27,2112.03,Bonif. v/fav. - RIF:218738199 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio

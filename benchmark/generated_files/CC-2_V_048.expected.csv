@@ -25,7 +25,7 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 24,2026-02-15,2889.74,Bonif. v/fav. - RIF:212123127 ORD. GAMMA TECHNOLOGIES SRL,income,false,Lavoro autonomo/Fattura / parcella
 25,2026-02-15,425.41,Bonif. v/fav. - RIF:219177944 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
 26,2026-02-15,2185.08,Bonif. v/fav. - RIF:219191262 ORD. EPSILON DIGITAL SRL,income,false,Lavoro autonomo/Fattura / parcella
-27,2026-02-16,-31.69,"Pagam. POS - PAGAMENTO POS 31,69 EUR DEL 16.02.2026 A (ITA) BUFFETTI FLAMINIO",expense,false,Tasse e tributi/Imposte varie
+27,2026-02-16,-31.69,"Pagam. POS - PAGAMENTO POS 31,69 EUR DEL 16.02.2026 A (ITA) BUFFETTI FLAMINIO",expense,false,Istruzione/Libri e materiale
 28,2026-02-19,4659.47,Bonif. v/fav. - RIF:213378032 ORD. GAMMA TECHNOLOGIES SRL,income,false,Lavoro autonomo/Fattura / parcella
 29,2026-02-27,-642.37,GIROCONTO DA CC 0075849 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 30,2026-02-28,3478.14,Bonif. v/fav. - RIF:215256438 ORD. DELTA SOLUTIONS SPA,income,false,Lavoro autonomo/Fattura / parcella

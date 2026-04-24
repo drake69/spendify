@@ -19,13 +19,13 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 18,2026-01-01,1233.65,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
 19,2026-01-01,1187.46,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
 20,2026-01-01,-448.94,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-21,2026-01-02,-130.73,"Pagam. POS - PAGAMENTO POS 130,73 EUR DEL 02.01.2026 A (ITA) BOTTEGA VERDE",expense,false,Cura personale/Parrucchiere / barbiere
+21,2026-01-02,-130.73,"Pagam. POS - PAGAMENTO POS 130,73 EUR DEL 02.01.2026 A (ITA) BOTTEGA VERDE",expense,false,Cura personale/Cosmetici e igiene
 22,2026-01-07,-526.36,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 23,2026-01-15,-857.85,Disposizione - RIF:212816607 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-24,2026-01-22,-43.91,"Pagam. POS - PAGAMENTO POS 43,91 EUR DEL 22.01.2026 A (ITA) ACQUA & SAPONE",expense,false,Cura personale/Parrucchiere / barbiere
+24,2026-01-22,-43.91,"Pagam. POS - PAGAMENTO POS 43,91 EUR DEL 22.01.2026 A (ITA) ACQUA & SAPONE",expense,false,Cura personale/Cosmetici e igiene
 25,2026-01-22,-42.13,Disposizione - RIF:217357303 BEN. GIARDINIERE COLOMBO LUIGI,expense,false,Alimentari/Altro alimentari
 26,2026-01-22,305.69,Bonif. v/fav. - RIF:213425984 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
-27,2026-01-24,-117.93,PAGAMENTO CONTACTLESS CARTA **** 6181 SPLENDIDI E SPLENDENTI VIMODRONE,expense,false,Cura personale/Parrucchiere / barbiere
+27,2026-01-24,-117.93,PAGAMENTO CONTACTLESS CARTA **** 6181 SPLENDIDI E SPLENDENTI VIMODRONE,expense,false,Cura personale/Cosmetici e igiene
 28,2026-01-27,-870.94,Disposizione - RIF:215413664 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 29,2026-01-30,206.05,Bonif. v/fav. - RIF:212938131 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
 30,2026-02-01,1156.58,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
@@ -51,5 +51,5 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 50,2026-02-01,1188.12,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
 51,2026-02-01,1198.48,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
 52,2026-02-04,-957.25,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-53,2026-02-28,-28.75,"Pagam. POS - PAGAMENTO POS 28,75 EUR DEL 28.02.2026 A (ITA) COMPRO ORO NORD",expense,false,Altro/Spese non classificate
-54,2026-02-28,-8.17,"Pagam. POS - PAGAMENTO POS 8,17 EUR DEL 28.02.2026 A (ITA) MAXI ZOO",expense,false,Altro/Spese non classificate
+53,2026-02-28,-28.75,"Pagam. POS - PAGAMENTO POS 28,75 EUR DEL 28.02.2026 A (ITA) COMPRO ORO NORD",expense,false,Abbigliamento/Altro abbigliamento
+54,2026-02-28,-8.17,"Pagam. POS - PAGAMENTO POS 8,17 EUR DEL 28.02.2026 A (ITA) MAXI ZOO",expense,false,Animali domestici/Cibo

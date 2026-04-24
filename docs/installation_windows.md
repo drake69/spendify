@@ -19,10 +19,16 @@
 | Python | 3.13 (installed automatically) | 3.13 |
 | Git | any recent version | installed automatically |
 | GPU | optional | NVIDIA (for CUDA-accelerated LLM inference) |
+| VRAM | — (CPU-only) | >= model size (e.g. 8 GB for 7B Q4) |
 
 **NVIDIA GPU (optional):** if an NVIDIA GPU is detected, the installer
 automatically installs a CUDA 12.x wheel of `llama-cpp-python`.  Everything
 works without a GPU — inference is simply slower.
+
+**VRAM-aware model selection:** on first launch, Spendif.ai detects available
+VRAM via `nvidia-smi`.  The auto-downloaded model is sized to fit the VRAM,
+not system RAM — e.g. a PC with 32 GB RAM but 8 GB VRAM will download
+Qwen2.5-3B (2.1 GB), not Gemma-3-12B (6.8 GB).
 
 **AMD / Intel Arc:** CPU-only mode is used automatically.  Vulkan support in
 `llama-cpp-python` is experimental and not enabled by this installer.

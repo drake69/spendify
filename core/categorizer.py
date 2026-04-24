@@ -147,6 +147,7 @@ class CategorizationResult:
     source: CategorySource
     rationale: str = ""
     to_review: bool = False
+    model_name: str = ""
 
 
 # ── Static country rules (loaded from core/static_rules/<language>.json) ─────
@@ -291,7 +292,12 @@ def _run_llm_batch_group(
         items = []
         for idx in batch_indices:
             tx = transactions[idx]
-            desc = tx.get("description", "") or ""
+            # Income: use raw_description (keeps context like RIMBORSO, STIPENDIO, PENSIONE)
+            # Expense: use cleaned description (counterpart name, needed for NSI/OSM match)
+            if direction == "income":
+                desc = tx.get("raw_description") or tx.get("description", "") or ""
+            else:
+                desc = tx.get("description", "") or ""
             # Always redact before any LLM call (local or remote) — permutation-aware
             desc = redact_pii(desc, sanitize_config)
             item_dict: dict = {"amount": str(tx.get("amount", 0)), "description": desc}
@@ -317,6 +323,10 @@ def _run_llm_batch_group(
             user_prompt=user_prompt,
             json_schema=json_schema,
             fallback=fallback_backend,
+            caller="categorizer",
+            step=f"batch_{direction}",
+            source_name=source_name,
+            batch_size=n,
         )
 
         if raw is None:
@@ -330,17 +340,21 @@ def _run_llm_batch_group(
             continue
 
         llm_results = raw.get("results", [])
-        if not isinstance(llm_results, list) or len(llm_results) != n:
+        if not isinstance(llm_results, list):
             logger.warning(
                 f"categorize_batch [{source_name}] {direction}: "
-                f"unexpected response shape (expected {n}, got "
-                f"{len(llm_results) if isinstance(llm_results, list) else type(llm_results)!r}) "
-                f"— using fallback"
+                f"response 'results' is not a list ({type(llm_results)!r}) — using fallback"
             )
             for idx in batch_indices:
                 if results[idx] is None:
                     results[idx] = _make_fallback(_parse_amount(transactions[idx].get("amount")), fallback_categories)
             continue
+        if len(llm_results) != n:
+            logger.warning(
+                f"categorize_batch [{source_name}] {direction}: "
+                f"partial response (expected {n}, got {len(llm_results)}) "
+                f"— using available results, fallback for the rest"
+            )
 
         logger.debug(
             f"categorize_batch [{source_name}] {direction}: "
@@ -351,6 +365,7 @@ def _run_llm_batch_group(
             item = llm_results[j] if j < len(llm_results) else {}
             amount = _parse_amount(transactions[idx].get("amount"))
             results[idx] = _validate_llm_result(item, categories, taxonomy, amount, direction, fallback_categories)
+            results[idx].model_name = backend_used
 
         if batch_done_callback:
             batch_done_callback(len(batch_indices))

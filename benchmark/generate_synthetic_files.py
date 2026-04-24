@@ -323,6 +323,45 @@ for _cat, _tags in _CAT_TO_OSM_TAGS.items():
     if _pool:
         _CAT_OSM_BRANDS[_cat] = _pool
 
+# Build reverse mapping: brand → osm_tag (for expected category resolution)
+_BRAND_TO_OSM_TAG: dict[str, str] = {}
+for _tag, _brands in _OSM_IT_BY_TAG.items():
+    for _b in _brands:
+        _BRAND_TO_OSM_TAG[_b] = _tag
+
+# Load osm_to_spendifai_map.json for expected category resolution
+_OSM_MAP_PATH = Path(__file__).resolve().parent.parent / "core" / "static_rules" / "osm_to_spendifai_map.json"
+_OSM_TO_CATEGORY: dict[str, str] = {}
+if _OSM_MAP_PATH.exists():
+    try:
+        with open(_OSM_MAP_PATH, encoding="utf-8") as _f:
+            _osm_map_data = json.load(_f)
+        for _tag, _entry in _osm_map_data.items():
+            if _tag.startswith("_"):
+                continue
+            hint = _entry.get("hint", "")
+            if " > " in hint:
+                cat, sub = (p.strip() for p in hint.split(" > ", 1))
+                _OSM_TO_CATEGORY[_tag] = f"{cat}/{sub}"
+        print(f"[T-10] Loaded {len(_OSM_TO_CATEGORY)} OSM→category mappings from osm_to_spendifai_map.json")
+    except Exception as _exc:
+        print(f"[T-10] Failed to load osm_to_spendifai_map.json: {_exc}")
+
+
+def _resolve_osm_expected(brand: str, fallback_category: str) -> str:
+    """Resolve expected category from brand → OSM tag → osm_to_spendifai_map.
+
+    If the brand has an OSM tag with a mapped Spendify category, use that.
+    Otherwise fall back to the internal CATEGORY_MAP bucket.
+    """
+    tag = _BRAND_TO_OSM_TAG.get(brand)
+    if tag:
+        mapped = _OSM_TO_CATEGORY.get(tag)
+        if mapped:
+            return mapped
+    return fallback_category
+
+
 # Flat list of ALL IT brands (fallback for categories with no specific mapping)
 _OSM_IT_ALL: list[str] = [b for brands in _OSM_IT_BY_TAG.values() for b in brands]
 
@@ -624,8 +663,10 @@ def _generate_expense(templates: list[str], category: str, d: date) -> Transacti
 
     # T-10: try to use a real OSM brand for this category
     osm_brands = _CAT_OSM_BRANDS.get(category)
+    osm_brand_used: str | None = None
     if osm_brands and random.random() < _OSM_RATIO:
         brand = random.choice(osm_brands)
+        osm_brand_used = brand
         use_sdd = any(
             tag in _SDD_TAGS
             for tag in _CAT_TO_OSM_TAGS.get(category, [])
@@ -636,9 +677,16 @@ def _generate_expense(templates: list[str], category: str, d: date) -> Transacti
         tmpl = random.choice(templates)
         desc = _fill_template(tmpl, amount, d)
 
+    # Resolve expected category: OSM brand → tag → spendifai map (if available)
+    bucket_category = CATEGORY_MAP.get(category, "Altro/Varie")
+    if osm_brand_used:
+        expected = _resolve_osm_expected(osm_brand_used, bucket_category)
+    else:
+        expected = bucket_category
+
     valuta = d + timedelta(days=random.choice([0, 0, 0, 1, 2]))
     return Transaction(date=d, valuta_date=valuta, description=desc, amount=-amount,
-                       expected_category=CATEGORY_MAP.get(category, "Altro/Varie"))
+                       expected_category=expected)
 
 
 def _generate_income(templates: list[str], category: str, d: date) -> Transaction:

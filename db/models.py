@@ -17,6 +17,8 @@ Thirteen tables:
 """
 from __future__ import annotations
 
+import hashlib
+import pathlib
 from datetime import datetime, timezone
 
 from sqlalchemy import (
@@ -69,14 +71,59 @@ DEFAULT_USER_SETTINGS = {
     "giroconto_mode": "neutral",
     "max_transaction_amount": "1000000",
     "force_schema_import": "false",  # I-04: skip schema review, always auto-import
+    # Categorizer-specific backend (empty = same as classifier)
+    "cat_llm_backend": "",
+    "cat_ollama_base_url": "",
+    "cat_ollama_model": "",
+    "cat_openai_api_key": "",
+    "cat_openai_model": "",
+    "cat_anthropic_api_key": "",
+    "cat_anthropic_model": "",
+    "cat_compat_base_url": "",
+    "cat_compat_api_key": "",
+    "cat_compat_model": "",
+    "cat_llama_cpp_model_path": "",
+    "cat_llama_cpp_n_gpu_layers": "-1",
+    "cat_llama_cpp_n_ctx": "0",
     # NOTE: onboarding_done is NOT in defaults — it's managed by
     # _migrate_set_onboarding_done_for_existing_users() and SettingsService.
 }
 
 
+def _schema_hash() -> str:
+    """Return SHA-256 hex digest of this module's source file."""
+    src = pathlib.Path(__file__).read_bytes()
+    return hashlib.sha256(src).hexdigest()
+
+
+def _schema_hash_path(engine) -> pathlib.Path:
+    """Return the path to the .schema_hash file next to the database."""
+    url = str(engine.url)
+    # sqlite:///ledger.db  or  sqlite:////abs/path/ledger.db
+    if url.startswith("sqlite"):
+        db_path = url.split("///", 1)[-1]
+        if not db_path or db_path == ":memory:":
+            return pathlib.Path("")  # in-memory — no caching
+        return pathlib.Path(db_path).resolve().parent / ".schema_hash"
+    return pathlib.Path("")
+
+
 def create_tables(engine=None):
     if engine is None:
         engine = get_engine()
+
+    # ── fast-path: skip migrations if models.py hasn't changed ───────
+    current_hash = _schema_hash()
+    hash_file = _schema_hash_path(engine)
+    if hash_file.name and hash_file.is_file():
+        try:
+            saved = hash_file.read_text().strip()
+            if saved == current_hash:
+                return engine          # schema up-to-date, nothing to do
+        except OSError:
+            pass  # unreadable — fall through to full migration
+
+    # ── full migration path ──────────────────────────────────────────
     try:
         Base.metadata.create_all(engine, checkfirst=True)
     except Exception as exc:
@@ -106,7 +153,17 @@ def create_tables(engine=None):
     _migrate_add_footer_patterns(engine)
     _migrate_add_has_borders(engine)
     _migrate_add_nsi_tag_mapping(engine)
+    _migrate_add_category_model(engine)
+    _migrate_add_llm_usage_log(engine)
     _migrate_set_onboarding_done_for_existing_users(engine)  # must run last
+
+    # ── persist hash so next startup skips migrations ────────────────
+    if hash_file.name:
+        try:
+            hash_file.write_text(current_hash)
+        except OSError:
+            pass  # non-critical — migrations will just re-run next time
+
     return engine
 
 
@@ -239,6 +296,7 @@ class Transaction(Base):
     subcategory = Column(String(128))
     category_confidence = Column(String(10))
     category_source = Column(String(10))            # "manual" | "rule" | "llm" | future: "history"
+    category_model = Column(String(128))             # specific LLM model used (e.g. "gemma-2-2b-it-Q4_K_M")
     reconciled = Column(Boolean, default=False)
     to_review = Column(Boolean, default=False)
     transfer_pair_id = Column(String(64))
@@ -407,6 +465,25 @@ class BudgetTarget(Base):
     period_type = Column(String(16), default="monthly")       # monthly (future: quarterly, yearly)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, onupdate=lambda: datetime.now(timezone.utc))
+
+
+class LlmUsageLog(Base):
+    """Per-call LLM token usage log for statistical analysis of context utilization."""
+    __tablename__ = "llm_usage_log"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    backend = Column(String(30), nullable=False)       # local_llama_cpp, ollama, openai, claude
+    model_id = Column(String(120), nullable=False)
+    caller = Column(String(30), nullable=False)        # categorizer, classifier, description_cleaner, normalizer
+    step = Column(String(60))                          # e.g. "step1_identity", "batch_expense", "footer_detect"
+    source_name = Column(String(256))                  # file name or context identifier
+    batch_size = Column(Integer)
+    prompt_tokens = Column(Integer, default=0)
+    completion_tokens = Column(Integer, default=0)
+    total_tokens = Column(Integer, default=0)
+    n_ctx = Column(Integer)                            # context window (local backends only)
+    duration_ms = Column(Integer)                      # inference time
 
 
 class NsiTagMapping(Base):
@@ -888,5 +965,44 @@ def _migrate_add_nsi_tag_mapping(engine) -> None:
             'subcategory VARCHAR(128) NOT NULL, '
             'taxonomy_hash VARCHAR(64) NOT NULL, '
             'updated_at DATETIME)'
+        ))
+        conn.commit()
+
+
+def _migrate_add_category_model(engine) -> None:
+    """Add category_model column to track which LLM model categorized each tx."""
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        try:
+            conn.execute(_text(
+                'ALTER TABLE "transaction" ADD COLUMN category_model VARCHAR(128)'
+            ))
+            conn.commit()
+        except Exception as exc:
+            if "duplicate column name" in str(exc).lower():
+                pass
+            else:
+                raise
+
+
+def _migrate_add_llm_usage_log(engine) -> None:
+    """Create llm_usage_log table if not present (idempotent)."""
+    from sqlalchemy import text as _text
+    with engine.connect() as conn:
+        conn.execute(_text(
+            'CREATE TABLE IF NOT EXISTS llm_usage_log ('
+            'id INTEGER PRIMARY KEY AUTOINCREMENT, '
+            'timestamp DATETIME, '
+            'backend VARCHAR(30) NOT NULL, '
+            'model_id VARCHAR(120) NOT NULL, '
+            'caller VARCHAR(30) NOT NULL, '
+            'step VARCHAR(60), '
+            'source_name VARCHAR(256), '
+            'batch_size INTEGER, '
+            'prompt_tokens INTEGER DEFAULT 0, '
+            'completion_tokens INTEGER DEFAULT 0, '
+            'total_tokens INTEGER DEFAULT 0, '
+            'n_ctx INTEGER, '
+            'duration_ms INTEGER)'
         ))
         conn.commit()

@@ -1,23 +1,23 @@
 row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_category
 1,2026-01-01,-451.57,GIROCONTO DA CC 0123456 A CC 0468012 ACCANTONAMENTO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
-2,2026-01-04,-683.90,"Pagam. POS - PAGAMENTO POS 683,90 EUR DEL 04.01.2026 A (ITA) FUNSIDE NAPOLI",expense,false,Istruzione/Rette scolastiche
+2,2026-01-04,-683.90,"Pagam. POS - PAGAMENTO POS 683,90 EUR DEL 04.01.2026 A (ITA) FUNSIDE NAPOLI",expense,false,Svago e tempo libero/Libri / riviste
 3,2026-01-06,236.89,Bonif. v/fav. - RIF:210884213 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
 4,2026-01-08,-25.17,PAGAMENTO CONTACTLESS CARTA **** 6493 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
-5,2026-01-09,-6.03,"Pagam. POS - PAGAMENTO POS 6,03 EUR DEL 09.01.2026 A (ITA) NATURA BRESCIA",expense,false,Altro/Spese non classificate
+5,2026-01-09,-6.03,"Pagam. POS - PAGAMENTO POS 6,03 EUR DEL 09.01.2026 A (ITA) NATURA BRESCIA",expense,false,Regali e donazioni/Regali
 6,2026-01-11,-145.55,"Pagam. POS - PAGAMENTO POS 145,55 EUR DEL 11.01.2026 A (ITA) MERCATÒ BIG BERGAMO",expense,false,Alimentari/Spesa supermercato
 7,2026-01-11,64.59,Bonif. v/fav. - RIF:214796901 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
 8,2026-01-13,-126.46,Disposizione - RIF:214271754 BEN. CONDOMINIO VIA ROMA 15,expense,false,Casa/Energia elettrica
-9,2026-01-13,-63.28,PAGAMENTO CONTACTLESS CARTA **** 3991 OAKBERRY AÇAÍ BOWLS,expense,false,Ristorazione/Ristorante
+9,2026-01-13,-63.28,PAGAMENTO CONTACTLESS CARTA **** 3991 OAKBERRY AÇAÍ BOWLS,expense,false,Ristorazione/Asporto / delivery
 10,2026-01-15,-35.58,"Pagam. POS - PAGAMENTO POS 35,58 EUR DEL 15.01.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
-11,2026-01-16,-93.34,"Pagam. POS - PAGAMENTO POS 93,34 EUR DEL 16.01.2026 A (ITA) NATURA",expense,false,Altro/Spese non classificate
-12,2026-01-20,-48.44,PAGAMENTO CONTACTLESS CARTA **** 2973 FLOWER BURGER,expense,false,Ristorazione/Ristorante
+11,2026-01-16,-93.34,"Pagam. POS - PAGAMENTO POS 93,34 EUR DEL 16.01.2026 A (ITA) NATURA",expense,false,Regali e donazioni/Regali
+12,2026-01-20,-48.44,PAGAMENTO CONTACTLESS CARTA **** 2973 FLOWER BURGER,expense,false,Ristorazione/Asporto / delivery
 13,2026-01-20,-12.65,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
-14,2026-01-21,-182.93,PAGAMENTO CONTACTLESS CARTA **** 7820 NAU! PARMA,expense,false,Salute/Farmaci
+14,2026-01-21,-182.93,PAGAMENTO CONTACTLESS CARTA **** 7820 NAU! PARMA,expense,false,Salute/Ottico
 15,2026-01-22,-39.28,PAGAMENTO CONTACTLESS CARTA **** 2549 DR. MAX TORINO,expense,false,Salute/Farmaci
 16,2026-01-22,-45.89,Disposizione - RIF:210673134 BEN. IDRAULICO ROSSI PAOLO,expense,false,Casa/Energia elettrica
-17,2026-01-23,-81.58,"Pagam. POS - PAGAMENTO POS 81,58 EUR DEL 23.01.2026 A (ITA) STARBUCKS RESERVE",expense,false,Ristorazione/Ristorante
+17,2026-01-23,-81.58,"Pagam. POS - PAGAMENTO POS 81,58 EUR DEL 23.01.2026 A (ITA) STARBUCKS RESERVE",expense,false,Ristorazione/Bar / caffè
 18,2026-01-23,-476.82,GIROCONTO DA CC 0123456 A CC 0468012 ACCANTONAMENTO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
-19,2026-01-26,-30.18,PAGAMENTO CONTACTLESS CARTA **** 8776 IKEA CAFÉ,expense,false,Ristorazione/Ristorante
+19,2026-01-26,-30.18,PAGAMENTO CONTACTLESS CARTA **** 8776 IKEA CAFÉ,expense,false,Ristorazione/Bar / caffè
 20,2026-01-26,-126.63,"Pagam. POS - PAGAMENTO POS 126,63 EUR DEL 26.01.2026 A (ITA) TIGRE AMICO",expense,false,Alimentari/Spesa supermercato
 21,2026-01-27,2086.01,ACCREDITO STIPENDIO MESE DI GENNAIO 2026,income,false,Lavoro dipendente/Stipendio
 22,2026-01-27,2135.66,Bonif. v/fav. - RIF:213936074 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
@@ -42,8 +42,8 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 41,2026-01-28,383.93,Bonif. v/fav. - RIF:215965385 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
 42,2026-01-28,-241.86,RICARICA HYPE DA CONTO 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 43,2026-01-29,128.09,Bonif. v/fav. - RIF:215422541 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
-44,2026-01-30,-21.62,PAGAMENTO CONTACTLESS CARTA **** 9359 JOHNSON FITNESS & WELLNESS EUR,expense,false,Abbigliamento/Abbigliamento adulti
-45,2026-02-01,-40.73,"Pagam. POS - PAGAMENTO POS 40,73 EUR DEL 01.02.2026 A (ITA) JULIUS MEINL",expense,false,Ristorazione/Ristorante
+44,2026-01-30,-21.62,PAGAMENTO CONTACTLESS CARTA **** 9359 JOHNSON FITNESS & WELLNESS EUR,expense,false,Svago e tempo libero/Sport e palestra
+45,2026-02-01,-40.73,"Pagam. POS - PAGAMENTO POS 40,73 EUR DEL 01.02.2026 A (ITA) JULIUS MEINL",expense,false,Ristorazione/Bar / caffè
 46,2026-02-02,-240.52,Disposizione - RIF:215815820 BEN. RICARICA POSTEPAY SOFIA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 47,2026-02-04,-132.56,Disposizione - RIF:218283087 BEN. RICARICA REVOLUT LAURA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 48,2026-02-06,-49.45,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
@@ -54,7 +54,7 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 53,2026-02-17,494.94,Bonif. v/fav. - RIF:219712311 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
 54,2026-02-20,-175.83,Disposizione - RIF:215595038 BEN. IDRAULICO ROSSI PAOLO,expense,false,Casa/Energia elettrica
 55,2026-02-22,-113.33,"Pagam. POS - PAGAMENTO POS 113,33 EUR DEL 22.02.2026 A (ITA) MERCATÒ",expense,false,Alimentari/Spesa supermercato
-56,2026-02-24,-120.50,"Pagam. POS - PAGAMENTO POS 120,50 EUR DEL 24.02.2026 A (ITA) KÖRPERFORMEN",expense,false,Svago e tempo libero/Cinema / teatro / eventi
+56,2026-02-24,-120.50,"Pagam. POS - PAGAMENTO POS 120,50 EUR DEL 24.02.2026 A (ITA) KÖRPERFORMEN",expense,false,Svago e tempo libero/Sport e palestra
 57,2026-02-25,-294.57,RICARICA HYPE DA CONTO 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 58,2026-02-27,2076.63,Bonif. v/fav. - RIF:215141927 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
 59,2026-02-27,2083.95,Bonif. v/fav. - RIF:219523235 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio

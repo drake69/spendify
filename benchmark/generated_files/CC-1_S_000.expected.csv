@@ -4,7 +4,7 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 3,2026-01-06,-13.54,"Pagam. POS - PAGAMENTO POS 13,54 EUR DEL 06.01.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
 4,2026-01-06,466.87,Bonif. v/fav. - RIF:216818496 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
 5,2026-01-17,-818.86,Disposizione - RIF:219255661 BEN. VERDI ROSA AIUTO NIPOTE,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-6,2026-01-19,-150.66,PAGAMENTO CONTACTLESS CARTA **** 1750 MARGHERITA CONAD BRESCIA,expense,false,Alimentari/Spesa supermercato
+6,2026-01-19,-150.66,PAGAMENTO CONTACTLESS CARTA **** 1750 MARGHERITA CONAD BRESCIA,expense,false,Alimentari/Altro alimentari
 7,2026-01-21,-152.97,PAGAMENTO CONTACTLESS CARTA **** 1525 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
 8,2026-01-27,2137.05,Bonif. v/fav. - RIF:213337174 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
 9,2026-01-27,2056.40,ACCREDITO STIPENDIO MESE DI GENNAIO 2026,income,false,Lavoro dipendente/Stipendio
@@ -15,13 +15,13 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 14,2026-01-27,2091.92,Bonif. v/fav. - RIF:213426900 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
 15,2026-01-27,2143.33,ACCREDITO STIPENDIO MESE DI GENNAIO 2026,income,false,Lavoro dipendente/Stipendio
 16,2026-01-27,2121.76,ACCREDITO STIPENDIO MESE DI GENNAIO 2026,income,false,Lavoro dipendente/Stipendio
-17,2026-01-28,-136.21,"Pagam. POS - PAGAMENTO POS 136,21 EUR DEL 28.01.2026 A (ITA) PRIMADONNA",expense,false,Abbigliamento/Abbigliamento adulti
+17,2026-01-28,-136.21,"Pagam. POS - PAGAMENTO POS 136,21 EUR DEL 28.01.2026 A (ITA) PRIMADONNA",expense,false,Abbigliamento/Calzature
 18,2026-02-01,-76.05,"Pagam. POS - PAGAMENTO POS 76,05 EUR DEL 01.02.2026 A (ITA) MACELLERIA BONI",expense,false,Alimentari/Spesa supermercato
 19,2026-02-04,389.87,Bonif. v/fav. - RIF:216693979 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
 20,2026-02-08,-179.44,"Pagam. POS - PAGAMENTO POS 179,44 EUR DEL 08.02.2026 A (ITA) IKEA ITALIA RETAIL",expense,false,Casa/Energia elettrica
 21,2026-02-08,195.87,Bonif. v/fav. - RIF:216089806 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
 22,2026-02-12,-73.71,Disposizione - RIF:218961380 BEN. CONDOMINIO VIA ROMA 15,expense,false,Casa/Energia elettrica
-23,2026-02-19,-101.53,PAGAMENTO CONTACTLESS CARTA **** 5315 CISALFA SPORT MILANO,expense,false,Abbigliamento/Abbigliamento adulti
+23,2026-02-19,-101.53,PAGAMENTO CONTACTLESS CARTA **** 5315 CISALFA SPORT MILANO,expense,false,Svago e tempo libero/Sport e palestra
 24,2026-02-21,344.29,Bonif. v/fav. - RIF:211737893 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
 25,2026-02-23,-61.02,Disposizione - RIF:215596150 BEN. RICARICA REVOLUT LAURA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 26,2026-02-27,2131.60,ACCREDITO STIPENDIO MESE DI FEBBRAIO 2026,income,false,Lavoro dipendente/Stipendio

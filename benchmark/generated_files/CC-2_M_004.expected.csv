@@ -36,7 +36,7 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 35,2026-02-08,3542.19,Bonif. v/fav. - RIF:210605005 ORD. BETA CONSULTING SRL,income,false,Lavoro autonomo/Fattura / parcella
 36,2026-02-10,-180.86,RICARICA HYPE DA CONTO 0075849,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 37,2026-02-11,5092.91,Bonif. v/fav. - RIF:214220919 ORD. CLIENTE ALFA S.P.A.,income,false,Lavoro autonomo/Fattura / parcella
-38,2026-02-12,-105.59,PAGAMENTO CONTACTLESS CARTA **** 3762 BUREAU VALLÉE,expense,false,Tasse e tributi/Imposte varie
+38,2026-02-12,-105.59,PAGAMENTO CONTACTLESS CARTA **** 3762 BUREAU VALLÉE,expense,false,Istruzione/Libri e materiale
 39,2026-02-12,2327.10,Bonif. v/fav. - RIF:217879825 ORD. GAMMA TECHNOLOGIES SRL,income,false,Lavoro autonomo/Fattura / parcella
 40,2026-02-13,468.61,Bonif. v/fav. - RIF:213349848 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
 41,2026-02-13,3541.78,Bonif. v/fav. - RIF:216393310 ORD. DELTA SOLUTIONS SPA,income,false,Lavoro autonomo/Fattura / parcella

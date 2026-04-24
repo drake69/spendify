@@ -39,6 +39,8 @@ tests/logs/
 my_secrets.py
 # Local databases (runtime data, never commit)
 *.db
+# Schema migration hash (avoids redundant migrations on startup)
+.schema_hash
 # Claude internal session data
 .claude/
 # NSI raw data (large downloaded datasets — not in git)

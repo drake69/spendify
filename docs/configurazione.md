@@ -18,6 +18,7 @@
 9. [Backend LLM](#9-backend-llm)
    - [llama.cpp (locale, default)](#90-llamacpp-locale-default)
    - [Ollama (locale)](#91-ollama-locale)
+   - [vLLM (server locale o remoto)](#92b-vllm-server-locale-o-remoto)
    - [OpenAI](#92-openai)
    - [Claude (Anthropic)](#93-claude-anthropic)
    - [OpenAI-compatible](#94-openai-compatible-groq-together-ai-ecc)
@@ -217,9 +218,12 @@ Il backend LLM viene usato per:
 |---|---|---|---|---|
 | **llama.cpp (locale, default)** | ✅ Totale | ✅ Gratuito | ⚡ Dipende dall'hardware | Buona (con modelli GGUF) |
 | **Ollama (locale)** | ✅ Totale | ✅ Gratuito | ⚡ Dipende dall'hardware | Buona (con gemma3:12b) |
+| **vLLM (server locale/remoto)** | ✅ Totale | ✅ Gratuito | ⚡⚡ Alta (GPU CUDA) | Alta |
 | **OpenAI** | ⚠️ PII redatte | 💰 Pay-per-use | ⚡⚡ Alta | Alta |
 | **Claude (Anthropic)** | ⚠️ PII redatte | 💰 Pay-per-use | ⚡⚡ Alta | Alta |
 | **OpenAI-compatible** | ⚠️ PII redatte | Varia | Varia | Varia |
+
+> **Nota:** `vllm_offline` (backend in-process senza server) è riservato al sistema di benchmark interno e non è selezionabile dall'utente nelle Impostazioni.
 
 **Circuit breaker:** Se il backend configurato non risponde, Spendif.ai fa fallback automatico su Ollama locale. Se anche Ollama è offline, la transazione viene importata con `to_review=True` e descrizione grezza.
 
@@ -235,7 +239,8 @@ La scelta predefinita per le **nuove installazioni**: nessun servizio esterno ne
 |---|---|---|
 | **RAM libera** | 4 GB (modelli 3B) | 8 GB (modelli 7B) |
 | **CPU** | Qualsiasi x86-64 o ARM64 degli ultimi 5 anni | Apple Silicon (M1+) o CPU con AVX2 |
-| **GPU** | Non necessaria | Apple Metal o CUDA (accelera 3-5x) |
+| **GPU** | Non necessaria | Apple Metal o CUDA/ROCm (accelera 3-5x) |
+| **VRAM** | — (CPU-only o memoria unificata) | >= dimensione modello (es. 8 GB per 7B Q4) |
 | **Disco** | 2.5 GB per modello | 5-7 GB per modello 7B |
 
 > **Nota:** Se l'hardware non soddisfa i requisiti minimi, usa un backend remoto (OpenAI, Claude) — vedi sezioni 9.2 e 9.3.
@@ -277,7 +282,11 @@ La sezione **Modelli locali** mostra i file `.gguf` presenti nella cartella mode
 
 > **Auto-detect context window:** lascia `n_ctx = 0` (default). Spendif.ai legge il valore nativo direttamente dall'header del file GGUF senza caricare i pesi — nessuna configurazione manuale richiesta. Impostando un valore specifico (es. `2048`) si limita la RAM usata a scapito del contesto disponibile.
 
-> **Accelerazione GPU:** llama.cpp usa automaticamente Apple Metal su Mac con chip Apple Silicon, CUDA su Linux/Windows con GPU NVIDIA. Per AMD su Linux (ROCm): `CMAKE_ARGS="-DGGML_HIPBLAS=on" uv pip install llama-cpp-python --upgrade`. Se il modello non supporta il ruolo `system`, Spendif.ai fonde automaticamente il system prompt nel prompt utente.
+> **Accelerazione GPU:** llama.cpp usa automaticamente Apple Metal su Mac con chip Apple Silicon, CUDA su Linux/Windows con GPU NVIDIA, ROCm per GPU AMD. Per AMD su Linux (ROCm): `CMAKE_ARGS="-DGGML_HIPBLAS=on" uv pip install llama-cpp-python --upgrade`. Se il modello non supporta il ruolo `system`, Spendif.ai fonde automaticamente il system prompt nel prompt utente.
+
+> **Selezione automatica basata su VRAM:** al primo avvio, Spendif.ai rileva la VRAM disponibile via `nvidia-smi` (NVIDIA) o `rocm-smi` (AMD). Su sistemi con GPU dedicata, il modello scaricato automaticamente è dimensionato sulla VRAM, non sulla RAM di sistema, per evitare download inutili di modelli troppo grandi. Su macOS (memoria unificata) la VRAM coincide con la RAM.
+
+> **Token usage tracking:** ogni chiamata LLM viene registrata nella tabella `llm_usage_log` con token di input/output, durata, backend, fase del processo (`caller`/`step`) e nome del file sorgente. Questo consente di analizzare il consumo reale di token e convergere su un valore ottimale di `n_ctx` basato su media ± intervallo di confidenza al 95%, stratificato per banca, lingua e fase di elaborazione. Per llama.cpp locale, un controllo pre-invio verifica che il prompt non ecceda la finestra di contesto, evitando troncamenti silenziosi.
 
 ---
 
@@ -400,6 +409,40 @@ Modello:      claude-3-5-haiku-20241022
 | `claude-opus-4-5` | ⚡ | ⭐⭐⭐⭐⭐ | Massima qualità, costo elevato |
 
 > **Privacy:** stesse garanzie di OpenAI — PII redatte prima dell'invio.
+
+---
+
+### 9.2b vLLM (server locale o remoto)
+
+Usa un server vLLM già in esecuzione, compatibile con l'API OpenAI. Adatto a macchine Linux con GPU NVIDIA per la massima velocità di inferenza locale.
+
+**Avviare il server (una tantum per sessione):**
+
+```bash
+# Installa vLLM (Linux + CUDA)
+pip install vllm
+
+# Avvia il server con un modello HuggingFace
+vllm serve Qwen/Qwen2.5-7B-Instruct --port 8000
+
+# Verifica
+curl http://localhost:8000/v1/models
+```
+
+**Configurazione in Spendif.ai:**
+
+```
+Backend LLM:  vLLM
+Base URL:     http://localhost:8000/v1   (o IP remoto se il server è su un'altra macchina)
+```
+
+Il modello servito viene rilevato automaticamente dal server — non serve inserirlo manualmente.
+
+| Campo | Default | Descrizione |
+|---|---|---|
+| **Base URL** | `http://localhost:8000/v1` | URL del server vLLM |
+
+> **Performance:** vLLM usa continuous batching e ottimizzazioni CUDA avanzate — significativamente più veloce di llama.cpp e Ollama su GPU NVIDIA, specialmente per modelli ≥ 7B.
 
 ---
 

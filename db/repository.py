@@ -20,6 +20,7 @@ from db.models import (
     ImportBatch,
     ImportJob,
     InternalTransferLink,
+    LlmUsageLog,
     NsiTagMapping,
     ReconciliationLink,
     Transaction,
@@ -274,6 +275,7 @@ def upsert_transaction(session: Session, tx: dict, batch_id: Optional[int] = Non
         subcategory=tx.get("subcategory"),
         category_confidence=tx.get("category_confidence"),
         category_source=tx.get("category_source"),
+        category_model=tx.get("category_model"),
         reconciled=bool(tx.get("reconciled", False)),
         to_review=bool(tx.get("to_review", False)),
         transfer_pair_id=tx.get("transfer_pair_id"),
@@ -308,6 +310,7 @@ def update_transaction_category(
     tx.subcategory = subcategory
     tx.category_confidence = "high"
     tx.category_source = "manual"
+    tx.category_model = None
     tx.to_review = False
     tx.human_validated = True
     tx.validated_at = datetime.now(timezone.utc)
@@ -558,6 +561,7 @@ def apply_rules_to_review_transactions(
                 if rule.context:
                     tx.context = rule.context
                 tx.category_source = "rule"
+                tx.category_model = None
                 tx.category_confidence = "high"
                 tx.to_review = False
                 # human_validated NOT reset: means "user saw this tx", not "user approves category"
@@ -598,6 +602,7 @@ def apply_all_rules_to_all_transactions(
                 if rule.context:
                     tx.context = rule.context
                 tx.category_source     = "rule"
+                tx.category_model      = None
                 tx.category_confidence = "high"
                 # human_validated NOT reset: means "user saw this tx", not "user approves category"
                 if tx.to_review:
@@ -1652,3 +1657,151 @@ def get_period_totals(
         "total_expenses": total_expenses,
         "by_category": by_category,
     }
+
+
+# ── LLM Usage Log ────────────────────────────────────────────────────────────
+
+def log_llm_usage(
+    session: Session,
+    *,
+    backend: str,
+    model_id: str,
+    caller: str,
+    step: str | None = None,
+    source_name: str | None = None,
+    batch_size: int | None = None,
+    prompt_tokens: int = 0,
+    completion_tokens: int = 0,
+    total_tokens: int = 0,
+    n_ctx: int | None = None,
+    duration_ms: int | None = None,
+) -> None:
+    """Persist a single LLM call's token usage."""
+    session.add(LlmUsageLog(
+        backend=backend,
+        model_id=model_id,
+        caller=caller,
+        step=step,
+        source_name=source_name,
+        batch_size=batch_size,
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+        total_tokens=total_tokens,
+        n_ctx=n_ctx,
+        duration_ms=duration_ms,
+    ))
+    session.commit()
+
+
+def get_token_usage_stats(
+    session: Session,
+    backend: str | None = None,
+    model_id: str | None = None,
+    caller: str | None = None,
+) -> list[dict]:
+    """Return token usage statistics grouped by (backend, model_id, caller).
+
+    Each row contains: count, mean, std, p50, p95, p99 for prompt_tokens,
+    completion_tokens, and total_tokens, plus CI 95% bounds.
+    """
+    import math
+
+    query = session.query(LlmUsageLog)
+    if backend:
+        query = query.filter(LlmUsageLog.backend == backend)
+    if model_id:
+        query = query.filter(LlmUsageLog.model_id == model_id)
+    if caller:
+        query = query.filter(LlmUsageLog.caller == caller)
+
+    rows = query.all()
+    if not rows:
+        return []
+
+    # Group by (backend, model_id, caller)
+    groups: dict[tuple, list[LlmUsageLog]] = {}
+    for r in rows:
+        key = (r.backend, r.model_id, r.caller)
+        groups.setdefault(key, []).append(r)
+
+    results = []
+    for (be, mid, cal), entries in groups.items():
+        n = len(entries)
+        for metric in ("prompt_tokens", "completion_tokens", "total_tokens"):
+            values = sorted(getattr(e, metric) or 0 for e in entries)
+            mean = sum(values) / n
+            variance = sum((v - mean) ** 2 for v in values) / n if n > 1 else 0.0
+            std = math.sqrt(variance)
+            ci_half = 1.96 * std / math.sqrt(n) if n > 1 else 0.0
+
+            results.append({
+                "backend": be,
+                "model_id": mid,
+                "caller": cal,
+                "metric": metric,
+                "count": n,
+                "mean": round(mean, 1),
+                "std": round(std, 1),
+                "p50": values[n // 2],
+                "p95": values[int(n * 0.95)] if n >= 20 else values[-1],
+                "p99": values[int(n * 0.99)] if n >= 100 else values[-1],
+                "ci95_lower": round(mean - ci_half, 1),
+                "ci95_upper": round(mean + ci_half, 1),
+            })
+
+    return results
+
+
+def get_adaptive_n_ctx_cap(
+    session: Session,
+    model_id: str,
+    min_observations: int = 1000,
+) -> int | None:
+    """Max CI-95% upper-bound of total_tokens across all caller/step combos.
+
+    Groups LlmUsageLog rows by (caller, step) for the given *model_id*.
+    Only groups with at least *min_observations* rows are considered.
+    Returns the maximum CI-95% upper-bound (rounded up to the next 1024
+    multiple) so that a single context window can cover the worst-case
+    caller.  Returns ``None`` when no group qualifies.
+    """
+    import math
+
+    rows = (
+        session.query(LlmUsageLog)
+        .filter(
+            LlmUsageLog.model_id == model_id,
+            LlmUsageLog.total_tokens.isnot(None),
+            LlmUsageLog.total_tokens > 0,
+        )
+        .all()
+    )
+    if not rows:
+        return None
+
+    # Group by (caller, step)
+    groups: dict[tuple[str, str | None], list[int]] = {}
+    for r in rows:
+        key = (r.caller, r.step)
+        groups.setdefault(key, []).append(r.total_tokens)
+
+    max_upper = 0.0
+    found = False
+    for _key, values in groups.items():
+        n = len(values)
+        if n < min_observations:
+            continue
+        found = True
+        mean = sum(values) / n
+        variance = sum((v - mean) ** 2 for v in values) / n
+        std = math.sqrt(variance)
+        ci_upper = mean + 1.96 * std / math.sqrt(n)
+        if ci_upper > max_upper:
+            max_upper = ci_upper
+
+    if not found:
+        return None
+
+    # Round up to next 1024 multiple, enforce floor of 2048
+    cap = max(int(math.ceil(max_upper / 1024)) * 1024, 2048)
+    return cap

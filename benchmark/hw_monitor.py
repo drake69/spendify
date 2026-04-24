@@ -143,10 +143,15 @@ def _detect_gpu_sampler():
             fn = _sample_gpu_nvidia
             fn._source = "nvidia-smi"
             return fn
-        # AMD
+        # AMD (ROCm)
         if shutil.which("rocm-smi"):
             fn = _sample_gpu_amd
             fn._source = "rocm-smi"
+            return fn
+        # AMD (radeontop — Vulkan / no ROCm)
+        if shutil.which("radeontop"):
+            fn = _sample_gpu_radeontop
+            fn._source = "radeontop"
             return fn
 
     fn = _sample_gpu_none
@@ -253,6 +258,24 @@ def _sample_gpu_amd() -> tuple[float, float]:
                 parts = line.split(",")
                 if len(parts) >= 2:
                     return float(parts[1].strip().rstrip("%")), 0.0
+    except Exception:
+        pass
+    return 0.0, 0.0
+
+
+def _sample_gpu_radeontop() -> tuple[float, float]:
+    """Sample AMD GPU utilization via radeontop (works without ROCm)."""
+    try:
+        result = subprocess.run(
+            ["radeontop", "-d", "-", "-l", "1"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode == 0:
+            # Output like: "... gpu 45.00%, ..."
+            import re
+            m = re.search(r"gpu\s+([\d.]+)%", result.stdout)
+            if m:
+                return float(m.group(1)), 0.0
     except Exception:
         pass
     return 0.0, 0.0

@@ -32,26 +32,33 @@ MODELS_DIR = Path.home() / ".spendifai" / "models"
 
 
 def detect_hw() -> dict[str, Any]:
-    """Detect system hardware: OS, arch, RAM, GPU.
+    """Detect system hardware: OS, arch, RAM, GPU, VRAM.
 
-    Returns a dict with keys: os, arch, ram_gb, gpu, gpu_cores.
+    Returns a dict with keys: os, arch, ram_gb, vram_gb, gpu, gpu_cores.
+    On macOS (unified memory) vram_gb equals ram_gb.
+    On Linux/Windows vram_gb is detected via nvidia-smi or rocm-smi (0 if no GPU).
     """
     info: dict[str, Any] = {
         "os": platform.system(),         # Darwin, Linux, Windows
         "arch": platform.machine(),      # arm64, x86_64
         "ram_gb": _get_ram_gb(),
+        "vram_gb": 0,
         "gpu": "unknown",
         "gpu_cores": 0,
     }
 
     if info["os"] == "Darwin":
         info["gpu"], info["gpu_cores"] = _detect_macos_gpu()
-    elif info["os"] == "Linux":
+        # Apple Silicon: unified memory — VRAM == RAM
+        info["vram_gb"] = info["ram_gb"]
+    elif info["os"] in ("Linux", "Windows"):
         info["gpu"] = _detect_linux_gpu()
+        info["vram_gb"] = _detect_vram_gb()
 
     logger.info(
         f"detect_hw: {info['os']} {info['arch']}, "
-        f"RAM={info['ram_gb']} GB, GPU={info['gpu']} ({info['gpu_cores']} cores)"
+        f"RAM={info['ram_gb']} GB, VRAM={info['vram_gb']} GB, "
+        f"GPU={info['gpu']} ({info['gpu_cores']} cores)"
     )
     return info
 
@@ -104,15 +111,105 @@ def _detect_macos_gpu() -> tuple[str, int]:
 
 
 def _detect_linux_gpu() -> str:
-    """Detect GPU on Linux (NVIDIA or other)."""
+    """Detect GPU on Linux/Windows (NVIDIA, AMD ROCm, or CPU-only)."""
+    # Try NVIDIA first
     try:
         out = subprocess.check_output(
             ["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"],
             text=True, timeout=5,
         ).strip()
-        return out.splitlines()[0] if out else "CPU only"
+        if out:
+            return out.splitlines()[0]
     except Exception:
-        return "CPU only"
+        pass
+    # Try AMD ROCm
+    try:
+        out = subprocess.check_output(
+            ["rocm-smi", "--showproductname"], text=True, timeout=5,
+        ).strip()
+        for line in out.splitlines():
+            if "Card series" in line or "GPU" in line:
+                return line.split(":")[-1].strip()
+    except Exception:
+        pass
+    # Try Vulkan (AMD without ROCm, or other Vulkan-capable GPUs)
+    try:
+        out = subprocess.check_output(
+            ["vulkaninfo", "--summary"], text=True, timeout=5,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+        for line in out.splitlines():
+            if "deviceName" in line:
+                return line.split("=")[-1].strip()
+    except Exception:
+        pass
+    return "CPU only"
+
+
+def _detect_vram_gb() -> int:
+    """Detect GPU VRAM in GB via nvidia-smi or rocm-smi. Returns 0 if no GPU."""
+    # NVIDIA
+    try:
+        out = subprocess.check_output(
+            ["nvidia-smi", "--query-gpu=memory.total", "--format=csv,noheader,nounits"],
+            text=True, timeout=5,
+        ).strip()
+        if out:
+            # nvidia-smi reports MiB; take first GPU
+            mib = int(out.splitlines()[0].strip())
+            return mib // 1024
+    except Exception:
+        pass
+    # AMD ROCm — try multiple parsing strategies (output format varies by version)
+    try:
+        out = subprocess.check_output(
+            ["rocm-smi", "--showmeminfo", "vram", "--csv"], text=True, timeout=5,
+        ).strip()
+        for line in out.splitlines():
+            parts = line.split(",")
+            if len(parts) >= 2 and parts[0].strip().isdigit():
+                # rocm-smi --csv: GPU#, VRAM Total (B), VRAM Used (B)
+                total_bytes = int(parts[1].strip())
+                return total_bytes // (1024 ** 3)
+    except Exception:
+        pass
+    # Fallback: non-CSV output (some ROCm versions)
+    try:
+        out = subprocess.check_output(
+            ["rocm-smi", "--showmeminfo", "vram"], text=True, timeout=5,
+        ).strip()
+        for line in out.splitlines():
+            low = line.lower()
+            if "total" in low:
+                # Extract first number — could be bytes or MiB depending on version
+                import re
+                nums = re.findall(r"(\d+)", line)
+                if nums:
+                    val = int(nums[0])
+                    # Heuristic: if > 1_000_000 it's bytes, otherwise MiB
+                    if val > 1_000_000:
+                        return val // (1024 ** 3)
+                    else:
+                        return val // 1024
+    except Exception:
+        pass
+    # Vulkan fallback (AMD without ROCm, or other Vulkan GPUs)
+    try:
+        out = subprocess.check_output(
+            ["vulkaninfo"], text=True, timeout=5,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+        import re
+        for line in out.splitlines():
+            if "DEVICE_LOCAL" in line and "heapSize" in line:
+                m = re.search(r"heapSize\s*=\s*(\d+)", line)
+                if m:
+                    heap_bytes = int(m.group(1))
+                    if heap_bytes > 1_000_000_000:  # sanity check: > 1 GB
+                        return heap_bytes // (1024 ** 3)
+    except Exception:
+        pass
+    return 0
 
 
 # ── Model Download ───────────────────────────────────────────────────────────
@@ -148,16 +245,26 @@ def ensure_model_available(
     _progress(0.05, "Rilevamento hardware...")
     hw = detect_hw()
     ram_gb = hw["ram_gb"]
+    vram_gb = hw["vram_gb"]
 
-    recommended = get_recommended_model(ram_gb)
+    # On systems with a discrete GPU, VRAM is the bottleneck for model size.
+    # On macOS (unified memory) vram_gb == ram_gb, so min() is a no-op.
+    # vram_gb == 0 means CPU-only: use RAM as the constraint.
+    effective_gb = min(ram_gb, vram_gb) if vram_gb > 0 else ram_gb
+
+    recommended = get_recommended_model(effective_gb)
     if recommended is None:
-        logger.error("ensure_model_available: no model found in registry for RAM=%d GB", ram_gb)
+        logger.error(
+            "ensure_model_available: no model found in registry for "
+            "effective=%d GB (RAM=%d, VRAM=%d)", effective_gb, ram_gb, vram_gb,
+        )
         _progress(1.0, "Nessun modello compatibile trovato")
         return None
 
     _progress(0.10, f"Consigliato: {recommended.name} ({recommended.size_mb} MB)")
     logger.info(
-        f"ensure_model_available: RAM={ram_gb} GB → {recommended.id} "
+        f"ensure_model_available: RAM={ram_gb} GB, VRAM={vram_gb} GB, "
+        f"effective={effective_gb} GB → {recommended.id} "
         f"({recommended.size_mb} MB, tier={recommended.tier})"
     )
 

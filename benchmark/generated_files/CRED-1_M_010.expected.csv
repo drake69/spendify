@@ -1,7 +1,7 @@
 row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_category
 1,2026-01-02,-75.58,Addebito SDD - GENERALI ITALIA POLIZZA VITA,expense,false,Altro/Spese non classificate
 2,2026-01-04,-135.04,"Pagam. POS - PAGAMENTO POS 135,04 EUR DEL 04.01.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
-3,2026-01-04,-102.03,PAGAMENTO CONTACTLESS CARTA **** 8209 BUFFETTI FLAMINIO,expense,false,Tasse e tributi/Imposte varie
+3,2026-01-04,-102.03,PAGAMENTO CONTACTLESS CARTA **** 8209 BUFFETTI FLAMINIO,expense,false,Istruzione/Libri e materiale
 4,2026-01-05,-61.83,"Pagam. POS - PAGAMENTO POS 61,83 EUR DEL 05.01.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
 5,2026-01-06,-19.77,PAGAMENTO CONTACTLESS CARTA **** 2477 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
 6,2026-01-06,-24.72,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
@@ -10,45 +10,45 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 9,2026-01-08,-79.62,"Pagam. POS - PAGAMENTO POS 79,62 EUR DEL 08.01.2026 A (ITA) COOP LOMBARDIA",expense,false,Altro/Spese non classificate
 10,2026-01-10,-53.75,"Pagam. POS - PAGAMENTO POS 53,75 EUR DEL 10.01.2026 A (ITA) PIZZERIA NAPOLI",expense,false,Ristorazione/Ristorante
 11,2026-01-11,-115.37,"Pagam. POS - PAGAMENTO POS 115,37 EUR DEL 11.01.2026 A (ITA) MERCATÒ BIG",expense,false,Alimentari/Spesa supermercato
-12,2026-01-13,-19.17,"Pagam. POS - PAGAMENTO POS 19,17 EUR DEL 13.01.2026 A (ITA) TACO BELL OSTIENSE",expense,false,Ristorazione/Ristorante
+12,2026-01-13,-19.17,"Pagam. POS - PAGAMENTO POS 19,17 EUR DEL 13.01.2026 A (ITA) TACO BELL OSTIENSE",expense,false,Ristorazione/Asporto / delivery
 13,2026-01-14,-151.36,PAGAMENTO CONTACTLESS CARTA **** 4054 ART'OTEL,expense,false,Svago e tempo libero/Viaggi e vacanze
-14,2026-01-14,-134.74,"Pagam. POS - PAGAMENTO POS 134,74 EUR DEL 14.01.2026 A (ITA) INMOTION",expense,false,Svago e tempo libero/Hobby
-15,2026-01-14,-148.94,PAGAMENTO CONTACTLESS CARTA **** 7571 PITTAROSSO,expense,false,Abbigliamento/Abbigliamento adulti
+14,2026-01-14,-134.74,"Pagam. POS - PAGAMENTO POS 134,74 EUR DEL 14.01.2026 A (ITA) INMOTION",expense,false,Casa/Elettrodomestici
+15,2026-01-14,-148.94,PAGAMENTO CONTACTLESS CARTA **** 7571 PITTAROSSO,expense,false,Abbigliamento/Calzature
 16,2026-01-16,-40.51,Addebito SDD - SARA ASSICURAZIONI RCA AUTO,expense,false,Trasporti/Carburante
-17,2026-01-17,-64.37,PAGAMENTO CONTACTLESS CARTA **** 6489 TACO BELL,expense,false,Ristorazione/Ristorante
+17,2026-01-17,-64.37,PAGAMENTO CONTACTLESS CARTA **** 6489 TACO BELL,expense,false,Ristorazione/Asporto / delivery
 18,2026-01-18,-53.93,"Pagam. POS - PAGAMENTO POS 53,93 EUR DEL 18.01.2026 A (ITA) SUPERCONTI MODENA",expense,false,Alimentari/Spesa supermercato
-19,2026-01-21,-66.04,PAGAMENTO CONTACTLESS CARTA **** 7956 MALVÓN,expense,false,Ristorazione/Ristorante
+19,2026-01-21,-66.04,PAGAMENTO CONTACTLESS CARTA **** 7956 MALVÓN,expense,false,Ristorazione/Asporto / delivery
 20,2026-01-23,-71.16,"Pagam. POS - PAGAMENTO POS 71,16 EUR DEL 23.01.2026 A (ITA) GIAP",expense,false,Trasporti/Carburante
-21,2026-01-23,-178.48,PAGAMENTO CONTACTLESS CARTA **** 6853 COMET,expense,false,Svago e tempo libero/Hobby
-22,2026-01-24,-53.08,PAGAMENTO CONTACTLESS CARTA **** 9306 POKE HOUSE MODENA,expense,false,Ristorazione/Ristorante
+21,2026-01-23,-178.48,PAGAMENTO CONTACTLESS CARTA **** 6853 COMET,expense,false,Casa/Elettrodomestici
+22,2026-01-24,-53.08,PAGAMENTO CONTACTLESS CARTA **** 9306 POKE HOUSE MODENA,expense,false,Ristorazione/Asporto / delivery
 23,2026-01-26,-146.85,PAGAMENTO CONTACTLESS CARTA **** 8063 BULGARI BARI,expense,false,Svago e tempo libero/Viaggi e vacanze
 24,2026-01-27,-78.57,PAGAMENTO CONTACTLESS CARTA **** 2319 SPAZIO CONAD CENTRO,expense,false,Alimentari/Spesa supermercato
 25,2026-01-27,-474.38,"Pagam. POS - PAGAMENTO POS 474,38 EUR DEL 27.01.2026 A (ITA) EXE HOTELS NORD",expense,false,Svago e tempo libero/Viaggi e vacanze
 26,2026-01-30,-48.74,"Pagam. POS - PAGAMENTO POS 48,74 EUR DEL 30.01.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
-27,2026-01-30,-60.12,"Pagam. POS - PAGAMENTO POS 60,12 EUR DEL 30.01.2026 A (ITA) THE COFFEE",expense,false,Ristorazione/Ristorante
+27,2026-01-30,-60.12,"Pagam. POS - PAGAMENTO POS 60,12 EUR DEL 30.01.2026 A (ITA) THE COFFEE",expense,false,Ristorazione/Bar / caffè
 28,2026-02-01,-495.15,PAGAMENTO CONTACTLESS CARTA **** 3023 OCCIDENTAL LINGOTTO,expense,false,Svago e tempo libero/Viaggi e vacanze
-29,2026-02-02,-165.92,PAGAMENTO CONTACTLESS CARTA **** 7921 INMOTION,expense,false,Svago e tempo libero/Hobby
+29,2026-02-02,-165.92,PAGAMENTO CONTACTLESS CARTA **** 7921 INMOTION,expense,false,Casa/Elettrodomestici
 30,2026-02-04,-214.32,Addebito SDD - TELEPASS PEDAGGI A14 AUTOSTRADA,expense,false,Svago e tempo libero/Viaggi e vacanze
-31,2026-02-05,-16.70,"Pagam. POS - PAGAMENTO POS 16,70 EUR DEL 05.02.2026 A (ITA) SNIPES",expense,false,Abbigliamento/Abbigliamento adulti
-32,2026-02-07,-142.74,"Pagam. POS - PAGAMENTO POS 142,74 EUR DEL 07.02.2026 A (ITA) TRONY",expense,false,Svago e tempo libero/Hobby
+31,2026-02-05,-16.70,"Pagam. POS - PAGAMENTO POS 16,70 EUR DEL 05.02.2026 A (ITA) SNIPES",expense,false,Abbigliamento/Calzature
+32,2026-02-07,-142.74,"Pagam. POS - PAGAMENTO POS 142,74 EUR DEL 07.02.2026 A (ITA) TRONY",expense,false,Casa/Elettrodomestici
 33,2026-02-08,-76.57,"Pagam. POS - PAGAMENTO POS 76,57 EUR DEL 08.02.2026 A (ITA) IN'S MERCATO VIMODRONE",expense,false,Alimentari/Spesa supermercato
 34,2026-02-09,-371.99,"Pagam. POS - PAGAMENTO POS 371,99 EUR DEL 09.02.2026 A (ITA) ART'OTEL TORINO",expense,false,Svago e tempo libero/Viaggi e vacanze
 35,2026-02-09,-129.38,"Pagam. POS - PAGAMENTO POS 129,38 EUR DEL 09.02.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Hobby
 36,2026-02-11,-46.84,"Pagam. POS - PAGAMENTO POS 46,84 EUR DEL 11.02.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
 37,2026-02-12,-32.19,"Pagam. POS - PAGAMENTO POS 32,19 EUR DEL 12.02.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
-38,2026-02-13,-70.70,PAGAMENTO CONTACTLESS CARTA **** 2743 SPIZZICO ROZZANO,expense,false,Ristorazione/Ristorante
+38,2026-02-13,-70.70,PAGAMENTO CONTACTLESS CARTA **** 2743 SPIZZICO ROZZANO,expense,false,Ristorazione/Asporto / delivery
 39,2026-02-13,-96.44,"Pagam. POS - PAGAMENTO POS 96,44 EUR DEL 13.02.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
-40,2026-02-14,-284.00,PAGAMENTO CONTACTLESS CARTA **** 1881 BUFFETTI ASSAGO,expense,false,Tasse e tributi/Imposte varie
-41,2026-02-14,-84.61,PAGAMENTO CONTACTLESS CARTA **** 8971 INMOTION MARGHERA,expense,false,Svago e tempo libero/Hobby
+40,2026-02-14,-284.00,PAGAMENTO CONTACTLESS CARTA **** 1881 BUFFETTI ASSAGO,expense,false,Istruzione/Libri e materiale
+41,2026-02-14,-84.61,PAGAMENTO CONTACTLESS CARTA **** 8971 INMOTION MARGHERA,expense,false,Casa/Elettrodomestici
 42,2026-02-16,-82.00,"Pagam. POS - PAGAMENTO POS 82,00 EUR DEL 16.02.2026 A (ITA) DOPPIO MALTO",expense,false,Ristorazione/Ristorante
 43,2026-02-17,-117.61,AMAZON.IT MARKETPLACE - ORDINE 402-211953294,expense,false,Svago e tempo libero/Hobby
 44,2026-02-18,-44.40,"Pagam. POS - PAGAMENTO POS 44,40 EUR DEL 18.02.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
 45,2026-02-18,-45.60,PAGAMENTO CONTACTLESS CARTA **** 5510 IES EUR,expense,false,Trasporti/Carburante
-46,2026-02-19,-51.36,"Pagam. POS - PAGAMENTO POS 51,36 EUR DEL 19.02.2026 A (ITA) SPORTLER FLAMINIO",expense,false,Abbigliamento/Abbigliamento adulti
-47,2026-02-19,-16.32,PAGAMENTO CONTACTLESS CARTA **** 4283 POKE HOUSE MILANO,expense,false,Ristorazione/Ristorante
+46,2026-02-19,-51.36,"Pagam. POS - PAGAMENTO POS 51,36 EUR DEL 19.02.2026 A (ITA) SPORTLER FLAMINIO",expense,false,Svago e tempo libero/Sport e palestra
+47,2026-02-19,-16.32,PAGAMENTO CONTACTLESS CARTA **** 4283 POKE HOUSE MILANO,expense,false,Ristorazione/Asporto / delivery
 48,2026-02-20,-144.56,"Pagam. POS - PAGAMENTO POS 144,56 EUR DEL 20.02.2026 A (ITA) RYANAIR LTD",expense,false,Svago e tempo libero/Viaggi e vacanze
-49,2026-02-21,-59.56,PAGAMENTO CONTACTLESS CARTA **** 5406 O'TACOS,expense,false,Ristorazione/Ristorante
-50,2026-02-22,-5.13,PAGAMENTO CONTACTLESS CARTA **** 3262 POKE HOUSE,expense,false,Ristorazione/Ristorante
-51,2026-02-23,-146.94,"Pagam. POS - PAGAMENTO POS 146,94 EUR DEL 23.02.2026 A (ITA) CEX",expense,false,Svago e tempo libero/Hobby
+49,2026-02-21,-59.56,PAGAMENTO CONTACTLESS CARTA **** 5406 O'TACOS,expense,false,Ristorazione/Asporto / delivery
+50,2026-02-22,-5.13,PAGAMENTO CONTACTLESS CARTA **** 3262 POKE HOUSE,expense,false,Ristorazione/Asporto / delivery
+51,2026-02-23,-146.94,"Pagam. POS - PAGAMENTO POS 146,94 EUR DEL 23.02.2026 A (ITA) CEX",expense,false,Casa/Elettrodomestici
 52,2026-02-25,-162.98,PAGAMENTO CONTACTLESS CARTA **** 4065 MIGROSS OVEST,expense,false,Alimentari/Spesa supermercato
 53,2026-02-25,-41.60,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate

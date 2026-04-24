@@ -186,6 +186,9 @@ def _classify_multi_step(
             user_prompt=step1_user,
             json_schema=step1_json_schema(),
             fallback=fallback_backend,
+            caller="classifier",
+            step="step1_identity",
+            source_name=source_name,
         )
         if step1_result is None:
             logger.warning(f"classify_document [{source_name}]: multi-step Step 1 FAILED — aborting")
@@ -213,6 +216,9 @@ def _classify_multi_step(
         user_prompt=step2_user,
         json_schema=step2_json_schema(),
         fallback=fallback_backend,
+        caller="classifier",
+        step="step2_mapping",
+        source_name=source_name,
     )
     if step2_result is None:
         # Fallback: use Phase 0 column mappings if available
@@ -257,6 +263,9 @@ def _classify_multi_step(
         user_prompt=step3_user,
         json_schema=step3_json_schema(),
         fallback=fallback_backend,
+        caller="classifier",
+        step="step3_semantic",
+        source_name=source_name,
     )
     if step3_result is None:
         logger.warning(f"classify_document [{source_name}]: Step 3 FAILED — using degraded defaults")
@@ -475,6 +484,9 @@ def classify_document(
             user_prompt=user_prompt,
             json_schema=json_schema,
             fallback=fallback_backend,
+            caller="classifier",
+            step="single_step",
+            source_name=source_name,
         )
         if result is None:
             logger.warning(f"classify_document: all backends failed for {source_name}")

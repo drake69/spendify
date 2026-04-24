@@ -22,14 +22,16 @@ The configuration is saved in the database (`user_settings`) and persists across
 
 ## ❓ Does the LLM model need to be downloaded before using the app?
 
-**No, with the one-click installation the model is downloaded automatically on first launch.** The app detects your hardware (RAM, GPU) and downloads the optimal model:
+**No, with the one-click installation the model is downloaded automatically on first launch.** The app detects your hardware (RAM, GPU, VRAM) and downloads the optimal model:
 
-| RAM | Model | Size |
-|-----|-------|------|
+| Effective memory | Model | Size |
+|------------------|-------|------|
 | 4 GB | Qwen2.5-1.5B | 1.1 GB |
 | 8 GB | Qwen2.5-3B | 2.1 GB |
 | 12 GB | Qwen2.5-7B | 4.7 GB |
 | 16+ GB | Gemma-3-12B | 6.8 GB |
+
+> **How is effective memory determined?** On Mac (Apple Silicon) memory is unified, so it equals RAM. On Linux/Windows with a discrete GPU (NVIDIA or AMD ROCm), VRAM is the bottleneck: the app detects VRAM via `nvidia-smi` or `rocm-smi` and uses `min(RAM, VRAM)`. If no GPU is detected, system RAM is used.
 
 > **Note:** the app works without an active LLM. Import, ledger, rules, analytics and reports are always available. If the LLM is unreachable, transactions receive the category "Other" and `to_review=True`.
 
@@ -45,7 +47,7 @@ The configuration is saved in the database (`user_settings`) and persists across
    - Checks Python and installs `uv` (package manager)
    - Downloads Spendif.ai to `~/Applications/Spendif.ai/`
    - Installs all dependencies
-   - Detects your hardware and recommends the optimal LLM model
+   - Detects your hardware (RAM, GPU, VRAM) and recommends the optimal LLM model
 4. On the first import, the model is downloaded automatically
 
 **To launch Spendif.ai every day:** double-click `Spendif.ai.command` in `~/Applications/Spendif.ai/packaging/macos/`
@@ -211,6 +213,8 @@ uv run huggingface-cli download Qwen/Qwen2.5-3B-Instruct-GGUF qwen2.5-3b-instruc
 ```
 
 > **GPU on Linux:** llama.cpp uses CUDA automatically if NVIDIA drivers are installed. For AMD GPUs (ROCm): `CMAKE_ARGS="-DGGML_HIPBLAS=on" uv pip install llama-cpp-python --upgrade` (requires `rocm-dev` and `hipblas-dev`).
+
+> **VRAM note:** if downloading manually, choose the model based on your GPU VRAM, not system RAM. On automatic first launch, Spendif.ai detects VRAM via `nvidia-smi` (NVIDIA) or `rocm-smi` (AMD) and downloads the appropriate model.
 
 ### Step 6 — Start the app
 

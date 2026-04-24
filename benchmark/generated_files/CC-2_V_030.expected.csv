@@ -1,6 +1,6 @@
 row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_category
 1,2026-01-02,1639.97,Bonif. v/fav. - RIF:215802206 ORD. BETA CONSULTING SRL,income,false,Lavoro autonomo/Fattura / parcella
-2,2026-01-03,-18.66,"Pagam. POS - PAGAMENTO POS 18,66 EUR DEL 03.01.2026 A (ITA) BLUESPIRIT",expense,false,Altro/Spese non classificate
+2,2026-01-03,-18.66,"Pagam. POS - PAGAMENTO POS 18,66 EUR DEL 03.01.2026 A (ITA) BLUESPIRIT",expense,false,Abbigliamento/Altro abbigliamento
 3,2026-01-04,5021.84,Bonif. v/fav. - RIF:219894247 ORD. EPSILON DIGITAL SRL,income,false,Lavoro autonomo/Fattura / parcella
 4,2026-01-05,2779.37,Bonif. v/fav. - RIF:214165129 ORD. DELTA SOLUTIONS SPA,income,false,Lavoro autonomo/Fattura / parcella
 5,2026-01-06,4395.97,Bonif. v/fav. - RIF:216198245 ORD. GAMMA TECHNOLOGIES SRL,income,false,Lavoro autonomo/Fattura / parcella

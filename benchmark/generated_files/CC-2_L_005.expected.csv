@@ -68,8 +68,8 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 67,2026-01-14,2151.76,Bonif. v/fav. - RIF:212585950 ORD. DELTA SOLUTIONS SPA,income,false,Lavoro autonomo/Fattura / parcella
 68,2026-01-15,118.27,Bonif. v/fav. - RIF:211472955 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
 69,2026-01-15,2232.57,Bonif. v/fav. - RIF:212743996 ORD. DELTA SOLUTIONS SPA,income,false,Lavoro autonomo/Fattura / parcella
-70,2026-01-16,-23.39,PAGAMENTO CONTACTLESS CARTA **** 3539 UNIEURO,expense,false,Svago e tempo libero/Hobby
-71,2026-01-16,-17.62,PAGAMENTO CONTACTLESS CARTA **** 1983 O'TACOS,expense,false,Ristorazione/Ristorante
+70,2026-01-16,-23.39,PAGAMENTO CONTACTLESS CARTA **** 3539 UNIEURO,expense,false,Casa/Elettrodomestici
+71,2026-01-16,-17.62,PAGAMENTO CONTACTLESS CARTA **** 1983 O'TACOS,expense,false,Ristorazione/Asporto / delivery
 72,2026-01-16,5189.08,Bonif. v/fav. - RIF:218219709 ORD. GAMMA TECHNOLOGIES SRL,income,false,Lavoro autonomo/Fattura / parcella
 73,2026-01-16,3791.59,Bonif. v/fav. - RIF:215524481 ORD. DELTA SOLUTIONS SPA,income,false,Lavoro autonomo/Fattura / parcella
 74,2026-01-16,4450.99,Bonif. v/fav. - RIF:213702106 ORD. BETA CONSULTING SRL,income,false,Lavoro autonomo/Fattura / parcella
@@ -220,7 +220,7 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 219,2026-02-16,4187.56,Bonif. v/fav. - RIF:215660743 ORD. BETA CONSULTING SRL,income,false,Lavoro autonomo/Fattura / parcella
 220,2026-02-16,-88.57,RICARICA HYPE DA CONTO 0075849,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 221,2026-02-16,-889.11,GIROCONTO DA CC 0075849 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-222,2026-02-17,-235.88,PAGAMENTO CONTACTLESS CARTA **** 6293 BUFFETTI CENTRO COMM. IL LEONE,expense,false,Tasse e tributi/Imposte varie
+222,2026-02-17,-235.88,PAGAMENTO CONTACTLESS CARTA **** 6293 BUFFETTI CENTRO COMM. IL LEONE,expense,false,Istruzione/Libri e materiale
 223,2026-02-17,3596.99,Bonif. v/fav. - RIF:214467052 ORD. BETA CONSULTING SRL,income,false,Lavoro autonomo/Fattura / parcella
 224,2026-02-17,2716.28,Bonif. v/fav. - RIF:211030419 ORD. EPSILON DIGITAL SRL,income,false,Lavoro autonomo/Fattura / parcella
 225,2026-02-17,4758.30,Bonif. v/fav. - RIF:212388393 ORD. BETA CONSULTING SRL,income,false,Lavoro autonomo/Fattura / parcella

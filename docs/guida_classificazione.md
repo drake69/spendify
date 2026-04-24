@@ -117,6 +117,7 @@ Spendif.ai gestisce due informazioni **distinte** per ogni transazione:
 |----------|-------|-------------|
 | **Validazione** | `human_validated` | "Ho visto questa spesa e confermo che e corretta (non anomala)." E l'approvazione della **spesa**, non della categoria. |
 | **Fonte classificazione** | `category_source` | "Chi ha assegnato l'ultima categoria." Valori: AI, Regola, Manuale, Storico. |
+| **Modello classificazione** | `category_model` | "Quale modello LLM specifico ha categorizzato." Es. `gemma-2-2b-it-Q4_K_M`. Vuoto se fonte = Regola o Manuale. |
 
 **Regola chiave:** i due campi sono indipendenti. Quando una regola o l'AI riclassificano una transazione, la fonte cambia ma la validazione **non viene toccata**. Solo un click esplicito sulla checkbox "Validato" (deselezionandola) puo rimuovere la validazione.
 

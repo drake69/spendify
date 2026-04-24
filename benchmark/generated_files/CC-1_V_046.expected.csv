@@ -1,11 +1,11 @@
 row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_category
-1,2026-01-12,-640.27,PAGAMENTO CONTACTLESS CARTA **** 3389 LA FELTRINELLI,expense,false,Istruzione/Rette scolastiche
+1,2026-01-12,-640.27,PAGAMENTO CONTACTLESS CARTA **** 3389 LA FELTRINELLI,expense,false,Svago e tempo libero/Libri / riviste
 2,2026-01-13,399.79,Bonif. v/fav. - RIF:214254742 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
 3,2026-01-17,488.23,Bonif. v/fav. - RIF:217014407 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
 4,2026-01-17,-442.80,Disposizione - RIF:217611845 BEN. ROSSI MARCO P.IVA GIROCONTO,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-5,2026-01-19,-9.53,"Pagam. POS - PAGAMENTO POS 9,53 EUR DEL 19.01.2026 A (ITA) THUN BERGAMO",expense,false,Altro/Spese non classificate
+5,2026-01-19,-9.53,"Pagam. POS - PAGAMENTO POS 9,53 EUR DEL 19.01.2026 A (ITA) THUN BERGAMO",expense,false,Regali e donazioni/Regali
 6,2026-01-24,-30.81,"Pagam. POS - PAGAMENTO POS 30,81 EUR DEL 24.01.2026 A (ITA) GNP",expense,false,Trasporti/Carburante
-7,2026-01-25,-13.23,"Pagam. POS - PAGAMENTO POS 13,23 EUR DEL 25.01.2026 A (ITA) WYCON COSMETICS CENTRO COMMERCIALE LE GRANGE",expense,false,Altro/Spese non classificate
+7,2026-01-25,-13.23,"Pagam. POS - PAGAMENTO POS 13,23 EUR DEL 25.01.2026 A (ITA) WYCON COSMETICS CENTRO COMMERCIALE LE GRANGE",expense,false,Cura personale/Cosmetici e igiene
 8,2026-01-27,2143.99,ACCREDITO STIPENDIO MESE DI GENNAIO 2026,income,false,Lavoro dipendente/Stipendio
 9,2026-01-27,2076.28,ACCREDITO STIPENDIO MESE DI GENNAIO 2026,income,false,Lavoro dipendente/Stipendio
 10,2026-01-27,2098.39,Bonif. v/fav. - RIF:216538222 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
@@ -13,10 +13,10 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 12,2026-01-27,2092.21,Bonif. v/fav. - RIF:214968956 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
 13,2026-01-27,2108.30,ACCREDITO STIPENDIO MESE DI GENNAIO 2026,income,false,Lavoro dipendente/Stipendio
 14,2026-01-27,2144.15,Bonif. v/fav. - RIF:219819728 ORD. MINISTERO PUBBLICA ISTRUZIONE STIPENDIO,income,false,Lavoro dipendente/Stipendio
-15,2026-01-31,-60.94,"Pagam. POS - PAGAMENTO POS 60,94 EUR DEL 31.01.2026 A (ITA) BLUESPIRIT NAPOLI",expense,false,Altro/Spese non classificate
+15,2026-01-31,-60.94,"Pagam. POS - PAGAMENTO POS 60,94 EUR DEL 31.01.2026 A (ITA) BLUESPIRIT NAPOLI",expense,false,Abbigliamento/Altro abbigliamento
 16,2026-02-01,-490.08,Addebito SDD - MENSA SCOLASTICA COMUNE DI MILANO,expense,false,Istruzione/Rette scolastiche
 17,2026-02-02,-767.71,GIROCONTO DA CC 0123456 A CC 0075849,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-18,2026-02-08,-69.83,"Pagam. POS - PAGAMENTO POS 69,83 EUR DEL 08.02.2026 A (ITA) FITACTIVE MESTRE",expense,false,Svago e tempo libero/Cinema / teatro / eventi
+18,2026-02-08,-69.83,"Pagam. POS - PAGAMENTO POS 69,83 EUR DEL 08.02.2026 A (ITA) FITACTIVE MESTRE",expense,false,Svago e tempo libero/Sport e palestra
 19,2026-02-09,119.92,Bonif. v/fav. - RIF:213726486 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
 20,2026-02-10,-118.56,Addebito SDD - GRUPPO HERA TARI 2026,expense,false,Casa/Energia elettrica
 21,2026-02-11,-867.06,GIROCONTO DA CC 0123456 A CC 0075849,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata

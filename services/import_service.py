@@ -114,6 +114,20 @@ class ImportService:
             test_mode=test_mode,
             max_transaction_amount=float(settings.get("max_transaction_amount", "1000000")),
             force_schema_import=settings.get("force_schema_import", "false").lower() == "true",
+            # Categorizer-specific backend
+            cat_llm_backend=settings.get("cat_llm_backend", ""),
+            cat_ollama_base_url=settings.get("cat_ollama_base_url", ""),
+            cat_ollama_model=settings.get("cat_ollama_model", ""),
+            cat_openai_model=settings.get("cat_openai_model", ""),
+            cat_openai_api_key=settings.get("cat_openai_api_key", ""),
+            cat_claude_model=settings.get("cat_anthropic_model", ""),
+            cat_anthropic_api_key=settings.get("cat_anthropic_api_key", ""),
+            cat_compat_base_url=settings.get("cat_compat_base_url", ""),
+            cat_compat_api_key=settings.get("cat_compat_api_key", ""),
+            cat_compat_model=settings.get("cat_compat_model", ""),
+            cat_llama_cpp_model_path=settings.get("cat_llama_cpp_model_path", ""),
+            cat_llama_cpp_n_gpu_layers=int(settings.get("cat_llama_cpp_n_gpu_layers", "-1")),
+            cat_llama_cpp_n_ctx=int(settings.get("cat_llama_cpp_n_ctx", "0")),
         )
 
     def get_owner_names(self) -> str:
@@ -291,4 +305,5 @@ class ImportService:
             anthropic_api_key=settings.get("anthropic_api_key", ""),
             claude_model=settings.get("anthropic_model", "claude-3-haiku-20240307"),
             force_schema_import=settings.get("force_schema_import", "false").lower() == "true",
+            cat_llm_backend=settings.get("cat_llm_backend", ""),
         )

@@ -31,9 +31,9 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 30,2026-01-21,261.56,Bonif. v/fav. - RIF:217078147 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
 31,2026-01-25,-648.86,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 32,2026-01-26,447.32,Bonif. v/fav. - RIF:210485316 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
-33,2026-01-27,-21.10,PAGAMENTO CONTACTLESS CARTA **** 4588 MERCATÒ LOCAL BARI,expense,false,Alimentari/Altro alimentari
-34,2026-01-29,-5.39,"Pagam. POS - PAGAMENTO POS 5,39 EUR DEL 29.01.2026 A (ITA) IL PANE QUOTIDIANO BOLOGNA",expense,false,Alimentari/Altro alimentari
-35,2026-01-29,-21.91,PAGAMENTO CONTACTLESS CARTA **** 6810 MERCATÒ VERONA,expense,false,Alimentari/Altro alimentari
+33,2026-01-27,-21.10,PAGAMENTO CONTACTLESS CARTA **** 4588 MERCATÒ LOCAL BARI,expense,false,Alimentari/Spesa supermercato
+34,2026-01-29,-5.39,"Pagam. POS - PAGAMENTO POS 5,39 EUR DEL 29.01.2026 A (ITA) IL PANE QUOTIDIANO BOLOGNA",expense,false,Alimentari/Mercato / freschi
+35,2026-01-29,-21.91,PAGAMENTO CONTACTLESS CARTA **** 6810 MERCATÒ VERONA,expense,false,Alimentari/Spesa supermercato
 36,2026-02-01,1183.30,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
 37,2026-02-01,1205.77,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
 38,2026-02-01,1174.65,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
@@ -79,9 +79,9 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 78,2026-02-01,1243.66,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
 79,2026-02-02,-97.02,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
 80,2026-02-03,-960.01,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-81,2026-02-08,-8.10,"Pagam. POS - PAGAMENTO POS 8,10 EUR DEL 08.02.2026 A (ITA) COOP.FI VENEZIA",expense,false,Alimentari/Altro alimentari
+81,2026-02-08,-8.10,"Pagam. POS - PAGAMENTO POS 8,10 EUR DEL 08.02.2026 A (ITA) COOP.FI VENEZIA",expense,false,Alimentari/Spesa supermercato
 82,2026-02-08,-429.60,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-83,2026-02-09,-197.64,"Pagam. POS - PAGAMENTO POS 197,64 EUR DEL 09.02.2026 A (ITA) FIELMANN",expense,false,Salute/Farmaci
+83,2026-02-09,-197.64,"Pagam. POS - PAGAMENTO POS 197,64 EUR DEL 09.02.2026 A (ITA) FIELMANN",expense,false,Salute/Ottico
 84,2026-02-09,61.67,Bonif. v/fav. - RIF:218427235 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
 85,2026-02-09,-400.43,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 86,2026-02-10,-108.51,"Pagam. POS - PAGAMENTO POS 108,51 EUR DEL 10.02.2026 A (ITA) IL GIGANTE MESTRE",expense,false,Alimentari/Spesa supermercato

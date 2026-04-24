@@ -1,5 +1,5 @@
 row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_category
-1,2026-01-01,-83.75,"Pagam. POS - PAGAMENTO POS 83,75 EUR DEL 01.01.2026 A (ITA) NAU! PRATI",expense,false,Salute/Farmaci
+1,2026-01-01,-83.75,"Pagam. POS - PAGAMENTO POS 83,75 EUR DEL 01.01.2026 A (ITA) NAU! PRATI",expense,false,Salute/Ottico
 2,2026-01-01,1207.13,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
 3,2026-01-01,1162.25,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
 4,2026-01-01,1242.93,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
@@ -70,7 +70,7 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 69,2026-01-22,-11.21,PAGAMENTO CONTACTLESS CARTA **** 3859 AVIA,expense,false,Alimentari/Altro alimentari
 70,2026-01-24,60.21,Bonif. v/fav. - RIF:212026133 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
 71,2026-01-24,-864.69,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-72,2026-01-25,-192.76,"Pagam. POS - PAGAMENTO POS 192,76 EUR DEL 25.01.2026 A (ITA) BOTTEGA VERDE FUORIGROTTA",expense,false,Cura personale/Parrucchiere / barbiere
+72,2026-01-25,-192.76,"Pagam. POS - PAGAMENTO POS 192,76 EUR DEL 25.01.2026 A (ITA) BOTTEGA VERDE FUORIGROTTA",expense,false,Cura personale/Cosmetici e igiene
 73,2026-01-27,-211.10,"Pagam. POS - PAGAMENTO POS 211,10 EUR DEL 27.01.2026 A (ITA) CENTRO MEDICO SANTAGOSTINO",expense,false,Salute/Farmaci
 74,2026-01-28,314.13,Bonif. v/fav. - RIF:216124528 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
 75,2026-02-01,1185.76,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
@@ -129,12 +129,12 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 128,2026-02-01,1165.14,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
 129,2026-02-03,101.85,Bonif. v/fav. - RIF:212739588 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
 130,2026-02-05,-920.13,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-131,2026-02-07,-175.01,"Pagam. POS - PAGAMENTO POS 175,01 EUR DEL 07.02.2026 A (ITA) BOTTEGA VERDE",expense,false,Cura personale/Parrucchiere / barbiere
-132,2026-02-08,-93.83,PAGAMENTO CONTACTLESS CARTA **** 5979 L'ISOLA DEI TESORI,expense,false,Altro/Spese non classificate
-133,2026-02-08,-154.05,"Pagam. POS - PAGAMENTO POS 154,05 EUR DEL 08.02.2026 A (ITA) TIGOTÀ",expense,false,Cura personale/Parrucchiere / barbiere
+131,2026-02-07,-175.01,"Pagam. POS - PAGAMENTO POS 175,01 EUR DEL 07.02.2026 A (ITA) BOTTEGA VERDE",expense,false,Cura personale/Cosmetici e igiene
+132,2026-02-08,-93.83,PAGAMENTO CONTACTLESS CARTA **** 5979 L'ISOLA DEI TESORI,expense,false,Animali domestici/Cibo
+133,2026-02-08,-154.05,"Pagam. POS - PAGAMENTO POS 154,05 EUR DEL 08.02.2026 A (ITA) TIGOTÀ",expense,false,Cura personale/Cosmetici e igiene
 134,2026-02-08,267.36,Bonif. v/fav. - RIF:210827064 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
 135,2026-02-11,-816.76,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-136,2026-02-12,-18.19,PAGAMENTO CONTACTLESS CARTA **** 6985 TODIS GENOVA,expense,false,Alimentari/Altro alimentari
+136,2026-02-12,-18.19,PAGAMENTO CONTACTLESS CARTA **** 6985 TODIS GENOVA,expense,false,Alimentari/Spesa supermercato
 137,2026-02-12,-373.86,Disposizione - RIF:216019614 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 138,2026-02-13,98.49,Bonif. v/fav. - RIF:213874405 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
 139,2026-02-16,-56.45,"Pagam. POS - PAGAMENTO POS 56,45 EUR DEL 16.02.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
@@ -143,7 +143,7 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 142,2026-02-17,441.72,Bonif. v/fav. - RIF:212587567 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
 143,2026-02-17,-343.76,Disposizione - RIF:215889734 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 144,2026-02-18,-611.87,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-145,2026-02-19,-53.26,"Pagam. POS - PAGAMENTO POS 53,26 EUR DEL 19.02.2026 A (ITA) COMPRO ORO",expense,false,Altro/Spese non classificate
+145,2026-02-19,-53.26,"Pagam. POS - PAGAMENTO POS 53,26 EUR DEL 19.02.2026 A (ITA) COMPRO ORO",expense,false,Abbigliamento/Altro abbigliamento
 146,2026-02-21,-948.47,Disposizione - RIF:210140823 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 147,2026-02-22,90.41,Bonif. v/fav. - RIF:216829432 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
 148,2026-02-25,-580.22,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata

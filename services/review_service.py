@@ -31,6 +31,44 @@ class ReviewService:
         finally:
             s.close()
 
+    # ── Config helper ────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _config_from_settings(settings: dict):
+        from core.orchestrator import ProcessingConfig
+        from core.sanitizer import SanitizationConfig
+        owner_names = [n.strip() for n in settings.get("owner_names", "").split(",") if n.strip()]
+        return ProcessingConfig(
+            llm_backend=settings.get("llm_backend", "local_ollama"),
+            sanitize_config=SanitizationConfig(
+                owner_names=owner_names,
+                description_language=settings.get("description_language", "it"),
+            ),
+            ollama_base_url=settings.get("ollama_base_url", "http://localhost:11434"),
+            ollama_model=settings.get("ollama_model", "gemma3:12b"),
+            openai_model=settings.get("openai_model", "gpt-4o-mini"),
+            openai_api_key=settings.get("openai_api_key", ""),
+            claude_model=settings.get("anthropic_model", "claude-3-5-haiku-20241022"),
+            anthropic_api_key=settings.get("anthropic_api_key", ""),
+            compat_base_url=settings.get("compat_base_url", ""),
+            compat_api_key=settings.get("compat_api_key", ""),
+            compat_model=settings.get("compat_model", ""),
+            description_language=settings.get("description_language", "it"),
+            cat_llm_backend=settings.get("cat_llm_backend", ""),
+            cat_ollama_base_url=settings.get("cat_ollama_base_url", ""),
+            cat_ollama_model=settings.get("cat_ollama_model", ""),
+            cat_openai_model=settings.get("cat_openai_model", ""),
+            cat_openai_api_key=settings.get("cat_openai_api_key", ""),
+            cat_claude_model=settings.get("cat_anthropic_model", ""),
+            cat_anthropic_api_key=settings.get("cat_anthropic_api_key", ""),
+            cat_compat_base_url=settings.get("cat_compat_base_url", ""),
+            cat_compat_api_key=settings.get("cat_compat_api_key", ""),
+            cat_compat_model=settings.get("cat_compat_model", ""),
+            cat_llama_cpp_model_path=settings.get("cat_llama_cpp_model_path", ""),
+            cat_llama_cpp_n_gpu_layers=int(settings.get("cat_llama_cpp_n_gpu_layers", "-1")),
+            cat_llama_cpp_n_ctx=int(settings.get("cat_llama_cpp_n_ctx", "0")),
+        )
+
     # ── Utility queries ───────────────────────────────────────────────────────
 
     _CATEGORIZABLE_TYPES = ("expense", "income", "card_tx", "unknown")
@@ -71,31 +109,15 @@ class ReviewService:
         """
         from core.description_cleaner import clean_descriptions_batch
         from core.categorizer import categorize_batch
-        from core.orchestrator import ProcessingConfig, _build_backend, _get_fallback_backend
+        from core.orchestrator import ProcessingConfig, _build_backend, _build_categorizer_backend, _get_fallback_backend
         from core.sanitizer import SanitizationConfig
 
         with self._session() as s:
             settings = repository.get_all_user_settings(s)
 
-        owner_names = [n.strip() for n in settings.get("owner_names", "").split(",") if n.strip()]
-        config = ProcessingConfig(
-            llm_backend=settings.get("llm_backend", "local_ollama"),
-            sanitize_config=SanitizationConfig(
-                owner_names=owner_names,
-                description_language=settings.get("description_language", "it"),
-            ),
-            ollama_base_url=settings.get("ollama_base_url", "http://localhost:11434"),
-            ollama_model=settings.get("ollama_model", "gemma3:12b"),
-            openai_model=settings.get("openai_model", "gpt-4o-mini"),
-            openai_api_key=settings.get("openai_api_key", ""),
-            claude_model=settings.get("anthropic_model", "claude-3-5-haiku-20241022"),
-            anthropic_api_key=settings.get("anthropic_api_key", ""),
-            compat_base_url=settings.get("compat_base_url", ""),
-            compat_api_key=settings.get("compat_api_key", ""),
-            compat_model=settings.get("compat_model", ""),
-            description_language=settings.get("description_language", "it"),
-        )
+        config = self._config_from_settings(settings)
         backend = _build_backend(config)
+        cat_backend = _build_categorizer_backend(config) or backend
         fallback = _get_fallback_backend(config)
 
         # Load all non-giroconto transactions that still need review
@@ -152,7 +174,7 @@ class ReviewService:
                 transactions=to_categorize,
                 taxonomy=taxonomy,
                 user_rules=user_rules,
-                llm_backend=backend,
+                llm_backend=cat_backend,
                 sanitize_config=config.sanitize_config,
                 fallback_backend=fallback,
                 confidence_threshold=config.confidence_threshold,
@@ -175,6 +197,7 @@ class ReviewService:
                     tx.subcategory = result.subcategory
                     tx.category_confidence = result.confidence.value
                     tx.category_source = result.source.value
+                    tx.category_model = result.model_name or None
                     tx.to_review = result.to_review
                     # human_validated NOT reset: means "user saw this tx", not "user approves category"
                     n_categorized += 1
@@ -267,7 +290,7 @@ class ReviewService:
         Returns (n_updated, n_categorized).
         """
         from core.categorizer import categorize_batch
-        from core.orchestrator import ProcessingConfig, _build_backend, _get_fallback_backend
+        from core.orchestrator import ProcessingConfig, _build_backend, _build_categorizer_backend, _get_fallback_backend
         from core.sanitizer import SanitizationConfig
 
         with self._session() as s:
@@ -294,25 +317,9 @@ class ReviewService:
         if n_updated == 0:
             return 0, 0
 
-        owner_names = [n.strip() for n in settings.get("owner_names", "").split(",") if n.strip()]
-        config = ProcessingConfig(
-            llm_backend=settings.get("llm_backend", "local_ollama"),
-            sanitize_config=SanitizationConfig(
-                owner_names=owner_names,
-                description_language=settings.get("description_language", "it"),
-            ),
-            ollama_base_url=settings.get("ollama_base_url", "http://localhost:11434"),
-            ollama_model=settings.get("ollama_model", "gemma3:12b"),
-            openai_model=settings.get("openai_model", "gpt-4o-mini"),
-            openai_api_key=settings.get("openai_api_key", ""),
-            claude_model=settings.get("anthropic_model", "claude-3-5-haiku-20241022"),
-            anthropic_api_key=settings.get("anthropic_api_key", ""),
-            compat_base_url=settings.get("compat_base_url", ""),
-            compat_api_key=settings.get("compat_api_key", ""),
-            compat_model=settings.get("compat_model", ""),
-            description_language=settings.get("description_language", "it"),
-        )
+        config = self._config_from_settings(settings)
         backend = _build_backend(config)
+        cat_backend = _build_categorizer_backend(config) or backend
         fallback = _get_fallback_backend(config)
 
         _categorizable = {"expense", "income", "card_tx", "unknown"}
@@ -328,7 +335,7 @@ class ReviewService:
                 transactions=to_categorize,
                 taxonomy=taxonomy,
                 user_rules=user_rules,
-                llm_backend=backend,
+                llm_backend=cat_backend,
                 sanitize_config=config.sanitize_config,
                 fallback_backend=fallback,
                 confidence_threshold=config.confidence_threshold,
@@ -348,6 +355,7 @@ class ReviewService:
                         tx.subcategory = result.subcategory
                         tx.category_confidence = result.confidence.value
                         tx.category_source = result.source.value
+                        tx.category_model = result.model_name or None
                         tx.to_review = result.to_review
                         # human_validated NOT reset: means "user saw this tx", not "user approves category"
                         n_categorized += 1
@@ -370,7 +378,7 @@ class ReviewService:
         """
         from core.description_cleaner import clean_descriptions_batch
         from core.categorizer import categorize_batch
-        from core.orchestrator import ProcessingConfig, _build_backend, _get_fallback_backend
+        from core.orchestrator import ProcessingConfig, _build_backend, _build_categorizer_backend, _get_fallback_backend
         from core.sanitizer import SanitizationConfig
 
         with self._session() as s:
@@ -394,25 +402,9 @@ class ReviewService:
         if not tx_dicts:
             return 0, 0, 0
 
-        owner_names = [n.strip() for n in settings.get("owner_names", "").split(",") if n.strip()]
-        config = ProcessingConfig(
-            llm_backend=settings.get("llm_backend", "local_ollama"),
-            sanitize_config=SanitizationConfig(
-                owner_names=owner_names,
-                description_language=settings.get("description_language", "it"),
-            ),
-            ollama_base_url=settings.get("ollama_base_url", "http://localhost:11434"),
-            ollama_model=settings.get("ollama_model", "gemma3:12b"),
-            openai_model=settings.get("openai_model", "gpt-4o-mini"),
-            openai_api_key=settings.get("openai_api_key", ""),
-            claude_model=settings.get("anthropic_model", "claude-3-5-haiku-20241022"),
-            anthropic_api_key=settings.get("anthropic_api_key", ""),
-            compat_base_url=settings.get("compat_base_url", ""),
-            compat_api_key=settings.get("compat_api_key", ""),
-            compat_model=settings.get("compat_model", ""),
-            description_language=settings.get("description_language", "it"),
-        )
+        config = self._config_from_settings(settings)
         backend = _build_backend(config)
+        cat_backend = _build_categorizer_backend(config) or backend
         fallback = _get_fallback_backend(config)
 
         if run_cleaner:
@@ -425,7 +417,7 @@ class ReviewService:
         cat_results = None
         if run_categorizer:
             cat_results = categorize_batch(
-                tx_dicts, taxonomy, user_rules, backend,
+                tx_dicts, taxonomy, user_rules, cat_backend,
                 sanitize_config=config.sanitize_config,
                 fallback_backend=fallback,
                 description_language=config.description_language,
@@ -454,6 +446,7 @@ class ReviewService:
                     tx.category_source = (
                         r.source.value if hasattr(r.source, "value") else str(r.source)
                     )
+                    tx.category_model = r.model_name or None
                     tx.to_review = r.to_review
                     # human_validated NOT reset: means "user saw this tx", not "user approves category"
                     n_cat_updated += 1

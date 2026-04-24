@@ -22,14 +22,16 @@ La configurazione viene salvata nel database (`user_settings`) e persiste tra i 
 
 ## ❓ Il modello LLM va scaricato prima di usare l'app?
 
-**No, con l'installazione one-click il modello viene scaricato automaticamente al primo avvio.** L'app rileva l'hardware (RAM, GPU) e scarica il modello ottimale:
+**No, con l'installazione one-click il modello viene scaricato automaticamente al primo avvio.** L'app rileva l'hardware (RAM, GPU, VRAM) e scarica il modello ottimale:
 
-| RAM | Modello | Dimensione |
-|-----|---------|-----------|
+| Memoria effettiva | Modello | Dimensione |
+|-------------------|---------|-----------|
 | 4 GB | Qwen2.5-1.5B | 1.1 GB |
 | 8 GB | Qwen2.5-3B | 2.1 GB |
 | 12 GB | Qwen2.5-7B | 4.7 GB |
 | 16+ GB | Gemma-3-12B | 6.8 GB |
+
+> **Come viene scelta la memoria effettiva?** Su Mac (Apple Silicon) la memoria è unificata, quindi coincide con la RAM. Su Linux/Windows con GPU dedicata (NVIDIA o AMD ROCm), il vincolo è la VRAM: l'app rileva la VRAM via `nvidia-smi` o `rocm-smi` e usa `min(RAM, VRAM)`. Se non viene rilevata nessuna GPU, usa la RAM di sistema.
 
 > **Nota:** l'app funziona anche senza LLM attivo. Import, ledger, regole, analisi e report sono sempre disponibili. Se il LLM non è raggiungibile, le transazioni ricevono categoria "Altro" e `to_review=True`.
 
@@ -45,7 +47,7 @@ La configurazione viene salvata nel database (`user_settings`) e persiste tra i 
    - Verifica Python e installa `uv` (package manager)
    - Scarica Spendif.ai in `~/Applications/Spendif.ai/`
    - Installa tutte le dipendenze
-   - Rileva il tuo hardware e consiglia il modello LLM ottimale
+   - Rileva il tuo hardware (RAM, GPU, VRAM) e consiglia il modello LLM ottimale
 4. Al primo import, il modello viene scaricato automaticamente
 
 **Per avviare Spendif.ai ogni giorno:** double-click su `Spendif.ai.command` in `~/Applications/Spendif.ai/packaging/macos/`
@@ -207,6 +209,8 @@ uv run huggingface-cli download Qwen/Qwen2.5-3B-Instruct-GGUF qwen2.5-3b-instruc
 ```
 
 > **GPU su Linux:** llama.cpp usa automaticamente CUDA se i driver NVIDIA sono installati. Per GPU AMD (ROCm): `CMAKE_ARGS="-DGGML_HIPBLAS=on" uv pip install llama-cpp-python --upgrade` (richiede `rocm-dev` e `hipblas-dev`).
+
+> **Nota VRAM:** se scarichi manualmente, scegli il modello in base alla VRAM della GPU, non alla RAM di sistema. Al primo avvio automatico, Spendif.ai rileva la VRAM via `nvidia-smi` (NVIDIA) o `rocm-smi` (AMD) e scarica il modello appropriato.
 
 ### Step 6 — Avvia l'app
 

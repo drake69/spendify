@@ -5,7 +5,7 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 4,2026-01-07,-231.55,RICARICA HYPE DA CONTO 0075849,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 5,2026-01-08,4670.17,Bonif. v/fav. - RIF:211295544 ORD. CLIENTE ALFA S.P.A.,income,false,Lavoro autonomo/Fattura / parcella
 6,2026-01-11,2659.32,Bonif. v/fav. - RIF:216543922 ORD. BETA CONSULTING SRL,income,false,Lavoro autonomo/Fattura / parcella
-7,2026-01-12,-45.37,"Pagam. POS - PAGAMENTO POS 45,37 EUR DEL 12.01.2026 A (ITA) SPIZZICO",expense,false,Ristorazione/Ristorante
+7,2026-01-12,-45.37,"Pagam. POS - PAGAMENTO POS 45,37 EUR DEL 12.01.2026 A (ITA) SPIZZICO",expense,false,Ristorazione/Asporto / delivery
 8,2026-01-12,2591.59,Bonif. v/fav. - RIF:214915693 ORD. BETA CONSULTING SRL,income,false,Lavoro autonomo/Fattura / parcella
 9,2026-01-12,4110.14,Bonif. v/fav. - RIF:213942906 ORD. GAMMA TECHNOLOGIES SRL,income,false,Lavoro autonomo/Fattura / parcella
 10,2026-01-15,4270.88,Bonif. v/fav. - RIF:219173706 ORD. GAMMA TECHNOLOGIES SRL,income,false,Lavoro autonomo/Fattura / parcella
@@ -14,7 +14,7 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 13,2026-01-29,1892.62,Bonif. v/fav. - RIF:210132919 ORD. CLIENTE ALFA S.P.A.,income,false,Lavoro autonomo/Fattura / parcella
 14,2026-01-31,3490.83,Bonif. v/fav. - RIF:212182395 ORD. BETA CONSULTING SRL,income,false,Lavoro autonomo/Fattura / parcella
 15,2026-01-31,1834.37,Bonif. v/fav. - RIF:218829861 ORD. BETA CONSULTING SRL,income,false,Lavoro autonomo/Fattura / parcella
-16,2026-02-01,-110.54,PAGAMENTO CONTACTLESS CARTA **** 1700 BUREAU VALLÉE,expense,false,Tasse e tributi/Imposte varie
+16,2026-02-01,-110.54,PAGAMENTO CONTACTLESS CARTA **** 1700 BUREAU VALLÉE,expense,false,Istruzione/Libri e materiale
 17,2026-02-04,3070.27,Bonif. v/fav. - RIF:211026583 ORD. DELTA SOLUTIONS SPA,income,false,Lavoro autonomo/Fattura / parcella
 18,2026-02-07,2912.77,Bonif. v/fav. - RIF:217934301 ORD. DELTA SOLUTIONS SPA,income,false,Lavoro autonomo/Fattura / parcella
 19,2026-02-08,4847.36,Bonif. v/fav. - RIF:213652602 ORD. DELTA SOLUTIONS SPA,income,false,Lavoro autonomo/Fattura / parcella

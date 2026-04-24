@@ -9,12 +9,12 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 8,2026-01-01,1185.30,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
 9,2026-01-01,1224.31,ACCREDITO PENSIONE INPS MESE DI GENNAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
 10,2026-01-03,-156.90,"Pagam. POS - PAGAMENTO POS 156,90 EUR DEL 03.01.2026 A (ITA) MERCERIA LA BOTTEGA",expense,false,Cura personale/Parrucchiere / barbiere
-11,2026-01-09,-110.96,"Pagam. POS - PAGAMENTO POS 110,96 EUR DEL 09.01.2026 A (ITA) BOTTEGA VERDE",expense,false,Cura personale/Parrucchiere / barbiere
+11,2026-01-09,-110.96,"Pagam. POS - PAGAMENTO POS 110,96 EUR DEL 09.01.2026 A (ITA) BOTTEGA VERDE",expense,false,Cura personale/Cosmetici e igiene
 12,2026-01-10,-95.00,PAGAMENTO CONTACTLESS CARTA **** 2934 MIGROS FLAMINIO,expense,false,Alimentari/Spesa supermercato
 13,2026-01-11,-761.89,Disposizione - RIF:219490989 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 14,2026-01-22,293.45,Bonif. v/fav. - RIF:211485285 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
 15,2026-01-24,66.56,Bonif. v/fav. - RIF:210119712 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
-16,2026-01-26,-178.24,PAGAMENTO CONTACTLESS CARTA **** 9020 PRIMOR,expense,false,Cura personale/Parrucchiere / barbiere
+16,2026-01-26,-178.24,PAGAMENTO CONTACTLESS CARTA **** 9020 PRIMOR,expense,false,Cura personale/Cosmetici e igiene
 17,2026-02-01,1238.91,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
 18,2026-02-01,1206.58,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
 19,2026-02-01,1216.72,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita

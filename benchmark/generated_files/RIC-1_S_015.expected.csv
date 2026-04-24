@@ -4,7 +4,7 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 3,2026-01-06,277.56,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 4,2026-01-09,-64.79,"Pagam. POS - PAGAMENTO POS 64,79 EUR DEL 09.01.2026 A (ITA) COOP.FI MILANO",expense,false,Alimentari/Spesa supermercato
 5,2026-01-09,164.61,Bonif. v/fav. - RIF:219756415 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
-6,2026-01-11,-47.32,PAGAMENTO CONTACTLESS CARTA **** 6144 EXKI PARMA,expense,false,Ristorazione/Ristorante
+6,2026-01-11,-47.32,PAGAMENTO CONTACTLESS CARTA **** 6144 EXKI PARMA,expense,false,Ristorazione/Asporto / delivery
 7,2026-01-11,57.26,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 8,2026-01-12,-20.24,"Pagam. POS - PAGAMENTO POS 20,24 EUR DEL 12.01.2026 A (ITA) SUSHIKO PARMA",expense,false,Ristorazione/Ristorante
 9,2026-01-16,93.39,RICARICA POSTEPAY DA CONTO 0123456 ORD. SOFIA ROSSI,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
@@ -12,20 +12,20 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 11,2026-01-19,-45.57,PAGAMENTO CONTACTLESS CARTA **** 5322 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
 12,2026-01-19,-10.15,"Pagam. POS - PAGAMENTO POS 10,15 EUR DEL 19.01.2026 A (ITA) DOPPIO MALTO CORSICO",expense,false,Ristorazione/Ristorante
 13,2026-01-22,-63.39,"Pagam. POS - PAGAMENTO POS 63,39 EUR DEL 22.01.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
-14,2026-01-25,-45.07,PAGAMENTO CONTACTLESS CARTA **** 3936 CADDY'S PRATI,expense,false,Abbigliamento/Abbigliamento adulti
-15,2026-01-26,-319.49,PAGAMENTO CONTACTLESS CARTA **** 1787 FUNSIDE,expense,false,Istruzione/Rette scolastiche
+14,2026-01-25,-45.07,PAGAMENTO CONTACTLESS CARTA **** 3936 CADDY'S PRATI,expense,false,Cura personale/Cosmetici e igiene
+15,2026-01-26,-319.49,PAGAMENTO CONTACTLESS CARTA **** 1787 FUNSIDE,expense,false,Svago e tempo libero/Libri / riviste
 16,2026-01-27,-88.57,PAGAMENTO CONTACTLESS CARTA **** 6983 TIGRE AMICO SAN GIULIANO MILANESE,expense,false,Alimentari/Spesa supermercato
 17,2026-01-28,-24.84,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
-18,2026-02-03,-54.66,"Pagam. POS - PAGAMENTO POS 54,66 EUR DEL 03.02.2026 A (ITA) O'TACOS",expense,false,Ristorazione/Ristorante
+18,2026-02-03,-54.66,"Pagam. POS - PAGAMENTO POS 54,66 EUR DEL 03.02.2026 A (ITA) O'TACOS",expense,false,Ristorazione/Asporto / delivery
 19,2026-02-05,-94.29,"Pagam. POS - PAGAMENTO POS 94,29 EUR DEL 05.02.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
-20,2026-02-06,-45.53,PAGAMENTO CONTACTLESS CARTA **** 6867 PRIMOR GENOVA,expense,false,Altro/Spese non classificate
+20,2026-02-06,-45.53,PAGAMENTO CONTACTLESS CARTA **** 6867 PRIMOR GENOVA,expense,false,Cura personale/Cosmetici e igiene
 21,2026-02-06,-167.62,PAGAMENTO CONTACTLESS CARTA **** 5234 UNES,expense,false,Alimentari/Spesa supermercato
 22,2026-02-09,-46.43,"Pagam. POS - PAGAMENTO POS 46,43 EUR DEL 09.02.2026 A (ITA) ARD DISCOUNT SESTO SAN GIOVANNI",expense,false,Alimentari/Spesa supermercato
 23,2026-02-11,-28.63,Addebito SDD - TELEPASS S.P.A. PEDAGGI,expense,false,Trasporti/Trasporto pubblico
-24,2026-02-12,-82.67,"Pagam. POS - PAGAMENTO POS 82,67 EUR DEL 12.02.2026 A (ITA) COLOURS & BEAUTY VERONA",expense,false,Altro/Spese non classificate
-25,2026-02-13,-643.78,"Pagam. POS - PAGAMENTO POS 643,78 EUR DEL 13.02.2026 A (ITA) UBIK",expense,false,Istruzione/Rette scolastiche
-26,2026-02-18,-59.25,PAGAMENTO CONTACTLESS CARTA **** 8846 NATURA TIBURTINA,expense,false,Altro/Spese non classificate
+24,2026-02-12,-82.67,"Pagam. POS - PAGAMENTO POS 82,67 EUR DEL 12.02.2026 A (ITA) COLOURS & BEAUTY VERONA",expense,false,Abbigliamento/Altro abbigliamento
+25,2026-02-13,-643.78,"Pagam. POS - PAGAMENTO POS 643,78 EUR DEL 13.02.2026 A (ITA) UBIK",expense,false,Svago e tempo libero/Libri / riviste
+26,2026-02-18,-59.25,PAGAMENTO CONTACTLESS CARTA **** 8846 NATURA TIBURTINA,expense,false,Regali e donazioni/Regali
 27,2026-02-20,-127.69,"Pagam. POS - PAGAMENTO POS 127,69 EUR DEL 20.02.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
-28,2026-02-24,-46.49,PAGAMENTO CONTACTLESS CARTA **** 3161 SPIZZICO TIBURTINA,expense,false,Ristorazione/Ristorante
+28,2026-02-24,-46.49,PAGAMENTO CONTACTLESS CARTA **** 3161 SPIZZICO TIBURTINA,expense,false,Ristorazione/Asporto / delivery
 29,2026-02-24,85.50,Bonif. v/fav. - RIF:218026020 ORD. RICARICA POSTEPAY SOFIA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
 30,2026-02-25,-87.37,PAGAMENTO CONTACTLESS CARTA **** 9663 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato

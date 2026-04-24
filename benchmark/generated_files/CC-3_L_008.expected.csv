@@ -122,13 +122,13 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 121,2026-01-02,-819.86,Disposizione - RIF:219088183 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 122,2026-01-02,-809.29,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 123,2026-01-03,-781.59,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-124,2026-01-04,-41.29,PAGAMENTO CONTACTLESS CARTA **** 4900 FIELMANN BERGAMO,expense,false,Salute/Farmaci
+124,2026-01-04,-41.29,PAGAMENTO CONTACTLESS CARTA **** 4900 FIELMANN BERGAMO,expense,false,Salute/Ottico
 125,2026-01-06,-33.29,"Pagam. POS - PAGAMENTO POS 33,29 EUR DEL 06.01.2026 A (ITA) EDICOLA PIAZZA DUOMO",expense,false,Alimentari/Altro alimentari
 126,2026-01-07,-151.13,"Pagam. POS - PAGAMENTO POS 151,13 EUR DEL 07.01.2026 A (ITA) PARRUCCHIERA SONIA",expense,false,Cura personale/Parrucchiere / barbiere
 127,2026-01-07,273.38,Bonif. v/fav. - RIF:218445004 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
 128,2026-01-07,-378.66,Disposizione - RIF:214819613 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-129,2026-01-09,-12.31,PAGAMENTO CONTACTLESS CARTA **** 4041 IL PANE QUOTIDIANO MARGHERA,expense,false,Alimentari/Altro alimentari
-130,2026-01-10,-47.10,PAGAMENTO CONTACTLESS CARTA **** 4348 EKOM,expense,false,Alimentari/Altro alimentari
+129,2026-01-09,-12.31,PAGAMENTO CONTACTLESS CARTA **** 4041 IL PANE QUOTIDIANO MARGHERA,expense,false,Alimentari/Mercato / freschi
+130,2026-01-10,-47.10,PAGAMENTO CONTACTLESS CARTA **** 4348 EKOM,expense,false,Alimentari/Spesa supermercato
 131,2026-01-10,291.16,Bonif. v/fav. - RIF:213231751 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
 132,2026-01-10,259.84,Bonif. v/fav. - RIF:214861731 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
 133,2026-01-12,-41.03,"Pagam. POS - PAGAMENTO POS 41,03 EUR DEL 12.01.2026 A (ITA) PAM LOCAL",expense,false,Alimentari/Altro alimentari
@@ -144,7 +144,7 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 143,2026-01-18,-171.58,PAGAMENTO CONTACTLESS CARTA **** 7036 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
 144,2026-01-18,487.91,Bonif. v/fav. - RIF:213554492 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
 145,2026-01-18,-922.87,Disposizione - RIF:216861979 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-146,2026-01-19,-20.63,"Pagam. POS - PAGAMENTO POS 20,63 EUR DEL 19.01.2026 A (ITA) CONAD SUPERSTORE TIBURTINA",expense,false,Alimentari/Altro alimentari
+146,2026-01-19,-20.63,"Pagam. POS - PAGAMENTO POS 20,63 EUR DEL 19.01.2026 A (ITA) CONAD SUPERSTORE TIBURTINA",expense,false,Alimentari/Spesa supermercato
 147,2026-01-19,-937.46,Disposizione - RIF:215561682 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 148,2026-01-20,-586.87,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 149,2026-01-20,-461.00,Disposizione - RIF:214149152 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
@@ -158,12 +158,12 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 157,2026-01-27,356.96,Bonif. v/fav. - RIF:215370746 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
 158,2026-01-27,103.67,Bonif. v/fav. - RIF:215484048 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
 159,2026-01-27,-638.34,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-160,2026-01-28,-153.25,PAGAMENTO CONTACTLESS CARTA **** 5966 SPLENDIDI E SPLENDENTI PADOVA,expense,false,Cura personale/Parrucchiere / barbiere
-161,2026-01-29,-75.23,PAGAMENTO CONTACTLESS CARTA **** 7797 COLOURS & BEAUTY TORINO,expense,false,Altro/Spese non classificate
+160,2026-01-28,-153.25,PAGAMENTO CONTACTLESS CARTA **** 5966 SPLENDIDI E SPLENDENTI PADOVA,expense,false,Cura personale/Cosmetici e igiene
+161,2026-01-29,-75.23,PAGAMENTO CONTACTLESS CARTA **** 7797 COLOURS & BEAUTY TORINO,expense,false,Abbigliamento/Altro abbigliamento
 162,2026-01-29,494.30,Bonif. v/fav. - RIF:215852648 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
 163,2026-01-31,-914.52,Disposizione - RIF:213890524 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 164,2026-01-31,-749.97,Disposizione - RIF:215577341 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-165,2026-02-01,-34.62,PAGAMENTO CONTACTLESS CARTA **** 1685 CONAD CITY MILANO,expense,false,Alimentari/Altro alimentari
+165,2026-02-01,-34.62,PAGAMENTO CONTACTLESS CARTA **** 1685 CONAD CITY MILANO,expense,false,Alimentari/Spesa supermercato
 166,2026-02-01,1245.15,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
 167,2026-02-01,1156.19,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
 168,2026-02-01,1179.91,ACCREDITO PENSIONE INPS MESE DI FEBBRAIO 2026,income,false,Prestazioni sociali/Pensione / rendita
@@ -267,7 +267,7 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 266,2026-02-02,190.51,Bonif. v/fav. - RIF:211860164 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
 267,2026-02-02,-853.94,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 268,2026-02-02,-511.51,Disposizione - RIF:217699159 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-269,2026-02-04,-141.94,PAGAMENTO CONTACTLESS CARTA **** 2456 TIGOTÀ,expense,false,Cura personale/Parrucchiere / barbiere
+269,2026-02-04,-141.94,PAGAMENTO CONTACTLESS CARTA **** 2456 TIGOTÀ,expense,false,Cura personale/Cosmetici e igiene
 270,2026-02-04,-989.65,Disposizione - RIF:218987534 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 271,2026-02-05,-958.01,Disposizione - RIF:210605237 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 272,2026-02-06,300.41,Bonif. v/fav. - RIF:218239341 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
@@ -275,18 +275,18 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 274,2026-02-08,346.54,Bonif. v/fav. - RIF:215437103 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
 275,2026-02-10,-38.80,PRELIEVO ATM BANCOMAT FIL. 01234 BANCO BPM,expense,false,Alimentari/Altro alimentari
 276,2026-02-10,-56.74,"Pagam. POS - PAGAMENTO POS 56,74 EUR DEL 10.02.2026 A (ITA) CENTRO DIAGNOSTICO SAN DONATO",expense,false,Salute/Farmaci
-277,2026-02-10,-10.81,"Pagam. POS - PAGAMENTO POS 10,81 EUR DEL 10.02.2026 A (ITA) MEGA BOLOGNA",expense,false,Alimentari/Altro alimentari
+277,2026-02-10,-10.81,"Pagam. POS - PAGAMENTO POS 10,81 EUR DEL 10.02.2026 A (ITA) MEGA BOLOGNA",expense,false,Alimentari/Spesa supermercato
 278,2026-02-11,-43.79,PAGAMENTO CONTACTLESS CARTA **** 3644 PARAFARMACIA CONAD LINGOTTO,expense,false,Salute/Farmaci
 279,2026-02-13,240.31,Bonif. v/fav. - RIF:211402429 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico
-280,2026-02-14,-22.64,"Pagam. POS - PAGAMENTO POS 22,64 EUR DEL 14.02.2026 A (ITA) IN'S MERCATO",expense,false,Alimentari/Altro alimentari
+280,2026-02-14,-22.64,"Pagam. POS - PAGAMENTO POS 22,64 EUR DEL 14.02.2026 A (ITA) IN'S MERCATO",expense,false,Alimentari/Spesa supermercato
 281,2026-02-16,-861.69,Disposizione - RIF:211514189 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-282,2026-02-17,-103.68,"Pagam. POS - PAGAMENTO POS 103,68 EUR DEL 17.02.2026 A (ITA) WYCON COSMETICS CINISELLO BALSAMO",expense,false,Cura personale/Parrucchiere / barbiere
+282,2026-02-17,-103.68,"Pagam. POS - PAGAMENTO POS 103,68 EUR DEL 17.02.2026 A (ITA) WYCON COSMETICS CINISELLO BALSAMO",expense,false,Cura personale/Cosmetici e igiene
 283,2026-02-17,-869.10,Disposizione - RIF:216339384 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 284,2026-02-17,-436.00,GIROCONTO DA CC 0036218 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 285,2026-02-19,-201.00,Disposizione - RIF:216676832 BEN. DR VERDI ODONTOIATRA,expense,false,Salute/Farmaci
 286,2026-02-19,-963.51,Disposizione - RIF:215531182 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
 287,2026-02-19,-758.45,Disposizione - RIF:218701486 BEN. ROSSI MARCO CONTRIBUTO NONNA,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
-288,2026-02-20,-3.34,"Pagam. POS - PAGAMENTO POS 3,34 EUR DEL 20.02.2026 A (ITA) UNES OSTIENSE",expense,false,Alimentari/Altro alimentari
+288,2026-02-20,-3.34,"Pagam. POS - PAGAMENTO POS 3,34 EUR DEL 20.02.2026 A (ITA) UNES OSTIENSE",expense,false,Alimentari/Spesa supermercato
 289,2026-02-21,-25.23,"Pagam. POS - PAGAMENTO POS 25,23 EUR DEL 21.02.2026 A (ITA) TIGRE AMICO PALERMO",expense,false,Alimentari/Spesa supermercato
 290,2026-02-21,310.18,Bonif. v/fav. - RIF:212276513 ORD. AGENZIA ENTRATE RIMBORSO 730,income,false,Trasferimenti e rimborsi/Rimborso generico
 291,2026-02-22,455.73,Bonif. v/fav. - RIF:211847769 ORD. REGIONE LOMBARDIA BONUS,income,false,Trasferimenti e rimborsi/Rimborso generico

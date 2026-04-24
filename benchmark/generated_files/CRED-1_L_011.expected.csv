@@ -1,78 +1,78 @@
 row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_category
-1,2026-01-01,-386.17,"Pagam. POS - PAGAMENTO POS 386,17 EUR DEL 01.01.2026 A (ITA) CAPI ELECTRONICS PERUGIA",expense,false,Svago e tempo libero/Hobby
+1,2026-01-01,-386.17,"Pagam. POS - PAGAMENTO POS 386,17 EUR DEL 01.01.2026 A (ITA) CAPI ELECTRONICS PERUGIA",expense,false,Casa/Elettrodomestici
 2,2026-01-01,-50.23,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Hobby
 3,2026-01-01,-128.02,"Pagam. POS - PAGAMENTO POS 128,02 EUR DEL 01.01.2026 A (ITA) MEGA PERUGIA",expense,false,Alimentari/Spesa supermercato
 4,2026-01-01,-67.29,"Pagam. POS - PAGAMENTO POS 67,29 EUR DEL 01.01.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
 5,2026-01-01,-82.99,"Pagam. POS - PAGAMENTO POS 82,99 EUR DEL 01.01.2026 A (ITA) RISTORANTE IL FARO CESENATICO",expense,false,Svago e tempo libero/Viaggi e vacanze
 6,2026-01-02,-38.42,PAGAMENTO CONTACTLESS CARTA **** 9657 GNP OSTIENSE,expense,false,Trasporti/Carburante
-7,2026-01-02,-142.72,PAGAMENTO CONTACTLESS CARTA **** 1761 MINI MIX BARI,expense,false,Alimentari/Spesa supermercato
+7,2026-01-02,-142.72,PAGAMENTO CONTACTLESS CARTA **** 1761 MINI MIX BARI,expense,false,Alimentari/Altro alimentari
 8,2026-01-02,-242.75,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Hobby
-9,2026-01-02,-71.34,"Pagam. POS - PAGAMENTO POS 71,34 EUR DEL 02.01.2026 A (ITA) CADDY'S",expense,false,Abbigliamento/Abbigliamento adulti
-10,2026-01-02,-44.92,"Pagam. POS - PAGAMENTO POS 44,92 EUR DEL 02.01.2026 A (ITA) TACO BELL",expense,false,Ristorazione/Ristorante
-11,2026-01-02,-45.76,"Pagam. POS - PAGAMENTO POS 45,76 EUR DEL 02.01.2026 A (ITA) PANS & COMPANY ROZZANO",expense,false,Ristorazione/Ristorante
+9,2026-01-02,-71.34,"Pagam. POS - PAGAMENTO POS 71,34 EUR DEL 02.01.2026 A (ITA) CADDY'S",expense,false,Cura personale/Cosmetici e igiene
+10,2026-01-02,-44.92,"Pagam. POS - PAGAMENTO POS 44,92 EUR DEL 02.01.2026 A (ITA) TACO BELL",expense,false,Ristorazione/Asporto / delivery
+11,2026-01-02,-45.76,"Pagam. POS - PAGAMENTO POS 45,76 EUR DEL 02.01.2026 A (ITA) PANS & COMPANY ROZZANO",expense,false,Ristorazione/Asporto / delivery
 12,2026-01-03,-41.24,"Pagam. POS - PAGAMENTO POS 41,24 EUR DEL 03.01.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
 13,2026-01-03,-15.45,"Pagam. POS - PAGAMENTO POS 15,45 EUR DEL 03.01.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
-14,2026-01-03,-44.57,"Pagam. POS - PAGAMENTO POS 44,57 EUR DEL 03.01.2026 A (ITA) PITTAROSSO",expense,false,Abbigliamento/Abbigliamento adulti
+14,2026-01-03,-44.57,"Pagam. POS - PAGAMENTO POS 44,57 EUR DEL 03.01.2026 A (ITA) PITTAROSSO",expense,false,Abbigliamento/Calzature
 15,2026-01-03,-124.06,"Pagam. POS - PAGAMENTO POS 124,06 EUR DEL 03.01.2026 A (ITA) EXE HOTELS",expense,false,Svago e tempo libero/Viaggi e vacanze
 16,2026-01-03,-338.61,"Pagam. POS - PAGAMENTO POS 338,61 EUR DEL 03.01.2026 A (ITA) RYANAIR LTD",expense,false,Svago e tempo libero/Viaggi e vacanze
-17,2026-01-03,-52.65,"Pagam. POS - PAGAMENTO POS 52,65 EUR DEL 03.01.2026 A (ITA) CISALFA SPORT FIRENZE",expense,false,Abbigliamento/Abbigliamento adulti
+17,2026-01-03,-52.65,"Pagam. POS - PAGAMENTO POS 52,65 EUR DEL 03.01.2026 A (ITA) CISALFA SPORT FIRENZE",expense,false,Svago e tempo libero/Sport e palestra
 18,2026-01-04,-201.83,Addebito SDD - REGISTER.IT S.P.A. DOMINIO,expense,false,Tasse e tributi/Imposte varie
 19,2026-01-04,-51.55,"Pagam. POS - PAGAMENTO POS 51,55 EUR DEL 04.01.2026 A (ITA) NATURASÌ EUR",expense,false,Alimentari/Spesa supermercato
 20,2026-01-04,-215.09,"Pagam. POS - PAGAMENTO POS 215,09 EUR DEL 04.01.2026 A (ITA) NH HOTELS PALERMO",expense,false,Svago e tempo libero/Viaggi e vacanze
 21,2026-01-05,-183.91,"Pagam. POS - PAGAMENTO POS 183,91 EUR DEL 05.01.2026 A (ITA) EXE HOTELS",expense,false,Svago e tempo libero/Viaggi e vacanze
 22,2026-01-05,-83.37,"Pagam. POS - PAGAMENTO POS 83,37 EUR DEL 05.01.2026 A (ITA) ARUBA S.P.A. HOSTING",expense,false,Tasse e tributi/Imposte varie
-23,2026-01-05,-73.17,"Pagam. POS - PAGAMENTO POS 73,17 EUR DEL 05.01.2026 A (ITA) CEX",expense,false,Svago e tempo libero/Hobby
-24,2026-01-05,-108.09,PAGAMENTO CONTACTLESS CARTA **** 3882 CAPI ELECTRONICS,expense,false,Svago e tempo libero/Hobby
+23,2026-01-05,-73.17,"Pagam. POS - PAGAMENTO POS 73,17 EUR DEL 05.01.2026 A (ITA) CEX",expense,false,Casa/Elettrodomestici
+24,2026-01-05,-108.09,PAGAMENTO CONTACTLESS CARTA **** 3882 CAPI ELECTRONICS,expense,false,Casa/Elettrodomestici
 25,2026-01-05,-88.97,PAGAMENTO CONTACTLESS CARTA **** 7471 ENILIVE OSTIENSE,expense,false,Trasporti/Carburante
-26,2026-01-06,-200.89,"Pagam. POS - PAGAMENTO POS 200,89 EUR DEL 06.01.2026 A (ITA) MEDIAWORLD OSTIENSE",expense,false,Svago e tempo libero/Hobby
+26,2026-01-06,-200.89,"Pagam. POS - PAGAMENTO POS 200,89 EUR DEL 06.01.2026 A (ITA) MEDIAWORLD OSTIENSE",expense,false,Casa/Elettrodomestici
 27,2026-01-06,-498.87,"Pagam. POS - PAGAMENTO POS 498,87 EUR DEL 06.01.2026 A (ITA) SURE HOTEL",expense,false,Svago e tempo libero/Viaggi e vacanze
-28,2026-01-06,-205.78,PAGAMENTO CONTACTLESS CARTA **** 5629 BUREAU VALLÉE,expense,false,Tasse e tributi/Imposte varie
-29,2026-01-06,-136.71,PAGAMENTO CONTACTLESS CARTA **** 1785 MEDIAWORLD,expense,false,Svago e tempo libero/Hobby
-30,2026-01-06,-99.03,PAGAMENTO CONTACTLESS CARTA **** 5358 PAM LOCAL,expense,false,Alimentari/Spesa supermercato
-31,2026-01-06,-142.46,"Pagam. POS - PAGAMENTO POS 142,46 EUR DEL 06.01.2026 A (ITA) BUREAU VALLÉE CATANIA",expense,false,Tasse e tributi/Imposte varie
+28,2026-01-06,-205.78,PAGAMENTO CONTACTLESS CARTA **** 5629 BUREAU VALLÉE,expense,false,Istruzione/Libri e materiale
+29,2026-01-06,-136.71,PAGAMENTO CONTACTLESS CARTA **** 1785 MEDIAWORLD,expense,false,Casa/Elettrodomestici
+30,2026-01-06,-99.03,PAGAMENTO CONTACTLESS CARTA **** 5358 PAM LOCAL,expense,false,Alimentari/Altro alimentari
+31,2026-01-06,-142.46,"Pagam. POS - PAGAMENTO POS 142,46 EUR DEL 06.01.2026 A (ITA) BUREAU VALLÉE CATANIA",expense,false,Istruzione/Libri e materiale
 32,2026-01-06,-72.43,"Pagam. POS - PAGAMENTO POS 72,43 EUR DEL 06.01.2026 A (ITA) Q8",expense,false,Trasporti/Carburante
-33,2026-01-07,-40.84,PAGAMENTO CONTACTLESS CARTA **** 1753 BUREAU VALLÉE,expense,false,Tasse e tributi/Imposte varie
+33,2026-01-07,-40.84,PAGAMENTO CONTACTLESS CARTA **** 1753 BUREAU VALLÉE,expense,false,Istruzione/Libri e materiale
 34,2026-01-07,-256.60,Addebito SDD - JETBRAINS S.R.O. INTELLIJ IDEA,expense,false,Tasse e tributi/Imposte varie
 35,2026-01-07,-87.85,"Pagam. POS - PAGAMENTO POS 87,85 EUR DEL 07.01.2026 A (ITA) COOP LOMBARDIA",expense,false,Altro/Spese non classificate
 36,2026-01-07,-66.75,"Pagam. POS - PAGAMENTO POS 66,75 EUR DEL 07.01.2026 A (ITA) EGO FIRENZE",expense,false,Trasporti/Carburante
-37,2026-01-07,-102.72,PAGAMENTO CONTACTLESS CARTA **** 8100 BUREAU VALLÉE,expense,false,Tasse e tributi/Imposte varie
+37,2026-01-07,-102.72,PAGAMENTO CONTACTLESS CARTA **** 8100 BUREAU VALLÉE,expense,false,Istruzione/Libri e materiale
 38,2026-01-08,-73.64,"Pagam. POS - PAGAMENTO POS 73,64 EUR DEL 08.01.2026 A (ITA) ROOM MATE",expense,false,Svago e tempo libero/Viaggi e vacanze
-39,2026-01-08,-240.24,"Pagam. POS - PAGAMENTO POS 240,24 EUR DEL 08.01.2026 A (ITA) BUFFETTI NORD",expense,false,Tasse e tributi/Imposte varie
+39,2026-01-08,-240.24,"Pagam. POS - PAGAMENTO POS 240,24 EUR DEL 08.01.2026 A (ITA) BUFFETTI NORD",expense,false,Istruzione/Libri e materiale
 40,2026-01-08,-63.81,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Hobby
 41,2026-01-09,-170.18,"Pagam. POS - PAGAMENTO POS 170,18 EUR DEL 09.01.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
 42,2026-01-10,-51.35,"Pagam. POS - PAGAMENTO POS 51,35 EUR DEL 10.01.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
 43,2026-01-10,-24.16,"Pagam. POS - PAGAMENTO POS 24,16 EUR DEL 10.01.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
 44,2026-01-10,-77.12,"Pagam. POS - PAGAMENTO POS 77,12 EUR DEL 10.01.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
 45,2026-01-10,-164.38,"Pagam. POS - PAGAMENTO POS 164,38 EUR DEL 10.01.2026 A (ITA) CONAD CINISELLO BALSAMO",expense,false,Alimentari/Spesa supermercato
-46,2026-01-10,-93.63,PAGAMENTO CONTACTLESS CARTA **** 3358 PRIMOR,expense,false,Altro/Spese non classificate
+46,2026-01-10,-93.63,PAGAMENTO CONTACTLESS CARTA **** 3358 PRIMOR,expense,false,Cura personale/Cosmetici e igiene
 47,2026-01-11,-39.14,"Pagam. POS - PAGAMENTO POS 39,14 EUR DEL 11.01.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
-48,2026-01-11,-71.60,PAGAMENTO CONTACTLESS CARTA **** 3975 JOHNSON FITNESS & WELLNESS,expense,false,Abbigliamento/Abbigliamento adulti
+48,2026-01-11,-71.60,PAGAMENTO CONTACTLESS CARTA **** 3975 JOHNSON FITNESS & WELLNESS,expense,false,Svago e tempo libero/Sport e palestra
 49,2026-01-11,-51.30,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
 50,2026-01-12,-80.14,"Pagam. POS - PAGAMENTO POS 80,14 EUR DEL 12.01.2026 A (ITA) KEROPETROL",expense,false,Trasporti/Carburante
 51,2026-01-12,-61.58,"Pagam. POS - PAGAMENTO POS 61,58 EUR DEL 12.01.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
 52,2026-01-12,-43.41,AMAZON.IT MARKETPLACE HW - ORDINE 402-217314004,expense,false,Tasse e tributi/Imposte varie
-53,2026-01-12,-28.18,"Pagam. POS - PAGAMENTO POS 28,18 EUR DEL 12.01.2026 A (ITA) BREWDOG BARI",expense,false,Ristorazione/Ristorante
+53,2026-01-12,-28.18,"Pagam. POS - PAGAMENTO POS 28,18 EUR DEL 12.01.2026 A (ITA) BREWDOG BARI",expense,false,Ristorazione/Bar / caffè
 54,2026-01-12,-131.99,"Pagam. POS - PAGAMENTO POS 131,99 EUR DEL 12.01.2026 A (ITA) NH HOTELS ASSAGO",expense,false,Svago e tempo libero/Viaggi e vacanze
-55,2026-01-12,-113.35,PAGAMENTO CONTACTLESS CARTA **** 1339 UNIEURO CAGLIARI,expense,false,Svago e tempo libero/Hobby
-56,2026-01-13,-110.35,"Pagam. POS - PAGAMENTO POS 110,35 EUR DEL 13.01.2026 A (ITA) PITTAROSSO",expense,false,Abbigliamento/Abbigliamento adulti
+55,2026-01-12,-113.35,PAGAMENTO CONTACTLESS CARTA **** 1339 UNIEURO CAGLIARI,expense,false,Casa/Elettrodomestici
+56,2026-01-13,-110.35,"Pagam. POS - PAGAMENTO POS 110,35 EUR DEL 13.01.2026 A (ITA) PITTAROSSO",expense,false,Abbigliamento/Calzature
 57,2026-01-13,-29.83,"Pagam. POS - PAGAMENTO POS 29,83 EUR DEL 13.01.2026 A (ITA) 100 MONTADITOS",expense,false,Ristorazione/Ristorante
 58,2026-01-13,-35.59,"Pagam. POS - PAGAMENTO POS 35,59 EUR DEL 13.01.2026 A (ITA) GIAP TORINO",expense,false,Trasporti/Carburante
-59,2026-01-14,-59.25,PAGAMENTO CONTACTLESS CARTA **** 3587 NATURA ROZZANO,expense,false,Altro/Spese non classificate
-60,2026-01-14,-76.18,PAGAMENTO CONTACTLESS CARTA **** 9429 HOKA CAGLIARI,expense,false,Abbigliamento/Abbigliamento adulti
-61,2026-01-14,-67.87,PAGAMENTO CONTACTLESS CARTA **** 9322 COMPRO ORO MARGHERA,expense,false,Altro/Spese non classificate
-62,2026-01-14,-290.78,PAGAMENTO CONTACTLESS CARTA **** 6954 UNIEURO,expense,false,Svago e tempo libero/Hobby
+59,2026-01-14,-59.25,PAGAMENTO CONTACTLESS CARTA **** 3587 NATURA ROZZANO,expense,false,Regali e donazioni/Regali
+60,2026-01-14,-76.18,PAGAMENTO CONTACTLESS CARTA **** 9429 HOKA CAGLIARI,expense,false,Svago e tempo libero/Sport e palestra
+61,2026-01-14,-67.87,PAGAMENTO CONTACTLESS CARTA **** 9322 COMPRO ORO MARGHERA,expense,false,Abbigliamento/Altro abbigliamento
+62,2026-01-14,-290.78,PAGAMENTO CONTACTLESS CARTA **** 6954 UNIEURO,expense,false,Casa/Elettrodomestici
 63,2026-01-14,-81.36,PAGAMENTO CONTACTLESS CARTA **** 9692 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
 64,2026-01-14,-71.37,"Pagam. POS - PAGAMENTO POS 71,37 EUR DEL 14.01.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
-65,2026-01-14,-48.36,"Pagam. POS - PAGAMENTO POS 48,36 EUR DEL 14.01.2026 A (ITA) BILLY TACOS ROMA",expense,false,Ristorazione/Ristorante
+65,2026-01-14,-48.36,"Pagam. POS - PAGAMENTO POS 48,36 EUR DEL 14.01.2026 A (ITA) BILLY TACOS ROMA",expense,false,Ristorazione/Asporto / delivery
 66,2026-01-15,-390.53,AMAZON.IT MARKETPLACE - ORDINE 402-212118949,expense,false,Svago e tempo libero/Hobby
-67,2026-01-15,-60.43,"Pagam. POS - PAGAMENTO POS 60,43 EUR DEL 15.01.2026 A (ITA) BUFFETTI",expense,false,Tasse e tributi/Imposte varie
+67,2026-01-15,-60.43,"Pagam. POS - PAGAMENTO POS 60,43 EUR DEL 15.01.2026 A (ITA) BUFFETTI",expense,false,Istruzione/Libri e materiale
 68,2026-01-15,-219.87,AMAZON.IT MARKETPLACE HW - ORDINE 402-212758732,expense,false,Tasse e tributi/Imposte varie
 69,2026-01-15,-125.15,"Pagam. POS - PAGAMENTO POS 125,15 EUR DEL 15.01.2026 A (ITA) WALDORF ASTORIA",expense,false,Svago e tempo libero/Viaggi e vacanze
-70,2026-01-15,-266.61,PAGAMENTO CONTACTLESS CARTA **** 9287 BUFFETTI,expense,false,Tasse e tributi/Imposte varie
+70,2026-01-15,-266.61,PAGAMENTO CONTACTLESS CARTA **** 9287 BUFFETTI,expense,false,Istruzione/Libri e materiale
 71,2026-01-16,-115.52,"Pagam. POS - PAGAMENTO POS 115,52 EUR DEL 16.01.2026 A (ITA) UDEMY.COM FORMAZIONE",expense,false,Tasse e tributi/Imposte varie
-72,2026-01-16,-65.33,"Pagam. POS - PAGAMENTO POS 65,33 EUR DEL 16.01.2026 A (ITA) BUREAU VALLÉE SESTO SAN GIOVANNI",expense,false,Tasse e tributi/Imposte varie
+72,2026-01-16,-65.33,"Pagam. POS - PAGAMENTO POS 65,33 EUR DEL 16.01.2026 A (ITA) BUREAU VALLÉE SESTO SAN GIOVANNI",expense,false,Istruzione/Libri e materiale
 73,2026-01-16,-27.13,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
-74,2026-01-16,-156.80,"Pagam. POS - PAGAMENTO POS 156,80 EUR DEL 16.01.2026 A (ITA) BUFFETTI VENEZIA",expense,false,Tasse e tributi/Imposte varie
+74,2026-01-16,-156.80,"Pagam. POS - PAGAMENTO POS 156,80 EUR DEL 16.01.2026 A (ITA) BUFFETTI VENEZIA",expense,false,Istruzione/Libri e materiale
 75,2026-01-16,-204.88,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Hobby
 76,2026-01-17,-159.69,PAGAMENTO CONTACTLESS CARTA **** 6074 PRIX,expense,false,Alimentari/Spesa supermercato
 77,2026-01-17,-242.96,"Pagam. POS - PAGAMENTO POS 242,96 EUR DEL 17.01.2026 A (ITA) MAMA SHELTER PADOVA",expense,false,Svago e tempo libero/Viaggi e vacanze
@@ -81,28 +81,28 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 80,2026-01-18,-46.45,"Pagam. POS - PAGAMENTO POS 46,45 EUR DEL 18.01.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
 81,2026-01-18,-297.26,AMAZON.IT MARKETPLACE - ORDINE 402-214177495,expense,false,Svago e tempo libero/Hobby
 82,2026-01-18,-29.04,PAGAMENTO CONTACTLESS CARTA **** 7157 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
-83,2026-01-18,-127.86,PAGAMENTO CONTACTLESS CARTA **** 7955 DESPAR,expense,false,Alimentari/Spesa supermercato
-84,2026-01-18,-140.89,"Pagam. POS - PAGAMENTO POS 140,89 EUR DEL 18.01.2026 A (ITA) SNIPES LINGOTTO",expense,false,Abbigliamento/Abbigliamento adulti
+83,2026-01-18,-127.86,PAGAMENTO CONTACTLESS CARTA **** 7955 DESPAR,expense,false,Alimentari/Altro alimentari
+84,2026-01-18,-140.89,"Pagam. POS - PAGAMENTO POS 140,89 EUR DEL 18.01.2026 A (ITA) SNIPES LINGOTTO",expense,false,Abbigliamento/Calzature
 85,2026-01-18,-270.23,PAGAMENTO CONTACTLESS CARTA **** 9020 FOUR POINTS FLEX BY SHERATON SAN GIULIANO MILANESE,expense,false,Svago e tempo libero/Viaggi e vacanze
-86,2026-01-18,-81.91,"Pagam. POS - PAGAMENTO POS 81,91 EUR DEL 18.01.2026 A (ITA) BLUESPIRIT",expense,false,Altro/Spese non classificate
+86,2026-01-18,-81.91,"Pagam. POS - PAGAMENTO POS 81,91 EUR DEL 18.01.2026 A (ITA) BLUESPIRIT",expense,false,Abbigliamento/Altro abbigliamento
 87,2026-01-19,-27.78,"Pagam. POS - PAGAMENTO POS 27,78 EUR DEL 19.01.2026 A (ITA) ROADHOUSE",expense,false,Ristorazione/Ristorante
-88,2026-01-19,-76.88,PAGAMENTO CONTACTLESS CARTA **** 4998 IKEA CAFÉ,expense,false,Ristorazione/Ristorante
-89,2026-01-20,-71.92,PAGAMENTO CONTACTLESS CARTA **** 7384 LA PIADINERIA FIRENZE,expense,false,Ristorazione/Ristorante
+88,2026-01-19,-76.88,PAGAMENTO CONTACTLESS CARTA **** 4998 IKEA CAFÉ,expense,false,Ristorazione/Bar / caffè
+89,2026-01-20,-71.92,PAGAMENTO CONTACTLESS CARTA **** 7384 LA PIADINERIA FIRENZE,expense,false,Ristorazione/Asporto / delivery
 90,2026-01-20,-149.43,PAGAMENTO CONTACTLESS CARTA **** 6593 SPAZIO CONAD BOLOGNA,expense,false,Alimentari/Spesa supermercato
-91,2026-01-20,-166.26,PAGAMENTO CONTACTLESS CARTA **** 9329 MEDIAWORLD CENTRO COMM. IL LEONE,expense,false,Svago e tempo libero/Hobby
+91,2026-01-20,-166.26,PAGAMENTO CONTACTLESS CARTA **** 9329 MEDIAWORLD CENTRO COMM. IL LEONE,expense,false,Casa/Elettrodomestici
 92,2026-01-20,-163.60,"Pagam. POS - PAGAMENTO POS 163,60 EUR DEL 20.01.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
 93,2026-01-20,-127.02,"Pagam. POS - PAGAMENTO POS 127,02 EUR DEL 20.01.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
 94,2026-01-20,-47.28,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
 95,2026-01-20,-230.00,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Hobby
-96,2026-01-21,-166.53,PAGAMENTO CONTACTLESS CARTA **** 8897 BUREAU VALLÉE,expense,false,Tasse e tributi/Imposte varie
+96,2026-01-21,-166.53,PAGAMENTO CONTACTLESS CARTA **** 8897 BUREAU VALLÉE,expense,false,Istruzione/Libri e materiale
 97,2026-01-21,-172.55,"Pagam. POS - PAGAMENTO POS 172,55 EUR DEL 21.01.2026 A (ITA) PESCHERIA DEL PORTO",expense,false,Alimentari/Spesa supermercato
-98,2026-01-21,-307.39,PAGAMENTO CONTACTLESS CARTA **** 7754 INMOTION,expense,false,Svago e tempo libero/Hobby
+98,2026-01-21,-307.39,PAGAMENTO CONTACTLESS CARTA **** 7754 INMOTION,expense,false,Casa/Elettrodomestici
 99,2026-01-21,-97.77,"Pagam. POS - PAGAMENTO POS 97,77 EUR DEL 21.01.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
-100,2026-01-22,-139.28,"Pagam. POS - PAGAMENTO POS 139,28 EUR DEL 22.01.2026 A (ITA) CARREFOUR CONTACT OVEST",expense,false,Alimentari/Spesa supermercato
-101,2026-01-22,-121.18,PAGAMENTO CONTACTLESS CARTA **** 5715 MARGHERITA CONAD PARMA,expense,false,Alimentari/Spesa supermercato
+100,2026-01-22,-139.28,"Pagam. POS - PAGAMENTO POS 139,28 EUR DEL 22.01.2026 A (ITA) CARREFOUR CONTACT OVEST",expense,false,Alimentari/Altro alimentari
+101,2026-01-22,-121.18,PAGAMENTO CONTACTLESS CARTA **** 5715 MARGHERITA CONAD PARMA,expense,false,Alimentari/Altro alimentari
 102,2026-01-22,-84.03,"Pagam. POS - PAGAMENTO POS 84,03 EUR DEL 22.01.2026 A (ITA) PIZZERIA NAPOLI",expense,false,Ristorazione/Ristorante
 103,2026-01-22,-82.21,PAGAMENTO CONTACTLESS CARTA **** 8549 EGO,expense,false,Trasporti/Carburante
-104,2026-01-22,-12.71,"Pagam. POS - PAGAMENTO POS 12,71 EUR DEL 22.01.2026 A (ITA) MAXI ZOO FUORIGROTTA",expense,false,Altro/Spese non classificate
+104,2026-01-22,-12.71,"Pagam. POS - PAGAMENTO POS 12,71 EUR DEL 22.01.2026 A (ITA) MAXI ZOO FUORIGROTTA",expense,false,Animali domestici/Cibo
 105,2026-01-22,-192.70,Addebito SDD - JETBRAINS S.R.O. INTELLIJ IDEA,expense,false,Tasse e tributi/Imposte varie
 106,2026-01-23,-93.79,PAGAMENTO CONTACTLESS CARTA **** 9587 SUPERCONTI,expense,false,Alimentari/Spesa supermercato
 107,2026-01-23,-149.37,AMAZON.IT MARKETPLACE HW - ORDINE 402-216375918,expense,false,Tasse e tributi/Imposte varie
@@ -111,132 +111,132 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 110,2026-01-24,-294.03,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Hobby
 111,2026-01-24,-69.85,PAGAMENTO CONTACTLESS CARTA **** 5447 COSTANTIN,expense,false,Trasporti/Carburante
 112,2026-01-24,-146.19,"Pagam. POS - PAGAMENTO POS 146,19 EUR DEL 24.01.2026 A (ITA) MD PARMA",expense,false,Alimentari/Spesa supermercato
-113,2026-01-24,-227.20,"Pagam. POS - PAGAMENTO POS 227,20 EUR DEL 24.01.2026 A (ITA) BUREAU VALLÉE PRATI",expense,false,Tasse e tributi/Imposte varie
-114,2026-01-24,-44.68,PAGAMENTO CONTACTLESS CARTA **** 1158 CEX,expense,false,Svago e tempo libero/Hobby
+113,2026-01-24,-227.20,"Pagam. POS - PAGAMENTO POS 227,20 EUR DEL 24.01.2026 A (ITA) BUREAU VALLÉE PRATI",expense,false,Istruzione/Libri e materiale
+114,2026-01-24,-44.68,PAGAMENTO CONTACTLESS CARTA **** 1158 CEX,expense,false,Casa/Elettrodomestici
 115,2026-01-24,-269.30,Addebito SDD - TELEPASS PEDAGGI A14 AUTOSTRADA,expense,false,Svago e tempo libero/Viaggi e vacanze
-116,2026-01-24,-193.38,PAGAMENTO CONTACTLESS CARTA **** 9859 CEX COLOGNO MONZESE,expense,false,Svago e tempo libero/Hobby
-117,2026-01-24,-122.24,PAGAMENTO CONTACTLESS CARTA **** 9904 CADDY'S,expense,false,Abbigliamento/Abbigliamento adulti
+116,2026-01-24,-193.38,PAGAMENTO CONTACTLESS CARTA **** 9859 CEX COLOGNO MONZESE,expense,false,Casa/Elettrodomestici
+117,2026-01-24,-122.24,PAGAMENTO CONTACTLESS CARTA **** 9904 CADDY'S,expense,false,Cura personale/Cosmetici e igiene
 118,2026-01-24,-282.53,Disposizione - RIF:217245593 BEN. STUDIO COMM.LE FERRI & ASSOCIATI,expense,false,Tasse e tributi/Imposte varie
-119,2026-01-24,-75.21,"Pagam. POS - PAGAMENTO POS 75,21 EUR DEL 24.01.2026 A (ITA) MARGHERITA CONAD PALERMO",expense,false,Alimentari/Spesa supermercato
+119,2026-01-24,-75.21,"Pagam. POS - PAGAMENTO POS 75,21 EUR DEL 24.01.2026 A (ITA) MARGHERITA CONAD PALERMO",expense,false,Alimentari/Altro alimentari
 120,2026-01-24,-425.71,"Pagam. POS - PAGAMENTO POS 425,71 EUR DEL 24.01.2026 A (ITA) MAMA SHELTER PERUGIA",expense,false,Svago e tempo libero/Viaggi e vacanze
 121,2026-01-24,-69.48,Addebito SDD - GENERALI ITALIA POLIZZA VITA,expense,false,Altro/Spese non classificate
 122,2026-01-25,-16.92,"Pagam. POS - PAGAMENTO POS 16,92 EUR DEL 25.01.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
 123,2026-01-25,-85.34,"Pagam. POS - PAGAMENTO POS 85,34 EUR DEL 25.01.2026 A (ITA) MACELLERIA BONI",expense,false,Alimentari/Spesa supermercato
-124,2026-01-25,-8.67,"Pagam. POS - PAGAMENTO POS 8,67 EUR DEL 25.01.2026 A (ITA) MAXI ZOO FUORIGROTTA",expense,false,Altro/Spese non classificate
+124,2026-01-25,-8.67,"Pagam. POS - PAGAMENTO POS 8,67 EUR DEL 25.01.2026 A (ITA) MAXI ZOO FUORIGROTTA",expense,false,Animali domestici/Cibo
 125,2026-01-26,-28.72,PAGAMENTO CONTACTLESS CARTA **** 8807 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
-126,2026-01-26,-55.01,"Pagam. POS - PAGAMENTO POS 55,01 EUR DEL 26.01.2026 A (ITA) BUFFETTI",expense,false,Tasse e tributi/Imposte varie
+126,2026-01-26,-55.01,"Pagam. POS - PAGAMENTO POS 55,01 EUR DEL 26.01.2026 A (ITA) BUFFETTI",expense,false,Istruzione/Libri e materiale
 127,2026-01-26,-127.47,"Pagam. POS - PAGAMENTO POS 127,47 EUR DEL 26.01.2026 A (ITA) COOP",expense,false,Alimentari/Spesa supermercato
-128,2026-01-26,-277.65,"Pagam. POS - PAGAMENTO POS 277,65 EUR DEL 26.01.2026 A (ITA) INMOTION PRATI",expense,false,Svago e tempo libero/Hobby
+128,2026-01-26,-277.65,"Pagam. POS - PAGAMENTO POS 277,65 EUR DEL 26.01.2026 A (ITA) INMOTION PRATI",expense,false,Casa/Elettrodomestici
 129,2026-01-26,-275.87,Addebito SDD - BOOKING.COM B.V.,expense,false,Svago e tempo libero/Viaggi e vacanze
 130,2026-01-26,-27.47,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
 131,2026-01-26,-447.73,"Pagam. POS - PAGAMENTO POS 447,73 EUR DEL 26.01.2026 A (ITA) SURE HOTEL COLLECTION",expense,false,Svago e tempo libero/Viaggi e vacanze
-132,2026-01-26,-71.60,"Pagam. POS - PAGAMENTO POS 71,60 EUR DEL 26.01.2026 A (ITA) GABOR CENTRO",expense,false,Abbigliamento/Abbigliamento adulti
+132,2026-01-26,-71.60,"Pagam. POS - PAGAMENTO POS 71,60 EUR DEL 26.01.2026 A (ITA) GABOR CENTRO",expense,false,Abbigliamento/Calzature
 133,2026-01-27,-154.37,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Hobby
-134,2026-01-27,-268.38,"Pagam. POS - PAGAMENTO POS 268,38 EUR DEL 27.01.2026 A (ITA) CAPI ELECTRONICS",expense,false,Svago e tempo libero/Hobby
+134,2026-01-27,-268.38,"Pagam. POS - PAGAMENTO POS 268,38 EUR DEL 27.01.2026 A (ITA) CAPI ELECTRONICS",expense,false,Casa/Elettrodomestici
 135,2026-01-27,-69.98,"Pagam. POS - PAGAMENTO POS 69,98 EUR DEL 27.01.2026 A (ITA) SISA PALERMO",expense,false,Alimentari/Spesa supermercato
-136,2026-01-28,-320.55,PAGAMENTO CONTACTLESS CARTA **** 9240 MEDIAWORLD,expense,false,Svago e tempo libero/Hobby
+136,2026-01-28,-320.55,PAGAMENTO CONTACTLESS CARTA **** 9240 MEDIAWORLD,expense,false,Casa/Elettrodomestici
 137,2026-01-28,-17.04,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
-138,2026-01-28,-138.07,PAGAMENTO CONTACTLESS CARTA **** 5123 BUREAU VALLÉE,expense,false,Tasse e tributi/Imposte varie
-139,2026-01-28,-22.13,"Pagam. POS - PAGAMENTO POS 22,13 EUR DEL 28.01.2026 A (ITA) THUN CENTRO COMMERCIALE LE GRANGE",expense,false,Altro/Spese non classificate
+138,2026-01-28,-138.07,PAGAMENTO CONTACTLESS CARTA **** 5123 BUREAU VALLÉE,expense,false,Istruzione/Libri e materiale
+139,2026-01-28,-22.13,"Pagam. POS - PAGAMENTO POS 22,13 EUR DEL 28.01.2026 A (ITA) THUN CENTRO COMMERCIALE LE GRANGE",expense,false,Regali e donazioni/Regali
 140,2026-01-28,-113.20,PAGAMENTO CONTACTLESS CARTA **** 3099 NATURASÌ COLOGNO MONZESE,expense,false,Alimentari/Spesa supermercato
 141,2026-01-28,-72.04,Disposizione - RIF:213426579 BEN. OFFICINA MECCANICA BRAMBILLA,expense,false,Trasporti/Carburante
-142,2026-01-28,-167.02,"Pagam. POS - PAGAMENTO POS 167,02 EUR DEL 28.01.2026 A (ITA) CEX NAPOLI",expense,false,Svago e tempo libero/Hobby
+142,2026-01-28,-167.02,"Pagam. POS - PAGAMENTO POS 167,02 EUR DEL 28.01.2026 A (ITA) CEX NAPOLI",expense,false,Casa/Elettrodomestici
 143,2026-01-28,-450.61,"Pagam. POS - PAGAMENTO POS 450,61 EUR DEL 28.01.2026 A (ITA) EUROSTARS",expense,false,Svago e tempo libero/Viaggi e vacanze
 144,2026-01-28,-75.82,PAGAMENTO CONTACTLESS CARTA **** 9289 VEGA CARBURANTI,expense,false,Trasporti/Carburante
-145,2026-01-29,-232.42,"Pagam. POS - PAGAMENTO POS 232,42 EUR DEL 29.01.2026 A (ITA) COMET BARI",expense,false,Svago e tempo libero/Hobby
-146,2026-01-29,-28.50,"Pagam. POS - PAGAMENTO POS 28,50 EUR DEL 29.01.2026 A (ITA) BUFFETTI",expense,false,Tasse e tributi/Imposte varie
-147,2026-01-29,-74.93,"Pagam. POS - PAGAMENTO POS 74,93 EUR DEL 29.01.2026 A (ITA) SNIPES CENTRO COMMERCIALE LE GRANGE",expense,false,Abbigliamento/Abbigliamento adulti
+145,2026-01-29,-232.42,"Pagam. POS - PAGAMENTO POS 232,42 EUR DEL 29.01.2026 A (ITA) COMET BARI",expense,false,Casa/Elettrodomestici
+146,2026-01-29,-28.50,"Pagam. POS - PAGAMENTO POS 28,50 EUR DEL 29.01.2026 A (ITA) BUFFETTI",expense,false,Istruzione/Libri e materiale
+147,2026-01-29,-74.93,"Pagam. POS - PAGAMENTO POS 74,93 EUR DEL 29.01.2026 A (ITA) SNIPES CENTRO COMMERCIALE LE GRANGE",expense,false,Abbigliamento/Calzature
 148,2026-01-29,-96.45,"Pagam. POS - PAGAMENTO POS 96,45 EUR DEL 29.01.2026 A (ITA) CALZEDONIA GROUP",expense,false,Abbigliamento/Abbigliamento adulti
 149,2026-01-29,-69.83,"Pagam. POS - PAGAMENTO POS 69,83 EUR DEL 29.01.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
 150,2026-01-29,-137.64,"Pagam. POS - PAGAMENTO POS 137,64 EUR DEL 29.01.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
-151,2026-01-29,-11.56,"Pagam. POS - PAGAMENTO POS 11,56 EUR DEL 29.01.2026 A (ITA) COLOURS & BEAUTY",expense,false,Altro/Spese non classificate
-152,2026-01-30,-106.52,PAGAMENTO CONTACTLESS CARTA **** 5183 CEX,expense,false,Svago e tempo libero/Hobby
+151,2026-01-29,-11.56,"Pagam. POS - PAGAMENTO POS 11,56 EUR DEL 29.01.2026 A (ITA) COLOURS & BEAUTY",expense,false,Abbigliamento/Altro abbigliamento
+152,2026-01-30,-106.52,PAGAMENTO CONTACTLESS CARTA **** 5183 CEX,expense,false,Casa/Elettrodomestici
 153,2026-01-30,-146.36,Addebito SDD - GITHUB INC. PRO PLAN,expense,false,Tasse e tributi/Imposte varie
-154,2026-01-30,-280.01,PAGAMENTO CONTACTLESS CARTA **** 2072 BUREAU VALLÉE,expense,false,Tasse e tributi/Imposte varie
+154,2026-01-30,-280.01,PAGAMENTO CONTACTLESS CARTA **** 2072 BUREAU VALLÉE,expense,false,Istruzione/Libri e materiale
 155,2026-01-30,-314.80,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Hobby
-156,2026-01-30,-241.06,"Pagam. POS - PAGAMENTO POS 241,06 EUR DEL 30.01.2026 A (ITA) TRONY",expense,false,Svago e tempo libero/Hobby
-157,2026-01-30,-65.16,"Pagam. POS - PAGAMENTO POS 65,16 EUR DEL 30.01.2026 A (ITA) PITTAROSSO NAPOLI",expense,false,Abbigliamento/Abbigliamento adulti
-158,2026-01-31,-57.86,"Pagam. POS - PAGAMENTO POS 57,86 EUR DEL 31.01.2026 A (ITA) AVIA NORD",expense,false,Trasporti/Carburante
-159,2026-01-31,-309.67,"Pagam. POS - PAGAMENTO POS 309,67 EUR DEL 31.01.2026 A (ITA) UNIEURO CENTRO COMMERCIALE LE GRANGE",expense,false,Svago e tempo libero/Hobby
-160,2026-01-31,-196.48,PAGAMENTO CONTACTLESS CARTA **** 1011 MEDIAWORLD LINGOTTO,expense,false,Svago e tempo libero/Hobby
-161,2026-01-31,-53.77,PAGAMENTO CONTACTLESS CARTA **** 9643 KEBHOUZE,expense,false,Ristorazione/Ristorante
+156,2026-01-30,-241.06,"Pagam. POS - PAGAMENTO POS 241,06 EUR DEL 30.01.2026 A (ITA) TRONY",expense,false,Casa/Elettrodomestici
+157,2026-01-30,-65.16,"Pagam. POS - PAGAMENTO POS 65,16 EUR DEL 30.01.2026 A (ITA) PITTAROSSO NAPOLI",expense,false,Abbigliamento/Calzature
+158,2026-01-31,-57.86,"Pagam. POS - PAGAMENTO POS 57,86 EUR DEL 31.01.2026 A (ITA) AVIA NORD",expense,false,Alimentari/Altro alimentari
+159,2026-01-31,-309.67,"Pagam. POS - PAGAMENTO POS 309,67 EUR DEL 31.01.2026 A (ITA) UNIEURO CENTRO COMMERCIALE LE GRANGE",expense,false,Casa/Elettrodomestici
+160,2026-01-31,-196.48,PAGAMENTO CONTACTLESS CARTA **** 1011 MEDIAWORLD LINGOTTO,expense,false,Casa/Elettrodomestici
+161,2026-01-31,-53.77,PAGAMENTO CONTACTLESS CARTA **** 9643 KEBHOUZE,expense,false,Ristorazione/Asporto / delivery
 162,2026-01-31,-59.67,PAGAMENTO CONTACTLESS CARTA **** 6120 MAMA SHELTER CORSICO,expense,false,Svago e tempo libero/Viaggi e vacanze
-163,2026-01-31,-201.74,PAGAMENTO CONTACTLESS CARTA **** 2161 CEX NORD,expense,false,Svago e tempo libero/Hobby
-164,2026-02-01,-301.44,PAGAMENTO CONTACTLESS CARTA **** 9305 COMET BERGAMO,expense,false,Svago e tempo libero/Hobby
+163,2026-01-31,-201.74,PAGAMENTO CONTACTLESS CARTA **** 2161 CEX NORD,expense,false,Casa/Elettrodomestici
+164,2026-02-01,-301.44,PAGAMENTO CONTACTLESS CARTA **** 9305 COMET BERGAMO,expense,false,Casa/Elettrodomestici
 165,2026-02-01,-118.17,Addebito SDD - REGISTER.IT S.P.A. DOMINIO,expense,false,Tasse e tributi/Imposte varie
-166,2026-02-01,-90.96,"Pagam. POS - PAGAMENTO POS 90,96 EUR DEL 01.02.2026 A (ITA) BUREAU VALLÉE EUR",expense,false,Tasse e tributi/Imposte varie
+166,2026-02-01,-90.96,"Pagam. POS - PAGAMENTO POS 90,96 EUR DEL 01.02.2026 A (ITA) BUREAU VALLÉE EUR",expense,false,Istruzione/Libri e materiale
 167,2026-02-01,-150.80,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Hobby
 168,2026-02-01,-407.70,PAGAMENTO CONTACTLESS CARTA **** 6547 ANANTARA,expense,false,Svago e tempo libero/Viaggi e vacanze
 169,2026-02-01,-451.39,"Pagam. POS - PAGAMENTO POS 451,39 EUR DEL 01.02.2026 A (ITA) BAGNO MARINO N.42 RICCIONE",expense,false,Svago e tempo libero/Viaggi e vacanze
-170,2026-02-02,-124.57,PAGAMENTO CONTACTLESS CARTA **** 6358 BUFFETTI,expense,false,Tasse e tributi/Imposte varie
-171,2026-02-02,-341.59,PAGAMENTO CONTACTLESS CARTA **** 2197 INMOTION,expense,false,Svago e tempo libero/Hobby
-172,2026-02-02,-30.12,"Pagam. POS - PAGAMENTO POS 30,12 EUR DEL 02.02.2026 A (ITA) CHURCH'S VIMODRONE",expense,false,Abbigliamento/Abbigliamento adulti
+170,2026-02-02,-124.57,PAGAMENTO CONTACTLESS CARTA **** 6358 BUFFETTI,expense,false,Istruzione/Libri e materiale
+171,2026-02-02,-341.59,PAGAMENTO CONTACTLESS CARTA **** 2197 INMOTION,expense,false,Casa/Elettrodomestici
+172,2026-02-02,-30.12,"Pagam. POS - PAGAMENTO POS 30,12 EUR DEL 02.02.2026 A (ITA) CHURCH'S VIMODRONE",expense,false,Abbigliamento/Calzature
 173,2026-02-02,-22.35,"Pagam. POS - PAGAMENTO POS 22,35 EUR DEL 02.02.2026 A (ITA) COOP LOMBARDIA",expense,false,Altro/Spese non classificate
 174,2026-02-02,-123.83,"Pagam. POS - PAGAMENTO POS 123,83 EUR DEL 02.02.2026 A (ITA) ARUBA S.P.A. HOSTING",expense,false,Tasse e tributi/Imposte varie
 175,2026-02-02,-212.56,"Pagam. POS - PAGAMENTO POS 212,56 EUR DEL 02.02.2026 A (ITA) RISTORANTE IL FARO CESENATICO",expense,false,Svago e tempo libero/Viaggi e vacanze
 176,2026-02-02,-139.10,"Pagam. POS - PAGAMENTO POS 139,10 EUR DEL 02.02.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
 177,2026-02-02,-29.05,PAGAMENTO CONTACTLESS CARTA **** 1840 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
-178,2026-02-04,-392.47,"Pagam. POS - PAGAMENTO POS 392,47 EUR DEL 04.02.2026 A (ITA) UNIEURO CENTRO",expense,false,Svago e tempo libero/Hobby
+178,2026-02-04,-392.47,"Pagam. POS - PAGAMENTO POS 392,47 EUR DEL 04.02.2026 A (ITA) UNIEURO CENTRO",expense,false,Casa/Elettrodomestici
 179,2026-02-04,-124.03,Addebito SDD - BOOKING.COM B.V.,expense,false,Svago e tempo libero/Viaggi e vacanze
-180,2026-02-04,-65.40,PAGAMENTO CONTACTLESS CARTA **** 7770 GABOR,expense,false,Abbigliamento/Abbigliamento adulti
+180,2026-02-04,-65.40,PAGAMENTO CONTACTLESS CARTA **** 7770 GABOR,expense,false,Abbigliamento/Calzature
 181,2026-02-05,-58.45,"Pagam. POS - PAGAMENTO POS 58,45 EUR DEL 05.02.2026 A (ITA) L'ANTICA PIZZERIA DA MICHELE VIMODRONE",expense,false,Ristorazione/Ristorante
-182,2026-02-05,-149.78,PAGAMENTO CONTACTLESS CARTA **** 7342 PITTAROSSO,expense,false,Abbigliamento/Abbigliamento adulti
-183,2026-02-05,-85.41,"Pagam. POS - PAGAMENTO POS 85,41 EUR DEL 05.02.2026 A (ITA) L'ISOLA DEI TESORI VENEZIA",expense,false,Altro/Spese non classificate
-184,2026-02-05,-386.39,PAGAMENTO CONTACTLESS CARTA **** 3783 TRONY VOMERO,expense,false,Svago e tempo libero/Hobby
+182,2026-02-05,-149.78,PAGAMENTO CONTACTLESS CARTA **** 7342 PITTAROSSO,expense,false,Abbigliamento/Calzature
+183,2026-02-05,-85.41,"Pagam. POS - PAGAMENTO POS 85,41 EUR DEL 05.02.2026 A (ITA) L'ISOLA DEI TESORI VENEZIA",expense,false,Animali domestici/Cibo
+184,2026-02-05,-386.39,PAGAMENTO CONTACTLESS CARTA **** 3783 TRONY VOMERO,expense,false,Casa/Elettrodomestici
 185,2026-02-05,-50.45,Addebito SDD - SARA ASSICURAZIONI RCA AUTO,expense,false,Trasporti/Carburante
 186,2026-02-05,-47.82,PAGAMENTO CONTACTLESS CARTA **** 4356 ROADHOUSE,expense,false,Ristorazione/Ristorante
 187,2026-02-06,-48.73,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
-188,2026-02-06,-60.06,PAGAMENTO CONTACTLESS CARTA **** 2840 GABOR,expense,false,Abbigliamento/Abbigliamento adulti
+188,2026-02-06,-60.06,PAGAMENTO CONTACTLESS CARTA **** 2840 GABOR,expense,false,Abbigliamento/Calzature
 189,2026-02-06,-71.59,Disposizione - RIF:216396996 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
-190,2026-02-06,-101.46,PAGAMENTO CONTACTLESS CARTA **** 1077 TIGOTÀ GENOVA,expense,false,Abbigliamento/Abbigliamento adulti
-191,2026-02-06,-299.57,PAGAMENTO CONTACTLESS CARTA **** 5970 TRONY,expense,false,Svago e tempo libero/Hobby
+190,2026-02-06,-101.46,PAGAMENTO CONTACTLESS CARTA **** 1077 TIGOTÀ GENOVA,expense,false,Cura personale/Cosmetici e igiene
+191,2026-02-06,-299.57,PAGAMENTO CONTACTLESS CARTA **** 5970 TRONY,expense,false,Casa/Elettrodomestici
 192,2026-02-06,-31.90,"Pagam. POS - PAGAMENTO POS 31,90 EUR DEL 06.02.2026 A (ITA) BAGNO MARINO N.42 RICCIONE",expense,false,Svago e tempo libero/Viaggi e vacanze
-193,2026-02-06,-36.77,"Pagam. POS - PAGAMENTO POS 36,77 EUR DEL 06.02.2026 A (ITA) BUREAU VALLÉE PARMA",expense,false,Tasse e tributi/Imposte varie
-194,2026-02-06,-239.28,PAGAMENTO CONTACTLESS CARTA **** 3655 BUREAU VALLÉE GENOVA,expense,false,Tasse e tributi/Imposte varie
+193,2026-02-06,-36.77,"Pagam. POS - PAGAMENTO POS 36,77 EUR DEL 06.02.2026 A (ITA) BUREAU VALLÉE PARMA",expense,false,Istruzione/Libri e materiale
+194,2026-02-06,-239.28,PAGAMENTO CONTACTLESS CARTA **** 3655 BUREAU VALLÉE GENOVA,expense,false,Istruzione/Libri e materiale
 195,2026-02-06,-93.59,"Pagam. POS - PAGAMENTO POS 93,59 EUR DEL 06.02.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Hobby
-196,2026-02-07,-214.58,"Pagam. POS - PAGAMENTO POS 214,58 EUR DEL 07.02.2026 A (ITA) BUFFETTI",expense,false,Tasse e tributi/Imposte varie
-197,2026-02-07,-265.10,PAGAMENTO CONTACTLESS CARTA **** 6973 UNIEURO TORINO,expense,false,Svago e tempo libero/Hobby
-198,2026-02-07,-51.29,"Pagam. POS - PAGAMENTO POS 51,29 EUR DEL 07.02.2026 A (ITA) CAPI ELECTRONICS",expense,false,Svago e tempo libero/Hobby
+196,2026-02-07,-214.58,"Pagam. POS - PAGAMENTO POS 214,58 EUR DEL 07.02.2026 A (ITA) BUFFETTI",expense,false,Istruzione/Libri e materiale
+197,2026-02-07,-265.10,PAGAMENTO CONTACTLESS CARTA **** 6973 UNIEURO TORINO,expense,false,Casa/Elettrodomestici
+198,2026-02-07,-51.29,"Pagam. POS - PAGAMENTO POS 51,29 EUR DEL 07.02.2026 A (ITA) CAPI ELECTRONICS",expense,false,Casa/Elettrodomestici
 199,2026-02-08,-46.24,PAGAMENTO CONTACTLESS CARTA **** 5909 EUROPAM,expense,false,Trasporti/Carburante
 200,2026-02-08,-62.80,"Pagam. POS - PAGAMENTO POS 62,80 EUR DEL 08.02.2026 A (ITA) ROADHOUSE MODENA",expense,false,Ristorazione/Ristorante
 201,2026-02-08,-53.52,"Pagam. POS - PAGAMENTO POS 53,52 EUR DEL 08.02.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
-202,2026-02-08,-145.94,"Pagam. POS - PAGAMENTO POS 145,94 EUR DEL 08.02.2026 A (ITA) CEX",expense,false,Svago e tempo libero/Hobby
+202,2026-02-08,-145.94,"Pagam. POS - PAGAMENTO POS 145,94 EUR DEL 08.02.2026 A (ITA) CEX",expense,false,Casa/Elettrodomestici
 203,2026-02-08,-31.17,PAGAMENTO CONTACTLESS CARTA **** 1139 OLD WILD WEST FIRENZE,expense,false,Ristorazione/Ristorante
 204,2026-02-09,-222.55,PAGAMENTO CONTACTLESS CARTA **** 5086 SURE HOTEL COLLECTION CAGLIARI,expense,false,Svago e tempo libero/Viaggi e vacanze
-205,2026-02-09,-43.60,"Pagam. POS - PAGAMENTO POS 43,60 EUR DEL 09.02.2026 A (ITA) IKEA RESTAURANT",expense,false,Ristorazione/Ristorante
-206,2026-02-09,-59.08,"Pagam. POS - PAGAMENTO POS 59,08 EUR DEL 09.02.2026 A (ITA) DM",expense,false,Abbigliamento/Abbigliamento adulti
-207,2026-02-10,-228.43,"Pagam. POS - PAGAMENTO POS 228,43 EUR DEL 10.02.2026 A (ITA) BUFFETTI PADOVA",expense,false,Tasse e tributi/Imposte varie
-208,2026-02-10,-32.74,PAGAMENTO CONTACTLESS CARTA **** 3418 POKE HOUSE SESTO SAN GIOVANNI,expense,false,Ristorazione/Ristorante
-209,2026-02-10,-192.14,"Pagam. POS - PAGAMENTO POS 192,14 EUR DEL 10.02.2026 A (ITA) BUREAU VALLÉE",expense,false,Tasse e tributi/Imposte varie
+205,2026-02-09,-43.60,"Pagam. POS - PAGAMENTO POS 43,60 EUR DEL 09.02.2026 A (ITA) IKEA RESTAURANT",expense,false,Ristorazione/Asporto / delivery
+206,2026-02-09,-59.08,"Pagam. POS - PAGAMENTO POS 59,08 EUR DEL 09.02.2026 A (ITA) DM",expense,false,Cura personale/Cosmetici e igiene
+207,2026-02-10,-228.43,"Pagam. POS - PAGAMENTO POS 228,43 EUR DEL 10.02.2026 A (ITA) BUFFETTI PADOVA",expense,false,Istruzione/Libri e materiale
+208,2026-02-10,-32.74,PAGAMENTO CONTACTLESS CARTA **** 3418 POKE HOUSE SESTO SAN GIOVANNI,expense,false,Ristorazione/Asporto / delivery
+209,2026-02-10,-192.14,"Pagam. POS - PAGAMENTO POS 192,14 EUR DEL 10.02.2026 A (ITA) BUREAU VALLÉE",expense,false,Istruzione/Libri e materiale
 210,2026-02-11,-155.49,PAGAMENTO CONTACTLESS CARTA **** 5354 TIGROS TORINO,expense,false,Alimentari/Spesa supermercato
-211,2026-02-11,-287.14,"Pagam. POS - PAGAMENTO POS 287,14 EUR DEL 11.02.2026 A (ITA) BUFFETTI",expense,false,Tasse e tributi/Imposte varie
-212,2026-02-11,-74.98,"Pagam. POS - PAGAMENTO POS 74,98 EUR DEL 11.02.2026 A (ITA) ARCAPLANET VIMODRONE",expense,false,Altro/Spese non classificate
+211,2026-02-11,-287.14,"Pagam. POS - PAGAMENTO POS 287,14 EUR DEL 11.02.2026 A (ITA) BUFFETTI",expense,false,Istruzione/Libri e materiale
+212,2026-02-11,-74.98,"Pagam. POS - PAGAMENTO POS 74,98 EUR DEL 11.02.2026 A (ITA) ARCAPLANET VIMODRONE",expense,false,Animali domestici/Cibo
 213,2026-02-11,-54.11,Addebito SDD - SARA ASSICURAZIONI RCA AUTO,expense,false,Trasporti/Carburante
-214,2026-02-11,-99.53,"Pagam. POS - PAGAMENTO POS 99,53 EUR DEL 11.02.2026 A (ITA) TIGOTÀ",expense,false,Abbigliamento/Abbigliamento adulti
-215,2026-02-11,-264.12,"Pagam. POS - PAGAMENTO POS 264,12 EUR DEL 11.02.2026 A (ITA) BUFFETTI",expense,false,Tasse e tributi/Imposte varie
+214,2026-02-11,-99.53,"Pagam. POS - PAGAMENTO POS 99,53 EUR DEL 11.02.2026 A (ITA) TIGOTÀ",expense,false,Cura personale/Cosmetici e igiene
+215,2026-02-11,-264.12,"Pagam. POS - PAGAMENTO POS 264,12 EUR DEL 11.02.2026 A (ITA) BUFFETTI",expense,false,Istruzione/Libri e materiale
 216,2026-02-12,-134.42,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Hobby
 217,2026-02-12,-71.90,"Pagam. POS - PAGAMENTO POS 71,90 EUR DEL 12.02.2026 A (ITA) PIZZERIA NAPOLI",expense,false,Ristorazione/Ristorante
 218,2026-02-12,-496.56,PAGAMENTO CONTACTLESS CARTA **** 5019 EXE HOTELS,expense,false,Svago e tempo libero/Viaggi e vacanze
 219,2026-02-12,-86.02,Addebito SDD - SARA ASSICURAZIONI RCA AUTO,expense,false,Trasporti/Carburante
 220,2026-02-12,-339.78,Addebito SDD - BOOKING.COM B.V.,expense,false,Svago e tempo libero/Viaggi e vacanze
 221,2026-02-12,-350.52,"Pagam. POS - PAGAMENTO POS 350,52 EUR DEL 12.02.2026 A (ITA) RISTORANTE IL FARO CESENATICO",expense,false,Svago e tempo libero/Viaggi e vacanze
-222,2026-02-13,-82.94,PAGAMENTO CONTACTLESS CARTA **** 7947 MEDIAWORLD BARI,expense,false,Svago e tempo libero/Hobby
-223,2026-02-13,-88.56,"Pagam. POS - PAGAMENTO POS 88,56 EUR DEL 13.02.2026 A (ITA) CAPI ELECTRONICS LINGOTTO",expense,false,Svago e tempo libero/Hobby
+222,2026-02-13,-82.94,PAGAMENTO CONTACTLESS CARTA **** 7947 MEDIAWORLD BARI,expense,false,Casa/Elettrodomestici
+223,2026-02-13,-88.56,"Pagam. POS - PAGAMENTO POS 88,56 EUR DEL 13.02.2026 A (ITA) CAPI ELECTRONICS LINGOTTO",expense,false,Casa/Elettrodomestici
 224,2026-02-14,-377.55,"Pagam. POS - PAGAMENTO POS 377,55 EUR DEL 14.02.2026 A (ITA) HOTEL BELLAVISTA RIMINI",expense,false,Svago e tempo libero/Viaggi e vacanze
-225,2026-02-14,-199.85,"Pagam. POS - PAGAMENTO POS 199,85 EUR DEL 14.02.2026 A (ITA) BUFFETTI BOLOGNA",expense,false,Tasse e tributi/Imposte varie
+225,2026-02-14,-199.85,"Pagam. POS - PAGAMENTO POS 199,85 EUR DEL 14.02.2026 A (ITA) BUFFETTI BOLOGNA",expense,false,Istruzione/Libri e materiale
 226,2026-02-14,-71.11,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Hobby
 227,2026-02-14,-199.97,"Pagam. POS - PAGAMENTO POS 199,97 EUR DEL 14.02.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Hobby
-228,2026-02-14,-44.17,"Pagam. POS - PAGAMENTO POS 44,17 EUR DEL 14.02.2026 A (ITA) THE COFFEE",expense,false,Ristorazione/Ristorante
+228,2026-02-14,-44.17,"Pagam. POS - PAGAMENTO POS 44,17 EUR DEL 14.02.2026 A (ITA) THE COFFEE",expense,false,Ristorazione/Bar / caffè
 229,2026-02-14,-351.14,"Pagam. POS - PAGAMENTO POS 351,14 EUR DEL 14.02.2026 A (ITA) LOGIS HOTELS CORSICO",expense,false,Svago e tempo libero/Viaggi e vacanze
 230,2026-02-15,-166.87,Addebito SDD - BOOKING.COM B.V.,expense,false,Svago e tempo libero/Viaggi e vacanze
-231,2026-02-15,-296.62,PAGAMENTO CONTACTLESS CARTA **** 2003 BUFFETTI CENTRO COMM. IL LEONE,expense,false,Tasse e tributi/Imposte varie
+231,2026-02-15,-296.62,PAGAMENTO CONTACTLESS CARTA **** 2003 BUFFETTI CENTRO COMM. IL LEONE,expense,false,Istruzione/Libri e materiale
 232,2026-02-15,-67.88,"Pagam. POS - PAGAMENTO POS 67,88 EUR DEL 15.02.2026 A (ITA) GIAP",expense,false,Trasporti/Carburante
 233,2026-02-16,-33.31,"Pagam. POS - PAGAMENTO POS 33,31 EUR DEL 16.02.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
-234,2026-02-16,-44.31,PAGAMENTO CONTACTLESS CARTA **** 2441 ALE-HOP,expense,false,Altro/Spese non classificate
-235,2026-02-16,-54.36,PAGAMENTO CONTACTLESS CARTA **** 4312 MEDIAWORLD PADOVA,expense,false,Svago e tempo libero/Hobby
-236,2026-02-16,-124.91,"Pagam. POS - PAGAMENTO POS 124,91 EUR DEL 16.02.2026 A (ITA) TRONY LINGOTTO",expense,false,Svago e tempo libero/Hobby
+234,2026-02-16,-44.31,PAGAMENTO CONTACTLESS CARTA **** 2441 ALE-HOP,expense,false,Regali e donazioni/Regali
+235,2026-02-16,-54.36,PAGAMENTO CONTACTLESS CARTA **** 4312 MEDIAWORLD PADOVA,expense,false,Casa/Elettrodomestici
+236,2026-02-16,-124.91,"Pagam. POS - PAGAMENTO POS 124,91 EUR DEL 16.02.2026 A (ITA) TRONY LINGOTTO",expense,false,Casa/Elettrodomestici
 237,2026-02-17,-20.20,"Pagam. POS - PAGAMENTO POS 20,20 EUR DEL 17.02.2026 A (ITA) PIZZERIA NAPOLI",expense,false,Ristorazione/Ristorante
-238,2026-02-17,-24.30,"Pagam. POS - PAGAMENTO POS 24,30 EUR DEL 17.02.2026 A (ITA) MINI MIX",expense,false,Alimentari/Spesa supermercato
+238,2026-02-17,-24.30,"Pagam. POS - PAGAMENTO POS 24,30 EUR DEL 17.02.2026 A (ITA) MINI MIX",expense,false,Alimentari/Altro alimentari
 239,2026-02-17,-35.42,"Pagam. POS - PAGAMENTO POS 35,42 EUR DEL 17.02.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
 240,2026-02-17,-134.90,PAGAMENTO CONTACTLESS CARTA **** 1377 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
 241,2026-02-17,-38.39,"Pagam. POS - PAGAMENTO POS 38,39 EUR DEL 17.02.2026 A (ITA) ITALO NTV S.P.A.",expense,false,Trasporti/Carburante
@@ -246,55 +246,55 @@ row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_catego
 245,2026-02-18,-50.91,Addebito SDD - ACI BOLLO AUTO TARGA MX651HL,expense,false,Trasporti/Carburante
 246,2026-02-18,-12.52,"Pagam. POS - PAGAMENTO POS 12,52 EUR DEL 18.02.2026 A (ITA) FRANCO MANCA",expense,false,Ristorazione/Ristorante
 247,2026-02-18,-95.26,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Hobby
-248,2026-02-18,-195.92,PAGAMENTO CONTACTLESS CARTA **** 7325 BUFFETTI TIBURTINA,expense,false,Tasse e tributi/Imposte varie
+248,2026-02-18,-195.92,PAGAMENTO CONTACTLESS CARTA **** 7325 BUFFETTI TIBURTINA,expense,false,Istruzione/Libri e materiale
 249,2026-02-18,-402.28,"Pagam. POS - PAGAMENTO POS 402,28 EUR DEL 18.02.2026 A (ITA) IH HOTEL BARI",expense,false,Svago e tempo libero/Viaggi e vacanze
 250,2026-02-18,-317.79,"Pagam. POS - PAGAMENTO POS 317,79 EUR DEL 18.02.2026 A (ITA) HOTEL BELLAVISTA RIMINI",expense,false,Svago e tempo libero/Viaggi e vacanze
-251,2026-02-18,-81.03,"Pagam. POS - PAGAMENTO POS 81,03 EUR DEL 18.02.2026 A (ITA) CADDY'S PORTA NUOVA",expense,false,Abbigliamento/Abbigliamento adulti
-252,2026-02-18,-55.75,"Pagam. POS - PAGAMENTO POS 55,75 EUR DEL 18.02.2026 A (ITA) STARBUCKS RESERVE",expense,false,Ristorazione/Ristorante
+251,2026-02-18,-81.03,"Pagam. POS - PAGAMENTO POS 81,03 EUR DEL 18.02.2026 A (ITA) CADDY'S PORTA NUOVA",expense,false,Cura personale/Cosmetici e igiene
+252,2026-02-18,-55.75,"Pagam. POS - PAGAMENTO POS 55,75 EUR DEL 18.02.2026 A (ITA) STARBUCKS RESERVE",expense,false,Ristorazione/Bar / caffè
 253,2026-02-18,-155.37,PAGAMENTO CONTACTLESS CARTA **** 4602 EXE HOTELS MESTRE,expense,false,Svago e tempo libero/Viaggi e vacanze
-254,2026-02-18,-17.17,"Pagam. POS - PAGAMENTO POS 17,17 EUR DEL 18.02.2026 A (ITA) ACQUA & SAPONE",expense,false,Abbigliamento/Abbigliamento adulti
-255,2026-02-19,-76.35,PAGAMENTO CONTACTLESS CARTA **** 1646 CAPI ELECTRONICS LINGOTTO,expense,false,Svago e tempo libero/Hobby
+254,2026-02-18,-17.17,"Pagam. POS - PAGAMENTO POS 17,17 EUR DEL 18.02.2026 A (ITA) ACQUA & SAPONE",expense,false,Cura personale/Cosmetici e igiene
+255,2026-02-19,-76.35,PAGAMENTO CONTACTLESS CARTA **** 1646 CAPI ELECTRONICS LINGOTTO,expense,false,Casa/Elettrodomestici
 256,2026-02-19,-101.33,"Pagam. POS - PAGAMENTO POS 101,33 EUR DEL 19.02.2026 A (ITA) RISTORANTE IL FARO CESENATICO",expense,false,Svago e tempo libero/Viaggi e vacanze
 257,2026-02-19,-489.36,PAGAMENTO CONTACTLESS CARTA **** 5076 NHOW VERONA,expense,false,Svago e tempo libero/Viaggi e vacanze
 258,2026-02-19,-41.08,"Pagam. POS - PAGAMENTO POS 41,08 EUR DEL 19.02.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
-259,2026-02-19,-278.58,"Pagam. POS - PAGAMENTO POS 278,58 EUR DEL 19.02.2026 A (ITA) INMOTION",expense,false,Svago e tempo libero/Hobby
-260,2026-02-20,-96.24,"Pagam. POS - PAGAMENTO POS 96,24 EUR DEL 20.02.2026 A (ITA) HISTOIRE D'OR FIRENZE",expense,false,Altro/Spese non classificate
-261,2026-02-20,-280.53,PAGAMENTO CONTACTLESS CARTA **** 4156 TRONY CORSICO,expense,false,Svago e tempo libero/Hobby
+259,2026-02-19,-278.58,"Pagam. POS - PAGAMENTO POS 278,58 EUR DEL 19.02.2026 A (ITA) INMOTION",expense,false,Casa/Elettrodomestici
+260,2026-02-20,-96.24,"Pagam. POS - PAGAMENTO POS 96,24 EUR DEL 20.02.2026 A (ITA) HISTOIRE D'OR FIRENZE",expense,false,Abbigliamento/Altro abbigliamento
+261,2026-02-20,-280.53,PAGAMENTO CONTACTLESS CARTA **** 4156 TRONY CORSICO,expense,false,Casa/Elettrodomestici
 262,2026-02-20,-108.68,Addebito SDD - GITHUB INC. PRO PLAN,expense,false,Tasse e tributi/Imposte varie
-263,2026-02-20,-260.71,"Pagam. POS - PAGAMENTO POS 260,71 EUR DEL 20.02.2026 A (ITA) TRONY",expense,false,Svago e tempo libero/Hobby
-264,2026-02-20,-19.30,"Pagam. POS - PAGAMENTO POS 19,30 EUR DEL 20.02.2026 A (ITA) WOK TO WALK",expense,false,Ristorazione/Ristorante
-265,2026-02-21,-44.16,PAGAMENTO CONTACTLESS CARTA **** 8917 PRIMADONNA,expense,false,Abbigliamento/Abbigliamento adulti
-266,2026-02-21,-71.10,PAGAMENTO CONTACTLESS CARTA **** 4669 OAKBERRY AÇAÍ BOWLS,expense,false,Ristorazione/Ristorante
-267,2026-02-21,-17.95,"Pagam. POS - PAGAMENTO POS 17,95 EUR DEL 21.02.2026 A (ITA) SNIPES OSTIENSE",expense,false,Abbigliamento/Abbigliamento adulti
-268,2026-02-22,-57.31,PAGAMENTO CONTACTLESS CARTA **** 8450 MAXI ZOO CATANIA,expense,false,Altro/Spese non classificate
+263,2026-02-20,-260.71,"Pagam. POS - PAGAMENTO POS 260,71 EUR DEL 20.02.2026 A (ITA) TRONY",expense,false,Casa/Elettrodomestici
+264,2026-02-20,-19.30,"Pagam. POS - PAGAMENTO POS 19,30 EUR DEL 20.02.2026 A (ITA) WOK TO WALK",expense,false,Ristorazione/Asporto / delivery
+265,2026-02-21,-44.16,PAGAMENTO CONTACTLESS CARTA **** 8917 PRIMADONNA,expense,false,Abbigliamento/Calzature
+266,2026-02-21,-71.10,PAGAMENTO CONTACTLESS CARTA **** 4669 OAKBERRY AÇAÍ BOWLS,expense,false,Ristorazione/Asporto / delivery
+267,2026-02-21,-17.95,"Pagam. POS - PAGAMENTO POS 17,95 EUR DEL 21.02.2026 A (ITA) SNIPES OSTIENSE",expense,false,Abbigliamento/Calzature
+268,2026-02-22,-57.31,PAGAMENTO CONTACTLESS CARTA **** 8450 MAXI ZOO CATANIA,expense,false,Animali domestici/Cibo
 269,2026-02-22,-53.00,"Pagam. POS - PAGAMENTO POS 53,00 EUR DEL 22.02.2026 A (ITA) AS 24",expense,false,Trasporti/Carburante
-270,2026-02-22,-298.17,PAGAMENTO CONTACTLESS CARTA **** 5660 BUREAU VALLÉE,expense,false,Tasse e tributi/Imposte varie
-271,2026-02-23,-130.02,PAGAMENTO CONTACTLESS CARTA **** 3336 PRIMADONNA,expense,false,Abbigliamento/Abbigliamento adulti
-272,2026-02-23,-9.26,"Pagam. POS - PAGAMENTO POS 9,26 EUR DEL 23.02.2026 A (ITA) JULIUS MEINL",expense,false,Ristorazione/Ristorante
+270,2026-02-22,-298.17,PAGAMENTO CONTACTLESS CARTA **** 5660 BUREAU VALLÉE,expense,false,Istruzione/Libri e materiale
+271,2026-02-23,-130.02,PAGAMENTO CONTACTLESS CARTA **** 3336 PRIMADONNA,expense,false,Abbigliamento/Calzature
+272,2026-02-23,-9.26,"Pagam. POS - PAGAMENTO POS 9,26 EUR DEL 23.02.2026 A (ITA) JULIUS MEINL",expense,false,Ristorazione/Bar / caffè
 273,2026-02-23,-382.19,"Pagam. POS - PAGAMENTO POS 382,19 EUR DEL 23.02.2026 A (ITA) RISTORANTE IL FARO CESENATICO",expense,false,Svago e tempo libero/Viaggi e vacanze
 274,2026-02-24,-210.59,PAGAMENTO CONTACTLESS CARTA **** 3430 ANANTARA,expense,false,Svago e tempo libero/Viaggi e vacanze
 275,2026-02-24,-75.42,Disposizione - RIF:217493255 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
-276,2026-02-24,-227.18,"Pagam. POS - PAGAMENTO POS 227,18 EUR DEL 24.02.2026 A (ITA) BUREAU VALLÉE BRESCIA",expense,false,Tasse e tributi/Imposte varie
+276,2026-02-24,-227.18,"Pagam. POS - PAGAMENTO POS 227,18 EUR DEL 24.02.2026 A (ITA) BUREAU VALLÉE BRESCIA",expense,false,Istruzione/Libri e materiale
 277,2026-02-24,-62.61,"Pagam. POS - PAGAMENTO POS 62,61 EUR DEL 24.02.2026 A (ITA) SURE HOTEL COLLECTION",expense,false,Svago e tempo libero/Viaggi e vacanze
 278,2026-02-24,-95.70,"Pagam. POS - PAGAMENTO POS 95,70 EUR DEL 24.02.2026 A (ITA) CONAD CITY ROMA",expense,false,Alimentari/Spesa supermercato
-279,2026-02-24,-128.28,"Pagam. POS - PAGAMENTO POS 128,28 EUR DEL 24.02.2026 A (ITA) BUFFETTI",expense,false,Tasse e tributi/Imposte varie
+279,2026-02-24,-128.28,"Pagam. POS - PAGAMENTO POS 128,28 EUR DEL 24.02.2026 A (ITA) BUFFETTI",expense,false,Istruzione/Libri e materiale
 280,2026-02-25,-455.34,Addebito SDD - TELEPASS PEDAGGI A14 AUTOSTRADA,expense,false,Svago e tempo libero/Viaggi e vacanze
-281,2026-02-25,-144.08,PAGAMENTO CONTACTLESS CARTA **** 8114 CEX CINISELLO BALSAMO,expense,false,Svago e tempo libero/Hobby
+281,2026-02-25,-144.08,PAGAMENTO CONTACTLESS CARTA **** 8114 CEX CINISELLO BALSAMO,expense,false,Casa/Elettrodomestici
 282,2026-02-25,-45.65,"Pagam. POS - PAGAMENTO POS 45,65 EUR DEL 25.02.2026 A (ITA) Q8 EASY",expense,false,Trasporti/Carburante
-283,2026-02-25,-72.16,PAGAMENTO CONTACTLESS CARTA **** 3248 BREWDOG,expense,false,Ristorazione/Ristorante
-284,2026-02-25,-32.45,"Pagam. POS - PAGAMENTO POS 32,45 EUR DEL 25.02.2026 A (ITA) HISTOIRE D'OR",expense,false,Altro/Spese non classificate
+283,2026-02-25,-72.16,PAGAMENTO CONTACTLESS CARTA **** 3248 BREWDOG,expense,false,Ristorazione/Bar / caffè
+284,2026-02-25,-32.45,"Pagam. POS - PAGAMENTO POS 32,45 EUR DEL 25.02.2026 A (ITA) HISTOIRE D'OR",expense,false,Abbigliamento/Altro abbigliamento
 285,2026-02-26,-77.32,PAGAMENTO CONTACTLESS CARTA **** 8596 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
 286,2026-02-26,-147.74,"Pagam. POS - PAGAMENTO POS 147,74 EUR DEL 26.02.2026 A (ITA) ZARA ITALIA SRL",expense,false,Abbigliamento/Abbigliamento adulti
 287,2026-02-26,-33.41,PAGAMENTO CONTACTLESS CARTA **** 6468 GNP TIBURTINA,expense,false,Trasporti/Carburante
-288,2026-02-27,-136.89,PAGAMENTO CONTACTLESS CARTA **** 2579 ACQUA & SAPONE,expense,false,Abbigliamento/Abbigliamento adulti
-289,2026-02-27,-19.91,"Pagam. POS - PAGAMENTO POS 19,91 EUR DEL 27.02.2026 A (ITA) JULIUS MEINL",expense,false,Ristorazione/Ristorante
+288,2026-02-27,-136.89,PAGAMENTO CONTACTLESS CARTA **** 2579 ACQUA & SAPONE,expense,false,Cura personale/Cosmetici e igiene
+289,2026-02-27,-19.91,"Pagam. POS - PAGAMENTO POS 19,91 EUR DEL 27.02.2026 A (ITA) JULIUS MEINL",expense,false,Ristorazione/Bar / caffè
 290,2026-02-27,-111.85,"Pagam. POS - PAGAMENTO POS 111,85 EUR DEL 27.02.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
 291,2026-02-27,-33.54,"Pagam. POS - PAGAMENTO POS 33,54 EUR DEL 27.02.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
 292,2026-02-27,-244.32,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Hobby
 293,2026-02-27,-230.93,Addebito SDD - JETBRAINS S.R.O. INTELLIJ IDEA,expense,false,Tasse e tributi/Imposte varie
 294,2026-02-27,-111.57,"Pagam. POS - PAGAMENTO POS 111,57 EUR DEL 27.02.2026 A (ITA) BULGARI CENTRO COMMERCIALE LE GRANGE",expense,false,Svago e tempo libero/Viaggi e vacanze
 295,2026-02-28,-129.52,"Pagam. POS - PAGAMENTO POS 129,52 EUR DEL 28.02.2026 A (ITA) SISA",expense,false,Alimentari/Spesa supermercato
-296,2026-02-28,-176.61,"Pagam. POS - PAGAMENTO POS 176,61 EUR DEL 28.02.2026 A (ITA) INMOTION",expense,false,Svago e tempo libero/Hobby
+296,2026-02-28,-176.61,"Pagam. POS - PAGAMENTO POS 176,61 EUR DEL 28.02.2026 A (ITA) INMOTION",expense,false,Casa/Elettrodomestici
 297,2026-02-28,-158.83,PAGAMENTO CONTACTLESS CARTA **** 7500 GULLIVER ASSAGO,expense,false,Alimentari/Spesa supermercato
 298,2026-02-28,-150.98,"Pagam. POS - PAGAMENTO POS 150,98 EUR DEL 28.02.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
 299,2026-02-28,-49.12,PAGAMENTO CONTACTLESS CARTA **** 2753 COSTANTIN PALERMO,expense,false,Trasporti/Carburante

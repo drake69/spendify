@@ -1521,7 +1521,19 @@ def strip_footer_phase2_llm(
     response_schema = prompts["response_schema"]
 
     try:
+        import time as _time
+        _t0 = _time.monotonic()
         result = llm_backend.complete_structured(system_prompt, user_prompt, response_schema)
+        _duration_ms = int((_time.monotonic() - _t0) * 1000)
+        from core.llm_backends import _log_usage_to_db
+        _log_usage_to_db(
+            backend=llm_backend,
+            caller="normalizer",
+            step="footer_detect",
+            source_name=source_name,
+            batch_size=tail_size,
+            duration_ms=_duration_ms,
+        )
     except Exception as exc:
         logger.warning("[%s] Phase 2 LLM footer detection failed: %s", source_name, exc)
         raise
