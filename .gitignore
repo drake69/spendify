@@ -26,6 +26,7 @@ Thumbs.db
 /da_cancellare
 /logs
 tests/logs/
+benchmark/logs/
 *.csv
 # Exception: config CSVs that are part of the codebase
 !benchmark/benchmark_models.csv
