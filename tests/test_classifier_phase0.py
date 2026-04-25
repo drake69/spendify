@@ -175,40 +175,48 @@ class TestRunStep0AnalysisAmount:
         result = _run_step0_analysis(list(df.columns), df_raw=df)
         assert result.amount_col == "Importo"
 
-    def test_debit_column_name_sets_outflow_semantics(self):
+    def test_debit_column_name_without_data_leaves_unclear(self):
+        """Without df_raw, Phase 0 cannot classify columns by content → unclear."""
         columns = ["Data", "Causale", "Addebito"]
         result = _run_step0_analysis(columns, df_raw=None)
-        assert result.amount_col == "Addebito"
-        assert result.amount_semantics == "outflow"
-        assert result.invert_sign is True
+        # No content-type detection without data → LLM handles it
+        assert result.amount_semantics == "unclear"
 
-    def test_credit_column_name_sets_inflow_semantics(self):
+    def test_credit_column_name_without_data_leaves_unclear(self):
+        """Without df_raw, Phase 0 cannot classify columns by content → unclear."""
         columns = ["Data", "Causale", "Accredito"]
         result = _run_step0_analysis(columns, df_raw=None)
-        assert result.amount_col == "Accredito"
-        assert result.amount_semantics == "inflow"
-        assert result.invert_sign is False
+        assert result.amount_semantics == "unclear"
 
-    def test_debit_and_credit_columns_sets_debit_positive(self):
+    def test_debit_and_credit_columns_complementary_density(self):
+        """Two amount columns with complementary density → debit_positive (resolved by role assignment)."""
+        import numpy as np
         df = pd.DataFrame({
-            "Data": ["01/01/2025", "02/01/2025"],
-            "Causale": ["desc1", "desc2"],
-            "Addebito": ["10.00", ""],
-            "Accredito": ["", "20.00"],
+            "Data": ["01/01/2025", "02/01/2025", "03/01/2025", "04/01/2025",
+                     "05/01/2025", "06/01/2025", "07/01/2025", "08/01/2025"],
+            "Causale": ["desc"] * 8,
+            "Addebito": ["10.00", "20.00", "30.00", "15.00", "25.00", np.nan, np.nan, np.nan],
+            "Accredito": [np.nan, np.nan, np.nan, np.nan, np.nan, "50.00", "100.00", "200.00"],
         })
         result = _run_step0_analysis(list(df.columns), df_raw=df)
         assert result.amount_semantics == "debit_positive"
         assert result.debit_col is not None
         assert result.credit_col is not None
 
-    def test_english_debit_column(self):
+    def test_english_debit_credit_without_data_leaves_unclear(self):
+        """Without df_raw, cannot detect amount columns → unclear."""
         columns = ["Date", "Description", "Debit", "Credit"]
         result = _run_step0_analysis(columns, df_raw=None)
-        assert result.amount_semantics == "debit_positive"
+        assert result.amount_semantics == "unclear"
 
-    def test_neutral_amount_column_synonym(self):
-        columns = ["Date", "Description", "Amount"]
-        result = _run_step0_analysis(columns, df_raw=None)
+    def test_neutral_amount_column_with_data(self):
+        """Single amount column detected from content → neutral."""
+        df = pd.DataFrame({
+            "Date": ["01/01/2025"],
+            "Description": ["test"],
+            "Amount": ["-10.50"],
+        })
+        result = _run_step0_analysis(list(df.columns), df_raw=df)
         assert result.amount_semantics == "neutral"
         assert result.amount_col == "Amount"
 
@@ -371,6 +379,22 @@ class TestMergeStep0IntoResult:
         result = _merge_step0_into_result(base, step0, "test")
         assert result.get("currency_col") is None
 
+    def test_currency_col_none_does_not_crash(self):
+        """Regression: currency_col=None must not raise AttributeError on .lower()."""
+        step0 = _Step0Result(date_accounting_col="Valuta")
+        base = self._base_result()
+        base["currency_col"] = None  # explicitly None, not missing
+        result = _merge_step0_into_result(base, step0, "test")
+        assert result.get("currency_col") is None
+
+    def test_currency_col_missing_key_does_not_crash(self):
+        """currency_col key absent from result dict must not raise."""
+        step0 = _Step0Result(date_accounting_col="Valuta")
+        base = self._base_result()
+        # no currency_col key at all
+        result = _merge_step0_into_result(base, step0, "test")
+        assert result.get("currency_col") is None
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # _apply_step0_invert_sign (post-merge safety net)
@@ -394,31 +418,34 @@ class TestApplyStep0InvertSign:
         )
         assert result["invert_sign"] is True
 
-    def test_outflow_column_not_bank_forces_invert_true(self):
+    def test_non_credit_card_no_synonym_override(self):
+        """Safety net no longer uses column-name synonyms — only credit_card rule."""
         result = _apply_step0_invert_sign(
             {"doc_type": "unknown", "sign_convention": "signed_single",
              "amount_col": "Addebito", "invert_sign": None},
             "test"
         )
-        assert result["invert_sign"] is True
+        # No synonym-based override; LLM decides
+        assert result["invert_sign"] is None
 
-    def test_outflow_column_bank_account_not_overridden(self):
-        """For bank_account doc_type, outflow column name should NOT force invert."""
+    def test_bank_account_no_override(self):
+        """Safety net leaves bank_account invert_sign as-is."""
         result = _apply_step0_invert_sign(
             {"doc_type": "bank_account", "sign_convention": "signed_single",
              "amount_col": "Addebito", "invert_sign": None},
             "test"
         )
-        # bank_account is excluded from the outflow rule
         assert result["invert_sign"] is None
 
-    def test_inflow_column_forces_invert_false(self):
+    def test_inflow_column_no_synonym_override(self):
+        """Safety net no longer uses column-name synonyms — LLM decides."""
         result = _apply_step0_invert_sign(
             {"doc_type": "unknown", "sign_convention": "signed_single",
              "amount_col": "Accredito", "invert_sign": True},
             "test"
         )
-        assert result["invert_sign"] is False
+        # No synonym override — value stays as LLM set it
+        assert result["invert_sign"] is True
 
     def test_debit_positive_convention_skipped(self):
         """Safety net only applies to signed_single convention."""
@@ -563,27 +590,27 @@ class TestRunStep0AnalysisEdgeCases:
         assert result.date_col is not None
         assert result.date_accounting_col is not None
 
-    def test_debit_only_from_data_sets_outflow(self):
-        """Debit-only amount col detected from data → outflow semantics (lines 483-485)."""
+    def test_single_amount_col_is_neutral(self):
+        """Single amount column → neutral semantics (LLM decides direction)."""
         df = pd.DataFrame({
             "Data": ["01/01/2025", "02/01/2025"],
             "Causale": ["desc1", "desc2"],
             "Addebito": ["10.00", "20.00"],
         })
         result = _run_step0_analysis(list(df.columns), df_raw=df)
-        assert result.amount_semantics == "outflow"
-        assert result.invert_sign is True
+        assert result.amount_semantics == "neutral"
+        assert result.amount_col == "Addebito"
 
-    def test_credit_only_from_data_sets_inflow(self):
-        """Credit-only amount col detected from data → inflow semantics (lines 487-489)."""
+    def test_single_credit_col_is_neutral(self):
+        """Single amount column → neutral semantics (LLM decides direction)."""
         df = pd.DataFrame({
             "Data": ["01/01/2025", "02/01/2025"],
             "Causale": ["desc1", "desc2"],
             "Accredito": ["10.00", "20.00"],
         })
         result = _run_step0_analysis(list(df.columns), df_raw=df)
-        assert result.amount_semantics == "inflow"
-        assert result.invert_sign is False
+        assert result.amount_semantics == "neutral"
+        assert result.amount_col == "Accredito"
 
 
 # ─────────────────────────────────────────────────────────────────────────────

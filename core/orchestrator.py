@@ -33,6 +33,7 @@ from core.description_cleaner import clean_descriptions_batch
 from core.classifier import classify_document
 from core.llm_backends import LLMBackend, BackendFactory, OllamaBackend
 from core.models import (
+    CARD_TYPES,
     Confidence,
     DocumentType,
     GirocontoMode,
@@ -45,12 +46,14 @@ from core.normalizer import (
     compute_file_hash,
     compute_header_sha256,
     compute_transaction_id,
+    detect_and_strip_footer_rows,
     detect_and_strip_preheader_rows,
     detect_best_sheet,
     detect_delimiter,
     detect_encoding,
     detect_header_row,
     detect_internal_transfers,
+    detect_skip_rows,
     drop_low_variability_columns,
     find_card_settlement_matches,
     load_raw_head,
@@ -58,6 +61,9 @@ from core.normalizer import (
     parse_amount,
     parse_date_safe,
     remove_card_balance_row,
+    strip_footer_phase1,
+    strip_footer_phase2_llm,
+    strip_footer_phase3_patterns,
 )
 from core.sanitizer import SanitizationConfig, redact_pii
 from core.schemas import DocumentSchema
@@ -68,7 +74,7 @@ logger = setup_logging()
 
 @dataclass
 class ProcessingConfig:
-    llm_backend: str = "local_ollama"
+    llm_backend: str = "local_llama_cpp"
     giroconto_mode: GirocontoMode = GirocontoMode.neutral
     window_days: int = 45
     max_gap_days: int = 5
@@ -78,6 +84,7 @@ class ProcessingConfig:
     settlement_days_strict: int = 1
     boundary_pre_post: int = 10
     confidence_threshold: float = 0.80
+    force_schema_import: bool = False  # I-04: bypass schema review, always auto-import
     require_keyword_confirmation: bool = True
     # When True: transactions whose description matches an owner name are marked
     # as internal transfer (giroconto), and the card balance row (if present) is
@@ -87,6 +94,7 @@ class ProcessingConfig:
     batch_size_llm: int = 1
     sanitize_config: SanitizationConfig = field(default_factory=SanitizationConfig)
     description_language: str = "it"  # language of transaction descriptions (ISO 639-1)
+    user_country: str = ""             # ISO 3166-1 alpha-2 (e.g. "IT") — used for NSI brand ranking
 
     # Plausibility cap for amount column detection: columns whose median absolute
     # value exceeds this threshold are treated as reference/ID columns, not amounts.
@@ -101,12 +109,49 @@ class ProcessingConfig:
     ollama_model: str = "gemma3:12b"
     openai_model: str = "gpt-4o-mini"
     openai_api_key: str = ""
-    claude_model: str = "claude-3-5-haiku-20241022"
+    claude_model: str = "claude-haiku-4-5-20251001"
     anthropic_api_key: str = ""
     # OpenAI-compatible (Groq, Together AI, Google AI Studio, …)
     compat_base_url: str = ""
     compat_api_key: str = ""
     compat_model: str = ""
+    # llama.cpp (local GGUF model)
+    llama_cpp_model_path: str = ""
+    llama_cpp_n_gpu_layers: int = -1
+    llama_cpp_n_ctx: int = 0   # 0 = auto-detect from GGUF metadata at load time
+    # vLLM (local or remote, OpenAI-compatible server)
+    vllm_base_url: str = "http://localhost:8000/v1"
+    vllm_model: str = ""
+    vllm_api_key: str = "EMPTY"
+    # vLLM offline (in-process, no server — Linux/CUDA only)
+    vllm_offline_model: str = ""                # HF model ID or local path
+    vllm_offline_tensor_parallel: int = 1       # number of GPUs for tensor parallelism
+    vllm_offline_gpu_memory_utilization: float = 0.90
+    # Classifier mode: "auto" (detect from model size), "single" (1 LLM call), "multi_step" (3 calls)
+    classifier_mode: str = "auto"
+
+    # Categorizer-specific backend (empty = same as classifier)
+    cat_llm_backend: str = ""
+    cat_ollama_base_url: str = ""
+    cat_ollama_model: str = ""
+    cat_openai_model: str = ""
+    cat_openai_api_key: str = ""
+    cat_claude_model: str = ""
+    cat_anthropic_api_key: str = ""
+    cat_compat_base_url: str = ""
+    cat_compat_api_key: str = ""
+    cat_compat_model: str = ""
+    cat_llama_cpp_model_path: str = ""
+    cat_llama_cpp_n_gpu_layers: int = -1
+    cat_llama_cpp_n_ctx: int = 0
+
+
+@dataclass
+class SkippedRow:
+    """Detail of a row that was skipped during normalisation."""
+    row_index: int            # 0-based index in the raw DataFrame
+    reason: str               # "date_nan" | "date_parse" | "amount_none" | "balance_row" | "merged"
+    raw_values: dict          # raw cell values for this row (column_name → value)
 
 
 @dataclass
@@ -123,6 +168,11 @@ class ImportResult:
     flow_used: str = "unknown"  # "flow1" or "flow2"
     needs_schema_review: bool = False   # True when confidence is medium/low → user must confirm schema
     available_columns: list[str] = field(default_factory=list)  # column names for review UI
+    total_file_rows: int = 0          # total rows in the raw DataFrame (after header stripping)
+    header_rows_skipped: int = 0      # rows stripped as header/pre-header
+    skipped_rows: list[SkippedRow] = field(default_factory=list)  # rows skipped during normalisation
+    merged_count: int = 0             # intra-file duplicate rows merged
+    internal_transfer_count: int = 0  # transactions detected as giroconti (always saved)
 
 
 def _build_backend(config: ProcessingConfig) -> LLMBackend:
@@ -140,6 +190,21 @@ def _build_backend(config: ProcessingConfig) -> LLMBackend:
         kwargs["base_url"] = config.compat_base_url
         kwargs["api_key"]  = config.compat_api_key
         kwargs["model"]    = config.compat_model
+    elif config.llm_backend == "local_llama_cpp":
+        kwargs.pop("timeout", None)  # LlamaCppBackend doesn't use timeout kwarg for Llama()
+        if config.llama_cpp_model_path:
+            kwargs["model_path"] = config.llama_cpp_model_path
+        kwargs["n_gpu_layers"] = config.llama_cpp_n_gpu_layers
+        kwargs["n_ctx"] = config.llama_cpp_n_ctx  # 0 = auto-detect from GGUF
+    elif config.llm_backend == "vllm":
+        kwargs["base_url"] = config.vllm_base_url
+        kwargs["model"] = config.vllm_model
+        kwargs["api_key"] = config.vllm_api_key
+    elif config.llm_backend == "vllm_offline":
+        kwargs.pop("timeout", None)
+        kwargs["model"] = config.vllm_offline_model
+        kwargs["tensor_parallel_size"] = config.vllm_offline_tensor_parallel
+        kwargs["gpu_memory_utilization"] = config.vllm_offline_gpu_memory_utilization
     return BackendFactory.create(config.llm_backend, **kwargs)
 
 
@@ -154,10 +219,48 @@ def _get_fallback_backend(config: ProcessingConfig) -> Optional[OllamaBackend]:
     return None
 
 
+def _build_categorizer_backend(config: ProcessingConfig) -> Optional[LLMBackend]:
+    """Build a separate LLM backend for categorization, or None to reuse the classifier backend."""
+    if not config.cat_llm_backend:
+        return None
+    kwargs: dict[str, Any] = {"timeout": config.llm_timeout_s}
+    if config.cat_llm_backend == "local_ollama":
+        kwargs["base_url"] = config.cat_ollama_base_url or config.ollama_base_url
+        kwargs["model"] = config.cat_ollama_model or config.ollama_model
+    elif config.cat_llm_backend == "openai":
+        kwargs["model"] = config.cat_openai_model or config.openai_model
+        kwargs["api_key"] = config.cat_openai_api_key or config.openai_api_key
+    elif config.cat_llm_backend == "claude":
+        kwargs["model"] = config.cat_claude_model or config.claude_model
+        kwargs["api_key"] = config.cat_anthropic_api_key or config.anthropic_api_key
+    elif config.cat_llm_backend == "openai_compatible":
+        kwargs["base_url"] = config.cat_compat_base_url or config.compat_base_url
+        kwargs["api_key"] = config.cat_compat_api_key or config.compat_api_key
+        kwargs["model"] = config.cat_compat_model or config.compat_model
+    elif config.cat_llm_backend == "local_llama_cpp":
+        kwargs.pop("timeout", None)
+        path = config.cat_llama_cpp_model_path or config.llama_cpp_model_path
+        if path:
+            kwargs["model_path"] = path
+        kwargs["n_gpu_layers"] = config.cat_llama_cpp_n_gpu_layers if config.cat_llama_cpp_model_path else config.llama_cpp_n_gpu_layers
+        kwargs["n_ctx"] = config.cat_llama_cpp_n_ctx if config.cat_llama_cpp_model_path else config.llama_cpp_n_ctx
+    elif config.cat_llm_backend == "vllm":
+        kwargs["base_url"] = config.vllm_base_url
+        kwargs["model"] = config.vllm_model
+        kwargs["api_key"] = config.vllm_api_key
+    elif config.cat_llm_backend == "vllm_offline":
+        kwargs.pop("timeout", None)
+        kwargs["model"] = config.vllm_offline_model
+        kwargs["tensor_parallel_size"] = config.vllm_offline_tensor_parallel
+        kwargs["gpu_memory_utilization"] = config.vllm_offline_gpu_memory_utilization
+    return BackendFactory.create(config.cat_llm_backend, **kwargs)
+
+
 def load_raw_dataframe(
     raw_bytes: bytes,
     filename: str,
     skip_rows_override: Optional[int] = None,
+    has_borders_hint: Optional[bool] = None,
 ) -> tuple[pd.DataFrame, str, PreprocessInfo]:
     """Load a file into a raw DataFrame with Phase-0 pre-processing.
 
@@ -166,7 +269,7 @@ def load_raw_dataframe(
     2. Detect and skip leading non-data rows (CSV: ``detect_header_row``).
     3. Load into DataFrame.
     4. Strip any pre-header metadata rows (statistical median approach).
-    5. Drop low-variability columns (e.g., repeated account name / card PAN).
+    5. Drop empty columns (all-null). Sparse columns with even one value are preserved.
 
     Args:
         raw_bytes: Raw file content.
@@ -174,6 +277,10 @@ def load_raw_dataframe(
         skip_rows_override: If provided, skip exactly this many rows before the
             header instead of auto-detecting. Also bypasses
             ``detect_and_strip_preheader_rows`` for Excel files.
+        has_borders_hint: If known from cached schema (I-10):
+            True → attempt border detection first (expected to succeed).
+            False → skip border detection (format known to have no borders).
+            None → unknown (new format), try border detection.
 
     Returns:
         ``(df, encoding_used, preprocess_info)``
@@ -181,6 +288,19 @@ def load_raw_dataframe(
     encoding = detect_encoding(raw_bytes)
     name_lower = filename.lower()
     logger.info(f"load_raw_dataframe: detected encoding {encoding} for {filename}")
+
+    # ── Pre-load header detection ─────────────────────────────────────────
+    # detect_skip_rows combines CSV and Excel detection into a single call.
+    # When skip_rows_override is provided the user already told us how many
+    # rows to skip, so we trust that unconditionally.
+    border_region = None
+    if skip_rows_override is not None:
+        skip_rows = skip_rows_override
+        skip_certain = True  # treat manual override as certain
+    else:
+        skip_rows, skip_certain, border_region = detect_skip_rows(
+            raw_bytes, filename, skip_border_check=(has_borders_hint is False),
+        )
 
     if name_lower.endswith((".xlsx", ".xls")):
         try:
@@ -191,30 +311,123 @@ def load_raw_dataframe(
         except Exception:
             sheet_name = 0  # fallback to first sheet
 
-        skip = skip_rows_override if skip_rows_override is not None else 0
-        df = pd.read_excel(io.BytesIO(raw_bytes), sheet_name=sheet_name, skiprows=skip if skip > 0 else None)
+        # Load rows using combined border + density signals.
+        # Border is a strong hint but not absolute — if dense data rows exist
+        # beyond the border, they are included (border may not cover full table).
+        read_kwargs: dict = {
+            "sheet_name": sheet_name,
+            "skiprows": skip_rows if skip_rows > 0 else None,
+        }
+        if border_region is not None:
+            r1, r2, _c1, _c2 = border_region
+            logger.info(
+                "load_raw_dataframe: border hint rows %d..%d (header at %d) — loading all, will reconcile with density",
+                r1, r2, skip_rows,
+            )
+
+        df = pd.read_excel(
+            io.BytesIO(raw_bytes),
+            **read_kwargs,
+        )
 
     else:
         # CSV / text
         text = raw_bytes.decode(encoding, errors="replace")
         delimiter = detect_delimiter(text)
-        lines = text.splitlines()
-        _detected, _ = detect_header_row(lines)
-        skip_rows = skip_rows_override if skip_rows_override is not None else _detected
 
         df = pd.read_csv(
             io.StringIO(text),
             sep=delimiter,
-            skiprows=skip_rows,
+            skiprows=skip_rows if skip_rows > 0 else None,
             engine="python",
             on_bad_lines="skip",
         )
 
-    # Phase-0 preprocessing (runs on both CSV and Excel)
-    if skip_rows_override is None:
-        df, skipped_rows = detect_and_strip_preheader_rows(df, source_name=filename)
-    else:
+    # Defensive: coerce all column names to str — Excel files may have datetime
+    # or numeric objects as column headers, which crash downstream .lower() calls.
+    df.columns = [str(c) for c in df.columns]
+
+    # ── Combined border + density row filtering ─────────────────────────────
+    # Two signals determine the data extent:
+    #   1. Border signal (Excel only): bordered region suggests data boundaries
+    #   2. Density signal (universal): rows with >= 50% columns filled are data
+    #
+    # Decision logic:
+    #   - Border strong + density agrees  → use border (it's exact)
+    #   - Border strong + dense rows outside → extend beyond border (border incomplete)
+    #   - No border → density decides everything
+    #   - Trailing sparse rows always trimmed (footer/decoration)
+    if len(df) > 0:
+        n_cols = len(df.columns)
+        if n_cols > 0:
+            row_density = df.notna().sum(axis=1) / n_cols
+            _density_threshold = 0.5
+            dense_mask = row_density >= _density_threshold
+
+            if border_region is not None:
+                _r1, _r2, _c1, _c2 = border_region
+                # Border says data ends at row _r2 (relative to file, not DataFrame).
+                # Translate to DataFrame index: border row count from header.
+                _border_nrows = _r2 - skip_rows
+                _n_dense_total = dense_mask.sum()
+                _n_dense_beyond_border = dense_mask.iloc[_border_nrows:].sum() if _border_nrows < len(df) else 0
+
+                if _n_dense_beyond_border > 0:
+                    # Dense rows exist outside the border → border is incomplete.
+                    # Trust density: trim only trailing sparse rows.
+                    last_dense_idx = dense_mask[::-1].idxmax()
+                    n_before = len(df)
+                    df = df.loc[:last_dense_idx].copy()
+                    logger.info(
+                        "load_raw_dataframe: border says %d rows but %d dense rows found beyond → "
+                        "extending to %d rows (density wins over border)",
+                        _border_nrows, _n_dense_beyond_border, len(df),
+                    )
+                else:
+                    # No dense rows beyond border → border and density agree.
+                    # Use border as the precise boundary.
+                    n_before = len(df)
+                    df = df.iloc[:_border_nrows].copy()
+                    if n_before != len(df):
+                        logger.info(
+                            "load_raw_dataframe: border and density agree → trimmed to %d rows",
+                            len(df),
+                        )
+            else:
+                # No border — trim trailing sparse rows by density alone.
+                if dense_mask.any():
+                    last_dense_idx = dense_mask[::-1].idxmax()
+                    n_before = len(df)
+                    df = df.loc[:last_dense_idx].copy()
+                    n_trimmed = n_before - len(df)
+                    if n_trimmed > 0:
+                        logger.info(
+                            "load_raw_dataframe: density filter trimmed %d trailing sparse rows "
+                            "(threshold=%.0f%%, kept %d rows)",
+                            n_trimmed, _density_threshold * 100, len(df),
+                        )
+
+    # Phase-0 preprocessing: post-load preheader strip
+    # When pre-load detection was certain (and skip_rows > 0), the pre-header
+    # rows were already excluded at load time — no need for the post-hoc strip.
+    if skip_certain and skip_rows > 0:
+        logger.info("Skipping post-load preheader strip: pre-load detection was certain (skip_rows=%d)", skip_rows)
+        skipped_rows = skip_rows
+    elif skip_rows_override is not None:
         skipped_rows = skip_rows_override
+    else:
+        try:
+            df, skipped_rows = detect_and_strip_preheader_rows(df, source_name=filename)
+        except ValueError as exc:
+            # Safety caps exceeded — don't crash; log the warning and continue
+            # with 0 rows stripped. The user will see an incorrect schema review
+            # and can set skip_rows manually.
+            logger.warning(f"load_raw_dataframe: preheader detection exceeded safety caps: {exc}")
+            skipped_rows = 0
+
+    # NOTE: Footer stripping moved to process_file() — runs AFTER schema
+    # detection so it can use column-aware structural filter (Phase 1) and
+    # LLM semantic detection (Phase 2/3).
 
     # Capture column names BEFORE drop_low_variability_columns — used for stable
     # cols_key lookup: drop ratio depends on file size so it varies across monthly
@@ -224,8 +437,12 @@ def load_raw_dataframe(
 
     info = PreprocessInfo(
         skipped_rows=skipped_rows,
+        footer_rows_stripped=0,  # updated later in process_file() after 3-phase strip
         dropped_columns=dropped_cols,
         columns_before_drop=cols_before_drop,
+        header_certain=skip_certain,
+        border_detected=border_region is not None,
+        border_region=border_region,
     )
     return df, encoding, info
 
@@ -234,18 +451,29 @@ def _normalize_df_with_schema(
     df: pd.DataFrame,
     schema: DocumentSchema,
     source_name: str,
-) -> list[dict]:
+) -> tuple[list[dict], list[SkippedRow], int]:
     """
     Apply DocumentSchema to produce a list of canonical transaction dicts.
+
+    Returns:
+        (transactions, skipped_rows, merge_count) — skipped_rows contains details
+        of each row that was dropped during normalisation; merge_count is the number
+        of intra-file duplicate rows that were aggregated (summed) into existing ones.
     """
     transactions = []
+    skipped_rows: list[SkippedRow] = []
     skip_date_nan = skip_date_parse = skip_amount = 0
 
-    for _, row in df.iterrows():
+    def _row_raw_values(r, idx: int) -> dict:
+        """Extract raw values for a skipped row (for diagnostics)."""
+        return {c: str(r.get(c, ""))[:120] for c in df.columns}
+
+    for row_idx, (_, row) in enumerate(df.iterrows()):
         # Parse date — Excel cells arrive as datetime/date objects, not strings
         raw_date = row.get(schema.date_col, "")
         if raw_date is None or (isinstance(raw_date, float) and pd.isna(raw_date)):
             skip_date_nan += 1
+            skipped_rows.append(SkippedRow(row_idx, "date_nan", _row_raw_values(row, row_idx)))
             continue
         if hasattr(raw_date, "date"):          # datetime → date
             tx_date = raw_date.date()
@@ -257,6 +485,7 @@ def _normalize_df_with_schema(
             tx_date = None
         if tx_date is None:
             skip_date_parse += 1
+            skipped_rows.append(SkippedRow(row_idx, "date_parse", _row_raw_values(row, row_idx)))
             continue  # skip rows with unparseable date
 
         # Parse accounting date
@@ -280,6 +509,12 @@ def _normalize_df_with_schema(
         )
         if amount is None:
             skip_amount += 1
+            # Distinguish between single-column parse failure and debit/credit both empty
+            if schema.sign_convention in (SignConvention.debit_positive, SignConvention.credit_negative):
+                reason = "amount_none_dc"
+            else:
+                reason = "amount_none"
+            skipped_rows.append(SkippedRow(row_idx, reason, _row_raw_values(row, row_idx)))
             continue
 
         # Card files often store expenses as positive values.
@@ -350,6 +585,7 @@ def _normalize_df_with_schema(
             "subcategory": None,
             "category_confidence": None,
             "category_source": None,
+            "category_model": None,
             "reconciled": False,
             "to_review": False,
             "transfer_pair_id": None,
@@ -403,7 +639,7 @@ def _normalize_df_with_schema(
             f"_normalize_df_with_schema [{source_name}]: "
             f"merged {merge_count} duplicate row(s) into {len(merged)} unique transactions"
         )
-    return merged
+    return merged, skipped_rows, merge_count
 
 
 def _infer_tx_type(
@@ -420,8 +656,7 @@ def _infer_tx_type(
             return TransactionType.internal_out if amount < 0 else TransactionType.internal_in
 
     doc_str = doc_type.value if isinstance(doc_type, DocumentType) else doc_type
-    _card_types = {DocumentType.credit_card.value, DocumentType.debit_card.value, DocumentType.prepaid_card.value}
-    if doc_str in _card_types:
+    if doc_str in {t.value for t in CARD_TYPES}:
         return TransactionType.card_tx
     if amount > 0:
         return TransactionType.income
@@ -446,6 +681,8 @@ def process_file(
     existing_tx_ids_checker=None,  # Callable[[list[str]], set[str]] — returns already-imported tx ids
     account_label_override: Optional[str] = None,  # user-selected account name; overrides LLM-assigned label
     skip_rows_override: Optional[int] = None,  # user-confirmed skip_rows from UI; takes precedence over schema
+    history_cache=None,  # Optional[HistoryCache] — pre-loaded history for batch categorization
+    taxonomy_map: Optional[dict] = None,  # C-08-cascade: {osm_tag: (category, subcategory)} or None
 ) -> ImportResult:
     """
     Process a single file through Flow 1 or Flow 2.
@@ -473,6 +710,9 @@ def process_file(
     logger.info(f"process_file: loading {filename} ({len(raw_bytes)} bytes)")
     backend = _build_backend(config)
     fallback = _get_fallback_backend(config)
+    cat_backend = _build_categorizer_backend(config) or backend
+    if cat_backend is not backend:
+        logger.info(f"process_file: using separate categorizer backend ({config.cat_llm_backend})")
 
     # Load raw data
     _progress(0.0)
@@ -482,7 +722,13 @@ def process_file(
         if skip_rows_override is not None
         else (known_schema.skip_rows if (known_schema and known_schema.skip_rows) else None)
     )
-    df_raw, encoding, _preprocess_info = load_raw_dataframe(raw_bytes, filename, skip_rows_override=skip_override)
+    _has_borders_hint = getattr(known_schema, 'has_borders', None) if known_schema else None
+    df_raw, encoding, _preprocess_info = load_raw_dataframe(
+        raw_bytes, filename,
+        skip_rows_override=skip_override,
+        has_borders_hint=_has_borders_hint,
+    )
+    _header_rows_skipped = _preprocess_info.skipped_rows if isinstance(_preprocess_info.skipped_rows, int) else 0
     logger.info(
         f"process_file: loaded {filename} | rows={len(df_raw)} "
         f"ncols={len(df_raw.columns)} | known_schema={'yes' if known_schema else 'no'}"
@@ -505,6 +751,8 @@ def process_file(
             reconciliations=[],
             transfer_links=[],
             errors=["Empty file or no data found"],
+            total_file_rows=0,
+            header_rows_skipped=_header_rows_skipped,
         )
 
     flow_used = "flow1"
@@ -518,6 +766,48 @@ def process_file(
         )
         doc_schema = None
 
+    # Safety net: if the cached schema uses signed_single but the actual file has
+    # separate debit/credit columns (e.g. "Uscite" + "Entrate"), re-run Phase 0
+    # to upgrade the convention to debit_positive — prevents silent data loss.
+    if (
+        doc_schema is not None
+        and str(doc_schema.sign_convention) in ("signed_single", "SignConvention.signed_single")
+        and not doc_schema.debit_col
+        and not doc_schema.credit_col
+    ):
+        from core.classifier import (
+            _DEBIT_COLUMN_SYNONYMS,
+            _CREDIT_COLUMN_SYNONYMS,
+            _run_step0_analysis,
+        )
+        _step0 = _run_step0_analysis(list(df_raw.columns), df_raw=df_raw)
+        if _step0.amount_semantics == "debit_positive" and _step0.debit_col and _step0.credit_col:
+            logger.warning(
+                f"process_file: cached schema uses signed_single but Phase 0 found "
+                f"debit_col='{_step0.debit_col}', credit_col='{_step0.credit_col}' "
+                f"→ upgrading to debit_positive for {filename}"
+            )
+            doc_schema.sign_convention = SignConvention.debit_positive
+            doc_schema.debit_col = _step0.debit_col
+            doc_schema.credit_col = _step0.credit_col
+
+    # Resolve account_type from the Account table when user selected an account
+    _account_type: str | None = None
+    if account_label_override and account_label_override.strip():
+        try:
+            from db.models import Account, get_engine, get_session
+            _session = get_session()
+            _acc_obj = (
+                _session.query(Account)
+                .filter(Account.name == account_label_override.strip())
+                .first()
+            )
+            if _acc_obj:
+                _account_type = _acc_obj.account_type
+            _session.close()
+        except Exception:
+            pass  # non-critical — account_type is a hint, not mandatory
+
     # Flow 2: classify document if no known schema
     if doc_schema is None:
         flow_used = "flow2"
@@ -530,24 +820,53 @@ def process_file(
             sanitize_config=config.sanitize_config,
             fallback_backend=fallback,
             amount_plausibility_cap=config.max_transaction_amount,
+            header_certain=_preprocess_info.header_certain,
+            account_type=_account_type,
+            classifier_mode=config.classifier_mode,
         )
         _progress(0.25)
-        # Always stop on Flow 2: user must confirm schema before any data is imported
-        logger.info(f"process_file: Flow 2 for {filename} — stopping for mandatory user schema review")
-        return ImportResult(
-            batch_sha256=batch_sha256,
-            source_name=filename,
-            transactions=[],
-            doc_schema=doc_schema,
-            reconciliations=[],
-            transfer_links=[],
-            errors=[],
-            flow_used=flow_used,
-            needs_schema_review=True,
-            available_columns=list(df_raw.columns),
-        )
+
+        # Confidence-based auto-import decision (I-04: force_schema_import bypasses review)
+        _score = doc_schema.confidence_score if doc_schema else 0.0
+        _effective_threshold = 0.0 if config.force_schema_import else config.confidence_threshold
+        if _score >= _effective_threshold:
+            if config.force_schema_import and _score < 0.50:
+                logger.warning(
+                    f"process_file: Flow 2 for {filename} — force_schema_import=True but "
+                    f"confidence_score={_score:.2f} is very low. Schema may be incorrect."
+                )
+            logger.info(
+                f"process_file: Flow 2 for {filename} — confidence_score={_score} >= "
+                f"{_effective_threshold} → auto-importing"
+                f"{' (force_schema_import)' if config.force_schema_import else ''}"
+            )
+            # Fall through to normalisation below (do NOT return early)
+        else:
+            logger.info(
+                f"process_file: Flow 2 for {filename} — confidence_score={_score} < "
+                f"{config.confidence_threshold} → stopping for user schema review"
+            )
+            return ImportResult(
+                batch_sha256=batch_sha256,
+                source_name=filename,
+                transactions=[],
+                doc_schema=doc_schema,
+                reconciliations=[],
+                transfer_links=[],
+                errors=[],
+                flow_used=flow_used,
+                total_file_rows=len(df_raw),
+                header_rows_skipped=_header_rows_skipped,
+                needs_schema_review=True,
+                available_columns=list(df_raw.columns),
+            )
     else:
         _progress(0.10)
+
+    # I-10: propagate border detection result to schema for persistence
+    if _preprocess_info.border_detected and not getattr(doc_schema, 'has_borders', False):
+        doc_schema.has_borders = True
+        logger.info(f"process_file: setting has_borders=True on schema for {filename}")
 
     # User-selected account overrides the LLM-assigned label — provides a
     # stable, human-readable dedup key independent of the filename.
@@ -557,22 +876,120 @@ def process_file(
             f"process_file: account_label overridden to '{doc_schema.account_label}' for {filename}"
         )
 
+    # ── 3-Phase Footer Stripping (post-schema) ─────────────────────────────
+    _total_footer_stripped = 0
+
+    # Phase 1: Structural filter (always runs — zero cost, no LLM)
+    df_raw, _p1 = strip_footer_phase1(df_raw, doc_schema, source_name=filename)
+    _total_footer_stripped += _p1
+    _footer_method = "phase1" if _p1 else ""
+
+    # Phase 2/3: Semantic footer stripping
+    _stored_patterns = getattr(doc_schema, "footer_patterns", []) or []
+
+    if _stored_patterns:
+        # Phase 3 first: try stored patterns (no LLM cost)
+        df_raw, _unmatched, _p3 = strip_footer_phase3_patterns(
+            df_raw, doc_schema, _stored_patterns, source_name=filename,
+        )
+        _total_footer_stripped += _p3
+        if _p3:
+            _footer_method += "+phase3" if _footer_method else "phase3"
+
+        # If unmatched suspicious rows remain → Phase 2 to learn new patterns
+        if _unmatched and backend is not None:
+            try:
+                df_raw, _new_pats, _p2 = strip_footer_phase2_llm(
+                    df_raw, doc_schema, backend,
+                    sanitize_config=config.sanitize_config,
+                    source_name=filename,
+                )
+                _total_footer_stripped += _p2
+                if _p2:
+                    _footer_method += "+phase2" if _footer_method else "phase2"
+                if _new_pats and doc_schema.source_identifier:
+                    from db.repository import update_footer_patterns
+                    from db.models import get_session as _get_session
+                    _s = _get_session()
+                    try:
+                        update_footer_patterns(_s, doc_schema.source_identifier, _new_pats)
+                        _s.commit()
+                    finally:
+                        _s.close()
+                    doc_schema.footer_patterns = list(dict.fromkeys(
+                        doc_schema.footer_patterns + _new_pats
+                    ))
+            except Exception as _exc:
+                logger.warning("Phase 2 footer LLM failed, falling back to IQR: %s", _exc)
+                df_raw, _iqr = detect_and_strip_footer_rows(df_raw, source_name=filename)
+                _total_footer_stripped += _iqr
+                _footer_method = "iqr_fallback"
+    else:
+        # No stored patterns yet: run Phase 2 (LLM) if backend available
+        if backend is not None:
+            try:
+                df_raw, _new_pats, _p2 = strip_footer_phase2_llm(
+                    df_raw, doc_schema, backend,
+                    sanitize_config=config.sanitize_config,
+                    source_name=filename,
+                )
+                _total_footer_stripped += _p2
+                if _p2:
+                    _footer_method += "+phase2" if _footer_method else "phase2"
+                if _new_pats and doc_schema.source_identifier:
+                    from db.repository import update_footer_patterns
+                    from db.models import get_session as _get_session
+                    _s = _get_session()
+                    try:
+                        update_footer_patterns(_s, doc_schema.source_identifier, _new_pats)
+                        _s.commit()
+                    finally:
+                        _s.close()
+                    doc_schema.footer_patterns = _new_pats[:]
+            except Exception as _exc:
+                logger.warning("Phase 2 footer LLM failed, falling back to IQR: %s", _exc)
+                df_raw, _iqr = detect_and_strip_footer_rows(df_raw, source_name=filename)
+                _total_footer_stripped += _iqr
+                _footer_method = "iqr_fallback"
+        else:
+            # No LLM available — fall back to old IQR method
+            df_raw, _iqr = detect_and_strip_footer_rows(df_raw, source_name=filename)
+            _total_footer_stripped += _iqr
+            _footer_method = "iqr_fallback"
+
+    if _total_footer_stripped:
+        logger.info(
+            "[%s] Total footer rows stripped: %d (method: %s)",
+            filename, _total_footer_stripped, _footer_method,
+        )
+
     # Apply schema → canonical transactions
-    transactions = _normalize_df_with_schema(df_raw, doc_schema, filename)
+    _total_file_rows = len(df_raw)
+    transactions, _norm_skipped, _merge_count = _normalize_df_with_schema(df_raw, doc_schema, filename)
     _progress(0.35)
 
     # Case 5: remove within-file card balance/totale summary row (double-counting guard)
-    _card_doc_types = {DocumentType.credit_card.value, DocumentType.debit_card.value, DocumentType.prepaid_card.value}
     _doc_str = doc_schema.doc_type.value if hasattr(doc_schema.doc_type, 'value') else str(doc_schema.doc_type)
-    if _doc_str in _card_doc_types and transactions:
+    if _doc_str in {t.value for t in CARD_TYPES} and transactions:
         _owner_label: str | None = None
         if config.use_owner_names_for_giroconto and config.sanitize_config.owner_names:
             _owner_label = ", ".join(config.sanitize_config.owner_names)
+        _len_before_balance = len(transactions)
         transactions, _balance_removed = remove_card_balance_row(
             transactions, epsilon=config.tolerance, owner_name_label=_owner_label
         )
-        if _balance_removed:
-            action = "relabelled" if _owner_label else "removed"
+        if _balance_removed and not _owner_label:
+            # Row was removed (not relabelled) — track it
+            _norm_skipped.append(SkippedRow(
+                row_index=-1, reason="balance_row",
+                raw_values={"nota": "Riga saldo/totale carta rimossa (importo = somma altre righe)"},
+            ))
+            action = "removed"
+        elif _balance_removed:
+            action = "relabelled"
+        else:
+            action = ""
+        if action:
             logger.info(f"process_file: balance/totale row {action} from {filename}")
 
     if not transactions:
@@ -585,6 +1002,10 @@ def process_file(
             transfer_links=[],
             errors=["No transactions could be parsed with the schema"],
             flow_used=flow_used,
+            total_file_rows=_total_file_rows,
+            header_rows_skipped=_header_rows_skipped,
+            skipped_rows=_norm_skipped,
+            merged_count=_merge_count,
         )
 
     # ── Per-transaction dedup: filter already-imported rows BEFORE any LLM call ──
@@ -612,6 +1033,10 @@ def process_file(
                 transfer_links=[],
                 skipped_count=skipped_count,
                 flow_used=flow_used,
+                total_file_rows=_total_file_rows,
+                header_rows_skipped=_header_rows_skipped,
+                skipped_rows=_norm_skipped,
+                merged_count=_merge_count,
             )
     _progress(0.38)
 
@@ -706,13 +1131,16 @@ def process_file(
         transactions=to_categorize,
         taxonomy=taxonomy,
         user_rules=user_rules,
-        llm_backend=backend,
+        llm_backend=cat_backend,
         sanitize_config=config.sanitize_config,
         fallback_backend=fallback,
         confidence_threshold=config.confidence_threshold,
         description_language=config.description_language,
+        user_country=config.user_country,
         progress_callback=_cat_cb,
         source_name=filename,
+        history_cache=history_cache,
+        taxonomy_map=taxonomy_map,
     )
     cat_map = {tx["id"]: result for tx, result in zip(to_categorize, cat_results)}
 
@@ -745,12 +1173,20 @@ def process_file(
             tx["subcategory"] = result.subcategory
             tx["category_confidence"] = result.confidence.value
             tx["category_source"] = result.source.value
+            tx["category_model"] = result.model_name or None
             tx["to_review"] = result.to_review
+            tx["human_validated"] = False
 
-    # Apply giroconto mode
-    if config.giroconto_mode == GirocontoMode.exclude:
-        excluded_types = {TransactionType.internal_out.value, TransactionType.internal_in.value}
-        transactions = [tx for tx in transactions if tx["tx_type"] not in excluded_types]
+    # Giroconti are ALWAYS persisted in the ledger regardless of giroconto_mode.
+    # The mode only affects downstream views (analytics, reports, registry).
+    _giro_count = sum(1 for tx in transactions if tx.get("tx_type") in (
+        TransactionType.internal_out.value, TransactionType.internal_in.value))
+    if _giro_count:
+        logger.info(
+            f"process_file: {_giro_count} internal transfers detected, "
+            f"all saved to ledger (giroconto_mode={config.giroconto_mode.value} "
+            f"applied only in views)"
+        )
 
     return ImportResult(
         batch_sha256=batch_sha256,
@@ -761,6 +1197,11 @@ def process_file(
         transfer_links=transfer_links,
         skipped_count=skipped_count,
         flow_used=flow_used,
+        total_file_rows=_total_file_rows,
+        header_rows_skipped=_header_rows_skipped,
+        skipped_rows=_norm_skipped,
+        merged_count=_merge_count,
+        internal_transfer_count=_giro_count,
     )
 
 

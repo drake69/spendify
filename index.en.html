@@ -1,10 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-M7MGHTEV07"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-M7MGHTEV07');
+  </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Spendify — Your unified bank ledger, on your computer</title>
-  <meta name="description" content="Spendify automatically aggregates bank statements from different banks into a single ledger — no duplicates, no subscriptions, no sending your data to anyone." />
+  <meta name="description" content="Spendify automatically aggregates movements files from different banks into a single ledger — no duplicates, no subscriptions, no sending your data to anyone." />
   <meta property="og:title" content="Spendify — Your unified bank ledger" />
   <meta property="og:description" content="An open source personal financial ledger that runs on your computer. Your data stays yours." />
   <meta property="og:type" content="website" />
@@ -628,6 +636,24 @@
       section { padding: 3.5rem 1.25rem; }
       .trust-bar { gap: 1.5rem; }
     }
+
+    /* ── LANG SWITCHER ────────────────────────────────────── */
+    .lang-switcher {
+      display: flex;
+      gap: 0.4rem;
+      align-items: center;
+      margin-left: 1rem;
+    }
+    .lang-switcher a {
+      font-size: 1.1rem;
+      text-decoration: none;
+      opacity: 0.5;
+      transition: opacity 0.2s;
+    }
+    .lang-switcher a:hover,
+    .lang-switcher a.active {
+      opacity: 1;
+    }
   </style>
 </head>
 <body>
@@ -641,8 +667,15 @@
     <li><a href="#features">Features</a></li>
     <li><a href="#developer">Developer</a></li>
     <li><a href="https://github.com/drake69/spendify" target="_blank" class="nav-cta">GitHub ↗</a></li>
-    <li><a href="index.html">🇮🇹 IT</a></li>
   </ul>
+  <div class="lang-switcher">
+    <a href="index.html" title="Italiano">🇮🇹</a>
+    <a href="index.en.html" title="English" class="active">🇬🇧</a>
+    <a href="index.de.html" title="Deutsch">🇩🇪</a>
+    <a href="index.fr.html" title="Français">🇫🇷</a>
+    <a href="index.es.html" title="Español">🇪🇸</a>
+    <a href="index.pt.html" title="Português">🇵🇹</a>
+  </div>
 </nav>
 
 <!-- ── HERO ─────────────────────────────────────────────────────────────── -->
@@ -685,7 +718,7 @@
     <div class="problem-grid fade-in">
       <div class="problem-card">
         <h3>😩 The monthly routine everyone hates</h3>
-        <p>Three bank statements from three different banking portals, incompatible CSV formats,
+        <p>Three movements files from three different banking portals, incompatible CSV formats,
         dates in different formats, amounts with random signs. Merging them by hand takes hours
         and always produces errors.</p>
       </div>
@@ -721,7 +754,7 @@
     <div class="steps fade-in">
       <div class="step">
         <h3>Download files from your bank</h3>
-        <p>Export bank statements as CSV or XLSX from your bank's portal.
+        <p>Export movements files as CSV or XLSX from your bank's portal.
         Works with any bank — Spendify automatically detects
         the format with no manual configuration.</p>
       </div>
@@ -804,7 +837,7 @@
         <div class="ico-big">🏠</div>
         <h3>Offline-first by default</h3>
         <p>Spendify uses <strong>Ollama locally</strong> by default: an AI engine that runs
-        on your computer, with no internet connection. Your bank statements never
+        on your computer, with no internet connection. Your movements files never
         leave your disk.</p>
       </div>
       <div class="privacy-card">
@@ -1092,7 +1125,7 @@
     <h2>What is coming</h2>
     <br>
     <ul class="roadmap-list fade-in">
-      <li><span class="dot"></span>PDF support — native parsing of PDF bank statements</li>
+      <li><span class="dot"></span>PDF support — native parsing of PDF movements files</li>
       <li><span class="dot"></span>Monthly budget per category with alerting</li>
       <li><span class="dot"></span>Automatic import via Open Banking (PSD2)</li>
       <li><span class="dot"></span>REST API for external integrations</li>

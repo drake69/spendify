@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-M7MGHTEV07"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-M7MGHTEV07');
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spendify — Su libro de cuentas bancario unificado, en su ordenador</title>
+  <meta name="description" content="Spendify agrega automáticamente los archivos de movimientos de diferentes bancos en un solo libro de cuentas — sin duplicados, sin suscripciones, sin enviar sus datos a nadie." />
+  <meta property="og:title" content="Spendify — Su libro de cuentas bancario unificado" />
+  <meta property="og:description" content="Un libro de cuentas financiero personal de código abierto que se ejecuta en su ordenador. Sus datos siguen siendo suyos." />
+  <meta property="og:type" content="website" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0d1117;
+      --surface:  #161b22;
+      --surface2: #21262d;
+      --border:   #30363d;
+      --blue:     #58a6ff;
+      --green:    #3fb950;
+      --purple:   #bc8cff;
+      --orange:   #e3b341;
+      --red:      #f85149;
+      --text:     #e6edf3;
+      --muted:    #8b949e;
+      --radius:   12px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    /* ── NAV ─────────────────────────────────────────────── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(13,17,23,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+    }
+    .nav-logo {
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--text);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .nav-logo span { color: var(--blue); }
+    .nav-links {
+      display: flex;
+      gap: 1.5rem;
+      list-style: none;
+    }
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      background: var(--blue);
+      color: #0d1117 !important;
+      padding: 0.4rem 1rem;
+      border-radius: 6px;
+      font-weight: 600;
+      transition: opacity .2s !important;
+    }
+    .nav-cta:hover { opacity: .85; }
+
+    /* ── HERO ────────────────────────────────────────────── */
+    .hero {
+      padding: 6rem 2rem 5rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(88,166,255,.12), transparent),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(63,185,80,.06), transparent);
+      pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-block;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 0.78rem;
+      padding: 0.3rem 0.9rem;
+      border-radius: 100px;
+      margin-bottom: 1.5rem;
+      letter-spacing: .03em;
+    }
+    .hero-badge strong { color: var(--green); }
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.4rem);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -.02em;
+      max-width: 820px;
+      margin: 0 auto 1.25rem;
+    }
+    h1 .accent { color: var(--blue); }
+    .hero-sub {
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      color: var(--muted);
+      max-width: 580px;
+      margin: 0 auto 2.5rem;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .7rem 1.6rem;
+      border-radius: 8px;
+      font-size: .95rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: opacity .2s, transform .15s;
+      cursor: pointer;
+      border: none;
+    }
+    .btn:hover { opacity: .85; transform: translateY(-1px); }
+    .btn-primary { background: var(--blue); color: #0d1117; }
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .hero-note {
+      margin-top: 2.5rem;
+      color: var(--muted);
+      font-size: .85rem;
+    }
+
+    /* ── TRUST BAR ───────────────────────────────────────── */
+    .trust-bar {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 1.2rem 2rem;
+      display: flex;
+      justify-content: center;
+      gap: 3rem;
+      flex-wrap: wrap;
+    }
+    .trust-item {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      color: var(--muted);
+      font-size: .875rem;
+    }
+    .trust-item .ico { font-size: 1rem; }
+
+    /* ── SECTIONS ────────────────────────────────────────── */
+    section { padding: 5rem 2rem; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: .75rem;
+    }
+    h2 {
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      font-weight: 800;
+      letter-spacing: -.02em;
+      line-height: 1.2;
+      margin-bottom: 1rem;
+    }
+    .section-sub {
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 580px;
+      margin-bottom: 3rem;
+    }
+
+    /* ── PROBLEM ─────────────────────────────────────────── */
+    .problem-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 3rem;
+    }
+    .problem-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.75rem;
+    }
+    .problem-card.highlight {
+      border-color: rgba(248,81,73,.35);
+      background: rgba(248,81,73,.05);
+    }
+    .problem-card h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: .6rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .problem-card p { color: var(--muted); font-size: .95rem; }
+
+    /* ── STEPS ───────────────────────────────────────────── */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      counter-reset: steps;
+    }
+    .step {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .step::before {
+      counter-increment: steps;
+      content: counter(steps);
+      position: absolute;
+      top: -10px;
+      right: 16px;
+      font-size: 5rem;
+      font-weight: 900;
+      color: var(--border);
+      line-height: 1;
+      pointer-events: none;
+      user-select: none;
+    }
+    .step h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: .75rem;
+      color: var(--blue);
+    }
+    .step p { color: var(--muted); font-size: .95rem; }
+
+    /* ── DIFFERENTIATORS ─────────────────────────────────── */
+    .diff-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    .diff-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.75rem;
+    }
+    .diff-card .tag {
+      display: inline-block;
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      background: rgba(88,166,255,.1);
+      color: var(--blue);
+      border: 1px solid rgba(88,166,255,.25);
+      padding: .2rem .6rem;
+      border-radius: 4px;
+      margin-bottom: .9rem;
+    }
+    .diff-card h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: .6rem;
+    }
+    .diff-card p { color: var(--muted); font-size: .93rem; }
+    .cascade-list {
+      list-style: none;
+      margin-top: .75rem;
+      display: flex;
+      flex-direction: column;
+      gap: .4rem;
+    }
+    .cascade-list li {
+      display: flex;
+      gap: .6rem;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+    .cascade-list li .num {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .7rem;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    /* ── PRIVACY ─────────────────────────────────────────── */
+    .privacy-section { background: var(--surface); }
+    .privacy-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+    .privacy-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.75rem;
+      text-align: center;
+    }
+    .privacy-card .ico-big {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+    .privacy-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: .5rem; }
+    .privacy-card p { color: var(--muted); font-size: .9rem; }
+    .pii-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+      justify-content: center;
+      margin-top: .75rem;
+    }
+    .pii-chip {
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: .75rem;
+      background: rgba(248,81,73,.1);
+      border: 1px solid rgba(248,81,73,.25);
+      color: #f0a8a8;
+      padding: .2rem .55rem;
+      border-radius: 4px;
+    }
+
+    /* ── FOR WHO ─────────────────────────────────────────── */
+    .audience-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+    }
+    .audience-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.75rem;
+      display: flex;
+      gap: 1rem;
+    }
+    .audience-card .ico-circle {
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      margin-top: .1rem;
+    }
+    .audience-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: .4rem; }
+    .audience-card p { color: var(--muted); font-size: .9rem; }
+
+    /* ── FEATURES TABLE ──────────────────────────────────── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .feature-row {
+      background: var(--surface);
+      padding: 1.1rem 1.5rem;
+      display: flex;
+      gap: 1rem;
+    }
+    .feature-row .feature-name {
+      font-weight: 600;
+      font-size: .9rem;
+      min-width: 190px;
+      flex-shrink: 0;
+      color: var(--text);
+    }
+    .feature-row .feature-desc {
+      color: var(--muted);
+      font-size: .88rem;
+    }
+
+    /* ── STACK ───────────────────────────────────────────── */
+    .stack-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .75rem;
+      margin-bottom: 2rem;
+    }
+    .stack-badge {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .6rem 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      font-size: .9rem;
+    }
+    .stack-badge strong { color: var(--text); }
+    .stack-badge span { color: var(--muted); font-size: .82rem; }
+
+    /* ── INSTALL ─────────────────────────────────────────── */
+    .install-section { background: var(--surface); }
+    .os-tabs {
+      display: flex;
+      gap: .5rem;
+      margin-bottom: 1rem;
+    }
+    .os-tab {
+      padding: .35rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      font-size: .85rem;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .os-tab.active {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+    }
+    .os-panel { display: none; }
+    .os-panel.active { display: block; }
+    .install-dev-link {
+      margin-top: 1.2rem;
+      font-size: .85rem;
+      color: var(--muted);
+    }
+    .install-dev-link a { color: var(--blue); }
+    .code-block {
+      background: #010409;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin: 2rem 0;
+    }
+    .code-header {
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      padding: .6rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .code-dots { display: flex; gap: .4rem; }
+    .code-dots span {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .code-dots .d1 { background: #ff5f57; }
+    .code-dots .d2 { background: #febc2e; }
+    .code-dots .d3 { background: #28c840; }
+    .code-label { color: var(--muted); font-size: .8rem; margin-left: .3rem; }
+    .copy-btn {
+      margin-left: auto;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: .75rem;
+      padding: .2rem .6rem;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: color .2s, border-color .2s;
+    }
+    .copy-btn:hover { color: var(--text); border-color: var(--muted); }
+    .code-body {
+      padding: 1.5rem;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: .88rem;
+      line-height: 1.8;
+      overflow-x: auto;
+    }
+    .code-body .p  { color: #8b949e; }  /* prompt */
+    .code-body .c  { color: #79c0ff; }  /* command */
+    .code-body .a  { color: #a5d6ff; }  /* args */
+    .code-body .co { color: #6a737d; }  /* comment */
+
+    .install-post {
+      color: var(--muted);
+      font-size: .95rem;
+    }
+    .install-post strong { color: var(--text); }
+
+    /* ── PIPELINE ────────────────────────────────────────── */
+    .pipeline-box {
+      background: #010409;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem 2rem;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: .83rem;
+      line-height: 1.9;
+      overflow-x: auto;
+      color: var(--muted);
+    }
+    .pipeline-box .ph { color: var(--blue); }
+    .pipeline-box .ar { color: var(--border); }
+    .pipeline-box .label { color: var(--text); }
+    .pipeline-box .note { color: #6a737d; }
+
+    /* ── ROADMAP ─────────────────────────────────────────── */
+    .roadmap-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: .75rem;
+    }
+    .roadmap-list li {
+      display: flex;
+      align-items: center;
+      gap: .9rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .9rem 1.25rem;
+      color: var(--muted);
+      font-size: .95rem;
+    }
+    .roadmap-list li .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    /* ── CONTRIBUTE ──────────────────────────────────────── */
+    .contribute-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+    }
+    .contribute-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+    }
+    .contribute-card h3 { font-size: .95rem; font-weight: 700; margin-bottom: .5rem; }
+    .contribute-card p { color: var(--muted); font-size: .88rem; }
+
+    /* ── FOOTER ──────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2.5rem 2rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: .87rem;
+    }
+    footer a { color: var(--blue); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+    footer .disclaimer {
+      max-width: 640px;
+      margin: 1rem auto 0;
+      font-size: .8rem;
+      line-height: 1.7;
+      opacity: .7;
+    }
+
+    /* ── DIVIDER ─────────────────────────────────────────── */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+    /* ── FADE-IN ANIMATION ───────────────────────────────── */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity .55s ease, transform .55s ease;
+    }
+    .fade-in.visible {
+      opacity: 1;
+      transform: none;
+    }
+
+    /* ── RESPONSIVE ──────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .problem-grid,
+      .steps,
+      .diff-grid,
+      .privacy-grid,
+      .audience-grid,
+      .features-grid,
+      .contribute-grid { grid-template-columns: 1fr; }
+
+      .nav-links { display: none; }
+      .hero { padding: 4rem 1.25rem 3rem; }
+      section { padding: 3.5rem 1.25rem; }
+      .trust-bar { gap: 1.5rem; }
+    }
+
+    /* ── LANG SWITCHER ────────────────────────────────────── */
+    .lang-switcher {
+      display: flex;
+      gap: 0.4rem;
+      align-items: center;
+      margin-left: 1rem;
+    }
+    .lang-switcher a {
+      font-size: 1.1rem;
+      text-decoration: none;
+      opacity: 0.5;
+      transition: opacity 0.2s;
+    }
+    .lang-switcher a:hover,
+    .lang-switcher a.active {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAV ──────────────────────────────────────────────────────────────── -->
+<nav>
+  <a class="nav-logo" href="#">💰 <span>Spend</span>ify</a>
+  <ul class="nav-links">
+    <li><a href="#how-it-works">Cómo funciona</a></li>
+    <li><a href="#privacy">Privacy</a></li>
+    <li><a href="#features">Funcionalidades</a></li>
+    <li><a href="#developer">Developer</a></li>
+    <li><a href="https://github.com/drake69/spendify" target="_blank" class="nav-cta">GitHub ↗</a></li>
+  </ul>
+  <div class="lang-switcher">
+    <a href="index.html" title="Italiano">🇮🇹</a>
+    <a href="index.en.html" title="English" class="active">🇬🇧</a>
+    <a href="index.de.html" title="Deutsch">🇩🇪</a>
+    <a href="index.fr.html" title="Français">🇫🇷</a>
+    <a href="index.es.html" title="Español">🇪🇸</a>
+    <a href="index.pt.html" title="Português">🇵🇹</a>
+  </div>
+</nav>
+
+<!-- ── HERO ─────────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-badge">Open source · <strong>Offline-first</strong> · Sin suscripción</div>
+  <h1>Su libro de cuentas bancario <span class="accent">unificado</span>,<br>en su ordenador</h1>
+  <p class="hero-sub">
+    Importe archivos de todos sus bancos. Spendify los fusiona, elimina los dobles conteos,
+    clasifica cada transacción — y sus datos nunca salen de su disco.
+  </p>
+  <div class="hero-actions">
+    <a class="btn btn-primary" href="#install">▶ Instalar ahora</a>
+    <a class="btn btn-secondary" href="https://github.com/drake69/spendify" target="_blank">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      View on GitHub
+    </a>
+  </div>
+  <p class="hero-note">Python · Streamlit · SQLite · Ollama · sin cuenta requerida</p>
+</section>
+
+<!-- ── TRUST BAR ─────────────────────────────────────────────────────────── -->
+<div class="trust-bar">
+  <div class="trust-item"><span class="ico">🔒</span> Datos solo en su ordenador</div>
+  <div class="trust-item"><span class="ico">🔁</span> Importación idempotente SHA-256</div>
+  <div class="trust-item"><span class="ico">🏦</span> Multi-banco, multi-formato</div>
+  <div class="trust-item"><span class="ico">🤖</span> IA local o en la nube con redacción de PII</div>
+  <div class="trust-item"><span class="ico">🧪</span> 199 tests, cero dependencias externas</div>
+</div>
+
+<!-- ── PROBLEM ──────────────────────────────────────────────────────────── -->
+<section id="problema">
+  <div class="container">
+    <div class="section-label">El problema</div>
+    <h2>Tres bancos, tres archivos, un caos</h2>
+    <p class="section-sub">
+      Cada mes: descargar, abrir Excel, pegar, corregir los signos, encontrar los duplicados.
+      Y cada vez algo no cuadra.
+    </p>
+
+    <div class="problem-grid fade-in">
+      <div class="problem-card">
+        <h3>😩 La rutina mensual que todos odian</h3>
+        <p>Tres archivos de movimientos de tres portales bancarios diferentes, formatos CSV incompatibles,
+        fechas en formatos diferentes, importes con signos aleatorios. Fusionarlos a mano lleva horas
+        y siempre produce errores.</p>
+      </div>
+      <div class="problem-card highlight">
+        <h3>🔴 El problema de todos los problemas: el doble conteo</h3>
+        <p>La compra del supermercado aparece en el extracto de la tarjeta de crédito <em>y</em> en la cuenta corriente
+        como un cargo mensual agregado. Sumándolo todo, sus gastos parecen el doble
+        de lo que realmente son. Ninguna herramienta común resuelve esto automáticamente.</p>
+      </div>
+      <div class="problem-card">
+        <h3>🔄 Las transferencias internas que distorsionan su balance</h3>
+        <p>Una transferencia a una cuenta de ahorro no es un gasto. Pero si importa ambas cuentas,
+        la misma transacción aparece dos veces — como salida de la cuenta corriente y como entrada en la cuenta de ahorro.</p>
+      </div>
+      <div class="problem-card">
+        <h3>📋 La categorización que nunca termina</h3>
+        <p>Clasificar 300 transacciones al mes a mano es un trabajo. Las aplicaciones en la nube lo hacen,
+        pero envían sus datos bancarios a sus servidores y le cobran una suscripción mensual.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ── HOW IT WORKS ──────────────────────────────────────────────────────── -->
+<section id="how-it-works">
+  <div class="container">
+    <div class="section-label">Cómo funciona</div>
+    <h2>Tres pasos, sin magia negra</h2>
+    <p class="section-sub">Sin integraciones bancarias, sin cuenta, sin configuración por archivo.</p>
+
+    <div class="steps fade-in">
+      <div class="step">
+        <h3>Descargue archivos de su banco</h3>
+        <p>Exporte archivos de movimientos como CSV o XLSX desde el portal de su banco.
+        Funciona con cualquier banco — Spendify detecta automáticamente
+        el formato sin configuración manual.</p>
+      </div>
+      <div class="step">
+        <h3>Arrástrelos a Spendify y haga clic en Procesar</h3>
+        <p>Seleccione todos los archivos a la vez, incluso de diferentes bancos, incluso de diferentes años.
+        Spendify detecta el tipo de documento, corrige los signos, elimina los dobles conteos
+        entre tarjeta y cuenta, y clasifica cada transacción.</p>
+      </div>
+      <div class="step">
+        <h3>Vea adónde va su dinero</h3>
+        <p>El libro de cuentas unificado muestra todo en un solo lugar: gráficos, filtros, exportación,
+        y la certeza de que cada euro se cuenta <strong>exactamente una vez</strong>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ── DIFFERENTIATORS ───────────────────────────────────────────────────── -->
+<section id="algoritmi">
+  <div class="container">
+    <div class="section-label">Lo que nadie más hace automáticamente</div>
+    <h2>Algoritmos que resuelven problemas reales</h2>
+    <p class="section-sub">Esta no es una aplicación de presupuesto genérica. Está diseñada en torno a los problemas específicos de personas con múltiples cuentas bancarias.</p>
+
+    <div class="diff-grid fade-in">
+      <div class="diff-card">
+        <div class="tag">RF-03</div>
+        <h3>Conciliación tarjeta de crédito–cuenta corriente</h3>
+        <p>Cuando la tarjeta de crédito carga el importe mensual en la cuenta corriente,
+        Spendify reconoce la relación y elimina el doble conteo automáticamente.</p>
+        <p style="margin-top:.75rem; color: var(--muted); font-size:.88rem;">
+          Ventana temporal ±45 días · 3 fases de coincidencia:
+          ventana deslizante → suma de subconjuntos para importes divididos → conciliación parcial
+        </p>
+      </div>
+      <div class="diff-card">
+        <div class="tag">RF-04</div>
+        <h3>Detección de transferencias internas</h3>
+        <p>Una transferencia de una cuenta corriente a una cuenta de ahorro no es ni un gasto ni
+        un ingreso: es una transferencia interna. Spendify la reconoce comparando
+        importes, fechas y nombres de titulares en las descripciones — incluso si los dos archivos
+        se importaron en momentos diferentes.</p>
+      </div>
+      <div class="diff-card">
+        <div class="tag">Dedup</div>
+        <h3>Deduplicación idempotente</h3>
+        <p>Cada transacción tiene un ID único calculado a partir de su contenido (SHA-256).
+        Si importa el mismo archivo dos veces, no pasa nada.
+        Puede reimportar todo su historial de transacciones sin temor a duplicados.</p>
+      </div>
+      <div class="diff-card">
+        <div class="tag">Categories</div>
+        <h3>Clasificación híbrida en cascada</h3>
+        <p>La categorización utiliza cuatro niveles en secuencia:</p>
+        <ul class="cascade-list">
+          <li><span class="num">1</span><span><strong>Sus reglas</strong> — "CONAD" → Alimentación (aplicadas retroactivamente)</span></li>
+          <li><span class="num">2</span><span><strong>Regex estáticas</strong> — patrones predefinidos para categorías comunes</span></li>
+          <li><span class="num">3</span><span><strong>LLM</strong> — para todo lo demás, IA local o en la nube</span></li>
+          <li><span class="num">4</span><span><strong>Fallback</strong> — "Por revisar" si todo lo demás falla</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ── PRIVACY ───────────────────────────────────────────────────────────── -->
+<section id="privacy" class="privacy-section">
+  <div class="container">
+    <div class="section-label">Privacy</div>
+    <h2>Sus datos siguen siendo suyos. En serio.</h2>
+    <p class="section-sub">No es solo un eslogan. Es la arquitectura.</p>
+
+    <div class="privacy-grid fade-in">
+      <div class="privacy-card">
+        <div class="ico-big">🏠</div>
+        <h3>Offline-first por defecto</h3>
+        <p>Spendify usa <strong>Ollama en local</strong> por defecto: un motor de IA que se ejecuta
+        en su ordenador, sin conexión a internet. Sus archivos de movimientos nunca
+        salen de su disco.</p>
+      </div>
+      <div class="privacy-card">
+        <div class="ico-big">🛡️</div>
+        <h3>Redacción automática de PII</h3>
+        <p>Si usa OpenAI o Claude, Spendify elimina automáticamente todos
+        los datos identificativos antes de cualquier llamada remota:</p>
+        <div class="pii-chips">
+          <span class="pii-chip">IBAN → &lt;ACCOUNT_ID&gt;</span>
+          <span class="pii-chip">PAN → &lt;CARD_ID&gt;</span>
+          <span class="pii-chip">Tax ID → &lt;FISCAL_ID&gt;</span>
+          <span class="pii-chip">Nombre → alias ficticio</span>
+        </div>
+        <p style="margin-top:.75rem; font-size:.83rem; color:var(--muted)">
+          Si la verificación falla, la llamada se bloquea — no se degrada silenciosamente.
+        </p>
+      </div>
+      <div class="privacy-card">
+        <div class="ico-big">💾</div>
+        <h3>Base de datos local portátil</h3>
+        <p>Los datos se almacenan en un archivo SQLite en su ordenador. Puede copiarlo, moverlo,
+        respaldarlo como cualquier otro archivo. Sin nube obligatoria,
+        sin cuenta, sin suscripción.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ── FOR WHO ───────────────────────────────────────────────────────────── -->
+<section id="per-chi">
+  <div class="container">
+    <div class="section-label">Para quién es Spendify</div>
+    <h2>No es para todos. Para quienes quieren control real.</h2>
+    <p class="section-sub">Cuatro perfiles que encuentran en Spendify algo que las alternativas no ofrecen.</p>
+
+    <div class="audience-grid fade-in">
+      <div class="audience-card">
+        <div class="ico-circle">🏦</div>
+        <div>
+          <h3>Personas con cuentas en varios bancos</h3>
+          <p>¿Cuenta corriente + tarjeta de crédito + cuenta de ahorro + cuenta de inversión?
+          Spendify las unifica todas en un solo libro de cuentas sin tener que hacer nada manualmente.</p>
+        </div>
+      </div>
+      <div class="audience-card">
+        <div class="ico-circle">📊</div>
+        <div>
+          <h3>Personas que controlan sus finanzas en serio</h3>
+          <p>Si usa Excel para sus gastos, Spendify puede reemplazar esa rutina:
+          importa los archivos una vez, Spendify unifica y clasifica, usted revisa
+          solo las excepciones.</p>
+        </div>
+      </div>
+      <div class="audience-card">
+        <div class="ico-circle">🔐</div>
+        <div>
+          <h3>Personas que no confían en la nube</h3>
+          <p>Sin backend remoto obligatorio, sin cuenta, sin registro.
+          Sus datos bancarios se quedan donde deben estar: en su ordenador.</p>
+        </div>
+      </div>
+      <div class="audience-card">
+        <div class="ico-circle">👨‍💻</div>
+        <div>
+          <h3>Desarrolladores</h3>
+          <p>Proyecto Python de código abierto con arquitectura modular, pipeline LLM sobre datos estructurados,
+          suite de tests completa. Un punto de partida para experimentar o
+          construir integraciones personalizadas.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ── FEATURES ──────────────────────────────────────────────────────────── -->
+<section id="features">
+  <div class="container">
+    <div class="section-label">Funcionalidades</div>
+    <h2>Todo lo que necesita, nada más</h2>
+    <br>
+
+    <div class="features-grid fade-in">
+      <div class="feature-row">
+        <span class="feature-name">Importación multi-banco</span>
+        <span class="feature-desc">CSV y XLSX de cualquier banco</span>
+      </div>
+      <div class="feature-row">
+        <span class="feature-name">Detección automática de formato</span>
+        <span class="feature-desc">Sin configuración manual para cada tipo de archivo</span>
+      </div>
+      <div class="feature-row">
+        <span class="feature-name">Libro de cuentas unificado</span>
+        <span class="feature-desc">Todas las transacciones en orden cronológico, filtrables por fecha / cuenta / categoría / contexto</span>
+      </div>
+      <div class="feature-row">
+        <span class="feature-name">Clasificación automática</span>
+        <span class="feature-desc">15 categorías de gastos + 7 categorías de ingresos con subcategorías</span>
+      </div>
+      <div class="feature-row">
+        <span class="feature-name">Taxonomía personalizable</span>
+        <span class="feature-desc">Agregar / editar categorías sin reiniciar la aplicación</span>
+      </div>
+      <div class="feature-row">
+        <span class="feature-name">Reglas deterministas</span>
+        <span class="feature-desc">Reglas "ESSELUNGA → Alimentación" aplicadas retroactivamente</span>
+      </div>
+      <div class="feature-row">
+        <span class="feature-name">Análisis interactivos</span>
+        <span class="feature-desc">7 gráficos: tendencia mensual, saldo acumulado, gráfico circular por categoría, top 10 comercios</span>
+      </div>
+      <div class="feature-row">
+        <span class="feature-name">Contextos de vida</span>
+        <span class="feature-desc">Segmentar gastos por Trabajo / Vacaciones / Vida cotidiana</span>
+      </div>
+      <div class="feature-row">
+        <span class="feature-name">Lista de verificación</span>
+        <span class="feature-desc">Tabla dinámica mes × cuenta: vea qué meses aún no ha importado</span>
+      </div>
+      <div class="feature-row">
+        <span class="feature-name">Exportación</span>
+        <span class="feature-desc">HTML independiente (con gráficos), CSV, XLSX</span>
+      </div>
+      <div class="feature-row">
+        <span class="feature-name">LLM configurable</span>
+        <span class="feature-desc">Ollama, OpenAI, Claude, Groq, Gemini, LM Studio, any compatible API</span>
+      </div>
+      <div class="feature-row">
+        <span class="feature-name">Saneamiento de PII</span>
+        <span class="feature-desc">Protección automática de IBAN / número de tarjeta / NIF / nombre antes de llamadas remotas</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ── INSTALL ───────────────────────────────────────────────────────────── -->
+<section id="install" class="install-section">
+  <div class="container">
+    <div class="section-label">Installation</div>
+    <h2>Un comando, aplicación lista</h2>
+    <p class="section-sub">Solo se requiere <a href="https://www.docker.com/products/docker-desktop/" target="_blank" style="color:var(--blue)">Docker Desktop</a>. Sin git clone, sin configuración.</p>
+
+    <div class="os-tabs">
+      <button class="os-tab active" onclick="switchOS('mac')">🍎 Mac / Linux</button>
+      <button class="os-tab" onclick="switchOS('win')">🪟 Windows</button>
+    </div>
+
+    <!-- Mac / Linux -->
+    <div class="os-panel active" id="panel-mac">
+      <div class="code-block fade-in">
+        <div class="code-header">
+          <div class="code-dots">
+            <span class="d1"></span><span class="d2"></span><span class="d3"></span>
+          </div>
+          <span class="code-label">bash</span>
+          <button class="copy-btn" onclick="copyCode(this, 'mac')">Copiar</button>
+        </div>
+        <div class="code-body">
+          <div><span class="p">$ </span><span class="c">curl</span><span class="a"> -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/install.sh | bash</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Windows -->
+    <div class="os-panel" id="panel-win">
+      <div class="code-block fade-in">
+        <div class="code-header">
+          <div class="code-dots">
+            <span class="d1"></span><span class="d2"></span><span class="d3"></span>
+          </div>
+          <span class="code-label">powershell</span>
+          <button class="copy-btn" onclick="copyCode(this, 'win')">Copiar</button>
+        </div>
+        <div class="code-body">
+          <div><span class="p">PS&gt; </span><span class="c">irm</span><span class="a"> https://raw.githubusercontent.com/drake69/spendify/main/installer/install.ps1 | iex</span></div>
+        </div>
+      </div>
+    </div>
+
+    <p class="install-post">
+      El script descarga la imagen de <strong>GitHub Container Registry</strong>, inicia el contenedor
+      y abre el navegador en <strong>http://localhost:8501</strong> automáticamente.<br>
+      <strong>IA local opcional:</strong> el instalador pregunta si agregar Ollama con <code>gemma3:12b</code> — se descarga en segundo plano (~8 GB). Funciona en Apple Silicon (arm64) y amd64.<br>
+      <small>Para desinstalar: <code>curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.sh | bash</code></small>
+    </p>
+
+    <p class="install-dev-link">
+      ¿Instalación para desarrolladores o nativa? →
+      <a href="https://github.com/drake69/spendify/blob/main/docs/installazione.en.md" target="_blank">Guía completa (Mac nativo · Linux Docker · Windows llama.cpp)</a>
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ── STACK ─────────────────────────────────────────────────────────────── -->
+<section id="stack">
+  <div class="container">
+    <div class="section-label">Stack tecnológico</div>
+    <h2>Tecnologías maduras, sin dependencias exóticas</h2>
+    <p class="section-sub">Sin framework LLM (sin LangChain) — los backends de IA usan los SDK oficiales directamente.</p>
+
+    <div class="stack-grid fade-in">
+      <div class="stack-badge"><strong>Python 3.13</strong> <span>+ pandas</span></div>
+      <div class="stack-badge"><strong>Streamlit</strong> <span>interfaz web</span></div>
+      <div class="stack-badge"><strong>SQLite</strong> <span>+ SQLAlchemy</span></div>
+      <div class="stack-badge"><strong>Pydantic v2</strong> <span>validación de esquemas</span></div>
+      <div class="stack-badge"><strong>Plotly</strong> <span>gráficos interactivos</span></div>
+      <div class="stack-badge"><strong>uv</strong> <span>gestor de paquetes</span></div>
+      <div class="stack-badge"><strong>Ollama</strong> <span>IA local</span></div>
+      <div class="stack-badge"><strong>chardet</strong> <span>detección de codificación</span></div>
+      <div class="stack-badge"><strong>openpyxl</strong> <span>análisis de Excel</span></div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ── DEVELOPER ─────────────────────────────────────────────────────────── -->
+<section id="developer">
+  <div class="container">
+    <div class="section-label">Para desarrolladores</div>
+    <h2>Arquitectura modular, suite de tests completa</h2>
+
+    <div class="pipeline-box fade-in">
+<span class="ph">CSV/XLSX File</span>
+  <span class="ar">→</span> <span class="label">Pre-processing</span>       <span class="note">(strip sparse rows, drop metadata columns)</span>
+  <span class="ar">→</span> <span class="label">Schema classifier</span>    <span class="note">(SHA-256 fingerprint → LLM if new schema)</span>
+  <span class="ar">→</span> <span class="label">Normalizer</span>            <span class="note">(encoding, parse_amount Decimal, SHA-256 tx_id)</span>
+  <span class="ar">→</span> <span class="label">RF-03 Reconciler</span>     <span class="note">(credit card–current account, 3 phases)</span>
+  <span class="ar">→</span> <span class="label">RF-04 Detector</span>       <span class="note">(internal transfers, symbolic matching)</span>
+  <span class="ar">→</span> <span class="label">Description cleaner</span>   <span class="note">(LLM: noise → canonical text)</span>
+  <span class="ar">→</span> <span class="label">Categorizer</span>           <span class="note">(rules → regex → LLM → fallback)</span>
+  <span class="ar">→</span> <span class="label">Database</span>              <span class="note">(SQLAlchemy, idempotent upsert)</span>
+    </div>
+
+    <br>
+
+    <div class="contribute-grid fade-in">
+      <div class="contribute-card">
+        <h3>🔌 Nuevos backends LLM</h3>
+        <p>Implemente <code>LLMBackend</code> (3 métodos) y regístrelo en <code>BackendFactory</code>. Funciona con cualquier API compatible con OpenAI.</p>
+      </div>
+      <div class="contribute-card">
+        <h3>🏦 Nuevos formatos bancarios</h3>
+        <p>El Flow 2 los reconoce automáticamente vía LLM sin cambios en el código. El esquema se guarda y reutiliza en importaciones posteriores.</p>
+      </div>
+      <div class="contribute-card">
+        <h3>🏷️ Nuevas categorías</h3>
+        <p>Desde la página de Taxonomía, sin tocar el código. La taxonomía es completamente configurable desde la interfaz.</p>
+      </div>
+      <div class="contribute-card">
+        <h3>🚀 REST API</h3>
+        <p>El pipeline <code>process_file()</code> está completamente separado de la UI — se puede exponer vía FastAPI sin cambios.</p>
+      </div>
+    </div>
+
+    <br>
+    <div class="code-block fade-in">
+      <div class="code-header">
+        <div class="code-dots">
+          <span class="d1"></span><span class="d2"></span><span class="d3"></span>
+        </div>
+        <span class="code-label">bash — test suite</span>
+      </div>
+      <div class="code-body">
+        <div><span class="p">$ </span><span class="c">uv run pytest</span><span class="a"> tests/ -v</span>         <span class="co"># 199 tests, cero dependencias externas</span></div>
+        <div><span class="p">$ </span><span class="c">uv run pytest</span><span class="a"> tests/ --cov=core</span>  <span class="co"># coverage of business logic layer</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ── ROADMAP ───────────────────────────────────────────────────────────── -->
+<section id="roadmap">
+  <div class="container">
+    <div class="section-label">Roadmap</div>
+    <h2>Lo que viene</h2>
+    <br>
+    <ul class="roadmap-list fade-in">
+      <li><span class="dot"></span>Soporte PDF — análisis nativo de archivos de movimientos PDF</li>
+      <li><span class="dot"></span>Presupuesto mensual por categoría con alertas</li>
+      <li><span class="dot"></span>Importación automática vía Open Banking (PSD2)</li>
+      <li><span class="dot"></span>API REST para integraciones externas</li>
+      <li><span class="dot"></span>Versión multiusuario con autenticación</li>
+      <li><span class="dot"></span>Aplicación móvil — visor de libro de cuentas y análisis</li>
+    </ul>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ── CONTRIBUTE ────────────────────────────────────────────────────────── -->
+<section id="contribuire">
+  <div class="container">
+    <div class="section-label">Open source</div>
+    <h2>Las contribuciones son bienvenidas</h2>
+    <p class="section-sub">Áreas donde las contribuciones son más útiles:</p>
+
+    <div class="contribute-grid fade-in">
+      <div class="contribute-card">
+        <h3>🏦 Nuevos formatos bancarios</h3>
+        <p>Si su banco no es reconocido automáticamente, abra un issue con una muestra CSV anonimizada.</p>
+      </div>
+      <div class="contribute-card">
+        <h3>🧪 Tests de UI</h3>
+        <p>La suite cubre la capa de lógica de negocio pero aún no la interfaz Streamlit. Hay espacio para contribuir.</p>
+      </div>
+      <div class="contribute-card">
+        <h3>🌍 Internacionalización</h3>
+        <p>La arquitectura ya soporta múltiples idiomas para descripciones. La UI está en italiano — hay margen para agregar otros idiomas.</p>
+      </div>
+      <div class="contribute-card">
+        <h3>⚡ Rendimiento</h3>
+        <p>La categorización por lotes es el cuello de botella con un LLM local. Hay espacio para paralelización.</p>
+      </div>
+    </div>
+
+    <br>
+    <div style="text-align:center; margin-top: 1rem;">
+      <a class="btn btn-primary" href="https://github.com/drake69/spendify" target="_blank">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        Go to GitHub
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ─────────────────────────────────────────────────────────────── -->
+<footer>
+  <p>
+    <strong>Spendify</strong> es de código abierto —
+    <a href="https://github.com/drake69/spendify" target="_blank">github.com/drake69/spendify</a>
+  </p>
+  <p class="disclaimer">
+    Spendify no es un servicio en la nube. Es un programa que se ejecuta en su ordenador.
+    Sus datos bancarios nunca se envían a servidores de terceros, a menos que elija explícitamente
+    un backend LLM remoto — en ese caso, todos los datos identificativos se
+    eliminan antes de la transmisión.
+  </p>
+</footer>
+
+<script>
+  /* Fade-in on scroll */
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+  /* OS tab switcher */
+  function switchOS(os) {
+    document.querySelectorAll('.os-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.os-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + os).classList.add('active');
+    event.currentTarget.classList.add('active');
+  }
+
+  /* Copy install command */
+  const installCmds = {
+    mac: 'curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/install.sh | bash',
+    win: 'irm https://raw.githubusercontent.com/drake69/spendify/main/installer/install.ps1 | iex'
+  };
+  function copyCode(btn, os) {
+    navigator.clipboard.writeText(installCmds[os] || installCmds.mac).then(() => {
+      btn.textContent = 'Copiado ✓';
+      setTimeout(() => btn.textContent = 'Copiar', 2000);
+    });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_category
+1,2026-01-01,-837.45,GIROCONTO DA CC 0075849 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+2,2026-01-03,3396.81,Bonif. v/fav. - RIF:211612275 ORD. BETA CONSULTING SRL,income,false,Lavoro autonomo/Fattura / parcella
+3,2026-01-05,1536.30,Bonif. v/fav. - RIF:211546025 ORD. EPSILON DIGITAL SRL,income,false,Lavoro autonomo/Fattura / parcella
+4,2026-01-07,-231.55,RICARICA HYPE DA CONTO 0075849,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+5,2026-01-08,4670.17,Bonif. v/fav. - RIF:211295544 ORD. CLIENTE ALFA S.P.A.,income,false,Lavoro autonomo/Fattura / parcella
+6,2026-01-11,2659.32,Bonif. v/fav. - RIF:216543922 ORD. BETA CONSULTING SRL,income,false,Lavoro autonomo/Fattura / parcella
+7,2026-01-12,-45.37,"Pagam. POS - PAGAMENTO POS 45,37 EUR DEL 12.01.2026 A (ITA) SPIZZICO",expense,false,Ristorazione/Asporto / delivery
+8,2026-01-12,2591.59,Bonif. v/fav. - RIF:214915693 ORD. BETA CONSULTING SRL,income,false,Lavoro autonomo/Fattura / parcella
+9,2026-01-12,4110.14,Bonif. v/fav. - RIF:213942906 ORD. GAMMA TECHNOLOGIES SRL,income,false,Lavoro autonomo/Fattura / parcella
+10,2026-01-15,4270.88,Bonif. v/fav. - RIF:219173706 ORD. GAMMA TECHNOLOGIES SRL,income,false,Lavoro autonomo/Fattura / parcella
+11,2026-01-17,3182.77,Bonif. v/fav. - RIF:214189501 ORD. BETA CONSULTING SRL,income,false,Lavoro autonomo/Fattura / parcella
+12,2026-01-26,3072.15,Bonif. v/fav. - RIF:214579329 ORD. DELTA SOLUTIONS SPA,income,false,Lavoro autonomo/Fattura / parcella
+13,2026-01-29,1892.62,Bonif. v/fav. - RIF:210132919 ORD. CLIENTE ALFA S.P.A.,income,false,Lavoro autonomo/Fattura / parcella
+14,2026-01-31,3490.83,Bonif. v/fav. - RIF:212182395 ORD. BETA CONSULTING SRL,income,false,Lavoro autonomo/Fattura / parcella
+15,2026-01-31,1834.37,Bonif. v/fav. - RIF:218829861 ORD. BETA CONSULTING SRL,income,false,Lavoro autonomo/Fattura / parcella
+16,2026-02-01,-110.54,PAGAMENTO CONTACTLESS CARTA **** 1700 BUREAU VALLÉE,expense,false,Istruzione/Libri e materiale
+17,2026-02-04,3070.27,Bonif. v/fav. - RIF:211026583 ORD. DELTA SOLUTIONS SPA,income,false,Lavoro autonomo/Fattura / parcella
+18,2026-02-07,2912.77,Bonif. v/fav. - RIF:217934301 ORD. DELTA SOLUTIONS SPA,income,false,Lavoro autonomo/Fattura / parcella
+19,2026-02-08,4847.36,Bonif. v/fav. - RIF:213652602 ORD. DELTA SOLUTIONS SPA,income,false,Lavoro autonomo/Fattura / parcella
+20,2026-02-10,2229.31,Bonif. v/fav. - RIF:216927911 ORD. EPSILON DIGITAL SRL,income,false,Lavoro autonomo/Fattura / parcella
+21,2026-02-12,2009.17,Bonif. v/fav. - RIF:211759413 ORD. BETA CONSULTING SRL,income,false,Lavoro autonomo/Fattura / parcella
+22,2026-02-14,4056.04,Bonif. v/fav. - RIF:216792821 ORD. EPSILON DIGITAL SRL,income,false,Lavoro autonomo/Fattura / parcella
+23,2026-02-14,4417.88,Bonif. v/fav. - RIF:216121845 ORD. BETA CONSULTING SRL,income,false,Lavoro autonomo/Fattura / parcella
+24,2026-02-16,1542.08,Bonif. v/fav. - RIF:210929242 ORD. EPSILON DIGITAL SRL,income,false,Lavoro autonomo/Fattura / parcella
+25,2026-02-18,2288.90,Bonif. v/fav. - RIF:212422763 ORD. EPSILON DIGITAL SRL,income,false,Lavoro autonomo/Fattura / parcella
+26,2026-02-21,3345.01,Bonif. v/fav. - RIF:216965880 ORD. DELTA SOLUTIONS SPA,income,false,Lavoro autonomo/Fattura / parcella
+27,2026-02-21,4349.21,Bonif. v/fav. - RIF:218412591 ORD. CLIENTE ALFA S.P.A.,income,false,Lavoro autonomo/Fattura / parcella
+28,2026-02-21,-549.77,GIROCONTO DA CC 0075849 A CC 0123456,internal_out,true,Trasferimenti e rimborsi/Giroconto entrata
+29,2026-02-22,3565.10,Bonif. v/fav. - RIF:211928826 ORD. CLIENTE ALFA S.P.A.,income,false,Lavoro autonomo/Fattura / parcella
+30,2026-02-28,3265.59,Bonif. v/fav. - RIF:214289373 ORD. DELTA SOLUTIONS SPA,income,false,Lavoro autonomo/Fattura / parcella

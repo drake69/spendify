@@ -15,14 +15,72 @@ import streamlit as st
 
 from services.settings_service import SettingsService
 from support.logging import setup_logging
+from ui.i18n import t
 
 logger = setup_logging()
 
 # ── Session-state keys ────────────────────────────────────────────────────────
 _K_STEP     = "_ob_step"
 _K_LANG     = "_ob_lang"
+_K_COUNTRY  = "_ob_country"
 _K_NAMES    = "_ob_owner_names"
 _K_ACCOUNTS = "_ob_accounts"
+
+
+def _account_types() -> dict[str, str]:
+    return {
+        t("onboarding.account_type.bank_account"): "bank_account",
+        t("onboarding.account_type.credit_card"): "credit_card",
+        t("onboarding.account_type.debit_card"): "debit_card",
+        t("onboarding.account_type.prepaid_card"): "prepaid_card",
+        t("onboarding.account_type.savings_account"): "savings_account",
+        t("onboarding.account_type.cash"): "cash",
+    }
+
+
+# ── Country list & language → country suggestion ──────────────────────────────
+# Sorted alphabetically by display name (Italian)
+_COUNTRIES: list[tuple[str, str]] = [
+    ("AT", "Austria"),
+    ("AU", "Australia"),
+    ("BE", "Belgio"),
+    ("CA", "Canada"),
+    ("CH", "Svizzera"),
+    ("CZ", "Rep. Ceca"),
+    ("DE", "Germania"),
+    ("DK", "Danimarca"),
+    ("ES", "Spagna"),
+    ("FI", "Finlandia"),
+    ("FR", "Francia"),
+    ("GB", "Gran Bretagna"),
+    ("HU", "Ungheria"),
+    ("IE", "Irlanda"),
+    ("IT", "Italia"),
+    ("LU", "Lussemburgo"),
+    ("NL", "Paesi Bassi"),
+    ("NO", "Norvegia"),
+    ("PL", "Polonia"),
+    ("PT", "Portogallo"),
+    ("RO", "Romania"),
+    ("SE", "Svezia"),
+    ("SI", "Slovenia"),
+    ("SK", "Slovacchia"),
+    ("SM", "San Marino"),
+    ("US", "USA"),
+]
+_COUNTRY_CODES   = [c for c, _ in _COUNTRIES]
+_COUNTRY_LABELS  = [n for _, n in _COUNTRIES]
+_COUNTRY_BY_CODE = {c: n for c, n in _COUNTRIES}
+_COUNTRY_BY_NAME = {n: c for c, n in _COUNTRIES}
+
+# Default country suggestion per taxonomy language
+_COUNTRY_SUGGESTION: dict[str, str] = {
+    "it": "IT",
+    "de": "DE",
+    "fr": "FR",
+    "es": "ES",
+    "en": "GB",
+}
 
 # ── Locale defaults per language ──────────────────────────────────────────────
 # (date_display_format, amount_decimal_sep, amount_thousands_sep)
@@ -120,14 +178,11 @@ def _step0_language(cfg_svc: SettingsService, lang_options: list[tuple[str, str]
     labels = [lbl for _, lbl in lang_options]
     codes  = [code for code, _ in lang_options]
 
-    st.subheader("🌍 Lingua e formato")
-    st.caption(
-        "Scegli la lingua della tassonomia e i formati di data e importo. "
-        "Abbiamo rilevato la lingua dal tuo browser — puoi cambiarla."
-    )
+    st.subheader(t("onboarding.step0.title"))
+    st.caption(t("onboarding.step0.caption"))
 
     sel_label = st.radio(
-        "Lingua",
+        t("onboarding.step0.language"),
         options=labels,
         index=codes.index(lang) if lang in codes else 0,
         horizontal=True,
@@ -136,19 +191,59 @@ def _step0_language(cfg_svc: SettingsService, lang_options: list[tuple[str, str]
     sel_code = codes[labels.index(sel_label)]
     st.session_state[_K_LANG] = sel_code
 
+    # UI language selector (i18n)
+    from ui.i18n import available_languages, set_language
+    _ui_langs = available_languages()
+    _ui_labels = [lbl for _, lbl in _ui_langs]
+    _ui_codes = [c for c, _ in _ui_langs]
+    _ui_default = sel_code if sel_code in _ui_codes else "it"
+    _ui_idx = _ui_codes.index(st.session_state.get("_ob_ui_lang", _ui_default))
+    ui_lang_sel = st.selectbox(
+        t("onboarding.step0.ui_language"),
+        _ui_labels,
+        index=_ui_idx,
+        key="_ob_ui_lang_select",
+    )
+    _ui_lang_code = _ui_codes[_ui_labels.index(ui_lang_sel)]
+    st.session_state["_ob_ui_lang"] = _ui_lang_code
+    set_language(_ui_lang_code)
+
     # Format preview
     loc = _locale(sel_code)
     preview = cfg_svc.get_default_taxonomy_preview(sel_code)
     c1, c2, c3 = st.columns(3)
-    c1.metric("Data", _fmt_date(sel_code))
-    c2.metric("Importo", _fmt_amount(sel_code))
-    c3.metric("Tassonomia", f"{len(preview['expenses'])} cat. spese")
+    c1.metric(t("onboarding.step0.date"), _fmt_date(sel_code))
+    c2.metric(t("onboarding.step0.amount"), _fmt_amount(sel_code))
+    c3.metric(t("onboarding.step0.taxonomy"), t("onboarding.step0.expense_cats", n=len(preview['expenses'])))
 
     if preview["expenses"]:
         st.caption(
-            f"**Categorie spese ({sel_label}):** "
-            + ", ".join(preview["expenses"][:6]) + "…"
+            t("onboarding.step0.categories_preview", lang=sel_label, cats=", ".join(preview["expenses"][:6]))
         )
+
+    st.write("")
+
+    # ── Paese ──────────────────────────────────────────────────────────────────
+    # Auto-suggest country from selected language; user can override.
+    # If language changed since last render, reset suggestion.
+    _prev_lang_key = "_ob_prev_lang_for_country"
+    if st.session_state.get(_prev_lang_key) != sel_code:
+        suggested = _COUNTRY_SUGGESTION.get(sel_code, "IT")
+        st.session_state["_ob_country_select"] = _COUNTRY_BY_CODE.get(suggested, "Italia")
+        st.session_state[_K_COUNTRY] = suggested
+    st.session_state[_prev_lang_key] = sel_code
+
+    st.subheader(t("onboarding.step0.country"))
+    st.caption(t("onboarding.step0.country_caption"))
+    _cur_country_label = st.session_state.get("_ob_country_select", _COUNTRY_BY_CODE.get("IT", "Italia"))
+    selected_country_label = st.selectbox(
+        t("onboarding.step0.country"),
+        _COUNTRY_LABELS,
+        index=_COUNTRY_LABELS.index(_cur_country_label) if _cur_country_label in _COUNTRY_LABELS else _COUNTRY_LABELS.index("Italia"),
+        key="_ob_country_select",
+        label_visibility="collapsed",
+    )
+    st.session_state[_K_COUNTRY] = _COUNTRY_BY_NAME.get(selected_country_label, "IT")
 
     st.write("")
     _, col_next = st.columns([1, 1])
@@ -160,28 +255,21 @@ def _step0_language(cfg_svc: SettingsService, lang_options: list[tuple[str, str]
 
 def _step1_owners(lang: str) -> None:
     """Step 1 — Nomi titolari."""
-    st.subheader("👤 Nomi titolari")
-    st.caption(
-        "Inserisci il nome (o i nomi) delle persone titolari dei conti, separati da virgola. "
-        "Vengono usati per rilevare automaticamente i **giroconti** tra conti propri "
-        "e per pulire le descrizioni delle transazioni."
-    )
-    st.info(
-        "💡 Esempio: `Mario Rossi, Maria Rossi` "
-        "— includi tutte le varianti del nome con cui appaiono negli estratti conto."
-    )
+    st.subheader(t("onboarding.step1.title"))
+    st.caption(t("onboarding.step1.caption"))
+    st.info(t("onboarding.step1.hint"))
 
     names = st.text_input(
-        "Nome/i titolare/i",
+        t("onboarding.step1.label"),
         value=st.session_state.get(_K_NAMES, ""),
-        placeholder="Mario Rossi, Maria Rossi",
+        placeholder=t("onboarding.step1.placeholder"),
         key="_ob_owner_input",
     )
     st.session_state[_K_NAMES] = names
 
     valid = bool(names.strip())
     if not valid:
-        st.warning("⚠️ Inserisci almeno un nome per continuare.")
+        st.warning(t("onboarding.step1.warning"))
 
     col_back, col_next = st.columns(2)
     with col_back:
@@ -197,42 +285,53 @@ def _step1_owners(lang: str) -> None:
 
 def _step2_accounts(lang: str) -> None:
     """Step 2 — Conti bancari."""
-    st.subheader("🏦 Conti bancari")
-    st.caption(
-        "Aggiungi i tuoi conti correnti, carte e conti di investimento. "
-        "Il **nome conto** è un'etichetta libera (es. *BancaX corrente*, *Carta Visa*). "
-        "Puoi aggiungere altri conti in qualsiasi momento da ⚙️ Impostazioni."
-    )
+    st.subheader(t("onboarding.step2.title"))
+    st.caption(t("onboarding.step2.caption"))
 
     # Initialize with one empty row if list is empty
     if not st.session_state.get(_K_ACCOUNTS):
-        st.session_state[_K_ACCOUNTS] = [{"name": "", "bank": ""}]
+        st.session_state[_K_ACCOUNTS] = [{"name": "", "bank": "", "type": "bank_account"}]
 
     accounts: list[dict] = st.session_state[_K_ACCOUNTS]
+    # Backfill 'type' key for accounts created before this field existed
+    for _a in accounts:
+        _a.setdefault("type", "bank_account")
     to_remove = None
 
     for i, acc in enumerate(accounts):
-        c1, c2, c3 = st.columns([3, 3, 1])
+        c1, c2, c2b, c3 = st.columns([3, 2, 2, 1])
         acc["name"] = c1.text_input(
-            "Nome conto" if i == 0 else "",
+            t("onboarding.step2.account_name") if i == 0 else "",
             value=acc["name"],
-            placeholder="BancaX corrente",
+            placeholder=t("onboarding.step2.account_name_placeholder"),
             key=f"_ob_acc_name_{i}",
             label_visibility="visible" if i == 0 else "collapsed",
         )
         acc["bank"] = c2.text_input(
-            "Banca (opzionale)" if i == 0 else "",
+            t("onboarding.step2.bank") if i == 0 else "",
             value=acc["bank"],
-            placeholder="Banca Esempio",
+            placeholder=t("onboarding.step2.bank_placeholder"),
             key=f"_ob_acc_bank_{i}",
             label_visibility="visible" if i == 0 else "collapsed",
         )
+        _types = _account_types()
+        _type_values = list(_types.values())
+        _type_labels_list = list(_types.keys())
+        _cur_type_idx = _type_values.index(acc["type"]) if acc["type"] in _type_values else 0
+        _sel_type_label = c2b.selectbox(
+            t("onboarding.step2.type") if i == 0 else "",
+            _type_labels_list,
+            index=_cur_type_idx,
+            key=f"_ob_acc_type_{i}",
+            label_visibility="visible" if i == 0 else "collapsed",
+        )
+        acc["type"] = _types[_sel_type_label]
         with c3:
             if i == 0:
                 st.write("")   # align with label height
                 st.write("")
             if len(accounts) > 1:
-                if st.button("🗑", key=f"_ob_acc_del_{i}", help="Rimuovi"):
+                if st.button("🗑", key=f"_ob_acc_del_{i}", help=t("onboarding.step2.remove")):
                     to_remove = i
 
     if to_remove is not None:
@@ -240,17 +339,14 @@ def _step2_accounts(lang: str) -> None:
         st.session_state[_K_ACCOUNTS] = accounts
         st.rerun()
 
-    if st.button("➕ Aggiungi conto", key="_ob_acc_add"):
-        accounts.append({"name": "", "bank": ""})
+    if st.button(t("onboarding.step2.add_account"), key="_ob_acc_add"):
+        accounts.append({"name": "", "bank": "", "type": "bank_account"})
         st.session_state[_K_ACCOUNTS] = accounts
         st.rerun()
 
     valid_accounts = [a for a in accounts if a["name"].strip()]
     if not valid_accounts:
-        st.warning(
-            "⚠️ Nessun conto aggiunto. Puoi continuare ma il dedup delle transazioni "
-            "potrebbe non essere stabile."
-        )
+        st.warning(t("onboarding.step2.no_accounts_warning"))
 
     col_back, col_next = st.columns(2)
     with col_back:
@@ -269,43 +365,76 @@ def _step3_confirm(cfg_svc: SettingsService, lang_options: list[tuple[str, str]]
     lang     = st.session_state[_K_LANG]
     names    = st.session_state.get(_K_NAMES, "").strip()
     accounts = [a for a in st.session_state.get(_K_ACCOUNTS, []) if a["name"].strip()]
-    lang_label = next((lbl for code, lbl in lang_options if code == lang), lang)
+    lang_label    = next((lbl for code, lbl in lang_options if code == lang), lang)
+    country_code  = st.session_state.get(_K_COUNTRY, "")
+    country_label = _COUNTRY_BY_CODE.get(country_code, country_code) if country_code else "—"
     loc = _locale(lang)
 
-    st.subheader("✅ Riepilogo")
-    st.caption("Controlla le impostazioni e clicca **Inizia** per applicarle.")
+    st.subheader(t("onboarding.step3.title"))
+    st.caption(t("onboarding.step3.caption"))
 
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("**🌍 Lingua & formato**")
-        st.markdown(f"- Lingua: **{lang_label}**")
-        st.markdown(f"- Data: `{_fmt_date(lang)}`")
-        st.markdown(f"- Importo: `{_fmt_amount(lang)}`")
+        st.markdown(t("onboarding.step3.lang_format"))
+        st.markdown(f"- {t('onboarding.step3.language')}: **{lang_label}**")
+        st.markdown(f"- {t('onboarding.step3.date')}: `{_fmt_date(lang)}`")
+        st.markdown(f"- {t('onboarding.step3.amount')}: `{_fmt_amount(lang)}`")
+        st.markdown(f"- {t('onboarding.step3.country')}: **{country_label}**")
 
         st.write("")
-        st.markdown("**👤 Nomi titolari**")
+        st.markdown(t("onboarding.step3.owners_title"))
         for name in [n.strip() for n in names.split(",") if n.strip()]:
             st.markdown(f"- {name}")
         if not names:
-            st.caption("*(nessun nome inserito)*")
+            st.caption(t("onboarding.step3.no_names"))
 
     with col2:
-        st.markdown("**🏦 Conti bancari**")
+        _type_labels_inv = {v: k for k, v in _account_types().items()}
+        st.markdown(t("onboarding.step3.accounts_title"))
         if accounts:
             for acc in accounts:
                 bank_note = f" — {acc['bank']}" if acc["bank"].strip() else ""
-                st.markdown(f"- **{acc['name']}**{bank_note}")
+                type_note = f" ({_type_labels_inv.get(acc.get('type', ''), acc.get('type', ''))})"
+                st.markdown(f"- **{acc['name']}**{bank_note}{type_note}")
         else:
-            st.caption("*(nessun conto aggiunto)*")
+            st.caption(t("onboarding.step3.no_accounts"))
 
         preview = cfg_svc.get_default_taxonomy_preview(lang)
         st.write("")
-        st.markdown("**🗂️ Tassonomia**")
+        st.markdown(t("onboarding.step3.taxonomy_title"))
         st.caption(
-            f"{len(preview['expenses'])} categorie spese · "
-            f"{len(preview['income'])} categorie redditi"
+            t("onboarding.step3.taxonomy_summary",
+              n_exp=len(preview['expenses']),
+              n_inc=len(preview['income']))
         )
+
+    # ── LLM Model status ───────────────────────────────────────────────
+    st.write("")
+    st.markdown(t("onboarding.step3.llm_title"))
+    from core.model_manager import detect_hw, list_local_models
+    from config import get_recommended_model
+
+    _hw = detect_hw()
+    _local = list_local_models()
+    _rec = get_recommended_model(_hw["ram_gb"])
+
+    if _local:
+        st.success(
+            t("onboarding.step3.llm_available",
+              name=_local[0].name,
+              size=f"{_local[0].stat().st_size / 1e9:.1f}")
+        )
+    elif _rec:
+        st.info(
+            t("onboarding.step3.llm_recommended",
+              gpu=_hw['gpu'],
+              ram=_hw['ram_gb'],
+              name=_rec.name,
+              size=_rec.size_mb)
+        )
+    else:
+        st.warning(t("onboarding.step3.llm_none"))
 
     st.divider()
 
@@ -318,7 +447,7 @@ def _step3_confirm(cfg_svc: SettingsService, lang_options: list[tuple[str, str]]
     with col_start:
         if st.button(_ui(lang)["start"], type="primary",
                      use_container_width=True, key="_ob_conf_start"):
-            _apply_onboarding(cfg_svc, lang, names, accounts, loc)
+            _apply_onboarding(cfg_svc, lang, names, accounts, loc, country=country_code)
 
 
 def _apply_onboarding(
@@ -327,25 +456,32 @@ def _apply_onboarding(
     owner_names: str,
     accounts: list[dict],
     loc: dict,
+    country: str = "",
 ) -> None:
     """Apply all onboarding settings in one shot and mark as done."""
-    with st.spinner("Configurazione in corso…"):
+    with st.spinner(t("onboarding.step3.applying")):
         # 1. Taxonomy (also sets description_language)
         n_cats = cfg_svc.apply_default_taxonomy(lang)
 
-        # 2. Locale + owner settings
+        # 2. Locale + owner settings + UI language + country
+        _ui_lang = st.session_state.get("_ob_ui_lang", lang)
         cfg_svc.set_bulk({
             "date_display_format":     loc["date_display_format"],
             "amount_decimal_sep":      loc["amount_decimal_sep"],
             "amount_thousands_sep":    loc["amount_thousands_sep"],
             "owner_names":             owner_names,
             "use_owner_names_giroconto": "true" if owner_names.strip() else "false",
+            "ui_language":             _ui_lang,
+            "country":                 country,
         })
 
         # 3. Accounts
         for acc in accounts:
             if acc["name"].strip():
-                cfg_svc.create_account(acc["name"].strip(), acc["bank"].strip())
+                cfg_svc.create_account(
+                    acc["name"].strip(), acc["bank"].strip(),
+                    account_type=acc.get("type", "bank_account"),
+                )
 
         # 4. Mark done
         cfg_svc.set_onboarding_done()
@@ -356,10 +492,11 @@ def _apply_onboarding(
     )
 
     # Clean up session state
-    for k in (_K_STEP, _K_LANG, _K_NAMES, _K_ACCOUNTS):
+    for k in (_K_STEP, _K_LANG, _K_COUNTRY, _K_NAMES, _K_ACCOUNTS,
+              "_ob_prev_lang_for_country", "_ob_country_select"):
         st.session_state.pop(k, None)
 
-    st.success("✅ Configurazione completata!")
+    st.success(t("onboarding.step3.done"))
     st.rerun()
 
 
@@ -371,7 +508,7 @@ def render_onboarding_page(engine) -> None:
     # Build language list from taxonomy_default table
     lang_options = cfg_svc.get_default_taxonomy_languages()  # [(code, label)]
     if not lang_options:
-        st.error("Nessuna tassonomia default trovata nel database.")
+        st.error(t("onboarding.no_taxonomy"))
         return
     supported_codes = [code for code, _ in lang_options]
 
@@ -380,16 +517,17 @@ def render_onboarding_page(engine) -> None:
         detected = _detect_browser_language(supported_codes)
         st.session_state[_K_STEP]     = 0
         st.session_state[_K_LANG]     = detected
+        st.session_state[_K_COUNTRY]  = _COUNTRY_SUGGESTION.get(detected, "IT")
         st.session_state[_K_NAMES]    = ""
-        st.session_state[_K_ACCOUNTS] = [{"name": "", "bank": ""}]
+        st.session_state[_K_ACCOUNTS] = [{"name": "", "bank": "", "type": "bank_account"}]
 
     step = st.session_state[_K_STEP]
     lang = st.session_state[_K_LANG]
     ui   = _ui(lang)
 
     # ── Header ────────────────────────────────────────────────────────────────
-    st.title("👋 Benvenuto in Spendify")
-    st.caption("Configurazione iniziale — ci vorranno meno di 2 minuti.")
+    st.title(t("onboarding.title"))
+    st.caption(t("onboarding.subtitle"))
 
     _progress_bar(step, ui["step_labels"])
 

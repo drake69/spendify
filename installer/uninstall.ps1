@@ -1,12 +1,12 @@
-# ── Spendify — Disinstallatore (Windows PowerShell) ──────────────────────────
+# ── Spendif.ai — Disinstallatore (Windows PowerShell) ──────────────────────────
 # Uso:
 #   irm https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.ps1 | iex
-#   oppure: powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\spendify\uninstall.ps1"
+#   oppure: powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\spendifai\uninstall.ps1"
 # ─────────────────────────────────────────────────────────────────────────────
 
-$InstallDir = if ($env:SPENDIFY_INSTALL_DIR) { $env:SPENDIFY_INSTALL_DIR } else { "$env:USERPROFILE\spendify" }
+$InstallDir = if ($env:SPENDIFAI_INSTALL_DIR) { $env:SPENDIFAI_INSTALL_DIR } else { "$env:USERPROFILE\spendifai" }
 
-function Info    { param($msg) Write-Host "[spendify] $msg" -ForegroundColor Cyan }
+function Info    { param($msg) Write-Host "[spendif.ai] $msg" -ForegroundColor Cyan }
 function Success { param($msg) Write-Host "✅ $msg" -ForegroundColor Green }
 function Warn    { param($msg) Write-Host "⚠️  $msg" -ForegroundColor Yellow }
 
@@ -18,7 +18,7 @@ function Ask {
 
 Write-Host ""
 Write-Host "╔══════════════════════════════════════╗" -ForegroundColor White
-Write-Host "║      Spendify — Disinstallatore      ║" -ForegroundColor White
+Write-Host "║      Spendif.ai — Disinstallatore      ║" -ForegroundColor White
 Write-Host "╚══════════════════════════════════════╝" -ForegroundColor White
 Write-Host ""
 
@@ -42,7 +42,7 @@ if (Test-Path "$InstallDir\docker-compose.yml") {
     $ComposeFound = $true
 } else {
     Warn "Nessuna installazione trovata in: $InstallDir"
-    Warn "Imposta SPENDIFY_INSTALL_DIR se hai installato in una cartella diversa."
+    Warn "Imposta SPENDIFAI_INSTALL_DIR se hai installato in una cartella diversa."
 }
 
 # ── 3. Scelte utente ──────────────────────────────────────────────────────────
@@ -53,7 +53,7 @@ Write-Host ""
 $RemoveDb     = Ask "Eliminare il database delle transazioni? (i tuoi dati finanziari)"
 $RemoveOllama = Ask "Eliminare i modelli Ollama (~8 GB su disco)?"
 $RemoveLlama  = Ask "Eliminare l'immagine llama.cpp e la cartella models/ (file GGUF)?"
-$RemoveImages = Ask "Eliminare le immagini Docker di Spendify/Ollama (libera ~500 MB–1 GB)?"
+$RemoveImages = Ask "Eliminare le immagini Docker di Spendif.ai/Ollama (libera ~500 MB–1 GB)?"
 $RemoveDir    = Ask "Eliminare la cartella di installazione ($InstallDir)?"
 $RemoveDocker = Ask "Mostrare istruzioni per rimuovere Docker Desktop?"
 
@@ -61,15 +61,15 @@ Write-Host ""
 
 # ── 4. Ferma e rimuovi i container ───────────────────────────────────────────
 if ($ComposeFound -and $DockerOk) {
-    Info "Fermo i container Spendify..."
+    Info "Fermo i container Spendif.ai..."
 
     $ProfileArgs = @()
     $volumes = docker volume ls --format "{{.Name}}" 2>$null
-    if ($volumes -match "spendify_ollama_models") {
+    if ($volumes -match "spendifai_ollama_models") {
         $ProfileArgs += @("--profile", "ollama")
     }
     $containers = docker ps -a --format "{{.Names}}" 2>$null
-    if ($containers -match "spendify_llama") {
+    if ($containers -match "spendifai_llama") {
         $ProfileArgs += @("--profile", "llama-cpp")
     }
 
@@ -80,25 +80,25 @@ if ($ComposeFound -and $DockerOk) {
 # ── 5. Rimuovi volumi selezionati ─────────────────────────────────────────────
 if ($DockerOk) {
     if ($RemoveDb) {
-        Info "Rimuovo il database (volume spendify_data e spendify_logs)..."
+        Info "Rimuovo il database (volume spendifai_data e spendifai_logs)..."
         try {
-            docker volume rm spendify_spendify_data 2>$null
-            Success "Volume spendify_data rimosso"
+            docker volume rm spendifai_spendifai_data 2>$null
+            Success "Volume spendifai_data rimosso"
         } catch {
-            Warn "Volume spendify_data non trovato (già rimosso?)"
+            Warn "Volume spendifai_data non trovato (già rimosso?)"
         }
         try {
-            docker volume rm spendify_spendify_logs 2>$null
-            Success "Volume spendify_logs rimosso"
+            docker volume rm spendifai_spendifai_logs 2>$null
+            Success "Volume spendifai_logs rimosso"
         } catch {
-            Warn "Volume spendify_logs non trovato"
+            Warn "Volume spendifai_logs non trovato"
         }
     }
 
     if ($RemoveOllama) {
         Info "Rimuovo i modelli Ollama (volume ollama_models, ~8 GB)..."
         try {
-            docker volume rm spendify_ollama_models 2>$null
+            docker volume rm spendifai_ollama_models 2>$null
             Success "Volume ollama_models rimosso"
         } catch {
             Warn "Volume ollama_models non trovato (mai installato?)"
@@ -128,14 +128,14 @@ if ($DockerOk) {
 
     if ($RemoveImages) {
         Info "Rimuovo le immagini Docker..."
-        # Immagini Spendify
-        $spendifyImages = docker images --format "{{.Repository}}:{{.Tag}}" 2>$null |
+        # Immagini Spendif.ai
+        $spendifaiImages = docker images --format "{{.Repository}}:{{.Tag}}" 2>$null |
                           Where-Object { $_ -like "ghcr.io/drake69/spendify*" }
-        if ($spendifyImages) {
-            $spendifyImages | ForEach-Object { docker rmi $_ 2>$null }
-            Success "Immagine Spendify rimossa"
+        if ($spendifaiImages) {
+            $spendifaiImages | ForEach-Object { docker rmi $_ 2>$null }
+            Success "Immagine Spendif.ai rimossa"
         } else {
-            Warn "Immagine Spendify non trovata"
+            Warn "Immagine Spendif.ai non trovata"
         }
         # Immagine Ollama
         $ollamaImage = docker images --format "{{.Repository}}:{{.Tag}}" 2>$null |
@@ -178,7 +178,7 @@ if ($RemoveDocker) {
 # ── 8. Riepilogo ──────────────────────────────────────────────────────────────
 Write-Host ""
 Write-Host "── Riepilogo ───────────────────────────────────────────────────" -ForegroundColor White
-if ($ComposeFound)  { Success "Container Spendify rimossi" }
+if ($ComposeFound)  { Success "Container Spendif.ai rimossi" }
 if ($RemoveDb)      { Success "Database transazioni rimosso" }  else { Info "Database transazioni conservato" }
 if ($RemoveOllama)  { Success "Modelli Ollama rimossi" }        else { Info "Modelli Ollama conservati" }
 if ($RemoveLlama)   { Success "llama.cpp + models/ rimossi" }   else { Info "llama.cpp conservato" }

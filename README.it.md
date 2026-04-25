@@ -1,4 +1,4 @@
-# Spendify v3.0
+# Spendif.ai v3.0
 
 [![CI](https://github.com/drake69/spendify/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/drake69/spendify/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/drake69/spendify/graph/badge.svg)](https://codecov.io/gh/drake69/spendify)
@@ -6,14 +6,15 @@
 [![License: PolyForm NC](https://img.shields.io/badge/license-PolyForm%20Noncommercial-orange)](LICENSE)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![Streamlit](https://img.shields.io/badge/UI-Streamlit-ff4b4b?logo=streamlit&logoColor=white)](https://streamlit.io)
-[![Issues](https://img.shields.io/github/issues/drake69/spendify)](https://github.com/drake69/spendify/issues)
-[![Last commit](https://img.shields.io/github/last-commit/drake69/spendify)](https://github.com/drake69/spendify/commits/main)
+[![Issues](https://img.shields.io/github/issues/drake69/spendifai)](https://github.com/drake69/spendify/issues)
+[![Last commit](https://img.shields.io/github/last-commit/drake69/spendifai)](https://github.com/drake69/spendify/commits/main)
+[![Supporta su Patreon](https://img.shields.io/badge/Patreon-offrimi%20un%20caffè%20☕-F96854?logo=patreon&logoColor=white)](https://patreon.com/drake69)
 
 > 🇬🇧 [Read in English](README.md)
 
 Registro finanziario personale unificato con pipeline ibrida deterministica + LLM.
 
-Aggrega estratti conto eterogenei (conti correnti, carte di credito, carte di debito, conti deposito, prepagate) in un unico ledger cronologico, eliminando il double-counting da addebiti carta periodici e da giroconti interni. Il processing avviene in modalità **offline-first**; i backend LLM remoti sono supportati come opt-in con sanitizzazione PII obbligatoria.
+Aggrega movimenti eterogenei (conti correnti, carte di credito, carte di debito, conti deposito, prepagate) in un unico ledger cronologico, eliminando il double-counting da addebiti carta periodici e da giroconti interni. Il processing avviene in modalità **offline-first**; i backend LLM remoti sono supportati come opt-in con sanitizzazione PII obbligatoria.
 
 ---
 
@@ -123,7 +124,7 @@ Aggrega estratti conto eterogenei (conti correnti, carte di credito, carte di de
 ## Struttura del progetto
 
 ```
-spendify/
+spendifai/
 ├── app.py                  # Entry point Streamlit — onboarding gate + 9 pagine
 ├── .env.example            # Template variabili d'ambiente
 ├── pyproject.toml          # Dipendenze (uv / pip)
@@ -201,12 +202,12 @@ L'unico prerequisito è **[Docker Desktop](https://www.docker.com/products/docke
 
 **Mac / Linux:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/drake69/spendifai/main/installer/install.sh | bash
 ```
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/drake69/spendify/main/installer/install.ps1 | iex
+irm https://raw.githubusercontent.com/drake69/spendifai/main/installer/install.ps1 | iex
 ```
 
 Lo script scarica l'immagine pre-compilata da GitHub Container Registry, avvia il container e apre il browser su **http://localhost:8501** automaticamente.
@@ -215,10 +216,10 @@ Lo script scarica l'immagine pre-compilata da GitHub Container Registry, avvia i
 
 > **Aggiornamento all'ultima versione:**
 > ```bash
-> docker compose --project-directory ~/spendify pull && docker compose --project-directory ~/spendify up -d
+> docker compose --project-directory ~/spendifai pull && docker compose --project-directory ~/spendifai up -d
 > ```
 
-> **Disinstallazione:** `curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.sh | bash`
+> **Disinstallazione:** `curl -fsSL https://raw.githubusercontent.com/drake69/spendifai/main/installer/uninstall.sh | bash`
 
 ---
 
@@ -236,7 +237,7 @@ Lo script scarica l'immagine pre-compilata da GitHub Container Registry, avvia i
 
 ```bash
 git clone https://github.com/drake69/spendify.git
-cd spendify
+cd spendifai
 ```
 
 ### 2. Installa le dipendenze
@@ -268,7 +269,7 @@ Il file `.env` contiene solo parametri infrastrutturali. Tutto il resto — back
 
 ```dotenv
 # URI database — lascia invariato per uso locale; sovrascritto da docker-compose per Docker
-SPENDIFY_DB=sqlite:///ledger.db
+SPENDIFAI_DB=sqlite:///ledger.db
 ```
 
 > **Nient'altro appartiene al `.env`.** Backend LLM, URL Ollama, nome modello, chiavi API OpenAI/Anthropic e nomi titolari sono tutti salvati nella tabella `user_settings` e modificabili live dall'UI senza riavviare l'app.
@@ -473,7 +474,7 @@ Ogni transazione ha un `id` di 24 caratteri (SHA-256 troncato) calcolato determi
 
 ### Correzione segno carta (`invert_sign`)
 
-Gli estratti conto italiani per carte di credito/debito esportano spesso gli acquisti come valori positivi. Il flag `DocumentSchema.invert_sign`, impostato dall'LLM durante la classificazione Flow 2, istruisce il normalizzatore a negare tutti gli importi — le spese diventano negative e i rimborsi positivi con un'unica operazione simmetrica.
+I file movimenti italiani per carte di credito/debito esportano spesso gli acquisti come valori positivi. Il flag `DocumentSchema.invert_sign`, impostato dall'LLM durante la classificazione Flow 2, istruisce il normalizzatore a negare tutti gli importi — le spese diventano negative e i rimborsi positivi con un'unica operazione simmetrica.
 
 #### Algoritmo di rilevamento in due passi
 

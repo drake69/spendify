@@ -20,6 +20,7 @@ from __future__ import annotations
 import json
 import unicodedata
 from decimal import Decimal
+from pathlib import Path
 
 from core.llm_backends import LLMBackend, call_with_fallback
 from core.sanitizer import SanitizationConfig, redact_pii, restore_owner_placeholders
@@ -46,178 +47,22 @@ def _strip_non_text(text: str) -> str:
     return " ".join("".join(kept).split())
 
 
-# ── Prompts ───────────────────────────────────────────────────────────────────
+# ── Prompts (loaded from prompts/description_cleaner.json) ────────────────────
 
-_SYSTEM_EXPENSE = """\
-You are a financial transaction description parser. Descriptions may come from banks
-in any country and language.
+_PROMPTS_FILE = Path(__file__).parent.parent / "prompts" / "description_cleaner.json"
 
-These are EXPENSE transactions (money going OUT).
-Task: extract ONLY the RECIPIENT — the merchant, business, or person that received the payment.
-The counterpart name can appear anywhere in the string; scan the full description.
 
-WHAT TO STRIP (language-independent noise):
-  • Payment-type labels (e.g. "POS", "Bonifico", "Virement", "Lastschrift", "wire transfer")
-  • Beneficiary markers (strip the label, keep what follows):
-    "Fv.", "F.V.", "Beg.", "Begünstigter", "Pour", "For the benefit of"
-  • Amounts: "352,00 EUR", "9.798,76 EUR"
-  • Dates: "23.12.2025", "2025-12-29", "29/10.41"
-  • Card numbers (13–19 consecutive digits) and masked card refs ("CARTA ****0178")
-  • Auth/transaction codes: "CAU 98105", "NDS 824402523"
-  • Reference codes and SEPA fields: "RIF:", "CRO:", "/INV/", "/SEPASCT/", "/SEPADD/", BIC
-  • "ORD." and any identifier tokens that follow it (unless the counterpart name follows)
-  • Country codes: "(ITA)", "(IRL)", "(FRA)"
-  • City names that appear after the business name
-  • Repeated phrases — some banks duplicate text within a single field; keep only one
-    occurrence (e.g. "Rimborso spese rimborso spese" → "Rimborso spese",
-    "Luigi Rossi luigi rossi" → "Luigi Rossi")
-  • The literal string "nan"
+def _load_prompts() -> dict:
+    with open(_PROMPTS_FILE, encoding="utf-8") as f:
+        return json.load(f)
 
-BANK-ORIGINATED EXPENSES (no external recipient — the bank itself charges):
-  If the description is a bank interest charge, account fee, commission, or credit-card
-  balance settlement with no identifiable external payee, return a short descriptive label
-  in the same language as the description (e.g. "Interessi bancari", "Frais bancaires",
-  "Bankgebühren", "Bank fees", "Saldo carta").
 
-FALLBACK: if no name can be identified, return a short label describing the payment type
-in the same language as the description. Never return "null", "none", "n/a", or empty string.
+_PROMPTS = _load_prompts()
 
-Examples (description → result):
-  "pagam. pos - pagamento pos 352,00 eur del 23.12.2025 a (ita) NOTORIOUS CINEMAS carta..."
-      → "Notorious Cinemas"
-  "vietgnam srl pagamento con carta 5179090003789315 vietgnam srl milan"
-      → "Vietgnam SRL"
-  "Bonifico eseguito Carlo Brambilla Marta Pellegrino carlo brambilla marta pellegrino"
-      → "Carlo Brambilla Marta Pellegrino"
-  "Bonifico eseguito Rimborso spese rimborso spese"
-      → "Bonifico"
-  "VOSTRA DISPOSIZIONE Disposizione bonifico SCT Fv. ARCA FONDI SGR SPA [CF] 00000000031914"
-      → "Arca Fondi SGR SPA"
-  "Disposizione bonifico SCT Fv. MARIO ROSSI [CF] RIF:0012345"
-      → "Mario Rossi"
-  "Disposizione bonifico SCT Rapporto 06 77 Codice cliente 12345"
-      → "Bonifico"
-  "Virement AMAZON EU SARL 14,95 EUR 2025-11-03"
-      → "Amazon EU SARL"
-  "Lastschrift Netflix International 15,99 EUR 2025-10-15"
-      → "Netflix International"
-  "Liquidazione interessi debitori trim. 1,75% a fronte del saldo"
-      → "Interessi bancari"
-  "Saldo carta INARCASSACARD RIF:8834729"
-      → "Saldo carta"
-  "SOTTOSCRIZIONI FONDI E SICAV SOTTOSCRIZIONE ETICA AZIONARIO R DEP.TITOLI 081/663905/000"
-      → "Etica Azionario R"
-  "Subscription funds SICAV SUBSCRIPTION GLOBAL EQUITY FUND DEP.TITOLI 002/123456/000"
-      → "Global Equity Fund"
-  "RID ENEL ENERGIA SPA 00001234567 UTENZA GAS 987654"
-      → "Enel Energia SPA"
-  "Addebito diretto SDD TELECOM ITALIA SPA CID IT12345 RIF:20251201"
-      → "Telecom Italia SPA"
-  "SDD SEPA Direct Debit SPOTIFY AB mandate 0987654321"
-      → "Spotify AB"
-  "ADDEBITO DIRETTO SDD 00001234 /SEPADD/"
-      → "Addebito diretto"
-  "PRELIEVO CONTANTI SPORTELLO 23/12/2025 BANCA XYZ VIA ROMA MILANO"
-      → "Prelievo contanti"
-  "ATM WITHDRAWAL 29/10/2025 BANK OF IRELAND O CONNELL ST DUBLIN"
-      → "Prelievo contanti"
-  "PAGAMENTO F24 IRPEF ACCONTO II RATA 2025 [CF]"
-      → "F24 IRPEF"
-  "F24 IMU COMUNE DI MILANO CODICE TRIBUTO 3912"
-      → "F24 IMU"
-  "PAGAMENTO BOLLETTINO POSTALE 123456789 COMUNE DI MILANO TASSA RIFIUTI"
-      → "Comune di Milano"
-  "BOLLETTINO POSTALE 123456789 REF 20251201"
-      → "Bollettino postale"
-
-Output: a JSON object {"results": ["recipient1", "recipient2", ...]} — same order as input.
-"""
-
-_SYSTEM_INCOME = """\
-You are a financial transaction description parser. Descriptions may come from banks
-in any country and language.
-
-These are INCOME transactions (money coming IN).
-Task: extract ONLY the SENDER — the person, business, or institution that sent the payment.
-The counterpart name can appear anywhere in the string; scan the full description.
-It often follows labels like "ORD.", "FROM:", "DA:", "DE:" but not always.
-
-WHAT TO STRIP (language-independent noise):
-  • Payment-type labels (e.g. "Bonifico", "Accredito", "Virement", "Gutschrift", "wire transfer")
-  • Amounts: "300,00 EUR", "9.798,76 EUR"
-  • Interest rates: "1,75%", "0,50% annuo"
-  • Period/condition qualifiers: "trim.", "semestre", "annuo", "a fronte del saldo"
-  • Dates: "23.12.2025", "2025-12-29"
-  • Card numbers (13–19 consecutive digits)
-  • Reference codes and SEPA fields: "RIF:", "CRO:", "/INV/", "/SEPASCT/", BIC
-  • "ORD." and any reference identifier tokens before the name
-  • City names that appear after the sender name
-  • Repeated phrases — some banks duplicate text within a single field; keep only one
-    occurrence (e.g. "Mario Rossi mario rossi" → "Mario Rossi")
-  • The literal string "nan"
-
-BANK-ORIGINATED INCOME (no external sender — the bank itself is the source):
-  If the description is an interest credit, fee reversal, or capitalisation with no
-  identifiable external sender, return a short descriptive label in the same language
-  as the description (e.g. "Interessi bancari", "Intérêts bancaires", "Bankzinsen",
-  "Bank interest", "Liquidazione bancaria"). Strip all rate and period information.
-
-FALLBACK: if no name can be identified, return a short label describing the transaction
-type in the same language as the description. Never return "null", "none", "n/a", or empty string.
-
-Examples (description → result):
-  "bonif. v/fav. - rif:209403494ord. CENTRO DIAGNOSTICO ITALIANO SPA /inv/24-2025-FE"
-      → "Centro Diagnostico Italiano SPA"
-  "Bonifico ricevuto Corsaro luigi gerotti elena CORSARO LUIGI GEROTTI ELENA"
-      → "Corsaro Luigi Gerotti Elena"
-  "Virement reçu MARTIN DUPONT 500,00 EUR 2025-11-15"
-      → "Martin Dupont"
-  "Gutschrift MUSTER GMBH Überweisung 1.250,00 EUR"
-      → "Muster GmbH"
-  "Liquidazione interessi attivi a fronte del saldo trim. 0,50% annuo"
-      → "Interessi bancari"
-  "Liquidazione interessi-commissioni-spese semestre"
-      → "Liquidazione bancaria"
-  "ACCREDITO STIPENDIO ORD. ACME SRL [CF] CRO:12345678"
-      → "Acme SRL"
-  "Salary payment JOHNSON & JOHNSON LTD ref 2025-DEC"
-      → "Johnson & Johnson Ltd"
-  "RIMBORSO RID ENEL ENERGIA SPA 00001234567"
-      → "Enel Energia SPA"
-  "Rimborso spese trasferta ORD. MARIO ROSSI"
-      → "Mario Rossi"
-  "ACCREDITO PENSIONE INPS CRO:987654321 [CF]"
-      → "INPS"
-  "Pension payment SOCIAL SECURITY ADMINISTRATION ref 2025-12"
-      → "Social Security Administration"
-  "Rimborso fiscale Agenzia delle Entrate CRO:123456789"
-      → "Agenzia delle Entrate"
-  "Bonifico ricevuto <CARD_ID>   20250923"
-      → "Bonifico da carta"
-  "Bonifico ricevuto <CARD_ID>   <CARD_ID> 017   20241216"
-      → "Bonifico da carta"
-
-Output: a JSON object {"results": ["sender1", "sender2", ...]} — same order as input.
-"""
-
-_USER_TEMPLATE = """\
-Extract the counterpart from each of these {n} transaction descriptions.
-Return exactly {n} results in the same order.
-
-{descriptions_json}
-"""
-
-_RESPONSE_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "results": {
-            "type": "array",
-            "items": {"type": "string"},
-            "description": "Extracted counterpart names, one per input description",
-        }
-    },
-    "required": ["results"],
-}
+_SYSTEM_EXPENSE = _PROMPTS["system_expense"]
+_SYSTEM_INCOME = _PROMPTS["system_income"]
+_USER_TEMPLATE = _PROMPTS["user_template"]
+_RESPONSE_SCHEMA = _PROMPTS["response_schema"]
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
@@ -319,6 +164,10 @@ def _process_group(
     """Process a group of transactions (expense or income) in batches.
     Updates txs[i]["description"] in place. Returns count of cleaned descriptions.
 
+    Optimization: deduplicates descriptions before sending to LLM.
+    300 transactions with 40 unique descriptions → only 40 LLM calls.
+    Results are remapped to all transactions sharing the same description.
+
     Privacy flow (when sanitize_config is provided):
         1. raw_description → redact_pii()     → <OWNER_N> placeholders replace names
         2. sanitized text  → LLM              → counterpart extracted (may contain <OWNER_N>)
@@ -326,40 +175,138 @@ def _process_group(
     """
     cleaned_count = 0
 
-    for batch_start in range(0, len(indices), batch_size):
-        batch_indices = indices[batch_start: batch_start + batch_size]
-        # Prefer raw_description: it already contains all description_cols merged
-        # (done by _normalize_df_with_schema) and preserves original casing —
-        # better for LLM pattern matching than the casefold'd "description".
-        raw_descs = [
-            txs[i].get("raw_description") or txs[i].get("description") or ""
-            for i in batch_indices
-        ]
+    # ── Step 1: Dedup descriptions ────────────────────────────────────────
+    # Group indices by unique raw_description → send each unique desc once
+    desc_to_indices: dict[str, list[int]] = {}
+    for i in indices:
+        raw = txs[i].get("raw_description") or txs[i].get("description") or ""
+        desc_to_indices.setdefault(raw, []).append(i)
 
-        # Always redact before LLM (owner names + IBAN/PAN/fiscal code)
-        # Then strip emoji and non-text symbols so the LLM sees clean text only
-        llm_descs = [_strip_non_text(redact_pii(d, sanitize_config)) for d in raw_descs]
-
-        cleaned = _call_llm_batch(
-            llm_descs, system_prompt, llm_backend, fallback_backend,
-            source_name, label,
+    unique_descs = list(desc_to_indices.keys())
+    n_total = len(indices)
+    n_unique = len(unique_descs)
+    if n_unique < n_total:
+        logger.info(
+            f"clean_descriptions_batch [{source_name}] {label}: "
+            f"dedup {n_total} → {n_unique} unique descriptions"
         )
 
-        for j, idx in enumerate(batch_indices):
-            original = raw_descs[j]
-            result = cleaned[j] if j < len(cleaned) else None
-            if result:
-                # Restore <OWNER_N> → real name before storing
-                result = restore_owner_placeholders(result, sanitize_config)
-                result = result.strip()
-                # Discard known bad LLM outputs: "null", "none", "n/a", etc.
-                if result.lower() in {"null", "none", "n/a", "na", "nan", "-", "—"}:
-                    result = None
-            if result and len(result) >= 2 and result != original:
+    # ── Step 2: Clean unique descriptions via LLM (indexed batch) ────────
+    # Sanitize + strip non-text
+    llm_descs = [_strip_non_text(redact_pii(d, sanitize_config)) for d in unique_descs]
+
+    cleaned = _call_llm_batch(
+        llm_descs, system_prompt, llm_backend, fallback_backend,
+        batch_size, source_name, label,
+    )
+
+    # ── Step 3: Remap results to all transactions ────────────────────────
+    for j, raw_desc in enumerate(unique_descs):
+        result = cleaned[j] if j < len(cleaned) else None
+        if result:
+            result = restore_owner_placeholders(result, sanitize_config)
+            result = result.strip()
+            if result.lower() in {"null", "none", "n/a", "na", "nan", "-", "—"}:
+                result = None
+        if result and len(result) >= 2 and result != raw_desc:
+            # Apply to ALL transactions with this raw_description
+            for idx in desc_to_indices[raw_desc]:
                 txs[idx]["description"] = result
                 cleaned_count += 1
 
     return cleaned_count
+
+
+# ── Indexed LLM schema ────────────────────────────────────────────────────
+
+_INDEXED_RESPONSE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "results": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "idx": {"type": "integer"},
+                    "name": {"type": "string"},
+                },
+                "required": ["idx", "name"],
+            },
+            "description": "Extracted counterpart names with index matching input order",
+        }
+    },
+    "required": ["results"],
+}
+
+_INDEXED_USER_TEMPLATE = (
+    "Extract the counterpart from each of these {n} transaction descriptions.\n"
+    "Return exactly {n} results. Each result must include the idx from the input.\n\n"
+    "{descriptions_json}"
+)
+
+
+def _containment_score(output_name: str, input_desc: str) -> float:
+    """Score how well output_name is 'contained' within input_desc.
+
+    Uses token-level Jaccard on normalised lowercased words.
+    A high score means every word in the output appears in the input —
+    the classic signal that the LLM correctly extracted a substring.
+    """
+    def tokens(s: str) -> set[str]:
+        s = s.lower()
+        s = "".join(ch if ch.isalnum() or ch.isspace() else " " for ch in s)
+        return set(s.split())
+
+    out_tok = tokens(output_name)
+    in_tok = tokens(input_desc)
+    if not out_tok:
+        return 0.0
+    # Containment: |out ∩ in| / |out|  (how much of the output is in the input)
+    return len(out_tok & in_tok) / len(out_tok)
+
+
+def _reverse_match(
+    unresolved: list[tuple[int, str]],
+    unclaimed_names: list[str],
+    source_name: str,
+    label: str,
+) -> dict[int, str]:
+    """I-17: greedy containment-based reverse matching.
+
+    For each (global_idx, input_description) in `unresolved`, find the best
+    unclaimed output name by containment score.  Assignments are made greedily
+    (highest score first) so each output name is used at most once.
+
+    Returns a dict {global_idx: name} for assignments with score > 0.
+    """
+    # Build all (score, input_idx_in_list, name_idx_in_list) triples
+    scores: list[tuple[float, int, int]] = []
+    for i, (_, inp) in enumerate(unresolved):
+        for j, name in enumerate(unclaimed_names):
+            sc = _containment_score(name, inp)
+            if sc > 0:
+                scores.append((sc, i, j))
+
+    scores.sort(reverse=True)
+
+    assigned_inputs: set[int] = set()
+    assigned_names: set[int] = set()
+    result: dict[int, str] = {}
+
+    for sc, i, j in scores:
+        if i in assigned_inputs or j in assigned_names:
+            continue
+        global_idx, inp = unresolved[i]
+        name = unclaimed_names[j]
+        result[global_idx] = name
+        assigned_inputs.add(i)
+        assigned_names.add(j)
+        logger.debug(
+            f"I-17 reverse-match [{source_name}] {label}: "
+            f"idx={global_idx} score={sc:.2f} {inp!r} → {name!r}"
+        )
+
+    return result
 
 
 def _call_llm_batch(
@@ -367,53 +314,101 @@ def _call_llm_batch(
     system_prompt: str,
     llm_backend: LLMBackend,
     fallback_backend: LLMBackend | None,
+    batch_size: int,
     source_name: str,
     label: str,
 ) -> list[str]:
-    """Single LLM call for one directional batch. Returns same-length list.
+    """Send descriptions to LLM in indexed batches. Returns same-length list.
+    Uses indexed input/output to prevent shuffle on small models.
     Falls back to original descriptions on any failure.
     """
-    n = len(descriptions)
-    descriptions_json = json.dumps(descriptions, ensure_ascii=False, indent=2)
-    user_prompt = _USER_TEMPLATE.format(n=n, descriptions_json=descriptions_json)
+    all_results: list[str | None] = [None] * len(descriptions)
 
-    result, backend_used = call_with_fallback(
-        primary=llm_backend,
-        system_prompt=system_prompt,
-        user_prompt=user_prompt,
-        json_schema=_RESPONSE_SCHEMA,
-        fallback=fallback_backend,
-    )
+    for batch_start in range(0, len(descriptions), batch_size):
+        batch = descriptions[batch_start: batch_start + batch_size]
+        n = len(batch)
 
-    if result is None:
-        logger.warning(
-            f"clean_descriptions_batch [{source_name}] {label}: "
-            f"LLM failed — keeping original descriptions"
+        # Build indexed input
+        indexed_input = [{"idx": batch_start + i, "name": d} for i, d in enumerate(batch)]
+        descriptions_json = json.dumps(indexed_input, ensure_ascii=False, indent=2)
+        user_prompt = _INDEXED_USER_TEMPLATE.format(n=n, descriptions_json=descriptions_json)
+
+        result, backend_used = call_with_fallback(
+            primary=llm_backend,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            json_schema=_INDEXED_RESPONSE_SCHEMA,
+            fallback=fallback_backend,
+            caller="description_cleaner",
+            step=f"batch_{label}",
+            source_name=source_name,
+            batch_size=n,
         )
-        return descriptions
 
-    results = result.get("results")
-    if not isinstance(results, list):
-        logger.warning(
+        if result is None:
+            logger.warning(
+                f"clean_descriptions_batch [{source_name}] {label}: "
+                f"LLM failed on batch {batch_start}..{batch_start + n} — keeping originals"
+            )
+            for i, d in enumerate(batch):
+                all_results[batch_start + i] = d
+            continue
+
+        results = result.get("results")
+        if not isinstance(results, list):
+            logger.warning(
+                f"clean_descriptions_batch [{source_name}] {label}: "
+                f"unexpected response type {type(results)!r} — keeping originals"
+            )
+            for i, d in enumerate(batch):
+                all_results[batch_start + i] = d
+            continue
+
+        # Map by idx (anti-shuffle, I-16)
+        idx_to_name: dict[int, str] = {}
+        for item in results:
+            if isinstance(item, dict) and "idx" in item and "name" in item:
+                idx_to_name[item["idx"]] = str(item["name"])
+            elif isinstance(item, str):
+                # Fallback: old-style flat array (backward compat)
+                pass
+
+        # Collect output names that were not claimed by any idx
+        claimed_idx = set(idx_to_name.keys())
+        unclaimed_names = [
+            str(item["name"])
+            for item in results
+            if isinstance(item, dict) and "name" in item
+            and item.get("idx") not in claimed_idx
+        ]
+
+        # I-17: reverse matching — recover positions where idx was missing/wrong.
+        # For each unresolved input position, pick the unclaimed output name whose
+        # normalised form is most contained within the input description.
+        # Greedy assignment (best score first) avoids duplicate assignments.
+        unresolved = [
+            (batch_start + i, batch[i])
+            for i in range(n)
+            if (batch_start + i) not in claimed_idx
+        ]
+        if unresolved and unclaimed_names:
+            assigned = _reverse_match(unresolved, unclaimed_names, source_name, label)
+            idx_to_name.update(assigned)
+
+        for i, d in enumerate(batch):
+            global_idx = batch_start + i
+            name = idx_to_name.get(global_idx)
+            if name:
+                all_results[global_idx] = name
+            else:
+                all_results[global_idx] = d  # keep original
+
+        n_by_idx = len(claimed_idx & {batch_start + i for i in range(n)})
+        n_by_rev = len(idx_to_name) - n_by_idx
+        logger.debug(
             f"clean_descriptions_batch [{source_name}] {label}: "
-            f"unexpected response type {type(results)!r} — keeping originals"
+            f"batch {batch_start}..{batch_start + n} via {backend_used}, "
+            f"{n_by_idx}/{n} by idx, {n_by_rev}/{n} by reverse-match"
         )
-        return descriptions
 
-    if len(results) != n:
-        logger.warning(
-            f"clean_descriptions_batch [{source_name}] {label}: "
-            f"unexpected response shape (expected {n}, got {len(results)})"
-            f" — using partial results, keeping originals for missing entries"
-        )
-        # Pad or truncate: use what we have, fall back to original for the rest
-        results = list(results[:n]) + [None] * max(0, n - len(results))
-
-    logger.debug(
-        f"clean_descriptions_batch [{source_name}] {label}: "
-        f"batch of {n} via {backend_used}"
-    )
-    mapped = [str(r) if r else descriptions[i] for i, r in enumerate(results)]
-    for i, (inp, out) in enumerate(zip(descriptions, mapped)):
-        logger.debug(f"  [{label}] #{i}: {inp!r} → {out!r}")
-    return mapped
+    return [r if r else descriptions[i] for i, r in enumerate(all_results)]

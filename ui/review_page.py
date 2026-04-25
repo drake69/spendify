@@ -1,6 +1,9 @@
 """Review page (RF-08): manual review of low/medium confidence transactions."""
 from __future__ import annotations
 
+import json
+from datetime import datetime
+
 import streamlit as st
 import pandas as pd
 
@@ -8,14 +11,15 @@ from services.review_service import ReviewService
 from services.rule_service import RuleService
 from services.settings_service import SettingsService
 from services.transaction_service import TransactionService
-from support.formatting import format_amount_display, format_date_display, format_raw_amount_display
+from support.formatting import format_amount_display, format_date_display, format_raw_amount_display, strftime_to_momentjs
 from support.logging import setup_logging
+from ui.i18n import t
 
 logger = setup_logging()
 
 
 def render_review_page(engine):
-    st.header("🔍 Review — Revisione Manuale")
+    st.header(t("review.title"))
 
     review_svc = ReviewService(engine)
     rule_svc   = RuleService(engine)
@@ -25,41 +29,38 @@ def render_review_page(engine):
     # Auto-apply rules to to_review transactions before rendering
     _auto_resolved = rule_svc.apply_to_review()
     if _auto_resolved:
-        st.success(f"✅ {_auto_resolved} transazioni risolte automaticamente dalle regole.")
+        st.success(t("review.auto_resolved", n=_auto_resolved))
         logger.info(f"review_page: auto-resolved {_auto_resolved} transactions via rules")
 
     # ── Rielabora transazioni in coda di revisione ─────────────────────────────
     _n_to_review = review_svc.count_to_review()
 
     _rerun_label = (
-        f"🔄 Rielabora con LLM ({_n_to_review} da rivedere)"
+        t("review.rerun_llm", n=_n_to_review)
         if _n_to_review > 0
-        else "🔄 Rielabora con LLM (nessuna transazione in coda di revisione)"
+        else t("review.rerun_llm_empty")
     )
     if st.button(_rerun_label, key="review_rerun_llm", disabled=(_n_to_review == 0)):
-        with st.spinner("Rielaborazione in corso…"):
+        st.session_state["llm_in_progress"] = True
+        with st.spinner(t("review.processing")):
             n_cleaned, n_cat = review_svc.rerun_llm_on_review()
-        st.success(
-            f"Completato: {n_cleaned} descrizioni pulite · {n_cat} ri-categorizzate."
-        )
+        st.session_state["llm_in_progress"] = False
+        st.success(t("review.rerun_done", cleaned=n_cleaned, categorized=n_cat))
         logger.info(f"review_page: rerun_llm: cleaned={n_cleaned} categorized={n_cat}")
         st.rerun()
 
     # ── Riesegui rilevamento giroconti ─────────────────────────────────────────
     if st.button(
-        "🔁 Riesegui rilevamento giroconti (cross-account)",
+        t("review.rerun_transfers"),
         key="review_rerun_transfers",
-        help=(
-            "Riesegue il matching importo+data su TUTTE le transazioni nel DB. "
-            "Utile dopo aver importato più file di conti diversi."
-        ),
+        help=t("review.rerun_transfers_help"),
     ):
-        with st.spinner("Rilevamento in corso…"):
+        with st.spinner(t("review.detecting")):
             n_updated = review_svc.rerun_transfer_detection()
         if n_updated:
-            st.success(f"Trovate e marcate **{n_updated}** nuove transazioni come giroconto.")
+            st.success(t("review.transfers_found", n=n_updated))
         else:
-            st.info("Nessuna nuova coppia giroconto trovata.")
+            st.info(t("review.transfers_none"))
         logger.info(f"review_page: rerun_transfers: updated={n_updated}")
         if n_updated:
             st.rerun()
@@ -69,37 +70,57 @@ def render_review_page(engine):
     all_categories = taxonomy.all_expense_categories + taxonomy.all_income_categories
     settings = cfg_svc.get_all()
     _date_fmt = settings.get("date_display_format", "%d/%m/%Y")
+    _date_fmt_js = strftime_to_momentjs(_date_fmt)
     _dec = settings.get("amount_decimal_sep", ",")
     _thou = settings.get("amount_thousands_sep", ".")
 
-    only_review = st.toggle("Solo transazioni da rivedere", value=True, key="review_only_toggle")
+    try:
+        _contexts: list[str] = json.loads(
+            settings.get("contexts", '["Quotidianità", "Lavoro", "Vacanza"]')
+        )
+    except Exception:
+        _contexts = ["Quotidianità", "Lavoro", "Vacanza"]
+
+    only_review = st.toggle(t("review.toggle_review_only"), value=True, key="review_only_toggle")
     filters = {"to_review": True} if only_review else {}
     txs = tx_svc.get_transactions(filters=filters)
 
     if not txs:
-        st.success("Nessuna transazione richiede revisione.")
+        st.success(t("review.no_transactions"))
         return
 
     if only_review:
-        st.info(f"{len(txs)} transazioni in coda di revisione.")
+        st.info(t("review.count_review", total=len(txs)))
     else:
         n_review = sum(1 for tx in txs if tx.to_review)
-        st.info(f"{len(txs)} transazioni totali · {n_review} da rivedere ⚠️")
+        st.info(t("review.count_all", total=len(txs), review=n_review))
 
-    show_raw = st.toggle("Mostra valori originali (raw)", value=False, key="review_show_raw")
+    show_raw = st.toggle(t("review.show_raw"), value=False, key="review_show_raw")
+
+    _SOURCE_BADGE = {
+        "llm": "🧠 AI",
+        "rule": "📏 Regola",
+        "manual": "👤 Manuale",
+        "history": "📚 Storico",
+    }
 
     data = [
         {
             "id": tx.id,
-            "Data": format_date_display(tx.date, _date_fmt),
-            "Descrizione": (tx.description or "")[:100],
-            "Entrata": float(tx.amount) if float(tx.amount) > 0 else None,
-            "Uscita": abs(float(tx.amount)) if float(tx.amount) < 0 else None,
-            "Tipo": tx.tx_type,
-            "Categoria": tx.category or "",
-            "Sottocategoria": tx.subcategory or "",
+            "sel": False,
+            t("ledger.col.date"): datetime.strptime(tx.date, "%Y-%m-%d").date() if tx.date else None,
+            t("ledger.col.description"): (tx.description or "")[:100],
+            t("ledger.col.income"): float(tx.amount) if float(tx.amount) > 0 else None,
+            t("ledger.col.expense"): abs(float(tx.amount)) if float(tx.amount) < 0 else None,
+            t("ledger.col.type"): tx.tx_type,
+            t("ledger.col.category"): tx.category or "",
+            t("ledger.col.subcategory"): tx.subcategory or "",
+            t("ledger.col.context"): tx.context or "",
             "Confidenza": tx.category_confidence or "",
-            "⚠️": "⚠️" if tx.to_review else "",
+            t("ledger.col.source"): _SOURCE_BADGE.get(tx.category_source, "—"),
+            "⚠️": "⚠️" if tx.to_review else "·",
+            "✅": "✅" if tx.human_validated else "·",
+            "Validato": bool(tx.human_validated),
             "Desc. originale": (tx.raw_description or "")[:100],
             "Importo originale": format_raw_amount_display(tx.raw_amount),
         }
@@ -112,17 +133,75 @@ def render_review_page(engine):
         hide_cols += ["Desc. originale", "Importo originale"]
 
     display_df = df.drop(columns=hide_cols)
-    st.dataframe(
+    edited_review = st.data_editor(
         display_df,
-        width="stretch",
+        use_container_width=True,
+        hide_index=True,
         column_config={
-            "Entrata": st.column_config.NumberColumn("Entrata", format="%.2f"),
-            "Uscita": st.column_config.NumberColumn("Uscita", format="%.2f"),
+            "sel": st.column_config.CheckboxColumn("✔", width=40),
+            t("ledger.col.date"): st.column_config.DateColumn(t("ledger.col.date"), format=_date_fmt_js, width="small"),
+            t("ledger.col.income"): st.column_config.NumberColumn(t("ledger.col.income"), format="%.2f"),
+            t("ledger.col.expense"): st.column_config.NumberColumn(t("ledger.col.expense"), format="%.2f"),
+            t("ledger.col.context"): st.column_config.SelectboxColumn(
+                t("ledger.col.context"), options=[""] + _contexts, required=False, width="small",
+            ),
+            t("ledger.col.source"): st.column_config.TextColumn(t("ledger.col.source"), disabled=True, width=100),
+            "⚠️": st.column_config.TextColumn("⚠️", disabled=True, width=40),
+            "✅": st.column_config.TextColumn("✅", disabled=True, width=40),
+            "Validato": st.column_config.CheckboxColumn("Validato", width=60),
         },
+        key="review_grid",
     )
 
+    # ── Detect inline edits (Validato, Contesto) ───────────────────────────
+    n_val_changed = 0
+    n_ctx_changed = 0
+    for i in range(len(edited_review)):
+        tx_id = df.iloc[i]["id"]
+
+        new_val = bool(edited_review.iloc[i].get("Validato", False))
+        old_val = bool(display_df.iloc[i].get("Validato", False))
+        if new_val != old_val:
+            if new_val:
+                tx_svc.validate(tx_id)
+            else:
+                tx_svc.unvalidate(tx_id)
+            n_val_changed += 1
+
+        new_ctx = str(edited_review.iloc[i].get(t("ledger.col.context"), ""))
+        old_ctx = str(display_df.iloc[i].get(t("ledger.col.context"), ""))
+        if new_ctx != old_ctx:
+            tx_svc.update_context(tx_id, new_ctx or None)
+            n_ctx_changed += 1
+
+    _need_rerun = False
+    if n_val_changed:
+        st.success(t("review.updated_count", n=n_val_changed))
+        logger.info(f"review_page: toggled validation on {n_val_changed} via checkbox")
+        _need_rerun = True
+    if n_ctx_changed:
+        st.success(t("review.context_updated", n=n_ctx_changed))
+        logger.info(f"review_page: updated context on {n_ctx_changed} transactions")
+        _need_rerun = True
+    if _need_rerun:
+        st.rerun()
+
+    selected_ids = [
+        df.iloc[i]["id"]
+        for i in range(len(edited_review))
+        if edited_review.iloc[i].get("sel", False)
+    ]
+    if st.button(t("review.validate_selected"), disabled=len(selected_ids) == 0, key="review_validate_bulk"):
+        n_ok = 0
+        for _tid in selected_ids:
+            if tx_svc.validate(_tid):
+                n_ok += 1
+        st.success(t("review.validated_count", n=n_ok))
+        logger.info(f"review_page: validated {n_ok} transactions")
+        st.rerun()
+
     st.divider()
-    st.subheader("Applica correzione")
+    st.subheader(t("review.apply_correction"))
 
     txs2 = tx_svc.get_transactions(filters=filters)
 
@@ -133,7 +212,7 @@ def render_review_page(engine):
         for tx in txs2
     }
 
-    selected_label = st.selectbox("Seleziona transazione", list(tx_options.keys()),
+    selected_label = st.selectbox(t("review.select_transaction"), list(tx_options.keys()),
                                   key="review_tx_select")
     selected_tx = tx_options[selected_label]
 
@@ -157,12 +236,12 @@ def render_review_page(engine):
     apply_to_similar = False
     if _similar_count > 0:
         apply_to_similar = st.checkbox(
-            f"Applica anche alle altre {_similar_count} transazioni con la stessa descrizione",
+            t("review.apply_similar", n=_similar_count),
             value=True,
             key="review_giroconto_similar",
         )
 
-    giroconto_label = "↩️ Rimuovi da giroconti" if is_giroconto else "🔄 Segna come giroconto"
+    giroconto_label = t("review.remove_giro") if is_giroconto else t("review.mark_giro")
     if st.button(giroconto_label, key="review_toggle_giroconto"):
         ok, new_type = tx_svc.toggle_giroconto(selected_tx.id)
         n_extra = 0
@@ -172,39 +251,55 @@ def render_review_page(engine):
                 selected_tx.description, make_giroconto, exclude_id=selected_tx.id
             )
         if ok:
-            action = "rimossa dai giroconti" if new_type in ("expense", "income") else "segnata come giroconto"
+            if new_type in ("expense", "income"):
+                msg = t("review.giro_removed", type=new_type)
+            else:
+                msg = t("review.giro_marked", type=new_type)
             extra_msg = f" · {n_extra} transazioni simili aggiornate." if n_extra else ""
-            st.success(f"Transazione {action} (tipo: {new_type}).{extra_msg}")
+            st.success(f"{msg}{extra_msg}")
             st.rerun()
         else:
-            st.error("Transazione non trovata.")
+            st.error(t("review.tx_not_found"))
 
     # ── Correzione categoria (solo se non giroconto) ───────────────────────────
     if not is_giroconto:
         col1, col2 = st.columns(2)
         with col1:
             cat_idx = all_categories.index(selected_tx.category) if selected_tx.category in all_categories else 0
-            new_cat = st.selectbox("Nuova categoria", all_categories, index=cat_idx,
+            new_cat = st.selectbox(t("review.new_category"), all_categories, index=cat_idx,
                                    key="review_cat")
         with col2:
             subs = taxonomy.valid_subcategories(new_cat)
             if subs:
                 sub_idx = subs.index(selected_tx.subcategory) \
                     if (selected_tx.subcategory in subs and selected_tx.category == new_cat) else 0
-                new_sub = st.selectbox("Nuova sottocategoria", subs, index=sub_idx,
+                new_sub = st.selectbox(t("review.new_subcategory"), subs, index=sub_idx,
                                        key=f"review_sub_{new_cat}")
             else:
-                new_sub = st.text_input("Nuova sottocategoria",
+                new_sub = st.text_input(t("review.new_subcategory"),
                                         value=selected_tx.subcategory or "",
                                         key=f"review_sub_{new_cat}")
 
         save_rule = st.checkbox(
-            "Salva come regola deterministica (applica a tutte le transazioni simili)",
+            t("review.save_as_rule"),
             value=False,
             key="review_save_rule",
         )
 
-        if st.button("💾 Applica correzione", type="primary"):
+        # Preview and retroactive options (shown when save_rule is checked)
+        if save_rule and selected_tx.description:
+            _preview_pattern = selected_tx.description
+            _preview_matching = tx_svc.get_by_rule_pattern(_preview_pattern, "contains")
+            st.info(t("review.will_match", n=len(_preview_matching)))
+            review_retroactive = st.checkbox(
+                t("review.apply_retroactive"),
+                value=True,
+                key="review_retroactive",
+            )
+        else:
+            review_retroactive = False
+
+        if st.button(t("review.apply_btn"), type="primary"):
             ok = tx_svc.update_category(selected_tx.id, new_cat, new_sub)
             if ok:
                 rule_msg = ""
@@ -216,82 +311,127 @@ def render_review_page(engine):
                         subcategory=new_sub,
                         priority=10,
                     )
-                    similar = tx_svc.get_by_rule_pattern(selected_tx.description, "contains")
-                    n_similar = 0
-                    for stx in similar:
-                        if stx.id != selected_tx.id:
-                            tx_svc.update_category(stx.id, new_cat, new_sub)
-                            n_similar += 1
-                    rule_tag = "creata" if created else "aggiornata"
-                    rule_msg = f" · Regola {rule_tag}"
-                    if n_similar:
-                        rule_msg += f" · {n_similar} transazioni simili aggiornate."
-                st.success(f"Categoria aggiornata: {new_cat} / {new_sub}{rule_msg}")
-                st.rerun()
+                    rule_tag = t("review.rule_created") if created else t("review.rule_updated")
+                    rule_msg = rule_tag
+                    if review_retroactive:
+                        n_matched, _ = rule_svc.apply_to_all()
+                        rule_msg += f" · {n_matched} transazioni aggiornate retroattivamente."
+                    else:
+                        similar = tx_svc.get_by_rule_pattern(selected_tx.description, "contains")
+                        n_similar = 0
+                        for stx in similar:
+                            if stx.id != selected_tx.id:
+                                tx_svc.update_category(stx.id, new_cat, new_sub)
+                                n_similar += 1
+                        if n_similar:
+                            rule_msg += f" · {n_similar} transazioni simili aggiornate."
+                st.success(t("review.category_updated", cat=new_cat, sub=new_sub, extra=rule_msg))
+
+                # ── C-06: Fan-out — propose applying to similar uncategorized ──
+                if not save_rule and selected_tx.description:
+                    _fan_similar = tx_svc.find_similar_uncategorized(
+                        selected_tx.description, selected_tx.id
+                    )
+                    if _fan_similar:
+                        st.session_state["_review_fan_out"] = {
+                            "source_id": selected_tx.id,
+                            "targets": _fan_similar,
+                        }
+                        st.info(t("review.fan_out_found", n=len(_fan_similar)))
+                    else:
+                        st.rerun()
+                else:
+                    st.rerun()
             else:
-                st.error("Transazione non trovata.")
+                st.error(t("review.tx_not_found"))
+
+        # ── C-06: Fan-out action buttons (review page) ───────────────────────
+        if st.session_state.get("_review_fan_out"):
+            _fo_data = st.session_state["_review_fan_out"]
+            _fo_targets = _fo_data["targets"]
+            fo_c1, fo_c2, _ = st.columns([1, 1, 4])
+            with fo_c1:
+                if st.button(
+                    t("review.fan_out_apply", n=len(_fo_targets)),
+                    key="review_fan_out_apply",
+                    type="primary",
+                    use_container_width=True,
+                ):
+                    _n_fo = tx_svc.apply_fan_out(
+                        _fo_data["source_id"],
+                        [fo_t.id for fo_t in _fo_targets],
+                    )
+                    del st.session_state["_review_fan_out"]
+                    st.toast(f"Fan-out: {_n_fo} transazioni aggiornate")
+                    logger.info(f"review_page: fan-out applied to {_n_fo} transactions")
+                    st.rerun()
+            with fo_c2:
+                if st.button(
+                    t("review.fan_out_skip"),
+                    key="review_fan_out_skip",
+                    use_container_width=True,
+                ):
+                    del st.session_state["_review_fan_out"]
+                    st.rerun()
 
     # ── Correggi descrizione in blocco ─────────────────────────────────────────
     st.divider()
-    with st.expander("✏️ Correggi descrizione in blocco", expanded=False):
-        st.caption(
-            "Sostituisce la descrizione di tutte le transazioni la cui **raw description** "
-            "corrisponde al pattern, poi ri-categorizza con l'LLM."
-        )
+    with st.expander(t("review.bulk_desc_title"), expanded=False):
+        st.caption(t("review.bulk_desc_caption"))
         _match_types = {"exact": "Esatto", "contains": "Contiene", "regex": "Regex"}
         _raw_default = selected_tx.raw_description or selected_tx.description or ""
 
         bulk_pattern = st.text_input(
-            "Pattern da cercare nella raw description",
+            t("review.bulk_pattern"),
             value=_raw_default,
             key="bulk_desc_pattern",
         )
         bulk_match_type = st.selectbox(
-            "Tipo di match",
+            t("review.bulk_match_type"),
             options=list(_match_types.keys()),
             format_func=lambda k: _match_types[k],
             index=list(_match_types.keys()).index("contains"),
             key="bulk_desc_match_type",
         )
         bulk_new_desc = st.text_input(
-            "Nuova descrizione pulita",
+            t("review.bulk_new_desc"),
             value="",
             key="bulk_desc_new",
-            placeholder="Inserisci la descrizione che sostituirà quella originale",
+            placeholder=t("review.bulk_new_desc_placeholder"),
         )
 
         # Live preview: count matching transactions
         if bulk_pattern:
             _preview_matches = tx_svc.get_by_raw_pattern(bulk_pattern, bulk_match_type)
-            st.caption(f"Transazioni corrispondenti: **{len(_preview_matches)}**")
+            st.caption(t("review.bulk_matching", n=len(_preview_matches)))
 
         bulk_save_rule = st.checkbox(
-            "Salva come regola (riapplicabile in futuro)",
+            t("review.bulk_save_rule"),
             value=True,
             key="bulk_desc_save_rule",
         )
 
-        if st.button("✏️ Applica in blocco + ri-categorizza", key="bulk_desc_apply", type="primary"):
+        if st.button(t("review.bulk_apply"), key="bulk_desc_apply", type="primary"):
             if not bulk_pattern.strip():
-                st.warning("Inserisci un pattern.")
+                st.warning(t("review.bulk_no_pattern"))
             elif not bulk_new_desc.strip():
-                st.warning("Inserisci la nuova descrizione.")
+                st.warning(t("review.bulk_no_desc"))
             else:
                 if bulk_save_rule:
                     rule_svc.create_description_rule(bulk_pattern, bulk_match_type, bulk_new_desc)
 
-                with st.spinner("Aggiornamento descrizioni e ri-categorizzazione in corso…"):
+                st.session_state["llm_in_progress"] = True
+                with st.spinner(t("review.processing")):
                     n_upd, n_cat = review_svc.apply_description_rule_bulk(
                         bulk_pattern, bulk_match_type, bulk_new_desc
                     )
+                st.session_state["llm_in_progress"] = False
 
                 if n_upd == 0:
-                    st.warning("Nessuna transazione corrisponde al pattern.")
+                    st.warning(t("review.bulk_no_match"))
                 else:
-                    rule_note = " · Regola salvata." if bulk_save_rule else ""
-                    st.success(
-                        f"✅ {n_upd} descrizioni aggiornate · {n_cat} ri-categorizzate.{rule_note}"
-                    )
+                    rule_note = t("review.rule_saved") if bulk_save_rule else ""
+                    st.success(t("review.bulk_done", updated=n_upd, categorized=n_cat, extra=rule_note))
                     logger.info(
                         f"review_page: bulk_desc: pattern={bulk_pattern!r} "
                         f"match={bulk_match_type} updated={n_upd} categorized={n_cat}"
@@ -302,7 +442,7 @@ def render_review_page(engine):
     _desc_rules = rule_svc.get_description_rules()
 
     if _desc_rules:
-        with st.expander(f"📋 Regole descrizione salvate ({len(_desc_rules)})", expanded=False):
+        with st.expander(t("review.desc_rules_title", n=len(_desc_rules)), expanded=False):
             _match_labels = {"exact": "Esatto", "contains": "Contiene", "regex": "Regex"}
             for _rule in _desc_rules:
                 rcol1, rcol2, rcol3, rcol4 = st.columns([3, 1, 3, 1])
@@ -316,13 +456,15 @@ def render_review_page(engine):
                     _btn_col1, _btn_col2 = st.columns(2)
                     with _btn_col1:
                         if st.button("▶", key=f"desc_rule_apply_{_rule.id}", help="Riapplica regola"):
-                            with st.spinner("Riapplicazione in corso…"):
+                            st.session_state["llm_in_progress"] = True
+                            with st.spinner(t("review.processing")):
                                 n_upd, n_cat = review_svc.apply_description_rule_bulk(
                                     _rule.raw_pattern, _rule.match_type, _rule.cleaned_description
                                 )
+                            st.session_state["llm_in_progress"] = False
                             st.success(f"{n_upd} aggiornate · {n_cat} ri-categorizzate.")
                             st.rerun()
                     with _btn_col2:
-                        if st.button("🗑", key=f"desc_rule_del_{_rule.id}", help="Elimina regola"):
+                        if st.button("🗑", key=f"desc_rule_del_{_rule.id}", help=t("common.delete")):
                             rule_svc.delete_description_rule(_rule.id)
                             st.rerun()

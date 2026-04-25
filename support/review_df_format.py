@@ -172,7 +172,7 @@ def _get_amount_info(df):
         # 3️⃣ PROMPT LLM (RIDOTTO)
         # -----------------------------------
         amount_prompt = f"""
-        Sei un esperto di estratti conto bancari.
+        Sei un esperto di movimenti bancari.
 
         Colonne numeriche candidate:
         {numeric_candidates}
@@ -250,7 +250,7 @@ def _normalize_dates_position(df):
     sample = df.head(20).to_json(orient="records")
 
     date_prompt = f"""
-        Sei un esperto di normalizzazione di estratti conto bancari.
+        Sei un esperto di normalizzazione di movimenti bancari.
 
         Colonne candidate:
         {date_columns}

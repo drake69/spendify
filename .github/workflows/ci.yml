@@ -30,6 +30,13 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
+      - name: Verify prompt integrity (S-01)
+        run: uv run python tools/compute_prompt_hashes.py --verify
+
+      - name: Verify benchmark CSV append-only (T-09d)
+        if: github.event_name == 'pull_request'
+        run: uv run python tools/verify_bench_csv.py --base origin/${{ github.base_ref }}
+
       - name: Run tests with coverage
         run: uv run pytest tests/ -v --cov=. --cov-report=term-missing --cov-report=xml
         env:
@@ -222,6 +229,105 @@ jobs:
                 body,
               });
             }
+
+  security:
+    name: Security scanning (SAST + deps)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      # ── Bandit (Python SAST) ──────────────────────────────
+      - name: Install Bandit
+        run: uv pip install bandit[toml]
+
+      - name: Run Bandit — code injection & security checks
+        run: |
+          uv run bandit -r core/ services/ db/ api/ chat_bot/ quarantine/ support/ \
+            -c pyproject.toml \
+            -f json -o bandit-report.json \
+            || true
+          # Pretty-print summary and fail on HIGH severity
+          uv run bandit -r core/ services/ db/ api/ chat_bot/ quarantine/ support/ \
+            -c pyproject.toml \
+            -ll -ii
+          # -ll = only HIGH severity, -ii = only HIGH confidence → hard gate
+
+      - name: Upload Bandit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bandit-report
+          path: bandit-report.json
+          retention-days: 30
+
+      # ── Semgrep (OWASP / broader SAST) ───────────────────
+      - name: Run Semgrep — OWASP top-10 rules
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/python
+            p/owasp-top-ten
+            p/security-audit
+        env:
+          SEMGREP_RULES: p/python p/owasp-top-ten p/security-audit
+
+      # ── pip-audit (known CVEs in dependencies) ───────────
+      - name: Install pip-audit
+        run: uv pip install pip-audit
+
+      - name: Run pip-audit — dependency vulnerabilities
+        run: |
+          uv run pip-audit \
+            --requirement <(uv pip freeze) \
+            --format json --output pip-audit-report.json \
+            || true
+          uv run pip-audit \
+            --requirement <(uv pip freeze) \
+            --strict
+
+      - name: Upload pip-audit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pip-audit-report
+          path: pip-audit-report.json
+          retention-days: 30
+
+      # ── ShellCheck (bash injection / script quality) ─────
+      - name: Install ShellCheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Run ShellCheck on installer scripts
+        run: |
+          shellcheck --severity=warning \
+            installer/install.sh \
+            installer/uninstall.sh \
+            benchmark/run_benchmark_full.sh \
+            docker/benchmark_entrypoint.sh
+
+      # ── Trivy (Docker image vulnerabilities) ────────────
+      - name: Build Docker image for scanning
+        run: docker build -f docker/Dockerfile -t spendify:scan .
+
+      - name: Run Trivy — container vulnerability scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: 'spendify:scan'
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
 
   installer-validate:
     name: Installer validation (syntax + compose)

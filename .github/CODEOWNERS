@@ -1,0 +1,10 @@
+# Default owner — all files require review from the owner
+* @drake69
+
+# Critical paths — explicit for future collaborators
+.github/              @drake69
+core/                 @drake69
+db/                   @drake69
+api/                  @drake69
+docker/               @drake69
+installer/            @drake69

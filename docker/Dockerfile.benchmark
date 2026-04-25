@@ -1,0 +1,45 @@
+# ── Spendify Benchmark — GPU-enabled Docker image ────────────────────────────
+# Runs classifier + categorizer benchmarks with llama-cpp-python (CUDA).
+# No Streamlit, no UI — headless benchmark only.
+#
+# Build:  docker build -f docker/Dockerfile.benchmark -t spendify-bench .
+# Run:    docker run --gpus all -v ./results:/app/results spendify-bench \
+#           --model qwen2.5-3b --runs 1
+#
+# Azure ML: pushed to ACR, launched as ML Job with mounted input/output.
+
+FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04
+
+# ── System deps ──────────────────────────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.11 python3.11-venv python3-pip git curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Use python3.11 as default
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
+
+# ── uv ───────────────────────────────────────────────────────────────────────
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+WORKDIR /app
+
+ENV UV_PYTHON_DOWNLOADS=0
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# ── Dependencies ─────────────────────────────────────────────────────────────
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
+
+COPY . .
+ENV PATH="/app/.venv/bin:$PATH"
+
+# ── Models directory (mounted or downloaded at runtime) ──────────────────────
+RUN mkdir -p /models /app/results
+
+# ── Entrypoint ───────────────────────────────────────────────────────────────
+# The entrypoint script handles: model download, classifier bench, categorizer bench
+COPY docker/benchmark_entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]

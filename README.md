@@ -1,4 +1,4 @@
-# Spendify v3.0
+# Spendif.ai v3.0
 
 [![CI](https://github.com/drake69/spendify/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/drake69/spendify/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/drake69/spendify/graph/badge.svg)](https://codecov.io/gh/drake69/spendify)
@@ -6,14 +6,15 @@
 [![License: PolyForm NC](https://img.shields.io/badge/license-PolyForm%20Noncommercial-orange)](LICENSE)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![Streamlit](https://img.shields.io/badge/UI-Streamlit-ff4b4b?logo=streamlit&logoColor=white)](https://streamlit.io)
-[![Issues](https://img.shields.io/github/issues/drake69/spendify)](https://github.com/drake69/spendify/issues)
-[![Last commit](https://img.shields.io/github/last-commit/drake69/spendify)](https://github.com/drake69/spendify/commits/main)
+[![Issues](https://img.shields.io/github/issues/drake69/spendifai)](https://github.com/drake69/spendify/issues)
+[![Last commit](https://img.shields.io/github/last-commit/drake69/spendifai)](https://github.com/drake69/spendify/commits/main)
+[![Support on Patreon](https://img.shields.io/badge/Patreon-buy%20me%20a%20coffee%20☕-F96854?logo=patreon&logoColor=white)](https://patreon.com/drake69)
 
 > 🇮🇹 [Leggi in italiano](README.it.md)
 
 Unified personal finance ledger with a hybrid deterministic + LLM pipeline.
 
-Aggregates heterogeneous bank statements (current accounts, credit cards, debit cards, savings accounts, prepaid cards) into a single chronological ledger, eliminating double-counting from periodic card settlements and internal transfers. Processing runs **offline-first**; remote LLM backends are supported as opt-in with mandatory PII sanitization.
+Aggregates heterogeneous movements files (current accounts, credit cards, debit cards, savings accounts, prepaid cards) into a single chronological ledger, eliminating double-counting from periodic card settlements and internal transfers. Processing runs **offline-first**; remote LLM backends are supported as opt-in with mandatory PII sanitization.
 
 ---
 
@@ -46,14 +47,14 @@ Aggregates heterogeneous bank statements (current accounts, credit cards, debit 
 | **Cascade categorization (RF-05)** | User rules → static regex → structured LLM → fallback "Other" |
 | **Rule engine with bulk apply** | Deterministic rules apply to all existing transactions on save, not just future imports |
 | **Subcategory-authoritative matching** | Subcategory is the primary key: if an LLM or rule assigns a subcategory present in the taxonomy, the parent category is resolved automatically |
-| **Guided onboarding wizard** | 4-step first-run wizard: language selection (browser-detected), owner names, bank accounts, confirmation. Atomic write: DB populated only on final "Inizia!". Skipped automatically if taxonomy already exists (existing installations). |
+| **Guided onboarding wizard** | 4-step first-run wizard: language selection (browser-detected), owner names, bank accounts, confirmation. Atomic write: DB populated only on final "Start!". Skipped automatically if taxonomy already exists (existing installations). |
 | **Multi-language taxonomy** | Built-in default taxonomy in 5 languages (🇮🇹 🇬🇧 🇫🇷 🇩🇪 🇪🇸). Seeded from `taxonomy_default` DB table (no YAML file). Language chosen at onboarding; can be reset from Settings at any time. |
-| **2-level taxonomy in DB** | 15 expense + 7 income categories; managed via the Tassonomia UI page (DB-backed, no file restart required) |
-| **Multi-provider LLM backend** | Ollama (local, default), OpenAI, Claude — shared abstract interface, no LangChain |
-| **LLM config in UI** | Backend, model and API keys are configurable from the Settings page without editing `.env` |
+| **2-level taxonomy in DB** | 15 expense + 7 income categories; managed via the Taxonomy UI page (DB-backed, no file restart required) |
+| **Multi-provider LLM backend** | llama.cpp (local GGUF), Ollama (local, default), OpenAI, Claude, vLLM, OpenAI-compatible — shared abstract interface, no LangChain |
+| **LLM config in UI** | Backend, model and API keys are configurable from the Settings page without editing `.env`. Context window auto-detected from GGUF header / Ollama API / static lookup — no manual input required. |
 | **PII sanitization (RF-10)** | IBAN, PAN, fiscal codes, owner names redacted before any remote call |
 | **Circuit breaker** | Automatic fallback to local Ollama; quarantine (`to_review=True`) if all backends fail |
-| **Life contexts** | User-configurable orthogonal dimension (e.g. Quotidianità / Lavoro / Vacanza) assignable to any transaction; Jaccard-based similarity suggestions pre-fill context from past transactions |
+| **Life contexts** | User-configurable orthogonal dimension (e.g. Everyday / Work / Vacation) assignable to any transaction; Jaccard-based similarity suggestions pre-fill context from past transactions |
 | **LLM re-run on failures** | Review page button re-runs description cleaning + categorization only on transactions where the LLM previously failed (`description == raw_description`) |
 | **Cross-account giroconto re-detection** | Review page button re-runs `detect_internal_transfers` globally on all transactions to catch pairs missed because the counterpart file was imported later |
 | **Owner-name permutation matching** | All token permutations of account-holder names are checked for giroconto detection, preventing missed matches when the name order varies across bank files |
@@ -61,8 +62,10 @@ Aggregates heterogeneous bank statements (current accounts, credit cards, debit 
 | **SQLAlchemy persistence** | 11 ORM tables; idempotent CRUD; automatic migrations on startup |
 | **Cross-session import progress** | Import job state stored in DB; all browser sessions see live progress |
 | **Report export** | Standalone HTML (Plotly), CSV, XLSX |
-| **9-page Streamlit UI** | Import → Ledger → Modifiche massive → Analytics → Review → Regole → Tassonomia → Impostazioni → Check List |
+| **14-page Streamlit UI** | Import → Import History → Ledger → Bulk Edit → Analytics → Report → Budget → Budget vs Actual → Review → Rules → Taxonomy → Settings → Checklist → Chat |
+| **Full i18n (EN + IT)** | 760+ translation keys, all UI pages internationalized; JSON-based with `t(key)` and Italian fallback |
 | **Monthly coverage checklist** | Pivot table (month × account) showing transaction counts; highlights missing months at a glance |
+| **Adaptive support chatbot** | Three modes auto-selected from user LLM settings: RAG Cloud (Claude/OpenAI), RAG Local (Ollama/vLLM), or deterministic FAQ match (TF-IDF, no LLM). Multi-language knowledge base (IT/EN/DE/ES/FR/PT). |
 
 ---
 
@@ -72,7 +75,7 @@ Aggregates heterogeneous bank statements (current accounts, credit cards, debit 
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                            app.py  (Streamlit)                           │
 │  [onboarding gate] → sidebar → upload │ ledger │ bulk-edit │ analytics  │
-│                               review │ rules │ taxonomy │ settings       │
+│                               review │ rules │ taxonomy │ settings │ chat │
 └──────────────────────────┬───────────────────────────────────────────────┘
                            │ services.*  (facade layer)
                core/orchestrator.py
@@ -107,6 +110,12 @@ Aggregates heterogeneous bank statements (current accounts, credit cards, debit 
         │
     reports/generator.py
     └─ HTML (Jinja2+Plotly) · CSV · XLSX
+
+ chat_bot/engine.py  ←── adaptive support chatbot
+ ├─ RAG Cloud (Claude/OpenAI API)
+ ├─ RAG Local (Ollama/vLLM)
+ └─ FAQ Match (TF-IDF classifier, no LLM)
+     knowledge/<lang>/faq.json · docs/
 ```
 
 ### Flow 1 vs Flow 2
@@ -123,8 +132,8 @@ Aggregates heterogeneous bank statements (current accounts, credit cards, debit 
 ## Project structure
 
 ```
-spendify/
-├── app.py                  # Streamlit entry point — onboarding gate + 9 pages
+spendifai/
+├── app.py                  # Streamlit entry point — onboarding gate + 14 pages
 ├── .env.example            # Environment variable template
 ├── pyproject.toml          # Dependencies (uv / pip)
 │
@@ -168,12 +177,21 @@ spendify/
 │   ├── rules_page.py       # Full CRUD for CategoryRule + "Run all rules" bulk re-categorization
 │   ├── taxonomy_page.py    # DB-backed CRUD for categories and subcategories
 │   ├── settings_page.py    # Locale, language, LLM config, taxonomy reset expander
-│   └── checklist_page.py   # Month × account pivot: transaction presence checklist
+│   ├── checklist_page.py   # Month × account pivot: transaction presence checklist
+│   └── chat_page.py        # Adaptive support chatbot (FAQ + RAG)
 │
 ├── tools/
 │   ├── coupling_check.py   # Architectural coupling validator (UI → services.* only)
 │   │                       #   --strict: enforces baseline, used in CI
 │   └── coupling_baseline.json  # Per-file max violation thresholds (currently all zero)
+│
+├── chat_bot/
+│   ├── engine.py           # ChatBotEngine: auto-selects RAG cloud/local or FAQ match
+│   ├── rag.py              # RAG engine: TF-IDF retrieval + LLM generation
+│   ├── faq_classifier.py   # Deterministic TF-IDF FAQ matcher (no LLM needed)
+│   ├── faq_store.py        # Loads FAQ (JSON/MD) and doc chunks from knowledge/
+│   ├── prompts.json        # System prompts + multi-language no-answer messages
+│   └── knowledge/          # FAQ and docs per language (it/, en/, de/, es/, fr/, pt/)
 │
 ├── prompts/
 │   ├── classifier.json     # System+user prompts for Flow 2 schema detection (invert_sign hint)
@@ -201,12 +219,12 @@ The only prerequisite is **[Docker Desktop](https://www.docker.com/products/dock
 
 **Mac / Linux:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/drake69/spendifai/main/installer/install.sh | bash
 ```
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/drake69/spendify/main/installer/install.ps1 | iex
+irm https://raw.githubusercontent.com/drake69/spendifai/main/installer/install.ps1 | iex
 ```
 
 The script downloads the pre-built image from GitHub Container Registry, starts the container and opens the browser at **http://localhost:8501** automatically.
@@ -215,10 +233,10 @@ The script downloads the pre-built image from GitHub Container Registry, starts 
 
 > **Update to latest version:**
 > ```bash
-> docker compose --project-directory ~/spendify pull && docker compose --project-directory ~/spendify up -d
+> docker compose --project-directory ~/spendifai pull && docker compose --project-directory ~/spendifai up -d
 > ```
 
-> **Uninstall:** `curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.sh | bash`
+> **Uninstall:** `curl -fsSL https://raw.githubusercontent.com/drake69/spendifai/main/installer/uninstall.sh | bash`
 
 ---
 
@@ -236,7 +254,7 @@ The script downloads the pre-built image from GitHub Container Registry, starts 
 
 ```bash
 git clone https://github.com/drake69/spendify.git
-cd spendify
+cd spendifai
 ```
 
 ### 2. Install dependencies
@@ -268,7 +286,7 @@ The `.env` file contains only infrastructure parameters. Everything else — LLM
 
 ```dotenv
 # Database URI — leave as-is for local use; overridden by docker-compose for Docker installs
-SPENDIFY_DB=sqlite:///ledger.db
+SPENDIFAI_DB=sqlite:///ledger.db
 ```
 
 > **Nothing else belongs in `.env`.** LLM backend, Ollama URL, model name, OpenAI/Anthropic API keys and owner names for PII redaction are all stored in the `user_settings` table and editable live from the UI without restarting the app.
@@ -299,27 +317,35 @@ Configurable from the app sidebar:
 ## Running the app
 
 ```bash
-# With uv
-uv run streamlit run app.py
+# Startup script (recommended) — checks prerequisites, activates virtualenv and starts
+./start.sh          # UI only (default)
+./start.sh api      # REST API only
+./start.sh all      # UI + API
 
-# Or directly
-streamlit run app.py
+# On Windows
+start.bat           # same options: ui | api | all
+
+# Or manually
+uv run streamlit run app.py
 ```
 
 On the **first run** the onboarding wizard appears automatically (4 steps: language, owner names, bank accounts, confirmation). Existing installations with data already in the taxonomy are detected automatically and skip the wizard.
 
-The app opens at `http://localhost:8501` with 9 pages:
+The app opens at `http://localhost:8501` with 13 pages:
 
 | Page | Description |
 |---|---|
 | **📥 Import** | Upload one or more files (CSV / XLSX). Shows live progress (visible across all browser sessions). Summary: imported transactions, reconciliations, transfer links, flow used (1/2). |
 | **📋 Ledger** | Filterable table (date, type, description, category, context, review flag). Click any row to select it instantly. Split Entrata/Uscita columns, right-aligned. Net/income/expense metrics. Context filter + assignment expander with Jaccard similarity suggestions. Giroconto toggle with bulk-apply. CSV/XLSX download. |
-| **✏️ Modifiche massive** | Bulk operations on a reference transaction: giroconto toggle, context assignment (with Jaccard similarity), category correction + rule save. Mass deletion by combined filters (date, account, type, description, category) with preview and mandatory `ELIMINA` confirmation. |
+| **✏️ Bulk Edit** | Bulk operations on a reference transaction: giroconto toggle, context assignment (with Jaccard similarity), category correction + rule save. LLM reprocessing by scope. Mass deletion by combined filters (date, account, type, description, category) with preview and mandatory confirmation keyword. Cross-account duplicate detection and cleanup. |
 | **📊 Analytics** | 7 interactive Plotly charts: monthly bar chart, cumulative balance, expense pie+treemap, interactive category drill-down with subcategory bar + monthly trend, income pie+treemap, top-10 descriptions, stacked by account. HTML export. |
 | **🔍 Review** | Transactions with `to_review=True`. Giroconto toggle (with bulk-apply). Category/subcategory correction + optional save as permanent rule applied immediately. "Re-run LLM" button for uncleaned transactions. "Re-detect cross-account giroconti" button. |
-| **📏 Regole** | Full CRUD for category rules. Edit/delete existing rules + optional bulk re-categorization of already-matched transactions. "▶️ Esegui tutte le regole" button applies all rules to every transaction in the ledger at once. |
-| **🗂️ Tassonomia** | DB-backed CRUD for categories and subcategories (expenses and income). Changes take effect immediately without restarting. |
-| **⚙️ Impostazioni** | Date format, amount separators, description language, life contexts, bank account list, LLM backend (model + API keys). All persisted in DB. |
+| **📜 Import History** | Import timeline with undo capability. Shows date, file, account, transaction count, status. Cancel import to permanently delete all transactions from a batch. |
+| **📏 Rules** | Full CRUD for category rules. Edit/delete existing rules + optional bulk re-categorization of already-matched transactions. "Run all rules" button applies all rules to every transaction in the ledger at once. |
+| **🗂️ Taxonomy** | DB-backed CRUD for categories and subcategories (expenses and income). Changes take effect immediately without restarting. |
+| **💰 Budget** | Define spending % targets per expense category. Visual allocation bar with remaining liquidity and over-100% warnings. |
+| **📊 Budget vs Actual** | Compare actual spending with budget targets by period (month/quarter/year/custom). Traffic-light status per category, bar chart + donut distribution. |
+| **⚙️ Settings** | Date format, amount separators, description language, UI language, life contexts, bank account list, schema cache, LLM backend (6 backends: llama.cpp, Ollama, OpenAI, Claude, OpenAI-compatible), power user profile. All persisted in DB. |
 | **✅ Check List** | Pivot table (month × account). Current month at top, descending. Cells show tx count; **—** = no transactions. Color-coded by volume. Filters: account selection, last N months, hide empty rows. CSV export. |
 
 ---
@@ -332,7 +358,7 @@ The taxonomy is stored in the database (`taxonomy_category` / `taxonomy_subcateg
 
 The `taxonomy_default` table contains immutable built-in templates in 5 languages — Italian, English, French, German, Spanish. These are seeded from `db/taxonomy_defaults.py` on first startup (no YAML file required). During onboarding the user selects a language and the matching template is copied into the editable user taxonomy.
 
-To reset the user taxonomy to a different language at any time: **⚙️ Impostazioni → 🔄 Reset tassonomia**.
+To reset the user taxonomy to a different language at any time: **⚙️ Settings → 🔄 Reset Taxonomy**.
 
 ### Default taxonomy (Italian)
 
@@ -399,7 +425,7 @@ The pipeline tries to match transfers automatically during import using three pa
 
 ### Cross-account re-detection
 
-When two counterpart transactions belong to files imported at different times, the first import cannot find the pair. Use the **"🔁 Riesegui rilevamento giroconti"** button on the **🔍 Review** page to re-run detection globally on all non-giroconto transactions and update newly detectable pairs.
+When two counterpart transactions belong to files imported at different times, the first import cannot find the pair. Use the **"🔁 Re-run internal transfer detection"** button on the **🔍 Review** page to re-run detection globally on all non-giroconto transactions and update newly detectable pairs.
 
 ### Manual toggle
 
@@ -423,19 +449,55 @@ Life contexts are an orthogonal classification dimension that complements the ca
 | **Storage** | Nullable `VARCHAR(64)` column `context` on the `Transaction` table |
 | **Orthogonality** | Independent of category/subcategory — any combination is valid |
 | **User-configurable** | Add, rename, or remove contexts from the **⚙️ Impostazioni** page (stored as JSON in `user_settings`) |
-| **Default contexts** | Quotidianità · Lavoro · Vacanza |
+| **Default contexts** | Everyday · Work · Vacation |
 
 ### Assignment
 
-From the **📋 Ledger** page, select any transaction and open the "🌍 Assegna contesto" expander:
+From the **📋 Ledger** page, select any transaction and open the "🌍 Assign context" expander:
 
 1. Choose a context from the dropdown (or clear it)
-2. Optionally enable **"Applica anche a transazioni simili"** — Jaccard token similarity (threshold 0.35) finds other transactions whose cleaned description is semantically close and pre-fills the same context
-3. Click **Applica**
+2. Optionally enable **"Also apply to similar transactions"** — Jaccard token similarity (threshold 0.35) finds other transactions whose cleaned description is semantically close and pre-fills the same context
+3. Click **Apply**
 
 ### Filtering
 
-The ledger's filter bar includes a context selector: *tutti*, individual context values, or *— nessuno —* (transactions with no context assigned).
+The ledger's filter bar includes a context selector: *all*, individual context values, or *— none —* (transactions with no context assigned).
+
+---
+
+## Support chatbot
+
+An adaptive, in-app support chatbot accessible from the **💬 Assistente** sidebar button. The chatbot answers questions about Spendif.ai features, configuration, and usage based on a multi-language knowledge base.
+
+### Three modes (auto-selected)
+
+| Mode | Trigger | How it works |
+|---|---|---|
+| **RAG Cloud** | User configured a cloud API (OpenAI, Claude, OpenAI-compatible) with a valid key | TF-IDF retrieval over FAQ + docs → LLM generates the answer |
+| **RAG Local** | User configured Ollama or vLLM as LLM backend | TF-IDF retrieval over FAQ + docs → local LLM generates the answer |
+| **FAQ Match** | llama.cpp backend or no LLM configured | Deterministic TF-IDF cosine similarity matching to known FAQ entries — zero LLM calls, works on any hardware |
+
+The mode is determined by the user's **LLM backend setting** (configured in Settings page), not by hardware probing.
+
+### Knowledge base
+
+```
+chat_bot/knowledge/
+├── it/           # Italian FAQ + docs
+│   ├── faq.json  # Q&A pairs
+│   └── docs/     # Markdown/text documents for RAG
+├── en/           # English
+├── de/           # German
+├── es/           # Spanish
+├── fr/           # French
+└── pt/           # Portuguese
+```
+
+FAQ files support JSON (`[{"q": "...", "a": "..."}]`) and Markdown (`## Question` + body) formats.
+
+### Security
+
+The chatbot answers **only** from the provided knowledge base context. The system prompt instructs the LLM to never invent information and to reply "contact support" when context is insufficient.
 
 ---
 
@@ -448,6 +510,28 @@ uv run python -m pytest tests/ -v
 # With coverage
 uv run python -m pytest tests/ --cov=core --cov=db --cov-report=term-missing
 ```
+
+### LLM Benchmark
+
+End-to-end benchmark against real LLM backends. Measures classifier accuracy (schema detection, parsing) and categorizer accuracy across all supported backends and models.
+
+```bash
+# macOS / Linux
+bash tests/run_benchmark_full.sh
+
+# Windows (PowerShell)
+powershell -ExecutionPolicy Bypass -File .\tests\run_benchmark_full.ps1
+
+# With options
+bash tests/run_benchmark_full.sh --benchmark both --runs 3
+bash tests/run_benchmark_full.sh --skip-ollama --skip-vllm   # llama.cpp only
+```
+
+GPU utilization is tracked cross-platform during benchmark runs via a background-thread HW monitor (`tests/hw_monitor.py`): macOS Apple Silicon (`ioreg`), Linux NVIDIA (`nvidia-smi`), Linux AMD (`rocm-smi`). All GGUF models are now included (no size filter).
+
+Results are appended to `tests/generated_files/benchmark/results_all_runs.csv` (resume-safe). Logs are saved to `tests/logs/` (timestamped, one per run). See [`tests/README.md`](tests/README.md) for full documentation (backends, GPU setup, model list, context auto-detect, collaborative workflow).
+
+On Windows, run `diagnose.ps1` first to verify prerequisites (Python, uv, VC++ Redistributable, GPU, GGUF models, network).
 
 ### Test files
 
@@ -511,7 +595,7 @@ Every `DocumentSchema` produced by Flow 2 includes four diagnostic fields for au
 | `positive_ratio` | `float \| null` | Fraction of amount-column values > 0 in the sample |
 | `negative_ratio` | `float \| null` | Fraction of amount-column values < 0 in the sample |
 | `semantic_evidence` | `list[str]` | 2–4 short sentences from the LLM explaining the decision |
-| `normalization_case_id` | `str \| null` | C1 = bank signed_single · C2 = card inverted · C3 = card already negative · C4 = Dare/Avere columns · C5 = ambiguous |
+| `normalization_case_id` | `str \| null` | C1 = bank signed_single · C2 = card inverted · C3 = card already negative · C4 = Dare/Avere columns · C5 = ambiguous · C6 = debit\_credit\_signed (separate debit/credit columns, values already carry sign) |
 
 These fields are persisted in the `document_schema` DB table and are visible in the Flow 2 schema review step in the UI.
 

@@ -20,6 +20,8 @@ from db.models import (
     ImportBatch,
     ImportJob,
     InternalTransferLink,
+    LlmUsageLog,
+    NsiTagMapping,
     ReconciliationLink,
     Transaction,
     UserSettings,
@@ -42,6 +44,55 @@ def get_all_batch_hashes(session: Session) -> set[str]:
     return {row.sha256 for row in session.query(ImportBatch.sha256).all()}
 
 
+def get_import_history(session: Session, limit: int = 100) -> list[dict]:
+    """Return import batches ordered by most recent first, with live transaction counts."""
+    from sqlalchemy import func
+    rows = (
+        session.query(
+            ImportBatch.id,
+            ImportBatch.filename,
+            ImportBatch.account_label,
+            ImportBatch.imported_at,
+            ImportBatch.status,
+            func.count(Transaction.id).label("n_transactions"),
+        )
+        .outerjoin(Transaction, Transaction.batch_id == ImportBatch.id)
+        .group_by(ImportBatch.id)
+        .order_by(ImportBatch.imported_at.desc())
+        .limit(limit)
+        .all()
+    )
+    return [
+        {
+            "id": r.id,
+            "filename": r.filename,
+            "account_label": r.account_label or "",
+            "imported_at": r.imported_at,
+            "status": r.status or "completed",
+            "n_transactions": r.n_transactions,
+        }
+        for r in rows
+    ]
+
+
+def cancel_import_batch(session: Session, batch_id: int) -> int:
+    """Hard-delete all transactions belonging to this batch, mark batch as cancelled.
+
+    Returns the number of transactions deleted.
+    """
+    count = session.query(Transaction).filter(Transaction.batch_id == batch_id).count()
+    if count > 0:
+        session.query(Transaction).filter(Transaction.batch_id == batch_id).delete(
+            synchronize_session="fetch"
+        )
+    batch = session.get(ImportBatch, batch_id)
+    if batch:
+        batch.status = "cancelled"
+        batch.n_transactions = 0
+    session.commit()
+    return count
+
+
 def create_import_batch(
     session: Session,
     sha256: str,
@@ -49,6 +100,7 @@ def create_import_batch(
     flow_used: str = "unknown",
     n_transactions: int = 0,
     errors: Optional[str] = None,
+    account_label: Optional[str] = None,
 ) -> ImportBatch:
     existing = session.query(ImportBatch).filter_by(sha256=sha256).first()
     if existing:
@@ -59,6 +111,8 @@ def create_import_batch(
         flow_used=flow_used,
         n_transactions=n_transactions,
         errors=errors,
+        account_label=account_label,
+        status="completed",
     )
     session.add(batch)
     session.flush()
@@ -101,6 +155,13 @@ def find_schema_by_header_sha256(session: Session, header_sha256: str) -> Option
     return _row_to_schema(row)
 
 
+def delete_all_schemas(session: Session) -> int:
+    """Delete all cached document schemas. Returns the number of rows deleted."""
+    count = session.query(DocumentSchemaModel).delete()
+    session.flush()
+    return count
+
+
 def upsert_document_schema(session: Session, schema: DocumentSchema) -> DocumentSchemaModel:
     row = session.query(DocumentSchemaModel).filter_by(
         source_identifier=schema.source_identifier
@@ -125,12 +186,15 @@ def upsert_document_schema(session: Session, schema: DocumentSchema) -> Document
     row.is_zero_sum = schema.is_zero_sum
     row.invert_sign = schema.invert_sign
     row.internal_transfer_patterns = json.dumps(schema.internal_transfer_patterns)
+    row.footer_patterns = json.dumps(getattr(schema, 'footer_patterns', []) or [])
+    row.has_borders = getattr(schema, 'has_borders', False)
     row.account_label = schema.account_label
     row.encoding = schema.encoding
     row.sheet_name = schema.sheet_name
     row.skip_rows = schema.skip_rows
     row.delimiter = schema.delimiter
     row.confidence = schema.confidence.value if hasattr(schema.confidence, 'value') else schema.confidence
+    row.confidence_score = getattr(schema, 'confidence_score', None)
     if schema.header_sha256:
         row.header_sha256 = schema.header_sha256
 
@@ -156,15 +220,29 @@ def _row_to_schema(row: DocumentSchemaModel) -> DocumentSchema:
         is_zero_sum=bool(row.is_zero_sum),
         invert_sign=bool(row.invert_sign) if row.invert_sign is not None else False,
         internal_transfer_patterns=json.loads(row.internal_transfer_patterns or "[]"),
+        footer_patterns=json.loads(getattr(row, 'footer_patterns', None) or "[]"),
+        has_borders=bool(getattr(row, 'has_borders', False)),
         account_label=row.account_label or "",
         encoding=row.encoding or "utf-8",
         sheet_name=row.sheet_name,
         skip_rows=row.skip_rows or 0,
         delimiter=row.delimiter,
         confidence=Confidence(row.confidence or "low"),
+        confidence_score=getattr(row, 'confidence_score', None) or 0.0,
         source_identifier=row.source_identifier,
         header_sha256=getattr(row, 'header_sha256', None),
     )
+
+
+def update_footer_patterns(session: Session, source_identifier: str, new_patterns: list[str]) -> None:
+    """Merge new footer patterns into the existing set for a schema (dedup, order-preserving)."""
+    row = session.query(DocumentSchemaModel).filter_by(source_identifier=source_identifier).first()
+    if row is None:
+        return
+    existing = json.loads(getattr(row, 'footer_patterns', None) or "[]")
+    merged = list(dict.fromkeys(existing + new_patterns))  # dedup preserving order
+    row.footer_patterns = json.dumps(merged)
+    session.flush()
 
 
 # ── Transaction ───────────────────────────────────────────────────────────────
@@ -197,12 +275,14 @@ def upsert_transaction(session: Session, tx: dict, batch_id: Optional[int] = Non
         subcategory=tx.get("subcategory"),
         category_confidence=tx.get("category_confidence"),
         category_source=tx.get("category_source"),
+        category_model=tx.get("category_model"),
         reconciled=bool(tx.get("reconciled", False)),
         to_review=bool(tx.get("to_review", False)),
         transfer_pair_id=tx.get("transfer_pair_id"),
         transfer_confidence=tx.get("transfer_confidence"),
         raw_description=tx.get("raw_description"),
         raw_amount=tx.get("raw_amount"),
+        human_validated=bool(tx.get("human_validated", False)),
     )
     session.add(row)
     return row
@@ -222,6 +302,7 @@ def update_transaction_category(
     category: str,
     subcategory: str,
 ) -> bool:
+    from datetime import datetime, timezone
     tx = session.get(Transaction, tx_id)
     if tx is None:
         return False
@@ -229,7 +310,10 @@ def update_transaction_category(
     tx.subcategory = subcategory
     tx.category_confidence = "high"
     tx.category_source = "manual"
+    tx.category_model = None
     tx.to_review = False
+    tx.human_validated = True
+    tx.validated_at = datetime.now(timezone.utc)
     return True
 
 
@@ -257,10 +341,13 @@ def toggle_transaction_giroconto(session: Session, tx_id: str) -> tuple[bool, st
 
 def update_transaction_context(session: Session, tx_id: str, context: str | None) -> bool:
     """Set or clear the context of a transaction. Returns True if found."""
+    from datetime import datetime, timezone
     tx = session.get(Transaction, tx_id)
     if tx is None:
         return False
     tx.context = context or None
+    tx.human_validated = True
+    tx.validated_at = datetime.now(timezone.utc)
     session.flush()
     return True
 
@@ -353,11 +440,17 @@ def get_transactions(
             )
         if "subcategory" in filters:
             q = q.filter(Transaction.subcategory == filters["subcategory"])
+        if "categories" in filters:
+            q = q.filter(Transaction.category.in_(filters["categories"]))
+        if "subcategories" in filters:
+            q = q.filter(Transaction.subcategory.in_(filters["subcategories"]))
         if "context" in filters:
             if filters["context"] is None:
                 q = q.filter(Transaction.context.is_(None))
             else:
                 q = q.filter(Transaction.context == filters["context"])
+        if "contexts" in filters:
+            q = q.filter(Transaction.context.in_(filters["contexts"]))
         if "exclude_tx_types" in filters:
             q = q.filter(Transaction.tx_type.notin_(filters["exclude_tx_types"]))
     q = q.order_by(Transaction.date.desc())
@@ -468,8 +561,10 @@ def apply_rules_to_review_transactions(
                 if rule.context:
                     tx.context = rule.context
                 tx.category_source = "rule"
+                tx.category_model = None
                 tx.category_confidence = "high"
                 tx.to_review = False
+                # human_validated NOT reset: means "user saw this tx", not "user approves category"
                 updated += 1
                 break
     if updated:
@@ -507,7 +602,9 @@ def apply_all_rules_to_all_transactions(
                 if rule.context:
                     tx.context = rule.context
                 tx.category_source     = "rule"
+                tx.category_model      = None
                 tx.category_confidence = "high"
+                # human_validated NOT reset: means "user saw this tx", not "user approves category"
                 if tx.to_review:
                     tx.to_review = False
                     n_cleared += 1
@@ -637,6 +734,11 @@ def persist_import_result(session: Session, result) -> None:
         logger.info(f"persist_import_result: skipping duplicate {result.source_name}")
         return
 
+    # Derive account_label from the first transaction (if any)
+    _account_label = None
+    if result.transactions:
+        _account_label = result.transactions[0].get("account_label")
+
     batch = create_import_batch(
         session=session,
         sha256=result.batch_sha256,
@@ -644,6 +746,7 @@ def persist_import_result(session: Session, result) -> None:
         flow_used=result.flow_used,
         n_transactions=len(result.transactions),
         errors="; ".join(result.errors) if result.errors else None,
+        account_label=_account_label,
     )
 
     if result.doc_schema:
@@ -858,6 +961,89 @@ def delete_taxonomy_subcategory(session: Session, sub_id: int) -> bool:
     return True
 
 
+# ── Classification tracking ──────────────────────────────────────────────────
+
+def validate_transaction(session: Session, tx_id: str) -> bool:
+    """Mark a transaction as human-validated and clear to_review flag."""
+    from datetime import datetime, timezone
+    tx = session.get(Transaction, tx_id)
+    if tx is None:
+        return False
+    tx.human_validated = True
+    tx.validated_at = datetime.now(timezone.utc)
+    tx.to_review = False
+    session.flush()
+    return True
+
+
+def unvalidate_transaction(session: Session, tx_id: str) -> bool:
+    """Remove human-validated flag from a transaction."""
+    tx = session.get(Transaction, tx_id)
+    if tx is None:
+        return False
+    tx.human_validated = False
+    tx.validated_at = None
+    session.flush()
+    return True
+
+
+def get_fallback_categories(session: Session) -> dict[str, tuple[str, str]]:
+    """Return fallback category names for expense and income, read from taxonomy.
+
+    Returns dict like {"expense": ("Altro", "Spese non classificate"), "income": ("Altro entrate", "Entrate non classificate")}
+    """
+    from db.models import TaxonomyCategory, TaxonomySubcategory
+    fallbacks: dict[str, tuple[str, str]] = {}
+    for cat in session.query(TaxonomyCategory).filter(TaxonomyCategory.is_fallback == True).all():  # noqa: E712
+        subs = session.query(TaxonomySubcategory).filter(TaxonomySubcategory.category_id == cat.id).first()
+        sub_name = subs.name if subs else ""
+        fallbacks[cat.type] = (cat.name, sub_name)
+    # Hardcoded fallback if DB has no fallback categories (fresh install before seed)
+    if "expense" not in fallbacks:
+        fallbacks["expense"] = ("Altro", "Spese non classificate")
+    if "income" not in fallbacks:
+        fallbacks["income"] = ("Altro entrate", "Entrate non classificate")
+    return fallbacks
+
+
+# ── NsiTagMapping CRUD (C-08-cascade) ────────────────────────────────────────
+
+def get_nsi_tag_mapping(session: Session) -> dict[str, tuple[str, str]]:
+    """Load the full OSM tag → (category, subcategory) mapping from DB."""
+    rows = session.query(NsiTagMapping).all()
+    return {row.osm_tag: (row.category, row.subcategory) for row in rows}
+
+
+def get_nsi_tag_mapping_hash(session: Session) -> Optional[str]:
+    """Return the taxonomy_hash stored in nsi_tag_mapping, or None if table is empty."""
+    row = session.query(NsiTagMapping).first()
+    return row.taxonomy_hash if row else None
+
+
+def upsert_nsi_tag_mapping_bulk(session: Session, rows: list[dict]) -> None:
+    """Bulk INSERT OR REPLACE into nsi_tag_mapping.
+
+    Each dict must have keys: osm_tag, category, subcategory, taxonomy_hash, updated_at.
+    """
+    from sqlalchemy import text as _text
+    from sqlalchemy.orm import Session as _Session
+    # Use raw SQL for bulk efficiency
+    for row in rows:
+        session.execute(_text(
+            "INSERT OR REPLACE INTO nsi_tag_mapping "
+            "(osm_tag, category, subcategory, taxonomy_hash, updated_at) "
+            "VALUES (:osm_tag, :category, :subcategory, :taxonomy_hash, :updated_at)"
+        ), row)
+    session.flush()
+
+
+def clear_nsi_tag_mapping(session: Session) -> int:
+    """Delete all rows from nsi_tag_mapping. Returns the number of rows deleted."""
+    count = session.query(NsiTagMapping).delete()
+    session.flush()
+    return count
+
+
 # ── Account CRUD ──────────────────────────────────────────────────────────────
 
 def get_accounts(session: Session) -> list:
@@ -865,10 +1051,14 @@ def get_accounts(session: Session) -> list:
     return session.query(Account).order_by(Account.name).all()
 
 
-def create_account(session: Session, name: str, bank_name: str = "") -> object:
+def create_account(session: Session, name: str, bank_name: str = "", account_type: str | None = None) -> object:
     from db.models import Account
     from sqlalchemy.exc import IntegrityError
-    acc = Account(name=name.strip(), bank_name=bank_name.strip() or None)
+    acc = Account(
+        name=name.strip(),
+        bank_name=bank_name.strip() or None,
+        account_type=account_type,
+    )
     session.add(acc)
     try:
         session.flush()
@@ -886,6 +1076,132 @@ def delete_account(session: Session, account_id: int) -> bool:
     session.delete(acc)
     session.flush()
     return True
+
+
+def rename_account(
+    session: Session,
+    account_id: int,
+    new_name: str,
+    new_bank_name: str | None = None,
+    new_account_type: str | None = _SENTINEL,
+) -> int:
+    """Rename an account, recalculate all transaction IDs, and cascade to related tables.
+
+    When the account_label changes, every transaction ID must be recomputed because
+    the ID hash includes the account_label.  All FK references in reconciliation_link
+    and internal_transfer_link are updated atomically.
+
+    Returns the number of transactions updated, or -1 if account not found.
+    Raises ValueError if the new name collides with an existing account.
+    """
+    from db.models import Account, InternalTransferLink, ReconciliationLink, Transaction
+    from sqlalchemy.exc import IntegrityError
+    from core.normalizer import compute_transaction_id
+
+    acc = session.get(Account, account_id)
+    if acc is None:
+        return -1
+    old_name = acc.name
+    stripped_new = new_name.strip()
+    name_changed = old_name != stripped_new
+    if not name_changed and new_bank_name is None and new_account_type is _SENTINEL:
+        return 0  # nothing to do
+    acc.name = stripped_new
+    if new_bank_name is not None:
+        acc.bank_name = new_bank_name.strip() or None
+    if new_account_type is not _SENTINEL:
+        acc.account_type = new_account_type
+    try:
+        session.flush()
+    except IntegrityError:
+        session.rollback()
+        raise ValueError(f"Conto '{new_name}' già esistente")
+
+    if not name_changed:
+        # Only bank_name changed — no tx_id recalculation needed
+        session.flush()
+        return 0
+
+    # Fetch all transactions for the old account_label
+    txs = (
+        session.query(Transaction)
+        .filter(Transaction.account_label == old_name)
+        .all()
+    )
+    if not txs:
+        # Update document schemas even if no transactions exist
+        _update_schemas_account_label(session, old_name, acc.name)
+        session.flush()
+        return 0
+
+    # Snapshot the fields needed for id recomputation before any mutations
+    tx_data = []
+    for tx in txs:
+        tx_data.append({
+            "old_id": tx.id,
+            "source_file": tx.source_file or "",
+            "date": tx.date.isoformat() if hasattr(tx.date, 'isoformat') else str(tx.date or ""),
+            "amount_key": str(Decimal(str(tx.amount or 0)).normalize()),
+            "desc_key": (tx.raw_description or tx.description or "").strip(),
+        })
+
+    # Build old_id → new_id mapping
+    id_mapping: dict[str, str] = {}
+    for td in tx_data:
+        new_id = compute_transaction_id(
+            td["source_file"], td["date"], td["amount_key"], td["desc_key"],
+            account_label=acc.name,
+        )
+        id_mapping[td["old_id"]] = new_id
+
+    # Evict all affected Transaction objects from the identity map so raw SQL
+    # updates don't conflict with stale ORM state.
+    for tx in txs:
+        session.expunge(tx)
+
+    # Update FK references in related tables BEFORE changing PKs
+    from sqlalchemy import text as _text
+    for old_id, new_id in id_mapping.items():
+        if old_id == new_id:
+            continue
+        session.execute(
+            _text('UPDATE reconciliation_link SET settlement_id = :new WHERE settlement_id = :old'),
+            {"new": new_id, "old": old_id},
+        )
+        session.execute(
+            _text('UPDATE reconciliation_link SET detail_id = :new WHERE detail_id = :old'),
+            {"new": new_id, "old": old_id},
+        )
+        session.execute(
+            _text('UPDATE internal_transfer_link SET out_id = :new WHERE out_id = :old'),
+            {"new": new_id, "old": old_id},
+        )
+        session.execute(
+            _text('UPDATE internal_transfer_link SET in_id = :new WHERE in_id = :old'),
+            {"new": new_id, "old": old_id},
+        )
+
+    # Update transaction PKs and account_label using raw SQL (can't update PK via ORM)
+    for old_id, new_id in id_mapping.items():
+        session.execute(
+            _text('UPDATE "transaction" SET id = :new_id, account_label = :label WHERE id = :old_id'),
+            {"new_id": new_id, "old_id": old_id, "label": acc.name},
+        )
+
+    # Update document schemas that reference the old account_label
+    _update_schemas_account_label(session, old_name, acc.name)
+
+    session.flush()
+    return len(tx_data)
+
+
+def _update_schemas_account_label(session: Session, old_label: str, new_label: str) -> int:
+    """Update all DocumentSchemaModel rows that reference the old account_label."""
+    return (
+        session.query(DocumentSchemaModel)
+        .filter(DocumentSchemaModel.account_label == old_label)
+        .update({DocumentSchemaModel.account_label: new_label})
+    )
 
 
 # ── DescriptionRule ───────────────────────────────────────────────────────────
@@ -1123,3 +1439,369 @@ def seed_user_taxonomy_from_default(session: Session, language: str) -> int:
 
     session.commit()
     return len(cat_map)
+
+
+# ── Spending aggregation (A-01) ──────────────────────────────────────────────
+
+def get_spending_aggregation(
+    session: Session,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    account_ids: Optional[list[str]] = None,
+    exclude_internal: bool = True,
+) -> list[dict]:
+    """GROUP BY context, category with SUM(amount).
+
+    Returns a list of dicts with keys:
+        context, category, subcategory, total_amount, tx_count
+    Excludes card_settlement and aggregate_debit always.
+    When *exclude_internal* is True, also excludes internal_in/internal_out.
+    """
+    from sqlalchemy import func
+
+    q = session.query(
+        func.coalesce(Transaction.context, "—").label("context"),
+        func.coalesce(Transaction.category, "Altro").label("category"),
+        func.coalesce(Transaction.subcategory, "").label("subcategory"),
+        func.sum(Transaction.amount).label("total_amount"),
+        func.count(Transaction.id).label("tx_count"),
+    )
+
+    # Always exclude non-real tx types
+    excluded = ["card_settlement", "aggregate_debit"]
+    if exclude_internal:
+        excluded += ["internal_in", "internal_out"]
+    q = q.filter(Transaction.tx_type.notin_(excluded))
+
+    if date_from:
+        q = q.filter(Transaction.date >= date_from)
+    if date_to:
+        q = q.filter(Transaction.date <= date_to)
+    if account_ids:
+        q = q.filter(Transaction.account_label.in_(account_ids))
+
+    q = q.group_by(
+        func.coalesce(Transaction.context, "—"),
+        func.coalesce(Transaction.category, "Altro"),
+        func.coalesce(Transaction.subcategory, ""),
+    ).order_by(
+        func.coalesce(Transaction.context, "—"),
+        func.coalesce(Transaction.category, "Altro"),
+    )
+
+    rows = q.all()
+    return [
+        {
+            "context": r.context,
+            "category": r.category,
+            "subcategory": r.subcategory,
+            "total_amount": float(r.total_amount),
+            "tx_count": r.tx_count,
+        }
+        for r in rows
+    ]
+
+
+def get_monthly_spending(
+    session: Session,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    account_ids: Optional[list[str]] = None,
+    exclude_internal: bool = True,
+) -> list[dict]:
+    """Monthly totals by category for trend charts.
+
+    Returns list of dicts: month, category, total_amount
+    """
+    from sqlalchemy import func
+
+    q = session.query(
+        func.strftime("%Y-%m", Transaction.date).label("month"),
+        func.coalesce(Transaction.category, "Altro").label("category"),
+        func.sum(Transaction.amount).label("total_amount"),
+    )
+
+    excluded = ["card_settlement", "aggregate_debit"]
+    if exclude_internal:
+        excluded += ["internal_in", "internal_out"]
+    q = q.filter(Transaction.tx_type.notin_(excluded))
+
+    if date_from:
+        q = q.filter(Transaction.date >= date_from)
+    if date_to:
+        q = q.filter(Transaction.date <= date_to)
+    if account_ids:
+        q = q.filter(Transaction.account_label.in_(account_ids))
+
+    q = q.group_by(
+        func.strftime("%Y-%m", Transaction.date),
+        func.coalesce(Transaction.category, "Altro"),
+    ).order_by(
+        func.strftime("%Y-%m", Transaction.date),
+    )
+
+    rows = q.all()
+    return [
+        {
+            "month": r.month,
+            "category": r.category,
+            "total_amount": float(r.total_amount),
+        }
+        for r in rows
+    ]
+
+
+# ── BudgetTarget (A-02) ─────────────────────────────────────────────────────
+
+def get_budget_targets(session: Session) -> list["BudgetTarget"]:
+    """Return all budget targets ordered by category name."""
+    from db.models import BudgetTarget
+    return session.query(BudgetTarget).order_by(BudgetTarget.category).all()
+
+
+def upsert_budget_target(session: Session, category: str, target_pct: Decimal) -> "BudgetTarget":
+    """Insert or update a budget target for a category (unique on category)."""
+    from db.models import BudgetTarget
+    existing = session.query(BudgetTarget).filter_by(category=category).first()
+    if existing:
+        existing.target_pct = target_pct
+        session.flush()
+        return existing
+    bt = BudgetTarget(category=category, target_pct=target_pct)
+    session.add(bt)
+    session.flush()
+    return bt
+
+
+def delete_budget_target(session: Session, target_id: int) -> bool:
+    """Delete a budget target by id. Returns True if deleted."""
+    from db.models import BudgetTarget
+    bt = session.get(BudgetTarget, target_id)
+    if bt is None:
+        return False
+    session.delete(bt)
+    session.flush()
+    return True
+
+
+def delete_budget_target_by_category(session: Session, category: str) -> bool:
+    """Delete a budget target by category name. Returns True if deleted."""
+    from db.models import BudgetTarget
+    bt = session.query(BudgetTarget).filter_by(category=category).first()
+    if bt is None:
+        return False
+    session.delete(bt)
+    session.flush()
+    return True
+
+
+def get_period_totals(
+    session: Session,
+    date_from: str,
+    date_to: str,
+    exclude_internal: bool = True,
+) -> dict:
+    """Get total income and expenses for a date range, plus per-category expense breakdown.
+
+    Returns dict with keys:
+        total_income, total_expenses, by_category (list of {category, amount})
+    Excludes card_settlement, aggregate_debit, and optionally internal transfers.
+    """
+    from sqlalchemy import func, case
+
+    excluded = ["card_settlement", "aggregate_debit"]
+    if exclude_internal:
+        excluded += ["internal_in", "internal_out"]
+
+    # Total income (amount > 0) and total expenses (amount < 0)
+    totals = session.query(
+        func.coalesce(
+            func.sum(case((Transaction.amount > 0, Transaction.amount))),
+            0
+        ).label("total_income"),
+        func.coalesce(
+            func.sum(case((Transaction.amount < 0, Transaction.amount))),
+            0
+        ).label("total_expenses"),
+    ).filter(
+        Transaction.tx_type.notin_(excluded),
+        Transaction.date >= date_from,
+        Transaction.date <= date_to,
+    ).first()
+
+    total_income = float(totals.total_income) if totals else 0.0
+    total_expenses = abs(float(totals.total_expenses)) if totals else 0.0
+
+    # Per-category expense breakdown (only expenses, amount < 0)
+    cat_rows = session.query(
+        func.coalesce(Transaction.category, "Altro").label("category"),
+        func.sum(Transaction.amount).label("amount"),
+    ).filter(
+        Transaction.tx_type.notin_(excluded),
+        Transaction.date >= date_from,
+        Transaction.date <= date_to,
+        Transaction.amount < 0,
+    ).group_by(
+        func.coalesce(Transaction.category, "Altro"),
+    ).order_by(
+        func.sum(Transaction.amount),
+    ).all()
+
+    by_category = [
+        {"category": r.category, "amount": abs(float(r.amount))}
+        for r in cat_rows
+    ]
+
+    return {
+        "total_income": total_income,
+        "total_expenses": total_expenses,
+        "by_category": by_category,
+    }
+
+
+# ── LLM Usage Log ────────────────────────────────────────────────────────────
+
+def log_llm_usage(
+    session: Session,
+    *,
+    backend: str,
+    model_id: str,
+    caller: str,
+    step: str | None = None,
+    source_name: str | None = None,
+    batch_size: int | None = None,
+    prompt_tokens: int = 0,
+    completion_tokens: int = 0,
+    total_tokens: int = 0,
+    n_ctx: int | None = None,
+    duration_ms: int | None = None,
+) -> None:
+    """Persist a single LLM call's token usage."""
+    session.add(LlmUsageLog(
+        backend=backend,
+        model_id=model_id,
+        caller=caller,
+        step=step,
+        source_name=source_name,
+        batch_size=batch_size,
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+        total_tokens=total_tokens,
+        n_ctx=n_ctx,
+        duration_ms=duration_ms,
+    ))
+    session.commit()
+
+
+def get_token_usage_stats(
+    session: Session,
+    backend: str | None = None,
+    model_id: str | None = None,
+    caller: str | None = None,
+) -> list[dict]:
+    """Return token usage statistics grouped by (backend, model_id, caller).
+
+    Each row contains: count, mean, std, p50, p95, p99 for prompt_tokens,
+    completion_tokens, and total_tokens, plus CI 95% bounds.
+    """
+    import math
+
+    query = session.query(LlmUsageLog)
+    if backend:
+        query = query.filter(LlmUsageLog.backend == backend)
+    if model_id:
+        query = query.filter(LlmUsageLog.model_id == model_id)
+    if caller:
+        query = query.filter(LlmUsageLog.caller == caller)
+
+    rows = query.all()
+    if not rows:
+        return []
+
+    # Group by (backend, model_id, caller)
+    groups: dict[tuple, list[LlmUsageLog]] = {}
+    for r in rows:
+        key = (r.backend, r.model_id, r.caller)
+        groups.setdefault(key, []).append(r)
+
+    results = []
+    for (be, mid, cal), entries in groups.items():
+        n = len(entries)
+        for metric in ("prompt_tokens", "completion_tokens", "total_tokens"):
+            values = sorted(getattr(e, metric) or 0 for e in entries)
+            mean = sum(values) / n
+            variance = sum((v - mean) ** 2 for v in values) / n if n > 1 else 0.0
+            std = math.sqrt(variance)
+            ci_half = 1.96 * std / math.sqrt(n) if n > 1 else 0.0
+
+            results.append({
+                "backend": be,
+                "model_id": mid,
+                "caller": cal,
+                "metric": metric,
+                "count": n,
+                "mean": round(mean, 1),
+                "std": round(std, 1),
+                "p50": values[n // 2],
+                "p95": values[int(n * 0.95)] if n >= 20 else values[-1],
+                "p99": values[int(n * 0.99)] if n >= 100 else values[-1],
+                "ci95_lower": round(mean - ci_half, 1),
+                "ci95_upper": round(mean + ci_half, 1),
+            })
+
+    return results
+
+
+def get_adaptive_n_ctx_cap(
+    session: Session,
+    model_id: str,
+    min_observations: int = 1000,
+) -> int | None:
+    """Max CI-95% upper-bound of total_tokens across all caller/step combos.
+
+    Groups LlmUsageLog rows by (caller, step) for the given *model_id*.
+    Only groups with at least *min_observations* rows are considered.
+    Returns the maximum CI-95% upper-bound (rounded up to the next 1024
+    multiple) so that a single context window can cover the worst-case
+    caller.  Returns ``None`` when no group qualifies.
+    """
+    import math
+
+    rows = (
+        session.query(LlmUsageLog)
+        .filter(
+            LlmUsageLog.model_id == model_id,
+            LlmUsageLog.total_tokens.isnot(None),
+            LlmUsageLog.total_tokens > 0,
+        )
+        .all()
+    )
+    if not rows:
+        return None
+
+    # Group by (caller, step)
+    groups: dict[tuple[str, str | None], list[int]] = {}
+    for r in rows:
+        key = (r.caller, r.step)
+        groups.setdefault(key, []).append(r.total_tokens)
+
+    max_upper = 0.0
+    found = False
+    for _key, values in groups.items():
+        n = len(values)
+        if n < min_observations:
+            continue
+        found = True
+        mean = sum(values) / n
+        variance = sum((v - mean) ** 2 for v in values) / n
+        std = math.sqrt(variance)
+        ci_upper = mean + 1.96 * std / math.sqrt(n)
+        if ci_upper > max_upper:
+            max_upper = ci_upper
+
+    if not found:
+        return None
+
+    # Round up to next 1024 multiple, enforce floor of 2048
+    cap = max(int(math.ceil(max_upper / 1024)) * 1024, 2048)
+    return cap

@@ -47,21 +47,69 @@ class PreprocessInfo:
     or display what was stripped/dropped without re-running the analysis.
     """
     skipped_rows: int = 0
+    footer_rows_stripped: int = 0
+    footer_strip_method: str = ""
+    """How footer rows were stripped: 'phase1', 'phase1+phase2', 'phase1+phase3', 'iqr_fallback', etc."""
+    footer_patterns_learned: int = 0
+    """Number of new footer patterns learned from Phase 2 LLM extraction."""
     dropped_columns: list[str] = field(default_factory=list)
     columns_before_drop: list[str] = field(default_factory=list)
     """Column names captured AFTER preheader-strip but BEFORE drop_low_variability_columns.
     Used for stable schema lookup (cols_key) regardless of file size."""
+    header_certain: bool = False
+    """Whether the pre-load header detection was certain (used for confidence scoring)."""
+    border_detected: bool = False
+    """Whether the table bounds were determined by Excel border detection."""
+    border_region: Optional[tuple[int, int, int, int]] = None
+    """(first_row, last_row, first_col, last_col) 0-based. None if no borders."""
 
 
 # ── Encoding / format detection ───────────────────────────────────────────────
 
 def detect_encoding(raw_bytes: bytes) -> str:
-    """Detect file encoding using chardet. Returns lowercase encoding string."""
+    """Detect file encoding using chardet with fallback heuristics (I-08).
+
+    If chardet confidence is low (< 0.70), tries common European encodings
+    (latin1, cp1252, utf-8) and picks the one with fewest replacement characters.
+    """
     result = chardet.detect(raw_bytes)
     enc = (result.get("encoding") or "utf-8").lower()
+    confidence = result.get("confidence", 0.0)
+
     # Normalize common aliases
     if enc in ("ascii",):
         enc = "utf-8"
+
+    # I-08: fallback when chardet is uncertain
+    if confidence < 0.70:
+        logger.info(
+            f"detect_encoding: chardet returned {enc} with low confidence "
+            f"({confidence:.2f}) — trying European fallbacks"
+        )
+        # Try common European encodings; pick the one with fewest decode errors
+        candidates = ["utf-8", "latin-1", "cp1252", enc]
+        best_enc = enc
+        best_errors = float("inf")
+        sample = raw_bytes[:8192]  # check first 8KB only
+
+        for candidate in candidates:
+            try:
+                decoded = sample.decode(candidate, errors="replace")
+                # Count replacement characters (U+FFFD)
+                n_errors = decoded.count("\ufffd")
+                if n_errors < best_errors:
+                    best_errors = n_errors
+                    best_enc = candidate
+            except (LookupError, UnicodeDecodeError):
+                continue
+
+        if best_enc != enc:
+            logger.info(
+                f"detect_encoding: fallback selected {best_enc} "
+                f"(was {enc}, errors: {best_errors} vs original)"
+            )
+        enc = best_enc
+
     return enc
 
 
@@ -72,73 +120,401 @@ def detect_delimiter(content: str) -> str:
     return max(counts, key=counts.get)
 
 
+def _row_density(fields: list[str]) -> float:
+    """Fraction of non-empty fields in a row."""
+    if not fields:
+        return 0.0
+    return sum(1 for f in fields if f.strip()) / len(fields)
+
+
+def _row_non_numeric_count(fields: list[str]) -> int:
+    """Count non-empty, non-numeric fields (text = likely column names)."""
+    return sum(
+        1 for f in fields
+        if f.strip() and not re.match(r'^[\d\.\,\-\+\s€$£%]+$', f.strip())
+    )
+
+
 def detect_header_row(lines: list[str]) -> tuple[int, bool]:
-    """Return (index, certain) of the first line with ≥2 non-empty, non-numeric fields.
+    """Detect the header row using density analysis.
 
-    certain=True  → a matching line was found (header detected with confidence).
-    certain=False → no line matched; defaulted to 0 (ambiguous, ask the user).
+    Algorithm:
+    1. Parse each line into fields.
+    2. The header row is the one with the highest density (most non-empty cells).
+    3. Tiebreak: prefer the row with more non-numeric fields (text = column names).
+    4. certain=True if the winner has density ≥ 0.5 AND ≥ 2 non-numeric fields.
+
+    Returns (index, certain).
     """
-    for i, line in enumerate(lines):
-        fields = [f.strip() for f in re.split(r'[,;\t|]', line)]
-        non_numeric = sum(
-            1 for f in fields
-            if f and not re.match(r'^[\d\.\,\-\+\s€$£%]+$', f)
+    if not lines:
+        return 0, False
+
+    max_scan = min(len(lines), 50)
+    best_idx = 0
+    best_density = 0.0
+    best_text_count = 0
+
+    # Detect delimiter from the first non-empty lines (for CSV-aware splitting)
+    import csv as _csv_mod
+    _sample_text = "\n".join(lines[:max_scan])
+    try:
+        _dialect = _csv_mod.Sniffer().sniff(_sample_text, delimiters=',;\t|')
+        _delim = _dialect.delimiter
+    except _csv_mod.Error:
+        _delim = ','
+
+    logger.info("── detect_header_row: scanning %d lines (delimiter='%s') ──", max_scan, _delim)
+    for i in range(max_scan):
+        # Use csv.reader to correctly handle quoted fields (e.g. "POS 222,70 EUR")
+        # instead of naive regex split that breaks on commas inside quotes
+        try:
+            _parsed = list(_csv_mod.reader([lines[i]], delimiter=_delim, quotechar='"'))
+            fields = [f.strip() for f in _parsed[0]] if _parsed else []
+        except Exception:
+            fields = [f.strip() for f in re.split(r'[,;\t|]', lines[i])]
+        density = _row_density(fields)
+        text_count = _row_non_numeric_count(fields)
+        n_fields = len([f for f in fields if f])
+
+        logger.info(
+            "  row %2d | density=%.2f | text_fields=%d | filled=%d/%d | preview=%.80s",
+            i, density, text_count, n_fields, len(fields),
+            lines[i][:80].replace("\n", ""),
         )
-        if non_numeric >= 2:
-            return i, True
-    return 0, False
+
+        # Prefer higher density; tiebreak by more non-numeric (text) fields
+        if (density > best_density) or (density == best_density and text_count > best_text_count):
+            best_idx = i
+            best_density = density
+            best_text_count = text_count
+
+    certain = best_density >= 0.5 and best_text_count >= 2
+    logger.info(
+        "── detect_header_row result: row=%d density=%.2f text_count=%d certain=%s ──",
+        best_idx, best_density, best_text_count, certain,
+    )
+    return best_idx, certain
 
 
-def detect_header_row_excel(raw_bytes: bytes) -> tuple[int, bool]:
-    """Detect header row in an Excel file by scanning the best sheet's cell values.
+def _cell_has_border(cell) -> bool:
+    """Check if a cell has any non-trivial border on any side."""
+    border = getattr(cell, "border", None)
+    if border is None:
+        return False
+    for side_name in ("left", "right", "top", "bottom"):
+        side = getattr(border, side_name, None)
+        if side is not None and getattr(side, "style", None) not in (None, "none"):
+            return True
+    return False
 
-    Applies the same ≥2 non-numeric fields heuristic as detect_header_row.
-    Returns (skip_rows, certain) with identical semantics.
+
+def detect_bordered_region(
+    raw_bytes: bytes,
+    filename: str = "",
+    max_scan_rows: int = 60,
+) -> Optional[tuple[int, int, int, int]]:
+    """Detect a bordered table rectangle in an Excel file.
+
+    Scans the first *max_scan_rows* rows for a contiguous rectangular region
+    where ALL cells have at least one border (thin/medium/thick on any side).
+
+    Returns ``(first_row, last_row, first_col, last_col)`` as **0-based**
+    indices, or ``None`` if no qualifying bordered region is found.
+
+    Only works on ``.xlsx`` files — ``.xls`` always returns ``None``.
+    """
+    # Only .xlsx — openpyxl doesn't expose borders for .xls
+    if filename and not filename.lower().endswith(".xlsx"):
+        return None
+
+    import io as _io
+    try:
+        import openpyxl
+        wb = openpyxl.load_workbook(
+            _io.BytesIO(raw_bytes), read_only=False, data_only=True,
+        )
+        sheet_name = detect_best_sheet(wb)
+        ws = wb[sheet_name]
+
+        # ── Build border grid ──────────────────────────────────────
+        max_col = ws.max_column or 0
+        max_row = min(ws.max_row or 0, max_scan_rows)
+        if max_row < 3 or max_col < 3:
+            wb.close()
+            return None
+
+        # has_border[r][c] — 0-based
+        grid: list[list[bool]] = []
+        for r_idx in range(1, max_row + 1):
+            row_borders: list[bool] = []
+            for c_idx in range(1, max_col + 1):
+                cell = ws.cell(row=r_idx, column=c_idx)
+                row_borders.append(_cell_has_border(cell))
+            grid.append(row_borders)
+
+        wb.close()
+
+        # ── Find largest bordered rectangle (sweep top-down) ──────
+        # For each row, compute the longest contiguous run of bordered cells.
+        def _bordered_run(row_bools: list[bool]) -> Optional[tuple[int, int]]:
+            """Return (start, end) of the longest contiguous True run, or None."""
+            best_start = best_end = -1
+            best_len = 0
+            start = None
+            for i, v in enumerate(row_bools):
+                if v:
+                    if start is None:
+                        start = i
+                else:
+                    if start is not None:
+                        run_len = i - start
+                        if run_len > best_len:
+                            best_start, best_end, best_len = start, i - 1, run_len
+                        start = None
+            # Trailing run
+            if start is not None:
+                run_len = len(row_bools) - start
+                if run_len > best_len:
+                    best_start, best_end = start, len(row_bools) - 1
+            if best_start < 0:
+                return None
+            return best_start, best_end
+
+        # Find first row with a bordered run >= 3 columns
+        region_r1: Optional[int] = None
+        region_c1: int = 0
+        region_c2: int = 0
+
+        for r, row_bools in enumerate(grid):
+            run = _bordered_run(row_bools)
+            if run and (run[1] - run[0] + 1) >= 3:
+                region_r1 = r
+                region_c1, region_c2 = run
+                break
+
+        if region_r1 is None:
+            return None
+
+        # Extend downward: intersect column range
+        region_r2 = region_r1
+        for r in range(region_r1 + 1, len(grid)):
+            run = _bordered_run(grid[r])
+            if run is None:
+                break
+            # Intersect with current column range
+            new_c1 = max(region_c1, run[0])
+            new_c2 = min(region_c2, run[1])
+            if new_c2 - new_c1 + 1 < 3:
+                break  # intersection too narrow
+            region_c1, region_c2 = new_c1, new_c2
+            region_r2 = r
+
+        # Validate: minimum 3 rows × 3 columns
+        if (region_r2 - region_r1 + 1) < 3:
+            return None
+
+        logger.info(
+            "── detect_bordered_region: found region rows=%d..%d cols=%d..%d (%d×%d) ──",
+            region_r1, region_r2, region_c1, region_c2,
+            region_r2 - region_r1 + 1, region_c2 - region_c1 + 1,
+        )
+        return (region_r1, region_r2, region_c1, region_c2)
+
+    except Exception as exc:
+        logger.warning("detect_bordered_region failed: %s", exc)
+        return None
+
+
+def detect_header_row_excel(
+    raw_bytes: bytes,
+    filename: str = "",
+    skip_border_check: bool = False,
+) -> tuple[int, bool, Optional[tuple[int, int, int, int]]]:
+    """Detect header row in an Excel file.
+
+    Strategy:
+    1. **Border detection first** (deterministic): if a bordered region is found,
+       the first row with max density inside the region = header. certain=True.
+    2. **Density fallback**: scan first 50 rows for highest density row.
+
+    Args:
+        skip_border_check: If True, skip border detection (I-10 optimisation for
+            formats known to have no borders from cached schema ``has_borders=False``).
+
+    Returns ``(skip_rows, certain, border_region)``.
+    ``border_region`` is ``(r1, r2, c1, c2)`` 0-based, or ``None``.
     """
     import io as _io
+
+    # ── Phase A: Try border detection ──────────────────────────────
+    if skip_border_check:
+        logger.info("── detect_header_row_excel: skipping border check (has_borders=False from cache) ──")
+        border_region = None
+    else:
+        border_region = detect_bordered_region(raw_bytes, filename)
+    if border_region is not None:
+        r1, r2, c1, c2 = border_region
+        logger.info(
+            "── detect_header_row_excel: bordered region rows=%d..%d cols=%d..%d → scanning for header ──",
+            r1, r2, c1, c2,
+        )
+        try:
+            import openpyxl
+            wb = openpyxl.load_workbook(_io.BytesIO(raw_bytes), read_only=True, data_only=True)
+            sheet_name = detect_best_sheet(wb)
+            ws = wb[sheet_name]
+
+            best_idx = r1
+            best_density = 0.0
+            best_text_count = 0
+
+            for i, row in enumerate(ws.iter_rows(values_only=True, max_row=r2 + 1)):
+                if i < r1:
+                    continue
+                if i > r2:
+                    break
+                # Restrict to bordered columns
+                all_fields = [str(v).strip() if v is not None else "" for v in row]
+                fields = all_fields[c1:c2 + 1]
+                density = _row_density(fields)
+                text_count = _row_non_numeric_count(fields)
+
+                logger.info(
+                    "  [border] row %2d | density=%.2f | text=%d | values=%s",
+                    i, density, text_count, [f[:30] for f in fields if f][:6],
+                )
+
+                # Cross-check: first row with 100% density = header
+                if density >= 1.0 and text_count >= 2:
+                    best_idx = i
+                    best_density = density
+                    best_text_count = text_count
+                    break  # 100% density = certain header, stop
+
+                if (density > best_density) or (density == best_density and text_count > best_text_count):
+                    best_idx = i
+                    best_density = density
+                    best_text_count = text_count
+
+            wb.close()
+            logger.info(
+                "── detect_header_row_excel (border): row=%d density=%.2f text=%d certain=True ──",
+                best_idx, best_density, best_text_count,
+            )
+            return best_idx, True, border_region
+
+        except Exception as exc:
+            logger.warning("detect_header_row_excel border scan failed: %s — falling back to density", exc)
+
+    # ── Phase B: Density-only fallback ─────────────────────────────
     try:
         import openpyxl
         wb = openpyxl.load_workbook(_io.BytesIO(raw_bytes), read_only=True, data_only=True)
         sheet_name = detect_best_sheet(wb)
         ws = wb[sheet_name]
-        for i, row in enumerate(ws.iter_rows(values_only=True, max_row=30)):
-            values = [str(v).strip() for v in row if v is not None]
-            non_numeric = sum(
-                1 for v in values
-                if v and not re.match(r'^[\d\.\,\-\+\s€$£%]+$', v)
+
+        best_idx = 0
+        best_density = 0.0
+        best_text_count = 0
+
+        logger.info("── detect_header_row_excel (density): sheet='%s' ──", sheet_name)
+        for i, row in enumerate(ws.iter_rows(values_only=True, max_row=50)):
+            fields = [str(v).strip() if v is not None else "" for v in row]
+            density = _row_density(fields)
+            text_count = _row_non_numeric_count(fields)
+            n_fields = len([f for f in fields if f])
+
+            logger.info(
+                "  row %2d | density=%.2f | text_fields=%d | filled=%d/%d | values=%s",
+                i, density, text_count, n_fields, len(fields),
+                [f[:30] for f in fields if f][:6],
             )
-            if non_numeric >= 2:
-                wb.close()
-                return i, True
+
+            if (density > best_density) or (density == best_density and text_count > best_text_count):
+                best_idx = i
+                best_density = density
+                best_text_count = text_count
+
         wb.close()
-    except Exception:
-        pass
-    return 0, False
+        certain = best_density >= 0.5 and best_text_count >= 2
+        logger.info(
+            "── detect_header_row_excel result: row=%d density=%.2f text_count=%d certain=%s ──",
+            best_idx, best_density, best_text_count, certain,
+        )
+        return best_idx, certain, None
+    except Exception as exc:
+        logger.warning("detect_header_row_excel failed: %s", exc)
+    return 0, False, None
 
 
-def detect_skip_rows(raw_bytes: bytes, filename: str) -> tuple[int, bool]:
+def detect_skip_rows(
+    raw_bytes: bytes,
+    filename: str,
+    skip_border_check: bool = False,
+) -> tuple[int, bool, Optional[tuple[int, int, int, int]]]:
     """Unified pre-load header detection for CSV and Excel.
 
-    Returns (skip_rows, certain):
+    Returns ``(skip_rows, certain, border_region)``:
       certain=True  → detection confident, use skip_rows silently.
       certain=False → could not determine; surface a number_input to the user.
+      border_region → (r1, r2, c1, c2) 0-based if Excel borders found, else None.
+
+    Args:
+        skip_border_check: If True, skip border detection entirely (I-10 optimisation
+            for formats known to have no borders from cached schema ``has_borders=False``).
     """
+    logger.info("══ detect_skip_rows [%s] (%d bytes, type=%s, skip_border=%s) ══",
+                filename, len(raw_bytes),
+                "excel" if filename.lower().endswith((".xlsx", ".xls")) else "csv",
+                skip_border_check)
+    border_region: Optional[tuple[int, int, int, int]] = None
     if filename.lower().endswith((".xlsx", ".xls")):
-        return detect_header_row_excel(raw_bytes)
-    encoding = detect_encoding(raw_bytes)
-    text = raw_bytes.decode(encoding, errors="replace")
-    return detect_header_row(text.splitlines())
+        skip, certain, border_region = detect_header_row_excel(
+            raw_bytes, filename, skip_border_check=skip_border_check,
+        )
+    else:
+        encoding = detect_encoding(raw_bytes)
+        text = raw_bytes.decode(encoding, errors="replace")
+        skip, certain = detect_header_row(text.splitlines())
+    logger.info(
+        "══ detect_skip_rows result: skip_rows=%d, certain=%s, border=%s ══",
+        skip, certain, border_region,
+    )
+    return skip, certain, border_region
+
+
+_SUMMARY_SHEET_RE = re.compile(
+    r'summary|résumé|resume|zusammenfassung|resumen|récapitulatif|'
+    r'totale|totali|total|totaux|'
+    r'riepilogo|récapitulatif|übersicht|'
+    r'saldo|balance|solde',
+    re.IGNORECASE,
+)
+"""Regex that matches XLSX sheet names typically containing aggregate/summary data.
+
+Banks often export multi-sheet workbooks where one sheet holds individual
+transactions (e.g. "Movimenti", "Transactions") and another holds totals
+(e.g. "Riepilogo", "Summary", "Zusammenfassung").  `detect_best_sheet()`
+skips any sheet whose name matches this pattern to avoid importing aggregate
+rows as individual transactions.
+
+Coverage (aligned with `_FOOTER_SUSPECT_KEYWORDS`):
+  it: totale / totali / riepilogo / saldo
+  en: summary / total / balance
+  fr: résumé / resume / totaux / solde / récapitulatif
+  de: zusammenfassung / übersicht
+  es: resumen / total
+"""
 
 
 def detect_best_sheet(workbook) -> str:
     """Select the sheet with the most numeric columns and rows,
-    excluding sheets whose name matches summary patterns."""
-    summary_re = re.compile(r'summary|totale|riepilogo', re.IGNORECASE)
+    excluding aggregate/summary sheets (matched by `_SUMMARY_SHEET_RE`)."""
     best_sheet = None
     best_score = -1
 
     for name in workbook.sheetnames:
-        if summary_re.search(name):
+        if _SUMMARY_SHEET_RE.search(name):
             continue
         ws = workbook[name]
         rows = list(ws.iter_rows(values_only=True))
@@ -258,6 +634,19 @@ def apply_sign_convention(
         debit_abs = abs(debit) if debit is not None else Decimal(0)
         credit_abs = abs(credit) if credit is not None else Decimal(0)
         return credit_abs - debit_abs
+    elif convention == SignConvention.debit_credit_signed:
+        # Both columns already carry correct sign: debit values are negative,
+        # credit values are positive. Read as-is, no abs() or negation needed.
+        debit = parse_amount(row.get(debit_col)) if debit_col else None
+        credit = parse_amount(row.get(credit_col)) if credit_col else None
+        if debit is None and credit is None:
+            return parse_amount(row.get(amount_col)) if amount_col else None
+        # Take whichever is non-null (complementary columns: one is filled per row)
+        if debit is not None:
+            return debit   # already negative for expenses
+        if credit is not None:
+            return credit  # already positive for income
+        return None
     elif convention == SignConvention.credit_negative:
         # credit column is positive (income), debit column is negative (expense)
         credit = parse_amount(row.get(credit_col)) if credit_col else None
@@ -371,6 +760,8 @@ def load_raw_head(raw_bytes: bytes, filename: str, n: int = 10) -> "pd.DataFrame
             engine="python",
             on_bad_lines="skip",
         )
+    # Defensive: coerce column names to str (Excel datetime headers, etc.)
+    df.columns = [str(c) for c in df.columns]
     return df
 
 
@@ -381,6 +772,12 @@ def detect_and_strip_preheader_rows(
     source_name: str = "",
 ) -> tuple[pd.DataFrame, int]:
     """Remove spurious metadata rows that appear *before* the actual column header.
+
+    NOTE: This function is currently bypassed when the pre-load density-based
+    header detection (detect_skip_rows) returns certain=True. It is kept as a
+    fallback for edge cases where pre-load detection fails. The pre-load approach
+    is preferred because it avoids loading garbage data into pandas and then
+    trying to clean it up post-hoc.
 
     Banks occasionally export files where the first few rows contain account
     info, report titles, or empty lines before the real transaction table
@@ -416,11 +813,13 @@ def detect_and_strip_preheader_rows(
             safety caps, indicating the file probably does not start with a
             transaction table at all.
     """
+    logger.info("── detect_and_strip_preheader_rows [%s] ──", source_name)
     if len(df) < 4:
-        # Too short to run safely; nothing to strip.
+        logger.info("  DataFrame too short (%d rows), skipping strip.", len(df))
         return df, 0
 
     total_rows = len(df) + 1  # +1 for the reconstructed header row
+    logger.info("  total_rows (incl header)=%d, columns=%s", total_rows, list(df.columns)[:8])
 
     # Step 1 – Reconstruct the pandas-consumed header row.
     header_values: list = [
@@ -428,6 +827,8 @@ def detect_and_strip_preheader_rows(
         for c in df.columns
     ]
     n_cols = len(header_values)
+    logger.info("  pandas header (row 0): %s", [str(v)[:25] for v in header_values])
+
     header_series = pd.Series(header_values, index=df.columns)
     df_full = pd.concat(
         [header_series.to_frame().T, df.reset_index(drop=True)],
@@ -440,9 +841,16 @@ def detect_and_strip_preheader_rows(
         for _, row in df_full.iterrows()
     ]
 
+    # Log first 25 rows with density
+    for i, d in enumerate(densities[:25]):
+        row_vals = [str(v)[:20] for v in df_full.iloc[i] if pd.notna(v)][:5]
+        logger.info("  row %2d | density=%.2f | values=%s", i, d, row_vals)
+
     # Step 3 – Median density.
     med = median(densities)
     threshold = med * _PREHEADER_DENSITY_THRESHOLD
+    logger.info("  median_density=%.2f, threshold=%.2f (median × %.2f)",
+                med, threshold, _PREHEADER_DENSITY_THRESHOLD)
 
     # Step 4 – Contiguous sparse rows at the start.
     n_sparse = 0
@@ -452,10 +860,17 @@ def detect_and_strip_preheader_rows(
         else:
             break  # stop at first non-sparse row
 
+    logger.info("  contiguous sparse rows from top: %d", n_sparse)
+
     if n_sparse == 0:
+        logger.info("  → No pre-header rows to strip.")
         return df, 0
 
     # Step 5 – Safety caps.
+    ratio = n_sparse / total_rows
+    logger.info("  n_sparse=%d, ratio=%.2f%%, cap_abs=%d, cap_ratio=%.0f%%",
+                n_sparse, ratio * 100, _PREHEADER_MAX_ROWS, _PREHEADER_MAX_RATIO * 100)
+
     if n_sparse > _PREHEADER_MAX_ROWS:
         raise ValueError(
             f"[{source_name}] detect_and_strip_preheader_rows: "
@@ -463,7 +878,6 @@ def detect_and_strip_preheader_rows(
             f"absolute cap of {_PREHEADER_MAX_ROWS}. "
             "The file may not contain a standard transaction table."
         )
-    ratio = n_sparse / total_rows
     if ratio > _PREHEADER_MAX_RATIO:
         raise ValueError(
             f"[{source_name}] detect_and_strip_preheader_rows: "
@@ -478,15 +892,79 @@ def detect_and_strip_preheader_rows(
         (str(v).strip() if pd.notna(v) and str(v).strip() else f"Unnamed: {i}")
         for i, v in enumerate(new_header_row)
     ]
+    logger.info("  → New header from row %d: %s", n_sparse, new_columns[:8])
+
     result = df_full.iloc[n_sparse + 1:].copy()
     result.columns = new_columns
     result = result.reset_index(drop=True)
 
     logger.info(
-        "[%s] Stripped %d pre-header row(s) (density threshold=%.2f × median %.2f)",
+        "[%s] Stripped %d pre-header row(s) (density threshold=%.2f × median %.2f). "
+        "Result: %d rows, columns=%s",
         source_name, n_sparse, _PREHEADER_DENSITY_THRESHOLD, med,
+        len(result), list(result.columns)[:8],
     )
     return result, n_sparse
+
+
+# ── Footer detection constants ────────────────────────────────────────────────
+_FOOTER_MAX_ROWS: int = 5
+_FOOTER_MAX_RATIO: float = 0.05  # 5 % of total rows
+
+
+def detect_and_strip_footer_rows(
+    df: pd.DataFrame,
+    source_name: str = "",
+) -> tuple[pd.DataFrame, int]:
+    """Remove summary/totale rows at the bottom of the table using IQR outlier detection.
+
+    Algorithm (language-agnostic, statistical):
+    1. Compute per-row density (non-null fraction).
+    2. Compute Q1, Q3, IQR = Q3 - Q1.
+    3. lower_fence = Q1 - 1.5 × IQR.
+    4. Scan from the bottom: collect contiguous rows whose density < lower_fence.
+    5. Safety caps: max _FOOTER_MAX_ROWS or _FOOTER_MAX_RATIO × total_rows.
+
+    Returns:
+        (trimmed_df, n_stripped) — n_stripped == 0 if nothing was removed.
+    """
+    if len(df) < 5:
+        return df, 0
+
+    n_cols = len(df.columns)
+    if n_cols == 0:
+        return df, 0
+
+    densities = [row.notna().sum() / n_cols for _, row in df.iterrows()]
+
+    sorted_d = sorted(densities)
+    n = len(sorted_d)
+    q1 = sorted_d[n // 4]
+    q3 = sorted_d[(3 * n) // 4]
+    iqr = q3 - q1
+    lower_fence = q1 - 1.5 * iqr
+
+    # Scan from bottom upward: collect contiguous sparse rows
+    n_footer = 0
+    for d in reversed(densities):
+        if d < lower_fence:
+            n_footer += 1
+        else:
+            break
+
+    if n_footer == 0:
+        return df, 0
+
+    # Safety caps
+    max_allowed = min(_FOOTER_MAX_ROWS, int(len(df) * _FOOTER_MAX_RATIO))
+    n_footer = min(n_footer, max(max_allowed, 1))
+
+    result = df.iloc[:-n_footer].copy().reset_index(drop=True)
+    logger.info(
+        "[%s] Stripped %d footer row(s) (IQR lower_fence=%.2f, Q1=%.2f, Q3=%.2f)",
+        source_name, n_footer, lower_fence, q1, q3,
+    )
+    return result, n_footer
 
 
 def drop_low_variability_columns(
@@ -494,36 +972,26 @@ def drop_low_variability_columns(
     source_name: str = "",
     min_ratio: float = _LOW_VARIABILITY_RATIO,
 ) -> tuple[pd.DataFrame, list[str]]:
-    """Remove columns whose value diversity is too low to carry transaction data.
+    """Remove columns that are completely empty (all null/NaN).
 
-    Columns like "Nome titolare" (always the same name) or "Numero carta"
-    (same masked PAN on every row) add noise without information.  A column
-    is considered metadata/constant if::
+    Originally this function dropped columns with low variability
+    (nunique/nrows < 1.5%), but this incorrectly removed sparse
+    amount columns (e.g., a credit column with 4 values out of 300
+    rows in a savings account). Now only truly empty columns are
+    dropped — columns with even a single non-null value are preserved.
 
-        nunique(col) / nrows < min_ratio
-
-    At least 2 columns are always preserved so downstream processing has
-    something to work with.
-
-    Args:
-        df: DataFrame (may already be pre-header-stripped).
-        source_name: Filename used only for log messages.
-        min_ratio: Fraction threshold (default ``_LOW_VARIABILITY_RATIO``
-            = 1.5 %).
+    At least 2 columns are always preserved.
 
     Returns:
-        ``(cleaned_df, dropped_column_names)``.  If nothing was dropped,
-        ``dropped_column_names`` is an empty list.
+        ``(cleaned_df, dropped_column_names)``.
     """
     if len(df) < 2 or len(df.columns) <= 2:
         return df, []
 
-    nrows = len(df)
     to_drop: list[str] = []
 
     for col in df.columns:
-        ratio = df[col].nunique(dropna=True) / nrows
-        if ratio < min_ratio:
+        if df[col].notna().sum() == 0:
             to_drop.append(col)
 
     # Never drop below 2 columns.
@@ -536,7 +1004,7 @@ def drop_low_variability_columns(
 
     result = df.drop(columns=to_drop)
     logger.info(
-        "[%s] Dropped %d low-variability column(s): %s",
+        "[%s] Dropped %d empty column(s): %s",
         source_name, len(to_drop), to_drop,
     )
     return result, to_drop
@@ -833,7 +1301,7 @@ def remove_card_balance_row(
     """Handle the single balance/totale summary row from a card file if present.
 
     Some card exports include a row whose |amount| equals the sum of |all other
-    amounts| (the statement total). Including it would double-count every expense.
+    amounts| (the file total). Including it would double-count every expense.
 
     Detection rule (requires ≥ 3 transactions):
         For each candidate row i:
@@ -881,3 +1349,278 @@ def remove_card_balance_row(
                 return transactions[:i] + transactions[i + 1:], True
 
     return transactions, False
+
+
+# ── 3-Phase Footer Stripping ─────────────────────────────────────────────────
+#
+# Phase 1: Structural filter (column density, schema-aware)
+# Phase 2: Semantic extraction with LLM (last 10 rows)
+# Phase 3: Reuse stored textual patterns
+# ---------------------------------------------------------------------------
+
+# Regex for stripping dates and numbers from description text to build patterns
+_DATE_PATTERN = re.compile(r"\d{1,4}[/\-\.]\d{1,2}[/\-\.]\d{1,4}")
+_NUMBER_PATTERN = re.compile(r"[\d.,]+")
+_MULTI_SPACE = re.compile(r"\s+")
+
+# Multilingual keywords that signal a suspicious (possible footer) row
+_FOOTER_SUSPECT_KEYWORDS = frozenset({
+    "totale", "totali", "total", "totaux",
+    "saldo", "saldi", "balance", "solde",
+    "firma", "firme", "signature", "unterschrift",
+    "timbro", "stamp", "cachet",
+    "pagina", "page", "seite",
+    "estratto", "extract", "extrait",
+    "riepilogo", "summary", "résumé", "zusammenfassung",
+})
+
+_FOOTER_MIN_PATTERN_LEN = 3  # patterns shorter than this are discarded
+
+
+def _resolve_description_col(schema) -> Optional[str]:
+    """Return the primary description column name from a DocumentSchema."""
+    desc_cols = getattr(schema, "description_cols", None)
+    if desc_cols:
+        return desc_cols[0]
+    return getattr(schema, "description_col", None)
+
+
+def _normalize_description_to_pattern(text: str) -> str:
+    """Strip dates, numbers, and extra whitespace from description text → residual pattern."""
+    t = _DATE_PATTERN.sub("", text)
+    t = _NUMBER_PATTERN.sub("", t)
+    t = _MULTI_SPACE.sub(" ", t).strip().lower()
+    return t
+
+
+def strip_footer_phase1(
+    df: pd.DataFrame,
+    schema,
+    source_name: str = "",
+) -> tuple[pd.DataFrame, int]:
+    """Phase 1: Structural filter — remove bottom rows with NA in mandatory columns.
+
+    For 3-column schemas (amount_col set): date, description, amount all required.
+    For 4-column schemas (debit_col + credit_col): date and description required.
+
+    Scans from the bottom upward collecting contiguous rows that violate the
+    constraint. Applies the same safety caps as the old IQR method.
+    """
+    if len(df) < 3:
+        return df, 0
+
+    desc_col = _resolve_description_col(schema)
+
+    # Determine mandatory columns based on schema shape
+    if getattr(schema, "amount_col", None):
+        # 3-column schema: date + description + amount all mandatory
+        mandatory = [schema.date_col]
+        if desc_col and desc_col in df.columns:
+            mandatory.append(desc_col)
+        if schema.amount_col in df.columns:
+            mandatory.append(schema.amount_col)
+    elif getattr(schema, "debit_col", None) and getattr(schema, "credit_col", None):
+        # 4-column schema: date + description mandatory
+        mandatory = [schema.date_col]
+        if desc_col and desc_col in df.columns:
+            mandatory.append(desc_col)
+    else:
+        # Unknown shape — fall back to date-only check
+        mandatory = [schema.date_col]
+
+    # Filter to columns that actually exist in the DataFrame
+    mandatory = [c for c in mandatory if c in df.columns]
+    if not mandatory:
+        return df, 0
+
+    # Scan from bottom: count contiguous rows where any mandatory column is NA
+    n_footer = 0
+    for i in range(len(df) - 1, -1, -1):
+        row = df.iloc[i]
+        has_na = any(pd.isna(row.get(c)) for c in mandatory)
+        if has_na:
+            n_footer += 1
+        else:
+            break
+
+    if n_footer == 0:
+        return df, 0
+
+    # Safety caps
+    max_allowed = min(_FOOTER_MAX_ROWS, int(len(df) * _FOOTER_MAX_RATIO))
+    n_footer = min(n_footer, max(max_allowed, 1))
+
+    result = df.iloc[:-n_footer].copy().reset_index(drop=True)
+    logger.info(
+        "[%s] Phase 1 footer strip: removed %d row(s) with NA in mandatory columns %s",
+        source_name, n_footer, mandatory,
+    )
+    return result, n_footer
+
+
+def strip_footer_phase2_llm(
+    df: pd.DataFrame,
+    schema,
+    llm_backend,
+    sanitize_config=None,
+    source_name: str = "",
+) -> tuple[pd.DataFrame, list[str], int]:
+    """Phase 2: Semantic extraction — ask LLM to identify footer rows among the last 10.
+
+    Returns:
+        (trimmed_df, new_patterns, n_stripped)
+        new_patterns: list of normalised text patterns extracted from identified footers.
+    """
+    import json as _json
+    from pathlib import Path
+
+    if len(df) < 1:
+        return df, [], 0
+
+    tail_size = min(10, len(df))
+    tail_start = len(df) - tail_size
+    tail_df = df.iloc[tail_start:]
+
+    desc_col = _resolve_description_col(schema)
+
+    # Build row representations for the LLM
+    rows_for_llm = []
+    for local_idx, (_, row) in enumerate(tail_df.iterrows()):
+        row_dict = {}
+        for col in df.columns:
+            val = row.get(col)
+            row_dict[col] = "" if pd.isna(val) else str(val)[:200]
+        # Sanitize descriptions for remote backends
+        if sanitize_config and desc_col and desc_col in row_dict:
+            from core.sanitizer import redact_pii
+            row_dict[desc_col] = redact_pii(row_dict[desc_col], sanitize_config)
+        rows_for_llm.append({"index": local_idx, **row_dict})
+
+    # Load prompt
+    _prompts_file = Path(__file__).parent.parent / "prompts" / "footer_detector.json"
+    with open(_prompts_file, encoding="utf-8") as f:
+        prompts = _json.load(f)
+
+    system_prompt = prompts["system"]
+
+    # Build amount info string
+    if getattr(schema, "amount_col", None):
+        amount_info = f"single column: {schema.amount_col}"
+    elif getattr(schema, "debit_col", None):
+        amount_info = f"debit: {schema.debit_col}, credit: {getattr(schema, 'credit_col', '?')}"
+    else:
+        amount_info = "unknown"
+
+    user_prompt = prompts["user_template"].format(
+        date_col=schema.date_col,
+        description_col=desc_col or "N/A",
+        amount_info=amount_info,
+        rows_json=_json.dumps(rows_for_llm, ensure_ascii=False, indent=2),
+    )
+
+    response_schema = prompts["response_schema"]
+
+    try:
+        import time as _time
+        _t0 = _time.monotonic()
+        result = llm_backend.complete_structured(system_prompt, user_prompt, response_schema)
+        _duration_ms = int((_time.monotonic() - _t0) * 1000)
+        from core.llm_backends import _log_usage_to_db
+        _log_usage_to_db(
+            backend=llm_backend,
+            caller="normalizer",
+            step="footer_detect",
+            source_name=source_name,
+            batch_size=tail_size,
+            duration_ms=_duration_ms,
+        )
+    except Exception as exc:
+        logger.warning("[%s] Phase 2 LLM footer detection failed: %s", source_name, exc)
+        raise
+
+    footer_indices_local = []
+    for item in result.get("footer_rows", []):
+        idx = item.get("index")
+        if isinstance(idx, int) and 0 <= idx < tail_size:
+            footer_indices_local.append(idx)
+
+    if not footer_indices_local:
+        return df, [], 0
+
+    # Extract patterns from footer rows
+    new_patterns = []
+    for local_idx in footer_indices_local:
+        row = tail_df.iloc[local_idx]
+        desc = str(row.get(desc_col, "") or "") if desc_col else ""
+        pattern = _normalize_description_to_pattern(desc)
+        if len(pattern) >= _FOOTER_MIN_PATTERN_LEN:
+            new_patterns.append(pattern)
+
+    # Remove footer rows from the full DataFrame
+    global_indices = [tail_start + i for i in footer_indices_local]
+    result_df = df.drop(df.index[global_indices]).reset_index(drop=True)
+
+    n_stripped = len(footer_indices_local)
+    logger.info(
+        "[%s] Phase 2 LLM footer strip: removed %d row(s), learned %d pattern(s)",
+        source_name, n_stripped, len(new_patterns),
+    )
+    return result_df, new_patterns, n_stripped
+
+
+def strip_footer_phase3_patterns(
+    df: pd.DataFrame,
+    schema,
+    stored_patterns: list[str],
+    source_name: str = "",
+) -> tuple[pd.DataFrame, list[int], int]:
+    """Phase 3: Reuse stored patterns — match against the last 10 rows.
+
+    Returns:
+        (trimmed_df, unmatched_suspect_indices, n_stripped)
+        unmatched_suspect_indices: global DF indices of rows in the tail that
+        look suspicious (contain footer keywords) but were NOT matched by any
+        stored pattern — used to decide whether to trigger Phase 2.
+    """
+    if len(df) < 1 or not stored_patterns:
+        return df, [], 0
+
+    tail_size = min(10, len(df))
+    tail_start = len(df) - tail_size
+
+    desc_col = _resolve_description_col(schema)
+
+    matched_global = []
+    unmatched_suspect = []
+
+    for i in range(tail_size):
+        global_idx = tail_start + i
+        row = df.iloc[global_idx]
+        desc = str(row.get(desc_col, "") or "") if desc_col else ""
+        normalised = _normalize_description_to_pattern(desc)
+
+        # Check if any stored pattern matches
+        pattern_hit = False
+        for pat in stored_patterns:
+            if pat and pat in normalised:
+                pattern_hit = True
+                break
+
+        if pattern_hit:
+            matched_global.append(global_idx)
+        else:
+            # Check if this row looks suspicious based on keywords
+            desc_lower = desc.lower()
+            if any(kw in desc_lower for kw in _FOOTER_SUSPECT_KEYWORDS):
+                unmatched_suspect.append(global_idx)
+
+    if not matched_global:
+        return df, unmatched_suspect, 0
+
+    result_df = df.drop(df.index[matched_global]).reset_index(drop=True)
+    n_stripped = len(matched_global)
+    logger.info(
+        "[%s] Phase 3 pattern footer strip: removed %d row(s), %d unmatched suspect(s)",
+        source_name, n_stripped, len(unmatched_suspect),
+    )
+    return result_df, unmatched_suspect, n_stripped

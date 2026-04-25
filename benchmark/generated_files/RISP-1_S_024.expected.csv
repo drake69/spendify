@@ -1,0 +1,31 @@
+row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_category
+1,2026-01-01,-510.74,GIROCONTO DA CC 0468012 A CC 0123456 PRELIEVO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
+2,2026-01-01,-538.16,GIROCONTO DA CC 0468012 A CC 0123456 PRELIEVO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
+3,2026-01-03,-458.00,GIROCONTO DA CC 0468012 A CC 0123456 PRELIEVO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
+4,2026-01-04,-408.07,GIROCONTO DA CC 0468012 A CC 0123456 PRELIEVO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
+5,2026-01-04,-564.51,GIROCONTO DA CC 0468012 A CC 0123456 PRELIEVO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
+6,2026-01-04,-594.76,GIROCONTO DA CC 0468012 A CC 0123456 PRELIEVO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
+7,2026-01-05,-438.44,GIROCONTO DA CC 0468012 A CC 0123456 PRELIEVO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
+8,2026-01-08,-535.22,GIROCONTO DA CC 0468012 A CC 0123456 PRELIEVO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
+9,2026-01-14,-548.20,GIROCONTO DA CC 0468012 A CC 0123456 PRELIEVO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
+10,2026-01-16,-556.34,GIROCONTO DA CC 0468012 A CC 0123456 PRELIEVO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
+11,2026-01-21,73.28,ACCREDITO INTERESSI MATURATI TRIMESTRE Q4 2025,income,false,Rendite finanziarie/Interessi attivi
+12,2026-01-21,21.26,ACCREDITO INTERESSI MATURATI TRIMESTRE Q4 2025,income,false,Rendite finanziarie/Interessi attivi
+13,2026-01-28,-417.44,GIROCONTO DA CC 0468012 A CC 0123456 PRELIEVO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
+14,2026-01-29,-446.70,GIROCONTO DA CC 0468012 A CC 0123456 PRELIEVO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
+15,2026-01-31,-440.43,GIROCONTO DA CC 0468012 A CC 0123456 PRELIEVO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
+16,2026-02-06,-516.60,GIROCONTO DA CC 0468012 A CC 0123456 PRELIEVO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
+17,2026-02-09,-511.21,GIROCONTO DA CC 0468012 A CC 0123456 PRELIEVO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
+18,2026-02-11,-515.17,GIROCONTO DA CC 0468012 A CC 0123456 PRELIEVO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
+19,2026-02-12,73.30,ACCREDITO INTERESSI MATURATI TRIMESTRE Q4 2025,income,false,Rendite finanziarie/Interessi attivi
+20,2026-02-13,-460.40,GIROCONTO DA CC 0468012 A CC 0123456 PRELIEVO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
+21,2026-02-16,-557.15,GIROCONTO DA CC 0468012 A CC 0123456 PRELIEVO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
+22,2026-02-17,-516.55,GIROCONTO DA CC 0468012 A CC 0123456 PRELIEVO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
+23,2026-02-18,-492.65,GIROCONTO DA CC 0468012 A CC 0123456 PRELIEVO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
+24,2026-02-19,-523.85,GIROCONTO DA CC 0468012 A CC 0123456 PRELIEVO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
+25,2026-02-21,-580.85,GIROCONTO DA CC 0468012 A CC 0123456 PRELIEVO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
+26,2026-02-22,-472.34,GIROCONTO DA CC 0468012 A CC 0123456 PRELIEVO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
+27,2026-02-22,-521.56,GIROCONTO DA CC 0468012 A CC 0123456 PRELIEVO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
+28,2026-02-22,-423.19,GIROCONTO DA CC 0468012 A CC 0123456 PRELIEVO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio
+29,2026-02-26,72.86,ACCREDITO INTERESSI MATURATI TRIMESTRE Q1 2026,income,false,Rendite finanziarie/Interessi attivi
+30,2026-02-26,-458.11,GIROCONTO DA CC 0468012 A CC 0123456 PRELIEVO RISPARMIO,internal_out,true,Finanza e assicurazioni/Investimenti / risparmio

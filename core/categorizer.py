@@ -2,10 +2,14 @@
 
 Cascade:
   Step 0 – user-defined rules (category_rule table)
-  Step 1 – static deterministic rules (keyword/regex patterns)
+  Step 1 – static country rules (core/static_rules/<language>.json — optional, per-country)
   Step 2 – supervised ML model (future; currently stub returning None)
   Step 3 – LLM structured output  ← two directional batches (expense / income)
   Fallback – to_review = True
+
+Static rules (Step 1) are loaded from JSON at first use and cached in memory.
+If the JSON for the requested language does not exist, Step 1 is silently skipped.
+To add a new country create core/static_rules/<iso_code>.json (e.g. en.json, de.json).
 """
 from __future__ import annotations
 
@@ -18,16 +22,24 @@ from typing import Any, Optional
 
 import yaml
 
+from core.history_engine import (
+    HISTORY_AUTO_THRESHOLD,
+    HISTORY_SUGGEST_THRESHOLD,
+    HistoryCache,
+    get_top_associations_text,
+)
 from core.llm_backends import LLMBackend, call_with_fallback
 from core.models import CategorySource, Confidence
 from core.sanitizer import SanitizationConfig, redact_pii
 from core.schemas import build_categorization_batch_schema
 from support.logging import setup_logging
+from core.nsi_lookup import nsi_lookup
 
 logger = setup_logging()
 
-TAXONOMY_FALLBACK_EXPENSE = ("Altro", "Spese non classificate")
-TAXONOMY_FALLBACK_INCOME = ("Altro entrate", "Entrate non classificate")
+# Hardcoded defaults used as safety net when no DB fallback categories are available
+_DEFAULT_FALLBACK_EXPENSE = ("Altro", "Spese non classificate")
+_DEFAULT_FALLBACK_INCOME = ("Altro entrate", "Entrate non classificate")
 
 _PROMPTS_FILE = Path(__file__).parent.parent / "prompts" / "categorizer.json"
 
@@ -135,33 +147,42 @@ class CategorizationResult:
     source: CategorySource
     rationale: str = ""
     to_review: bool = False
+    model_name: str = ""
 
 
-# ── Static keyword rules ──────────────────────────────────────────────────────
-# Each rule is (pattern, category, subcategory, match_type, direction)
-# direction: "expense" | "income" | "any"
-_STATIC_RULES: list[tuple[str, str, str, str, str]] = [
-    (r'(conad|coop|esselunga|lidl|carrefour|eurospin|aldi|penny|pam\b)', "Alimentari", "Spesa supermercato", "regex", "expense"),
-    (r'(farmacia|pharma)', "Salute", "Farmaci", "regex", "expense"),
-    (r'(eni\b|shell|q8|tamoil|ip\b|api\b|agip)', "Trasporti", "Carburante", "regex", "expense"),
-    (r'(telepass|autostrad)', "Trasporti", "Parcheggio / ZTL", "regex", "expense"),
-    (r'(trenitalia|italo|frecciarossa|frecciargento)', "Trasporti", "Trasporto pubblico", "regex", "expense"),
-    (r'(enel\b|iren\b|a2a\b|hera\b|eni gas)', "Casa", "Energia elettrica", "regex", "expense"),
-    (r'(netflix|spotify|amazon prime|disney\+|apple tv)', "Svago e tempo libero", "Streaming / abbonamenti digitali", "regex", "expense"),
-    (r'(stipendio|salary|busta paga)', "Lavoro dipendente", "Stipendio", "regex", "income"),
-    (r'(pensione|inps rendita)', "Prestazioni sociali", "Pensione / rendita", "regex", "income"),
-    (r'(commissione|canone conto|spese tenuta)', "Finanza e assicurazioni", "Commissioni bancarie", "regex", "expense"),
-]
-
-_COMPILED_STATIC: list[tuple[re.Pattern, str, str, str]] = [
-    (re.compile(pat, re.IGNORECASE), cat, sub, direction)
-    for pat, cat, sub, _, direction in _STATIC_RULES
-]
+# ── Static country rules (loaded from core/static_rules/<language>.json) ─────
+_STATIC_RULES_DIR = Path(__file__).parent / "static_rules"
+_STATIC_RULES_CACHE: dict[str, list[tuple[re.Pattern, str, str, str]]] = {}
 
 
-def _apply_static_rules(description: str, is_expense: bool) -> Optional[tuple[str, str]]:
-    """Apply static rules respecting transaction direction."""
-    for pattern, category, subcategory, direction in _COMPILED_STATIC:
+def _load_static_rules(language: str) -> list[tuple[re.Pattern, str, str, str]]:
+    """Load and compile static rules for *language* from JSON.
+
+    Returns an empty list (no error) if the file does not exist —
+    Step 1 is simply skipped for languages without a rules file.
+    Results are cached in memory after the first load.
+    """
+    if language in _STATIC_RULES_CACHE:
+        return _STATIC_RULES_CACHE[language]
+    path = _STATIC_RULES_DIR / f"{language}.json"
+    if not path.exists():
+        _STATIC_RULES_CACHE[language] = []
+        return []
+    try:
+        entries = json.loads(path.read_text(encoding="utf-8"))
+        compiled = [
+            (re.compile(e["pattern"], re.IGNORECASE), e["category"], e["subcategory"], e["direction"])
+            for e in entries
+        ]
+    except Exception:
+        compiled = []
+    _STATIC_RULES_CACHE[language] = compiled
+    return compiled
+
+
+def _apply_static_rules(description: str, is_expense: bool, language: str = "it") -> Optional[tuple[str, str]]:
+    """Apply country static rules respecting transaction direction."""
+    for pattern, category, subcategory, direction in _load_static_rules(language):
         if direction == "expense" and not is_expense:
             continue
         if direction == "income" and is_expense:
@@ -188,8 +209,15 @@ def _try_deterministic(
     doc_type: str,
     user_rules: list[CategoryRule],
     taxonomy: TaxonomyConfig,
+    language: str = "it",
 ) -> Optional[CategorizationResult]:
-    """Apply user rules and static rules. Returns result or None if LLM needed."""
+    """Apply user rules. Returns result or None if further steps are needed.
+
+    Step 1 (static language rules from core/static_rules/_it.json) has been
+    deprecated (C-08-cascade): those rules matched against the raw causale
+    which is stripped by clean_descriptions_batch() before categorization,
+    making them ineffective.  Brand matching is handled better by NSI (Step 3b).
+    """
     # Step 0: user-defined rules (sorted by priority desc)
     for rule in sorted(user_rules, key=lambda r: r.priority, reverse=True):
         if rule.matches(description, doc_type):
@@ -209,23 +237,21 @@ def _try_deterministic(
                 source=CategorySource.rule,
             )
 
-    # Step 1: static rules (direction-aware)
-    is_expense = amount < 0
-    static_match = _apply_static_rules(description, is_expense)
-    if static_match:
-        category, subcategory = static_match
-        return CategorizationResult(
-            category=category,
-            subcategory=subcategory,
-            confidence=Confidence.high,
-            source=CategorySource.rule,
-        )
-
     return None
 
 
-def _make_fallback(amount: Decimal) -> CategorizationResult:
-    fallback_cat, fallback_sub = TAXONOMY_FALLBACK_EXPENSE if amount < 0 else TAXONOMY_FALLBACK_INCOME
+def _make_fallback(
+    amount: Decimal,
+    fallback_categories: dict[str, tuple[str, str]] | None = None,
+) -> CategorizationResult:
+    if fallback_categories:
+        fallback_cat, fallback_sub = (
+            fallback_categories.get("expense", _DEFAULT_FALLBACK_EXPENSE)
+            if amount < 0
+            else fallback_categories.get("income", _DEFAULT_FALLBACK_INCOME)
+        )
+    else:
+        fallback_cat, fallback_sub = _DEFAULT_FALLBACK_EXPENSE if amount < 0 else _DEFAULT_FALLBACK_INCOME
     return CategorizationResult(
         category=fallback_cat,
         subcategory=fallback_sub,
@@ -250,6 +276,9 @@ def _run_llm_batch_group(
     batch_size: int,
     direction: str,  # "expense" | "income"
     source_name: str,
+    fallback_categories: dict[str, tuple[str, str]] | None = None,
+    history_context: str = "",  # C-07: historical associations text block
+    batch_done_callback=None,  # Callable[[int], None] — called after each batch with batch size
 ) -> None:
     """Run LLM categorization in batches for one direction. Updates results[] in place."""
     cat_keys = list(categories.keys())
@@ -263,10 +292,19 @@ def _run_llm_batch_group(
         items = []
         for idx in batch_indices:
             tx = transactions[idx]
-            desc = tx.get("description", "") or ""
+            # Income: use raw_description (keeps context like RIMBORSO, STIPENDIO, PENSIONE)
+            # Expense: use cleaned description (counterpart name, needed for NSI/OSM match)
+            if direction == "income":
+                desc = tx.get("raw_description") or tx.get("description", "") or ""
+            else:
+                desc = tx.get("description", "") or ""
             # Always redact before any LLM call (local or remote) — permutation-aware
             desc = redact_pii(desc, sanitize_config)
-            items.append({"amount": str(tx.get("amount", 0)), "description": desc})
+            item_dict: dict = {"amount": str(tx.get("amount", 0)), "description": desc}
+            nsi_hint = tx.get("_nsi_hint")
+            if nsi_hint:
+                item_dict["merchant_hint"] = nsi_hint
+            items.append(item_dict)
 
         n = len(items)
         items_json = json.dumps(items, ensure_ascii=False, indent=2)
@@ -275,6 +313,7 @@ def _run_llm_batch_group(
             direction=direction,
             description_language=description_language,
             transactions_json=items_json,
+            history_context=history_context,
             taxonomy_hint=taxonomy_hint,
         )
 
@@ -284,6 +323,10 @@ def _run_llm_batch_group(
             user_prompt=user_prompt,
             json_schema=json_schema,
             fallback=fallback_backend,
+            caller="categorizer",
+            step=f"batch_{direction}",
+            source_name=source_name,
+            batch_size=n,
         )
 
         if raw is None:
@@ -293,21 +336,25 @@ def _run_llm_batch_group(
             )
             for idx in batch_indices:
                 if results[idx] is None:
-                    results[idx] = _make_fallback(_parse_amount(transactions[idx].get("amount")))
+                    results[idx] = _make_fallback(_parse_amount(transactions[idx].get("amount")), fallback_categories)
             continue
 
         llm_results = raw.get("results", [])
-        if not isinstance(llm_results, list) or len(llm_results) != n:
+        if not isinstance(llm_results, list):
             logger.warning(
                 f"categorize_batch [{source_name}] {direction}: "
-                f"unexpected response shape (expected {n}, got "
-                f"{len(llm_results) if isinstance(llm_results, list) else type(llm_results)!r}) "
-                f"— using fallback"
+                f"response 'results' is not a list ({type(llm_results)!r}) — using fallback"
             )
             for idx in batch_indices:
                 if results[idx] is None:
-                    results[idx] = _make_fallback(_parse_amount(transactions[idx].get("amount")))
+                    results[idx] = _make_fallback(_parse_amount(transactions[idx].get("amount")), fallback_categories)
             continue
+        if len(llm_results) != n:
+            logger.warning(
+                f"categorize_batch [{source_name}] {direction}: "
+                f"partial response (expected {n}, got {len(llm_results)}) "
+                f"— using available results, fallback for the rest"
+            )
 
         logger.debug(
             f"categorize_batch [{source_name}] {direction}: "
@@ -317,7 +364,11 @@ def _run_llm_batch_group(
         for j, idx in enumerate(batch_indices):
             item = llm_results[j] if j < len(llm_results) else {}
             amount = _parse_amount(transactions[idx].get("amount"))
-            results[idx] = _validate_llm_result(item, categories, taxonomy, amount, direction)
+            results[idx] = _validate_llm_result(item, categories, taxonomy, amount, direction, fallback_categories)
+            results[idx].model_name = backend_used
+
+        if batch_done_callback:
+            batch_done_callback(len(batch_indices))
 
 
 def _validate_llm_result(
@@ -326,6 +377,7 @@ def _validate_llm_result(
     taxonomy: TaxonomyConfig,
     amount: Decimal,
     direction: str,
+    fallback_categories: dict[str, tuple[str, str]] | None = None,
 ) -> CategorizationResult:
     """Validate and fix a single LLM result dict. Always returns a valid result."""
     category = item.get("category", "")
@@ -356,14 +408,14 @@ def _validate_llm_result(
                 logger.warning(
                     f"LLM returned unknown pair ({category!r}, {subcategory!r}) — fallback"
                 )
-                return _make_fallback(amount)
+                return _make_fallback(amount, fallback_categories)
 
     # Ensure the resolved category is in the expected direction
     if category not in categories:
         logger.warning(
             f"LLM assigned cross-direction category '{category}' for {direction} — fallback"
         )
-        return _make_fallback(amount)
+        return _make_fallback(amount, fallback_categories)
 
     return CategorizationResult(
         category=category,
@@ -389,20 +441,35 @@ def categorize_batch(
     batch_size: int = 20,
     progress_callback=None,  # Callable[[float], None] — 0.0..1.0 within batch
     source_name: str = "unknown",
+    fallback_categories: dict[str, tuple[str, str]] | None = None,
+    history_cache: HistoryCache | None = None,
+    user_country: str | None = None,  # ISO 3166-1 alpha-2, e.g. "IT" — for NSI ranking
+    taxonomy_map: dict[str, tuple[str, str]] | None = None,  # C-08-cascade: osm_tag → (cat, sub)
 ) -> list[CategorizationResult]:
     """Categorize transactions using two directional LLM batches (expense / income).
 
     Pipeline per transaction:
-      1. User rules (deterministic)
-      2. Static keyword rules (direction-aware)
-      3. LLM — expense batch sees only expense categories, income batch only income categories
-      4. Fallback → to_review=True
+      0. User rules (deterministic)
+      1. [deprecated] Static keyword rules — removed (C-08-cascade)
+      2. History lookup (validated transactions)
+      3b. NSI lookup (Fonte 3: brand → OSM tag):
+           - if user_country ∈ NsiMatch.countries AND taxonomy_map has the osm_tag
+             → direct CategorizationResult(source=nsi), skip LLM
+           - otherwise inject hint into LLM prompt
+      4. LLM — expense batch sees only expense categories, income batch only income categories
+      5. Fallback → to_review=True
     """
     n = len(transactions)
     results: list[Optional[CategorizationResult]] = [None] * n
 
     llm_expense: list[int] = []
     llm_income: list[int] = []
+    n_history = 0
+
+    # C-07: build historical context text once for all LLM batches
+    _history_context = ""
+    if history_cache:
+        _history_context = get_top_associations_text(history_cache)
 
     # Step 0 + 1: deterministic rules per transaction
     for i, tx in enumerate(transactions):
@@ -410,15 +477,79 @@ def categorize_batch(
         description = tx.get("description", "") or ""
         doc_type = tx.get("doc_type", "") or ""
 
-        result = _try_deterministic(description, amount, doc_type, user_rules, taxonomy)
+        result = _try_deterministic(description, amount, doc_type, user_rules, taxonomy, language=description_language)
         if result is not None:
             results[i] = result
-        elif amount < 0:
+            continue
+
+        # Step 2: history lookup (before LLM)
+        if history_cache is not None:
+            cat, subcat, confidence = history_cache.lookup(description)
+            if cat and confidence >= HISTORY_AUTO_THRESHOLD:
+                results[i] = CategorizationResult(
+                    category=cat,
+                    subcategory=subcat or "",
+                    confidence=Confidence.high,
+                    source=CategorySource.history,
+                    to_review=False,
+                )
+                n_history += 1
+                continue
+            if cat and confidence >= HISTORY_SUGGEST_THRESHOLD:
+                results[i] = CategorizationResult(
+                    category=cat,
+                    subcategory=subcat or "",
+                    confidence=Confidence.medium,
+                    source=CategorySource.history,
+                    to_review=True,
+                )
+                n_history += 1
+                continue
+
+        # Step 3b: NSI lookup — brand → OSM tag → taxonomy_map bypass (C-08-cascade)
+        nsi_match = nsi_lookup.lookup(description, user_country=user_country)
+        if nsi_match:
+            # Full bypass: only when user_country is confirmed in this brand's country list
+            _country_match = (
+                not nsi_match.countries  # universal brand
+                or (
+                    user_country
+                    and user_country.upper() in (c.upper() for c in nsi_match.countries)
+                )
+            )
+            if _country_match and taxonomy_map:
+                pair = taxonomy_map.get(nsi_match.osm_tag)
+                if pair:
+                    cat_nsi, sub_nsi = pair
+                    results[i] = CategorizationResult(
+                        category=cat_nsi,
+                        subcategory=sub_nsi,
+                        confidence=Confidence.high,
+                        source=CategorySource.nsi,
+                        to_review=False,
+                    )
+                    continue
+            # No bypass: inject hint for LLM
+            tx["_nsi_hint"] = nsi_match.hint
+
+        if amount < 0:
             llm_expense.append(i)
         else:
             llm_income.append(i)
 
-    # Step 3: LLM — two directional batches
+    # Report deterministic progress (rules + history done)
+    if progress_callback and n > 0:
+        progress_callback(0.3)  # 0..30% for deterministic phase
+
+    # Step 3: LLM — two directional batches with progress tracking
+    _llm_total = len(llm_expense) + len(llm_income)
+    _llm_done = [0]  # mutable for closure
+
+    def _batch_done_cb(batch_n: int):
+        _llm_done[0] += batch_n
+        if progress_callback and _llm_total > 0:
+            progress_callback(0.3 + 0.7 * (_llm_done[0] / _llm_total))
+
     if llm_backend is not None:
         if llm_expense:
             _run_llm_batch_group(
@@ -426,6 +557,9 @@ def categorize_batch(
                 taxonomy.expenses, taxonomy,
                 llm_backend, fallback_backend, sanitize_config,
                 description_language, batch_size, "expense", source_name,
+                fallback_categories=fallback_categories,
+                history_context=_history_context,
+                batch_done_callback=_batch_done_cb,
             )
         if llm_income:
             _run_llm_batch_group(
@@ -433,12 +567,15 @@ def categorize_batch(
                 taxonomy.income, taxonomy,
                 llm_backend, fallback_backend, sanitize_config,
                 description_language, batch_size, "income", source_name,
+                fallback_categories=fallback_categories,
+                history_context=_history_context,
+                batch_done_callback=_batch_done_cb,
             )
 
     # Fallback for any still-None (llm_backend=None or batch error)
     for i in range(n):
         if results[i] is None:
-            results[i] = _make_fallback(_parse_amount(transactions[i].get("amount")))
+            results[i] = _make_fallback(_parse_amount(transactions[i].get("amount")), fallback_categories)
 
     if progress_callback:
         progress_callback(1.0)
@@ -446,6 +583,8 @@ def categorize_batch(
     logger.info(
         f"categorize_batch [{source_name}]: {n} transactions — "
         f"{sum(1 for r in results if r and r.source == CategorySource.rule)} by rules, "
+        f"{n_history} by history, "
+        f"{sum(1 for r in results if r and r.source == CategorySource.nsi)} by NSI, "
         f"{sum(1 for r in results if r and r.source == CategorySource.llm)} by LLM"
     )
 
@@ -470,24 +609,49 @@ def categorize_transaction(
     fallback_backend: LLMBackend | None = None,
     confidence_threshold: float = 0.8,
     description_language: str = "it",
+    fallback_categories: dict[str, tuple[str, str]] | None = None,
+    session=None,
 ) -> CategorizationResult:
     """Single-transaction categorization. Used for real-time correction in the UI."""
-    result = _try_deterministic(description, amount, doc_type, user_rules, taxonomy)
+    result = _try_deterministic(description, amount, doc_type, user_rules, taxonomy, language=description_language)
     if result is not None:
         return result
+
+    # Step 2: history lookup (before LLM)
+    if session is not None:
+        from core.history_engine import lookup_history
+        cat, subcat, confidence = lookup_history(session, description)
+        if cat and confidence >= HISTORY_AUTO_THRESHOLD:
+            return CategorizationResult(
+                category=cat,
+                subcategory=subcat or "",
+                confidence=Confidence.high,
+                source=CategorySource.history,
+                to_review=False,
+            )
+        if cat and confidence >= HISTORY_SUGGEST_THRESHOLD:
+            return CategorizationResult(
+                category=cat,
+                subcategory=subcat or "",
+                confidence=Confidence.medium,
+                source=CategorySource.history,
+                to_review=True,
+            )
 
     if llm_backend is not None:
         tx = [{"description": description, "amount": amount, "doc_type": doc_type}]
         results: list[Optional[CategorizationResult]] = [None]
         direction = "expense" if amount < 0 else "income"
         categories = taxonomy.expenses if amount < 0 else taxonomy.income
+        # C-07: no history context for single-tx calls (review_service reclassification)
         _run_llm_batch_group(
             tx, [0], results,
             categories, taxonomy,
             llm_backend, fallback_backend, sanitize_config,
             description_language, 1, direction, "single",
+            fallback_categories=fallback_categories,
         )
         if results[0] is not None:
             return results[0]
 
-    return _make_fallback(amount)
+    return _make_fallback(amount, fallback_categories)
