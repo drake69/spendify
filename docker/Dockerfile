@@ -3,7 +3,7 @@
 # Build:  docker build -t spendify .
 # Run:    docker run -p 8501:8501 --env-file .env spendify
 
-FROM python:3.13-slim
+FROM python:3.14-slim
 
 # Build tools required by llama-cpp-python (compiled from source via scikit-build)
 RUN apt-get update -qq && \
