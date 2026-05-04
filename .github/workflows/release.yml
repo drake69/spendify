@@ -1,0 +1,331 @@
+name: Release — Build & Publish all platforms
+
+# Triggered on version tags (v*.*.*) or manually.
+# Builds native desktop apps for macOS, Windows, and Linux,
+# creates a GitHub Release, and attaches all artifacts.
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version override (e.g. 1.2.3). If empty, reads from VERSION file.'
+        required: false
+        default: ''
+
+env:
+  UV_CACHE_DIR: /tmp/uv-cache
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────
+  # Determine version once, share across jobs
+  # ─────────────────────────────────────────────────────────────────────────
+  prepare:
+    name: Determine version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Determine version
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VER="${{ github.event.inputs.version }}"
+          elif [ -f VERSION ]; then
+            VER="$(cat VERSION | tr -d '[:space:]')"
+          else
+            VER="0.0.0"
+          fi
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VER" >> "$GITHUB_OUTPUT"
+          echo "Version: $VER"
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # macOS — PyInstaller → .app → DMG
+  # ─────────────────────────────────────────────────────────────────────────
+  build-macos:
+    name: Build macOS DMG
+    needs: prepare
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Install dependencies (with desktop extras)
+        run: uv sync --extra desktop
+
+      - name: Generate app icon
+        run: uv run python packaging/macos/create_icon.py || echo "Icon generation failed — using default"
+
+      - name: Build .app via PyInstaller
+        run: |
+          uv run pyinstaller desktop.spec --noconfirm --clean
+          ls -lh dist/
+
+      - name: Verify .app bundle
+        run: |
+          test -d dist/SpendifAi.app
+          echo "✅ SpendifAi.app created"
+
+      - name: Install create-dmg
+        run: brew install create-dmg
+
+      - name: Build DMG
+        run: |
+          VERSION="${{ needs.prepare.outputs.version }}"
+          DMG_PATH="dist/SpendifAi-${VERSION}.dmg"
+          ICNS_PATH="packaging/macos/spendifai.icns"
+
+          ICON_ARGS=""
+          if [ -f "$ICNS_PATH" ]; then
+            ICON_ARGS="--volicon $ICNS_PATH"
+          fi
+
+          create-dmg \
+            --volname "Spendif.ai" \
+            $ICON_ARGS \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --icon "SpendifAi.app" 175 190 \
+            --hide-extension "SpendifAi.app" \
+            --app-drop-link 425 190 \
+            "$DMG_PATH" \
+            "dist/SpendifAi.app" \
+            || {
+              # create-dmg exits 2 when it can't set icon (non-fatal)
+              [ $? -eq 2 ] && echo "⚠ create-dmg icon warning (non-fatal)" || exit 1
+            }
+
+          ls -lh "$DMG_PATH"
+          echo "dmg_path=$DMG_PATH" >> "$GITHUB_ENV"
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: dist/SpendifAi-*.dmg
+          retention-days: 30
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Windows — PyInstaller → .exe folder → ZIP
+  # ─────────────────────────────────────────────────────────────────────────
+  build-windows:
+    name: Build Windows ZIP
+    needs: prepare
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Install dependencies (with desktop extras)
+        run: uv sync --extra desktop
+
+      - name: Build via PyInstaller
+        run: |
+          uv run pyinstaller desktop.spec --noconfirm --clean
+          dir dist\
+
+      - name: Verify .exe
+        run: |
+          if (Test-Path "dist\SpendifAi\SpendifAi.exe") {
+            Write-Host "✅ SpendifAi.exe created"
+          } else {
+            Write-Host "❌ SpendifAi.exe not found"
+            exit 1
+          }
+
+      - name: Create ZIP
+        run: |
+          $version = "${{ needs.prepare.outputs.version }}"
+          $zipName = "SpendifAi-${version}-windows.zip"
+
+          # Create staging directory with installer + docs
+          New-Item -ItemType Directory -Force "dist\zip_staging" | Out-Null
+          Copy-Item "dist\SpendifAi" "dist\zip_staging\SpendifAi" -Recurse
+          Copy-Item "packaging\windows\install.ps1" "dist\zip_staging\install.ps1"
+          Copy-Item "packaging\windows\uninstall.ps1" "dist\zip_staging\uninstall.ps1"
+          if (Test-Path "README.md") { Copy-Item "README.md" "dist\zip_staging\README.md" }
+          if (Test-Path "VERSION") { Copy-Item "VERSION" "dist\zip_staging\VERSION" }
+
+          Compress-Archive -Path "dist\zip_staging\*" -DestinationPath "dist\$zipName"
+          Write-Host "✅ $zipName created"
+          Get-Item "dist\$zipName" | Format-Table Name, Length
+
+      - name: Upload ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-zip
+          path: dist/SpendifAi-*-windows.zip
+          retention-days: 30
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Linux — .deb + .rpm
+  # ─────────────────────────────────────────────────────────────────────────
+  build-deb:
+    name: Build .deb (Ubuntu)
+    needs: prepare
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install fakeroot
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq fakeroot
+
+      - name: Build .deb package
+        run: bash packaging/linux/build-deb.sh --version ${{ needs.prepare.outputs.version }}
+
+      - name: Verify .deb
+        run: ls -lh build/spendifai_*.deb
+
+      - name: Smoke test — install in clean container
+        run: |
+          docker run --rm \
+            -v "$PWD/build:/packages:ro" \
+            ubuntu:24.04 \
+            bash -c '
+              set -e
+              apt-get update -qq
+              apt-get install -y -qq /packages/spendifai_*.deb 2>&1 | tail -5
+              dpkg -l spendifai | grep -q "^ii"
+              echo "✅ .deb installed"
+              test -f /opt/spendifai/app.py
+              echo "✅ app.py found"
+              apt-get remove -y spendifai
+              echo "✅ removed cleanly"
+            '
+
+      - name: Upload .deb artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deb-package
+          path: build/spendifai_*.deb
+          retention-days: 30
+
+  build-rpm:
+    name: Build .rpm (Fedora)
+    needs: prepare
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install rpm-build
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq rpm
+
+      - name: Build .rpm package
+        run: bash packaging/linux/build-rpm.sh --version ${{ needs.prepare.outputs.version }}
+
+      - name: Verify .rpm
+        run: ls -lh build/spendifai-*.rpm
+
+      - name: Smoke test — install in clean container
+        run: |
+          docker run --rm \
+            -v "$PWD/build:/packages:ro" \
+            fedora:41 \
+            bash -c '
+              set -e
+              dnf install -y -q /packages/spendifai-*.rpm 2>&1 | tail -5
+              rpm -q spendifai
+              echo "✅ .rpm installed"
+              test -f /opt/spendifai/app.py
+              echo "✅ app.py found"
+              dnf remove -y spendifai
+              echo "✅ removed cleanly"
+            '
+
+      - name: Upload .rpm artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpm-package
+          path: build/spendifai-*.rpm
+          retention-days: 30
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Publish — Create GitHub Release + attach all artifacts
+  # ─────────────────────────────────────────────────────────────────────────
+  publish:
+    name: Create GitHub Release
+    needs: [prepare, build-macos, build-windows, build-deb, build-rpm]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: packages/
+
+      - name: List all packages
+        run: find packages/ -type f | sort
+
+      - name: Compute SHA256 checksums
+        run: |
+          cd packages
+          find . -type f \( -name "*.dmg" -o -name "*.zip" -o -name "*.deb" -o -name "*.rpm" \) | while read f; do
+            sha256sum "$f"
+          done | tee ../SHA256SUMS.txt
+
+      - name: Build release notes
+        run: |
+          VERSION="${{ needs.prepare.outputs.version }}"
+
+          # Extract changelog section
+          NOTES=""
+          if [ -f CHANGELOG.md ]; then
+            NOTES=$(awk '/^## \[/{if(found) exit; found=1; next} found{print}' CHANGELOG.md)
+          fi
+          [ -z "$NOTES" ] && NOTES="Release v${VERSION}"
+
+          # Write release notes to file
+          cat > RELEASE_NOTES.md <<EOF
+          ## Spendif.ai v${VERSION}
+
+          ${NOTES}
+
+          ### Downloads
+
+          | Platform | File | Install |
+          |----------|------|---------|
+          | macOS | SpendifAi-${VERSION}.dmg | Double-click to install |
+          | Windows | SpendifAi-${VERSION}-windows.zip | Extract, run install.ps1 |
+          | Ubuntu/Debian | spendifai_${VERSION}_amd64.deb | sudo apt install ./spendifai_*.deb |
+          | Fedora/RHEL | spendifai-${VERSION}-1.noarch.rpm | sudo dnf install ./spendifai-*.rpm |
+
+          ### SHA256 Checksums
+          EOF
+          cat SHA256SUMS.txt >> RELEASE_NOTES.md
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ needs.prepare.outputs.tag }}"
+          FILES=$(find packages/ -type f \( -name "*.dmg" -o -name "*.zip" -o -name "*.deb" -o -name "*.rpm" \))
+          gh release create "$TAG" \
+            --title "Spendif.ai $TAG" \
+            --notes-file RELEASE_NOTES.md \
+            $FILES SHA256SUMS.txt
