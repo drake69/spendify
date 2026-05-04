@@ -8,7 +8,7 @@
 #
 # Azure ML: pushed to ACR, launched as ML Job with mounted input/output.
 
-FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04
+FROM nvidia/cuda:13.2.1-runtime-ubuntu22.04
 
 # ── System deps ──────────────────────────────────────────────────────────────
 RUN apt-get update && apt-get install -y --no-install-recommends \
