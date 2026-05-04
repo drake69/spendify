@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spendif.ai</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    overflow: hidden;
+  }
+  .logo {
+    font-size: 3rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.5rem;
+  }
+  .logo span { color: #53c28b; }
+  .subtitle {
+    font-size: 0.95rem;
+    color: #8899aa;
+    margin-bottom: 2.5rem;
+  }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid rgba(83, 194, 139, 0.2);
+    border-top-color: #53c28b;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 1.5rem;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #status {
+    font-size: 0.9rem;
+    color: #8899aa;
+    text-align: center;
+    min-height: 1.4em;
+    transition: opacity 0.3s;
+  }
+  .progress-bar {
+    width: 300px;
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    margin-top: 1rem;
+    overflow: hidden;
+    display: none;
+  }
+  .progress-bar.visible { display: block; }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: #53c28b;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+</style>
+</head>
+<body>
+  <div class="logo">Spendif<span>.ai</span></div>
+  <div class="subtitle">Personal Finance Ledger</div>
+  <div class="spinner"></div>
+  <div id="status">Starting...</div>
+  <div class="progress-bar" id="progressBar">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+  <script>
+    function updateStatus(msg) {
+      document.getElementById('status').textContent = msg;
+    }
+    function updateProgress(pct) {
+      var bar = document.getElementById('progressBar');
+      var fill = document.getElementById('progressFill');
+      bar.classList.add('visible');
+      fill.style.width = Math.min(100, Math.round(pct * 100)) + '%';
+    }
+    function hideProgress() {
+      document.getElementById('progressBar').classList.remove('visible');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+name: spendifai-bench
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  - cmake
+  - pip:
+    - huggingface_hub
+    - pandas
+    - openpyxl
+    - sqlalchemy
+    - pydantic
+    - pyyaml
+    - chardet

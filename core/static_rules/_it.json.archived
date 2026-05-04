@@ -1,0 +1,72 @@
+[
+  {
+    "pattern": "(conad|coop|esselunga|lidl|carrefour|eurospin|aldi|penny|pam\\b)",
+    "category": "Alimentari",
+    "subcategory": "Spesa supermercato",
+    "match_type": "regex",
+    "direction": "expense"
+  },
+  {
+    "pattern": "(farmacia|pharma)",
+    "category": "Salute",
+    "subcategory": "Farmaci",
+    "match_type": "regex",
+    "direction": "expense"
+  },
+  {
+    "pattern": "(eni\\b|shell|q8|tamoil|ip\\b|api\\b|agip)",
+    "category": "Trasporti",
+    "subcategory": "Carburante",
+    "match_type": "regex",
+    "direction": "expense"
+  },
+  {
+    "pattern": "(telepass|autostrad)",
+    "category": "Trasporti",
+    "subcategory": "Parcheggio / ZTL",
+    "match_type": "regex",
+    "direction": "expense"
+  },
+  {
+    "pattern": "(trenitalia|italo|frecciarossa|frecciargento)",
+    "category": "Trasporti",
+    "subcategory": "Trasporto pubblico",
+    "match_type": "regex",
+    "direction": "expense"
+  },
+  {
+    "pattern": "(enel\\b|iren\\b|a2a\\b|hera\\b|eni gas)",
+    "category": "Casa",
+    "subcategory": "Energia elettrica",
+    "match_type": "regex",
+    "direction": "expense"
+  },
+  {
+    "pattern": "(netflix|spotify|amazon prime|disney\\+|apple tv)",
+    "category": "Svago e tempo libero",
+    "subcategory": "Streaming / abbonamenti digitali",
+    "match_type": "regex",
+    "direction": "expense"
+  },
+  {
+    "pattern": "(stipendio|salary|busta paga)",
+    "category": "Lavoro dipendente",
+    "subcategory": "Stipendio",
+    "match_type": "regex",
+    "direction": "income"
+  },
+  {
+    "pattern": "(pensione|inps rendita)",
+    "category": "Prestazioni sociali",
+    "subcategory": "Pensione / rendita",
+    "match_type": "regex",
+    "direction": "income"
+  },
+  {
+    "pattern": "(commissione|canone conto|spese tenuta)",
+    "category": "Finanza e assicurazioni",
+    "subcategory": "Commissioni bancarie",
+    "match_type": "regex",
+    "direction": "expense"
+  }
+]

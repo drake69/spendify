@@ -1,21 +1,21 @@
-# ── Spendify — Installer (Windows PowerShell) ────────────────────────────────
+# ── Spendif.ai — Installer (Windows PowerShell) ────────────────────────────────
 # Uso (PowerShell come utente normale):
 #   irm https://raw.githubusercontent.com/drake69/spendify/main/install.ps1 | iex
 # ─────────────────────────────────────────────────────────────────────────────
 $ErrorActionPreference = "Stop"
 
-$InstallDir = "$env:USERPROFILE\spendify"
+$InstallDir = "$env:USERPROFILE\spendifai"
 $ComposeUrl = "https://raw.githubusercontent.com/drake69/spendify/main/docker/docker-compose.release.yml"
 $AppUrl     = "http://localhost:8501"
 
-function Info    { param($msg) Write-Host "[spendify] $msg" -ForegroundColor Cyan }
+function Info    { param($msg) Write-Host "[spendif.ai] $msg" -ForegroundColor Cyan }
 function Success { param($msg) Write-Host "✅ $msg" -ForegroundColor Green }
 function Warn    { param($msg) Write-Host "⚠️  $msg" -ForegroundColor Yellow }
 function Err     { param($msg) Write-Host "❌ $msg" -ForegroundColor Red; exit 1 }
 
 Write-Host ""
 Write-Host "╔══════════════════════════════════════╗" -ForegroundColor White
-Write-Host "║        Spendify — Installer          ║" -ForegroundColor White
+Write-Host "║        Spendif.ai — Installer          ║" -ForegroundColor White
 Write-Host "╚══════════════════════════════════════╝" -ForegroundColor White
 Write-Host ""
 
@@ -67,7 +67,7 @@ Success "Configurazione scaricata"
 Info "Scarico le immagini Docker (prima volta: ~500 MB, poi aggiornamenti incrementali)..."
 docker compose @ProfileArgs pull
 
-Info "Avvio Spendify..."
+Info "Avvio Spendif.ai..."
 docker compose @ProfileArgs up -d
 
 # ── 6. Attendi che l'app sia pronta ───────────────────────────────────────────
@@ -84,7 +84,7 @@ for ($i = 1; $i -le 30; $i++) {
 if (-not $ready) {
     Warn "L'app non risponde entro 60s. Controlla i log con:`n  docker compose --project-directory $InstallDir logs -f"
 } else {
-    Success "Spendify è in esecuzione!"
+    Success "Spendif.ai è in esecuzione!"
 }
 
 # ── 7. Istruzioni finali ──────────────────────────────────────────────────────
@@ -95,7 +95,7 @@ if ($UseOllama) {
     Write-Host "  AI locale in download — attendere il completamento (vedi log):" -ForegroundColor Yellow
     Write-Host "  docker compose --project-directory $InstallDir logs -f ollama-init"
     Write-Host ""
-    Write-Host "  Poi in Spendify → ⚙️ Impostazioni → Backend LLM:"
+    Write-Host "  Poi in Spendif.ai → ⚙️ Impostazioni → Backend LLM:"
     Write-Host "    Tipo: Ollama   URL: http://ollama:11434   Modello: gemma3:12b"
     Write-Host ""
 }

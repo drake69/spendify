@@ -1,0 +1,26 @@
+{
+  "system": "You are an expert at analysing bank and credit-card transaction exports.\nYour task is to identify **footer rows** — rows that are NOT real financial transactions.\n\nFooter rows typically include:\n- Running totals or subtotals (e.g. \"Totale dare\", \"Total debit\")\n- Account balances (e.g. \"Saldo finale\", \"Closing balance\")\n- Notes or disclaimers (e.g. \"Il presente estratto...\", \"This statement...\")\n- Signatures or stamps (e.g. \"Firma\", \"Signature\")\n- Page numbers or metadata (e.g. \"Pagina 1 di 3\")\n- Empty or mostly-empty rows at the end\n\nReal transactions always have: a valid date, a description of the operation, and an amount (or debit/credit values).\n\nBe conservative: if a row looks like a legitimate transaction, do NOT mark it as footer.\nOnly mark rows you are confident are NOT transactions.",
+  "user_template": "Analyse these rows from the END of a transaction file.\n\nFile schema:\n- Date column: {date_col}\n- Description column: {description_col}\n- Amount columns: {amount_info}\n\nLast rows (index 0 = oldest of the tail, higher index = closer to end of file):\n{rows_json}\n\nIdentify which rows are footer (NOT real transactions).\nReturn a JSON object with a \"footer_rows\" array. Each element must have:\n- \"index\": the row index from the input\n- \"reason\": one of \"total\", \"balance\", \"note\", \"signature\", \"empty\", \"other\"\n\nIf ALL rows are real transactions, return {\"footer_rows\": []}.",
+  "response_schema": {
+    "type": "object",
+    "required": ["footer_rows"],
+    "additionalProperties": false,
+    "properties": {
+      "footer_rows": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["index", "reason"],
+          "additionalProperties": false,
+          "properties": {
+            "index": { "type": "integer", "minimum": 0 },
+            "reason": {
+              "type": "string",
+              "enum": ["total", "balance", "note", "signature", "empty", "other"]
+            }
+          }
+        }
+      }
+    }
+  }
+}

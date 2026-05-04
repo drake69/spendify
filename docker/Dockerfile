@@ -5,6 +5,11 @@
 
 FROM python:3.13-slim
 
+# Build tools required by llama-cpp-python (compiled from source via scikit-build)
+RUN apt-get update -qq && \
+    apt-get install -y -qq --no-install-recommends gcc g++ cmake && \
+    rm -rf /var/lib/apt/lists/*
+
 # Installa uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 

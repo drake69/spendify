@@ -53,9 +53,9 @@ def load_pdf(pdf_path):
 
                 prompt = f"""
 
-                Sei un esperto di estratti conto bancari.
+                Sei un esperto di movimenti bancari.
 
-                Ti viene fornito il TESTO COMPLETO di una pagina di un estratto conto PDF.
+                Ti viene fornito il TESTO COMPLETO di una pagina di un file movimenti PDF.
                 Il testo può contenere intestazioni, saldi, note e TABELLE.
 
                 OBIETTIVO:
@@ -73,7 +73,7 @@ def load_pdf(pdf_path):
                 - Mantieni la descrizione completa cosi come appare
                 - NON normalizzare numeri o date
                 - NON interpretare Entrata/Uscita
-                - NON prendere le transazioni senza data o importo o descrizione, le righe riepilogative, di saldo, riferite ad estratti conti precendenti
+                - NON prendere le transazioni senza data o importo o descrizione, le righe riepilogative, di saldo, riferite a movimenti di periodi precendenti
                 - NON aggiungere righe inesistenti
 
                 RISPONDI SOLO IN JSON VALIDO:

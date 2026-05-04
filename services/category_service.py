@@ -35,14 +35,14 @@ class CategoryService:
         backend=None,
     ) -> CategorizationResult:
         """Categorize one transaction using rules → static → LLM cascade."""
-        from core.orchestrator import ProcessingConfig, _build_backend
+        from core.orchestrator import ProcessingConfig, _build_backend, _build_categorizer_backend
         with self._session() as s:
             taxonomy = repository.get_taxonomy_config(s)
             user_rules = repository.get_category_rules(s)
             settings = repository.get_all_user_settings(s)
         if backend is None:
             config = self._config_from_settings(settings)
-            backend = _build_backend(config)
+            backend = _build_categorizer_backend(config) or _build_backend(config)
         return categorize_transaction(
             description=description,
             amount=amount,
@@ -63,14 +63,19 @@ class CategoryService:
         progress_callback=None,
     ) -> list[CategorizationResult]:
         """Categorize a batch of transactions."""
-        from core.orchestrator import ProcessingConfig, _build_backend
+        from core.orchestrator import ProcessingConfig, _build_backend, _build_categorizer_backend
+        from services.nsi_taxonomy_service import NsiTaxonomyService
         with self._session() as s:
             taxonomy = repository.get_taxonomy_config(s)
             user_rules = repository.get_category_rules(s)
             settings = repository.get_all_user_settings(s)
         if backend is None:
             config = self._config_from_settings(settings)
-            backend = _build_backend(config)
+            backend = _build_categorizer_backend(config) or _build_backend(config)
+        # C-08-cascade: load (or build) NSI taxonomy_map
+        nsi_svc = NsiTaxonomyService(self.engine)
+        with self._session() as s:
+            taxonomy_map = nsi_svc.get_or_build(s, taxonomy, backend)
         return categorize_batch(
             transactions=transactions,
             taxonomy=taxonomy,
@@ -79,7 +84,9 @@ class CategoryService:
             sanitize_config=None,
             fallback_backend=None,
             description_language=settings.get("description_language", "it"),
+            user_country=settings.get("country", ""),
             progress_callback=progress_callback,
+            taxonomy_map=taxonomy_map,
         )
 
     # ── Internal helpers ──────────────────────────────────────────────────────
@@ -95,4 +102,18 @@ class CategoryService:
             openai_model=settings.get("openai_model", "gpt-4o-mini"),
             anthropic_api_key=settings.get("anthropic_api_key", ""),
             claude_model=settings.get("anthropic_model", "claude-3-haiku-20240307"),
+            user_country=settings.get("country", ""),
+            cat_llm_backend=settings.get("cat_llm_backend", ""),
+            cat_ollama_base_url=settings.get("cat_ollama_base_url", ""),
+            cat_ollama_model=settings.get("cat_ollama_model", ""),
+            cat_openai_model=settings.get("cat_openai_model", ""),
+            cat_openai_api_key=settings.get("cat_openai_api_key", ""),
+            cat_claude_model=settings.get("cat_anthropic_model", ""),
+            cat_anthropic_api_key=settings.get("cat_anthropic_api_key", ""),
+            cat_compat_base_url=settings.get("cat_compat_base_url", ""),
+            cat_compat_api_key=settings.get("cat_compat_api_key", ""),
+            cat_compat_model=settings.get("cat_compat_model", ""),
+            cat_llama_cpp_model_path=settings.get("cat_llama_cpp_model_path", ""),
+            cat_llama_cpp_n_gpu_layers=int(settings.get("cat_llama_cpp_n_gpu_layers", "-1")),
+            cat_llama_cpp_n_ctx=int(settings.get("cat_llama_cpp_n_ctx", "0")),
         )

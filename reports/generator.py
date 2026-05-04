@@ -112,8 +112,8 @@ def generate_html_report(
                 f"<td>{tx.amount}</td><td>{tx.category or ''}</td></tr>"
                 for tx in summary["transactions"][:200]
             )
-            return f"""<!DOCTYPE html><html><head><title>Spendify Report</title></head><body>
-<h1>Spendify Report</h1>
+            return f"""<!DOCTYPE html><html><head><title>Spendif.ai Report</title></head><body>
+<h1>Spendif.ai Report</h1>
 <p>Period: {date_from or 'all'} – {date_to or 'present'}</p>
 <p>Net balance: {summary['net']:.2f} €</p>
 <p>Total income: {summary['total_income']:.2f} €</p>

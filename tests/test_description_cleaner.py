@@ -64,40 +64,40 @@ class TestCallLlmBatch:
     def _call(self, descriptions, llm_result):
         backend = MagicMock()
         with patch("core.description_cleaner.call_with_fallback", return_value=llm_result):
-            return _call_llm_batch(descriptions, "system", backend, None, "test", "expense")
+            return _call_llm_batch(descriptions, "system", backend, None, 30, "test", "expense")
 
     def test_success_returns_mapped_results(self):
         descs = ["desc1", "desc2"]
-        result = self._call(descs, ({"results": ["Out1", "Out2"]}, "mock"))
+        result = self._call(descs, ({"results": [{"idx": 0, "name": "Out1"}, {"idx": 1, "name": "Out2"}]}, "mock"))
         assert result == ["Out1", "Out2"]
 
     def test_llm_failure_returns_originals(self):
-        """call_with_fallback returns (None, None) → fall back to original (lines 388-393)."""
+        """call_with_fallback returns (None, None) → fall back to original."""
         descs = ["desc1", "desc2"]
         result = self._call(descs, (None, None))
         assert result == descs
 
     def test_unexpected_response_type_returns_originals(self):
-        """results is not a list → return originals (lines 396-401)."""
+        """results is not a list → return originals."""
         descs = ["desc1", "desc2"]
         result = self._call(descs, ({"results": "not_a_list"}, "mock"))
         assert result == descs
 
-    def test_short_results_padded_with_none(self):
-        """LLM returns fewer results → missing ones fall back to originals (lines 403-410)."""
+    def test_short_results_padded_with_originals(self):
+        """LLM returns fewer results → missing ones fall back to originals."""
         descs = ["desc1", "desc2", "desc3"]
-        # LLM returns only 2 instead of 3
-        result = self._call(descs, ({"results": ["Out1", "Out2"]}, "mock"))
+        # LLM returns only 2 indexed results instead of 3
+        result = self._call(descs, ({"results": [{"idx": 0, "name": "Out1"}, {"idx": 1, "name": "Out2"}]}, "mock"))
         assert len(result) == 3
         assert result[0] == "Out1"
         assert result[1] == "Out2"
         assert result[2] == "desc3"  # padded with original
 
     def test_null_result_entry_uses_original(self):
-        """A None entry in results → maps to original description."""
+        """A result entry without a valid name → maps to original description."""
         descs = ["desc1", "desc2"]
-        result = self._call(descs, ({"results": [None, "Out2"]}, "mock"))
-        assert result[0] == "desc1"
+        result = self._call(descs, ({"results": [{"idx": 1, "name": "Out2"}]}, "mock"))
+        assert result[0] == "desc1"  # idx 0 missing → original
         assert result[1] == "Out2"
 
 
@@ -115,20 +115,20 @@ class TestProcessGroup:
         indices = [0]
         backend = MagicMock()
         with patch("core.description_cleaner.call_with_fallback",
-                   return_value=({"results": ["COOP"]}, "mock")):
+                   return_value=({"results": [{"idx": 0, "name": "COOP"}]}, "mock")):
             count = _process_group(txs, indices, "system", backend, None, 30, "test", "expense")
         assert count == 1
         assert txs[0]["description"] == "COOP"
 
     def test_bad_llm_output_not_applied(self):
-        """Known-bad outputs like 'null' are discarded (lines 355-360)."""
+        """Known-bad outputs like 'null' are discarded."""
         txs = self._make_txs(["desc1"])
         indices = [0]
         backend = MagicMock()
         for bad_val in ["null", "none", "n/a", "nan", "-"]:
             txs[0]["description"] = "desc1"
             with patch("core.description_cleaner.call_with_fallback",
-                       return_value=({"results": [bad_val]}, "mock")):
+                       return_value=({"results": [{"idx": 0, "name": bad_val}]}, "mock")):
                 _process_group(txs, indices, "sys", backend, None, 30, "test", "expense")
             assert txs[0]["description"] == "desc1"
 
@@ -138,7 +138,7 @@ class TestProcessGroup:
         indices = [0]
         backend = MagicMock()
         with patch("core.description_cleaner.call_with_fallback",
-                   return_value=({"results": ["X"]}, "mock")):
+                   return_value=({"results": [{"idx": 0, "name": "X"}]}, "mock")):
             _process_group(txs, indices, "sys", backend, None, 30, "test", "expense")
         assert txs[0]["description"] == "original desc"
 
@@ -153,7 +153,9 @@ class TestProcessGroup:
             nonlocal call_count
             call_count += 1
             n = kwargs["user_prompt"].count('"desc')
-            return {"results": [f"clean{i}" for i in range(n)]}, "mock"
+            # Return indexed format
+            batch_start = call_count - 1  # approximate
+            return {"results": [{"idx": i, "name": f"clean{i}"} for i in range(n)]}, "mock"
 
         with patch("core.description_cleaner.call_with_fallback", side_effect=fake_call):
             _process_group(txs, indices, "sys", backend, None, 2, "test", "expense")
@@ -172,7 +174,7 @@ class TestProcessGroup:
 
         def fake_call(**kwargs):
             captured.append(kwargs["user_prompt"])
-            return {"results": ["COOP"]}, "mock"
+            return {"results": [{"idx": 0, "name": "COOP"}]}, "mock"
 
         with patch("core.description_cleaner.call_with_fallback", side_effect=fake_call):
             _process_group(txs, indices, "sys", backend, None, 30, "test", "expense")
@@ -201,7 +203,7 @@ class TestCleanDescriptionsBatch:
         def fake_call(**kwargs):
             nonlocal call_count
             call_count += 1
-            return {"results": ["Cleaned"]}, "mock"
+            return {"results": [{"idx": 0, "name": "Cleaned"}]}, "mock"
 
         with patch("core.description_cleaner.call_with_fallback", side_effect=fake_call):
             result = clean_descriptions_batch(txs, backend)
@@ -213,7 +215,7 @@ class TestCleanDescriptionsBatch:
         txs = [{"description": "desc", "raw_description": "desc", "amount": "invalid"}]
         backend = MagicMock()
         with patch("core.description_cleaner.call_with_fallback",
-                   return_value=({"results": ["Cleaned"]}, "mock")):
+                   return_value=({"results": [{"idx": 0, "name": "Cleaned"}]}, "mock")):
             result = clean_descriptions_batch(txs, backend)
         assert result[0]["description"] == "Cleaned"
 
@@ -224,7 +226,7 @@ class TestCleanDescriptionsBatch:
         ]
         backend = MagicMock()
         with patch("core.description_cleaner.call_with_fallback",
-                   return_value=({"results": [f"Clean{i}" for i in range(3)]}, "mock")):
+                   return_value=({"results": [{"idx": i, "name": f"Clean{i}"} for i in range(3)]}, "mock")):
             result = clean_descriptions_batch(txs, backend)
         assert result[0]["description"] == "Clean0"
 
@@ -234,6 +236,6 @@ class TestCleanDescriptionsBatch:
         ]
         backend = MagicMock()
         with patch("core.description_cleaner.call_with_fallback",
-                   return_value=({"results": ["ACME SRL"]}, "mock")):
+                   return_value=({"results": [{"idx": 0, "name": "ACME SRL"}]}, "mock")):
             result = clean_descriptions_batch(txs, backend)
         assert result[0]["description"] == "ACME SRL"

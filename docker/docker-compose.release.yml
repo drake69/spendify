@@ -1,4 +1,4 @@
-# ── Spendify — Avvio rapido (immagine pre-compilata) ─────────────────────────
+# ── Spendif.ai — Avvio rapido (immagine pre-compilata) ─────────────────────────
 #
 # Non serve git clone né build locale.
 # Usa l'immagine pubblicata automaticamente su GitHub Container Registry.
@@ -19,24 +19,24 @@
 #   docker compose [--profile ollama] down
 # ─────────────────────────────────────────────────────────────────────────────
 
-name: spendify
+name: spendifai
 
 services:
-  spendify:
+  spendifai:
     image: ghcr.io/drake69/spendify:latest
-    container_name: spendify_app
+    container_name: spendifai_app
     restart: unless-stopped
 
     ports:
       - "8501:8501"
 
     environment:
-      SPENDIFY_DB: "sqlite:////app/data/ledger.db"
+      SPENDIFAI_DB: "sqlite:////app/data/ledger.db"
       TAXONOMY_PATH: "/app/taxonomy.yaml"
 
     volumes:
-      - spendify_data:/app/data
-      - spendify_logs:/app/logs
+      - spendifai_data:/app/data
+      - spendifai_logs:/app/logs
 
     healthcheck:
       test: ["CMD", "python", "-c",
@@ -50,7 +50,7 @@ services:
   # Server Ollama: rimane sempre in esecuzione dopo il primo avvio.
   ollama:
     image: ollama/ollama:latest
-    container_name: spendify_ollama
+    container_name: spendifai_ollama
     restart: unless-stopped
     profiles: ["ollama"]
     volumes:
@@ -65,7 +65,7 @@ services:
   # Scarica gemma3:12b la prima volta (poi esce; se già presente lo salta).
   ollama-init:
     image: ollama/ollama:latest
-    container_name: spendify_ollama_init
+    container_name: spendifai_ollama_init
     restart: on-failure
     profiles: ["ollama"]
     environment:
@@ -83,9 +83,9 @@ services:
       - ollama_models:/root/.ollama
 
 volumes:
-  spendify_data:
+  spendifai_data:
     driver: local
-  spendify_logs:
+  spendifai_logs:
     driver: local
   ollama_models:
     driver: local

@@ -3,17 +3,51 @@ from typing import Any, Optional
 from pydantic import BaseModel, Field
 from core.models import DocumentType, SignConvention, Confidence
 
+# Fields the LLM must always produce (no sensible default)
+LLM_REQUIRED_FIELDS = [
+    "doc_type", "date_col", "date_format", "sign_convention",
+    "description_col", "description_cols", "account_label",
+    "invert_sign", "positive_ratio", "semantic_evidence",
+]
+
+# Defaults for fields the LLM may omit
+LLM_OPTIONAL_DEFAULTS: dict[str, Any] = {
+    "date_accounting_col": None,
+    "amount_col": None,
+    "debit_col": None,
+    "credit_col": None,
+    "currency_col": None,
+    "default_currency": "EUR",
+    "is_zero_sum": False,
+    "internal_transfer_patterns": [],
+    "encoding": "utf-8",
+    "sheet_name": None,
+    "skip_rows": 0,
+    "delimiter": None,
+    "negative_ratio": None,
+    "normalization_case_id": None,
+}
+
+
+def fill_llm_defaults(data: dict[str, Any]) -> dict[str, Any]:
+    """Fill missing optional fields with sensible defaults."""
+    for key, default in LLM_OPTIONAL_DEFAULTS.items():
+        if key not in data:
+            data[key] = default
+    return data
+
 
 class DocumentSchema(BaseModel):
-    """Canonical parsing schema for a bank statement source."""
+    """Canonical parsing schema for a movements file source."""
     # required
     doc_type: DocumentType
     date_col: str
-    amount_col: str
+    amount_col: Optional[str] = None  # None when debit_col+credit_col split is used
     sign_convention: SignConvention
     date_format: str
     account_label: str
     confidence: Confidence
+    confidence_score: float = 0.0  # 0.0-1.0 deterministic score
 
     # optional column mappings
     date_accounting_col: Optional[str] = None
@@ -28,6 +62,8 @@ class DocumentSchema(BaseModel):
     is_zero_sum: bool = False
     invert_sign: bool = False  # True when card file stores expenses as positive (negate all amounts)
     internal_transfer_patterns: list[str] = Field(default_factory=list)
+    footer_patterns: list[str] = Field(default_factory=list)
+    has_borders: bool = False  # True if XLSX source uses bordered table (detected on first load)
     encoding: str = "utf-8"
     sheet_name: Optional[str] = None
     skip_rows: int = 0
@@ -48,15 +84,7 @@ class DocumentSchema(BaseModel):
         return {
             "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
-            "required": [
-                "doc_type", "date_col", "date_accounting_col", "amount_col",
-                "debit_col", "credit_col", "description_col", "description_cols",
-                "currency_col", "default_currency", "date_format", "sign_convention",
-                "is_zero_sum", "invert_sign", "internal_transfer_patterns",
-                "account_label", "encoding", "sheet_name", "skip_rows", "delimiter",
-                "confidence", "positive_ratio", "negative_ratio", "semantic_evidence",
-                "normalization_case_id",
-            ],
+            "required": LLM_REQUIRED_FIELDS,
             "additionalProperties": False,
             "properties": {
                 "doc_type": {
@@ -65,7 +93,7 @@ class DocumentSchema(BaseModel):
                 },
                 "date_col": {"type": "string"},
                 "date_accounting_col": {"type": ["string", "null"]},
-                "amount_col": {"type": "string"},
+                "amount_col": {"type": ["string", "null"]},
                 "debit_col": {"type": ["string", "null"]},
                 "credit_col": {"type": ["string", "null"]},
                 "description_col": {"type": ["string", "null"]},
@@ -118,6 +146,109 @@ class DocumentSchema(BaseModel):
                 },
             },
         }
+
+
+# ── Multi-step classifier sub-schemas ─────────────────────────────────────
+
+STEP1_REQUIRED = ["doc_type"]
+STEP2_REQUIRED = ["date_col", "description_col", "description_cols"]
+STEP3_REQUIRED = [
+    "sign_convention", "date_format", "account_label",
+    "invert_sign", "positive_ratio", "semantic_evidence",
+]
+
+
+def step1_json_schema() -> dict[str, Any]:
+    """JSON schema for Step 1: Document Identity."""
+    return {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "required": STEP1_REQUIRED,
+        "additionalProperties": False,
+        "properties": {
+            "doc_type": {
+                "type": "string",
+                "enum": [t.value for t in DocumentType],
+            },
+            "encoding": {"type": "string"},
+            "delimiter": {"type": ["string", "null"]},
+            "sheet_name": {"type": ["string", "null"]},
+            "skip_rows": {"type": "integer", "minimum": 0},
+        },
+    }
+
+
+def step2_json_schema() -> dict[str, Any]:
+    """JSON schema for Step 2: Column Mapping."""
+    return {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "required": STEP2_REQUIRED,
+        "additionalProperties": False,
+        "properties": {
+            "date_col": {"type": "string"},
+            "date_accounting_col": {"type": ["string", "null"]},
+            "amount_col": {"type": ["string", "null"]},
+            "debit_col": {"type": ["string", "null"]},
+            "credit_col": {"type": ["string", "null"]},
+            "description_col": {"type": ["string", "null"]},
+            "description_cols": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "All columns containing descriptive text.",
+            },
+            "currency_col": {"type": ["string", "null"]},
+            "default_currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+        },
+    }
+
+
+def step3_json_schema() -> dict[str, Any]:
+    """JSON schema for Step 3: Semantic Analysis."""
+    return {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "required": STEP3_REQUIRED,
+        "additionalProperties": False,
+        "properties": {
+            "sign_convention": {
+                "type": "string",
+                "enum": [c.value for c in SignConvention],
+            },
+            "invert_sign": {
+                "type": "boolean",
+                "description": "Set true when a card file stores expenses as positive amounts.",
+            },
+            "date_format": {"type": "string"},
+            "is_zero_sum": {"type": "boolean"},
+            "internal_transfer_patterns": {
+                "type": "array",
+                "items": {"type": "string"},
+            },
+            "account_label": {"type": "string"},
+            "confidence": {
+                "type": "string",
+                "enum": [c.value for c in Confidence],
+            },
+            "positive_ratio": {
+                "type": ["number", "null"],
+                "description": "Fraction of amount-column values > 0 in the sample (0.0-1.0).",
+            },
+            "negative_ratio": {
+                "type": ["number", "null"],
+                "description": "Fraction of amount-column values < 0 in the sample (0.0-1.0).",
+            },
+            "semantic_evidence": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Short sentences explaining classification decision.",
+            },
+            "normalization_case_id": {
+                "type": ["string", "null"],
+                "description": "Case ID: C1=bank signed_single, C2=card inverted, C3=debit/credit.",
+            },
+        },
+    }
 
 
 def build_categorization_schema(expense_categories: list[str], income_categories: list[str]) -> dict[str, Any]:

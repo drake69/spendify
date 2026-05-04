@@ -1,0 +1,11 @@
+# Custom-compiled packages to protect from uv sync.
+# One package name per line. These are backed up before uv sync
+# and restored after, preserving GPU-specific builds.
+#
+# Add any package you compiled manually (e.g. with CMAKE_ARGS).
+# Lines starting with # are ignored.
+
+llama_cpp_python
+vllm
+torch
+triton

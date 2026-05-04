@@ -1,19 +1,19 @@
-# ── Spendify — Docker Compose (sviluppo — build da sorgente) ─────────────────
+# ── Spendif.ai — Docker Compose (sviluppo — build da sorgente) ─────────────────
 # Avvio:   docker compose -f docker/docker-compose.yml up -d
 # Stop:    docker compose -f docker/docker-compose.yml down
-# Logs:    docker compose -f docker/docker-compose.yml logs -f spendify
+# Logs:    docker compose -f docker/docker-compose.yml logs -f spendifai
 # Backup:  vedi docs/deployment.md
 
-name: spendify
+name: spendifai
 
 services:
 
-  spendify:
+  spendifai:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    image: spendify:latest
-    container_name: spendify_app
+    image: spendifai:latest
+    container_name: spendifai_app
     restart: unless-stopped
 
     ports:
@@ -24,14 +24,14 @@ services:
 
     environment:
       # Override del percorso DB → usa il volume /app/data per la persistenza
-      SPENDIFY_DB: "sqlite:////app/data/ledger.db"
+      SPENDIFAI_DB: "sqlite:////app/data/ledger.db"
       TAXONOMY_PATH: "/app/taxonomy.yaml"
 
     volumes:
       # Persistenza DB SQLite
-      - spendify_data:/app/data
+      - spendifai_data:/app/data
       # Log applicazione
-      - spendify_logs:/app/logs
+      - spendifai_logs:/app/logs
       # taxonomy.yaml montato read-only dall'host (per aggiornamenti senza rebuild)
       - ../taxonomy.yaml:/app/taxonomy.yaml:ro
 
@@ -50,8 +50,8 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    image: spendify:latest
-    container_name: spendify_api
+    image: spendifai:latest
+    container_name: spendifai_api
     restart: unless-stopped
     command: ["uv", "run", "uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
@@ -63,11 +63,11 @@ services:
       TAXONOMY_PATH: "/app/taxonomy.yaml"
 
     volumes:
-      - spendify_data:/app/data
+      - spendifai_data:/app/data
       - ../taxonomy.yaml:/app/taxonomy.yaml:ro
 
     depends_on:
-      spendify:
+      spendifai:
         condition: service_healthy
 
     healthcheck:
@@ -83,7 +83,7 @@ services:
   # Poi scarica il modello (una tantum): docker compose exec ollama ollama pull gemma3:12b
   ollama:
     image: ollama/ollama:latest
-    container_name: spendify_ollama
+    container_name: spendifai_ollama
     restart: unless-stopped
     profiles: ["ollama"]
     ports:
@@ -106,7 +106,7 @@ services:
   # 3. Avvio: docker compose --profile llama-cpp up -d
   llama-cpp:
     image: ghcr.io/ggerganov/llama.cpp:server
-    container_name: spendify_llama
+    container_name: spendifai_llama
     restart: unless-stopped
     profiles: ["llama-cpp"]
     ports:
@@ -121,9 +121,9 @@ services:
       --threads 4
 
 volumes:
-  spendify_data:
+  spendifai_data:
     driver: local
-  spendify_logs:
+  spendifai_logs:
     driver: local
   ollama_models:
     driver: local

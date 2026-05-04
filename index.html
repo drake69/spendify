@@ -1,11 +1,19 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-M7MGHTEV07"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-M7MGHTEV07');
+  </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Spendify — Il tuo estratto conto unificato, sul tuo computer</title>
-  <meta name="description" content="Spendify aggrega automaticamente estratti conto di banche diverse in un unico ledger, senza duplicati, senza abbonamenti, senza inviare i tuoi dati a nessuno." />
-  <meta property="og:title" content="Spendify — Il tuo estratto conto unificato" />
+  <title>Spendify — I tuoi movimenti unificati, sul tuo computer</title>
+  <meta name="description" content="Spendify aggrega automaticamente i movimenti di banche diverse in un unico ledger, senza duplicati, senza abbonamenti, senza inviare i tuoi dati a nessuno." />
+  <meta property="og:title" content="Spendify — I tuoi movimenti unificati" />
   <meta property="og:description" content="Un registro finanziario personale open source che gira sul tuo computer. I tuoi dati restano tuoi." />
   <meta property="og:type" content="website" />
   <style>
@@ -628,6 +636,24 @@
       section { padding: 3.5rem 1.25rem; }
       .trust-bar { gap: 1.5rem; }
     }
+
+    /* ── LANG SWITCHER ────────────────────────────────────── */
+    .lang-switcher {
+      display: flex;
+      gap: 0.4rem;
+      align-items: center;
+      margin-left: 1rem;
+    }
+    .lang-switcher a {
+      font-size: 1.1rem;
+      text-decoration: none;
+      opacity: 0.5;
+      transition: opacity 0.2s;
+    }
+    .lang-switcher a:hover,
+    .lang-switcher a.active {
+      opacity: 1;
+    }
   </style>
 </head>
 <body>
@@ -641,14 +667,21 @@
     <li><a href="#features">Funzionalità</a></li>
     <li><a href="#developer">Developer</a></li>
     <li><a href="https://github.com/drake69/spendify" target="_blank" class="nav-cta">GitHub ↗</a></li>
-    <li><a href="index.en.html">🇬🇧 EN</a></li>
   </ul>
+  <div class="lang-switcher">
+    <a href="index.html" title="Italiano" class="active">🇮🇹</a>
+    <a href="index.en.html" title="English">🇬🇧</a>
+    <a href="index.de.html" title="Deutsch">🇩🇪</a>
+    <a href="index.fr.html" title="Français">🇫🇷</a>
+    <a href="index.es.html" title="Español">🇪🇸</a>
+    <a href="index.pt.html" title="Português">🇵🇹</a>
+  </div>
 </nav>
 
 <!-- ── HERO ─────────────────────────────────────────────────────────────── -->
 <section class="hero">
   <div class="hero-badge">Open source · <strong>Offline-first</strong> · Nessun abbonamento</div>
-  <h1>Il tuo estratto conto <span class="accent">unificato</span>,<br>sul tuo computer</h1>
+  <h1>I tuoi movimenti <span class="accent">unificati</span>,<br>sul tuo computer</h1>
   <p class="hero-sub">
     Importa i file di tutte le tue banche. Spendify li unifica, elimina i doppi conteggi,
     classifica ogni transazione — e i tuoi dati non lasciano mai il tuo disco.
@@ -685,13 +718,13 @@
     <div class="problem-grid fade-in">
       <div class="problem-card">
         <h3>😩 La routine mensile che tutti odiano</h3>
-        <p>Tre estratti conto da tre portali bancari diversi, formati CSV incompatibili,
+        <p>Tre file movimenti da tre portali bancari diversi, formati CSV incompatibili,
         date in formati differenti, importi con segni a caso. Unirli a mano richiede ore
         e genera sempre errori.</p>
       </div>
       <div class="problem-card highlight">
         <h3>🔴 Il problema dei problemi: il doppio conteggio</h3>
-        <p>La spesa al supermercato appare nell'estratto della carta <em>e</em> nel conto corrente
+        <p>La spesa al supermercato appare nei movimenti della carta <em>e</em> nel conto corrente
         come addebito mensile aggregato. Sommando tutto, le tue spese sembrano il doppio di
         quelle reali. Nessuno strumento comune risolve questo automaticamente.</p>
       </div>
@@ -721,7 +754,7 @@
     <div class="steps fade-in">
       <div class="step">
         <h3>Scarica i file dalla tua banca</h3>
-        <p>Esporta gli estratti conto in CSV o XLSX dal portale della tua banca.
+        <p>Esporta i movimenti in CSV o XLSX dal portale della tua banca.
         Funziona con qualsiasi banca italiana (e non solo) — Spendify riconosce
         automaticamente il formato senza configurazione manuale.</p>
       </div>
@@ -804,7 +837,7 @@
         <div class="ico-big">🏠</div>
         <h3>Offline-first per default</h3>
         <p>Spendify usa <strong>Ollama in locale</strong> di default: un motore AI che gira
-        sul tuo computer, senza connessione internet. I tuoi estratti conto non
+        sul tuo computer, senza connessione internet. I tuoi movimenti non
         lasciano mai il tuo disco.</p>
       </div>
       <div class="privacy-card">
@@ -1092,7 +1125,7 @@
     <h2>Cosa sta arrivando</h2>
     <br>
     <ul class="roadmap-list fade-in">
-      <li><span class="dot"></span>Supporto PDF — parsing nativo estratti PDF bancari</li>
+      <li><span class="dot"></span>Supporto PDF — parsing nativo file movimenti PDF bancari</li>
       <li><span class="dot"></span>Budget mensile per categoria con alerting</li>
       <li><span class="dot"></span>Importazione automatica via Open Banking (PSD2)</li>
       <li><span class="dot"></span>API REST per integrazioni esterne</li>

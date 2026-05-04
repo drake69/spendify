@@ -10,14 +10,14 @@ class AccountType(str, Enum):
 class Transaction(BaseModel):
     date_operation: Optional[str] = Field(
         default=None,
-        description="Operation date exactly as it appears in the statement (no normalization)."
+        description="Operation date exactly as it appears in the movements file (no normalization)."
     )
     date_value: Optional[str] = Field(
         default=None,
-        description="Value date exactly as it appears in the statement (no normalization)."
+        description="Value date exactly as it appears in the movements file (no normalization)."
     )
     description: str = Field(
-        description="Full transaction description exactly as it appears in the statement."
+        description="Full transaction description exactly as it appears in the movements file."
     )
     amount: str = Field(
         description="Transaction amount exactly as it appears, including signs, separators, and CR/DB text."
@@ -31,7 +31,7 @@ class Transaction(BaseModel):
 class BankStatementPage(BaseModel):
     iban_or_card: Optional[str] = Field(
         default=None,
-        description="IBAN or card number associated with the statement, if present."
+        description="IBAN or card number associated with the movements file, if present."
     )
     account_type: Optional[AccountType] = Field(
         default=None,

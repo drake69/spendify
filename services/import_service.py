@@ -20,9 +20,12 @@ from core.normalizer import (
     detect_skip_rows as _detect_skip_rows,
     load_raw_head as _load_raw_head,
 )
+from core.history_engine import HistoryCache
+from services.nsi_taxonomy_service import NsiTaxonomyService
 from core.orchestrator import (
     ImportResult,
     ProcessingConfig,
+    SkippedRow,  # noqa: F401 — re-exported for UI
     _normalize_df_with_schema,
     load_raw_dataframe,
     process_file as _process_file,
@@ -104,9 +107,27 @@ class ImportService:
             compat_base_url=settings.get("compat_base_url", ""),
             compat_api_key=settings.get("compat_api_key", ""),
             compat_model=settings.get("compat_model", ""),
+            llama_cpp_model_path=settings.get("llama_cpp_model_path", ""),
+            llama_cpp_n_gpu_layers=int(settings.get("llama_cpp_n_gpu_layers", "-1")),
+            llama_cpp_n_ctx=int(settings.get("llama_cpp_n_ctx", "0")),
             description_language=settings.get("description_language", "it"),
             test_mode=test_mode,
             max_transaction_amount=float(settings.get("max_transaction_amount", "1000000")),
+            force_schema_import=settings.get("force_schema_import", "false").lower() == "true",
+            # Categorizer-specific backend
+            cat_llm_backend=settings.get("cat_llm_backend", ""),
+            cat_ollama_base_url=settings.get("cat_ollama_base_url", ""),
+            cat_ollama_model=settings.get("cat_ollama_model", ""),
+            cat_openai_model=settings.get("cat_openai_model", ""),
+            cat_openai_api_key=settings.get("cat_openai_api_key", ""),
+            cat_claude_model=settings.get("cat_anthropic_model", ""),
+            cat_anthropic_api_key=settings.get("cat_anthropic_api_key", ""),
+            cat_compat_base_url=settings.get("cat_compat_base_url", ""),
+            cat_compat_api_key=settings.get("cat_compat_api_key", ""),
+            cat_compat_model=settings.get("cat_compat_model", ""),
+            cat_llama_cpp_model_path=settings.get("cat_llama_cpp_model_path", ""),
+            cat_llama_cpp_n_gpu_layers=int(settings.get("cat_llama_cpp_n_gpu_layers", "-1")),
+            cat_llama_cpp_n_ctx=int(settings.get("cat_llama_cpp_n_ctx", "0")),
         )
 
     def get_owner_names(self) -> str:
@@ -118,7 +139,8 @@ class ImportService:
 
     def detect_skip_rows(self, raw_bytes: bytes, filename: str) -> tuple[int, bool]:
         """Return (detected_skip_rows, is_certain) for a raw file."""
-        return _detect_skip_rows(raw_bytes, filename)
+        skip, certain, _border = _detect_skip_rows(raw_bytes, filename)
+        return skip, certain
 
     def get_raw_head(self, raw_bytes: bytes, filename: str, n: int = 10) -> pd.DataFrame:
         """Return the first *n* raw rows of a file without any pre-processing."""
@@ -167,7 +189,8 @@ class ImportService:
         df_raw, _, _ = load_raw_dataframe(
             raw_bytes, filename, skip_rows_override=skip_rows_override
         )
-        return _normalize_df_with_schema(df_raw.head(n), schema, filename)
+        txs, _, _ = _normalize_df_with_schema(df_raw.head(n), schema, filename)
+        return txs
 
     # ── Single-file import ─────────────────────────────────────────────────────
 
@@ -187,9 +210,15 @@ class ImportService:
         Duplicate detection uses a per-call session so no open session is needed
         from the caller.
         """
+        nsi_svc = NsiTaxonomyService(self.engine)
         with self._session() as s:
             taxonomy = repository.get_taxonomy_config(s)
             user_rules = repository.get_category_rules(s)
+            history_cache = HistoryCache(s)
+            # C-08-cascade: load (or build) NSI taxonomy_map
+            from core.orchestrator import _build_backend
+            _backend_for_nsi = _build_backend(config)
+            taxonomy_map = nsi_svc.get_or_build(s, taxonomy, _backend_for_nsi)
 
         def _existing_checker(tx_ids: list[str]) -> set[str]:
             with self._session() as s:
@@ -206,6 +235,8 @@ class ImportService:
             existing_tx_ids_checker=_existing_checker,
             account_label_override=account_label_override,
             skip_rows_override=skip_rows_override,
+            history_cache=history_cache,
+            taxonomy_map=taxonomy_map,
         )
 
     # ── Full-batch import (legacy) ─────────────────────────────────────────────
@@ -248,6 +279,18 @@ class ImportService:
         with self._session() as s:
             return repository.reset_stale_jobs(s)
 
+    # ── Import history & undo ──────────────────────────────────────────────────
+
+    def get_import_history(self, limit: int = 100) -> list[dict]:
+        """Return import batches with transaction counts, most recent first."""
+        with self._session() as s:
+            return repository.get_import_history(s, limit=limit)
+
+    def cancel_import(self, batch_id: int) -> int:
+        """Hard-delete all transactions for the given batch. Returns deleted count."""
+        with self._session() as s:
+            return repository.cancel_import_batch(s, batch_id)
+
     # ── Internal helpers ──────────────────────────────────────────────────────
 
     @staticmethod
@@ -261,4 +304,6 @@ class ImportService:
             openai_model=settings.get("openai_model", "gpt-4o-mini"),
             anthropic_api_key=settings.get("anthropic_api_key", ""),
             claude_model=settings.get("anthropic_model", "claude-3-haiku-20240307"),
+            force_schema_import=settings.get("force_schema_import", "false").lower() == "true",
+            cat_llm_backend=settings.get("cat_llm_backend", ""),
         )

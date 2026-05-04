@@ -32,6 +32,23 @@ def format_raw_amount_display(raw_amount: str | None) -> str:
     return ""
 
 
+def strftime_to_momentjs(fmt: str) -> str:
+    """Convert a Python strftime format string to Moment.js tokens.
+
+    Needed because Streamlit DateColumn renders dates on the frontend
+    using Moment.js, not Python strftime.
+    """
+    _MAP = {
+        "%d": "DD", "%m": "MM", "%Y": "YYYY", "%y": "YY",
+        "%B": "MMMM", "%b": "MMM", "%A": "dddd", "%a": "ddd",
+        "%H": "HH", "%I": "hh", "%M": "mm", "%S": "ss", "%p": "A",
+    }
+    result = fmt
+    for py_tok, mj_tok in _MAP.items():
+        result = result.replace(py_tok, mj_tok)
+    return result
+
+
 def format_date_display(date_str: str, fmt: str = "%d/%m/%Y") -> str:
     """Convert an ISO date string (YYYY-MM-DD) to the given display format.
 

@@ -1,0 +1,31 @@
+row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_category
+1,2026-01-03,-152.99,"Pagam. POS - PAGAMENTO POS 152,99 EUR DEL 03.01.2026 A (ITA) MACELLERIA BONI",expense,false,Alimentari/Spesa supermercato
+2,2026-01-08,-5.46,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+3,2026-01-09,132.86,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+4,2026-01-10,-58.72,PAGAMENTO CONTACTLESS CARTA **** 6118 MEGA,expense,false,Alimentari/Spesa supermercato
+5,2026-01-14,-67.43,PAGAMENTO CONTACTLESS CARTA **** 2479 MAXI ZOO VOMERO,expense,false,Animali domestici/Cibo
+6,2026-01-15,177.26,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+7,2026-01-19,-12.26,PAGAMENTO CONTACTLESS CARTA **** 7934 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
+8,2026-01-20,-146.34,"Pagam. POS - PAGAMENTO POS 146,34 EUR DEL 20.01.2026 A (ITA) ITALMARK LIVORNO",expense,false,Alimentari/Spesa supermercato
+9,2026-01-21,-30.11,PAGAMENTO CONTACTLESS CARTA **** 9923 L'ANTICA PIZZERIA DA MICHELE,expense,false,Ristorazione/Ristorante
+10,2026-01-23,141.51,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+11,2026-01-27,-43.32,PAGAMENTO CONTACTLESS CARTA **** 7530 DESPAR,expense,false,Alimentari/Altro alimentari
+12,2026-01-29,-14.11,PAGAMENTO CONTACTLESS CARTA **** 2223 POKE HOUSE,expense,false,Ristorazione/Asporto / delivery
+13,2026-01-29,-159.07,PAGAMENTO CONTACTLESS CARTA **** 3328 MERCATÒ LOCAL,expense,false,Alimentari/Spesa supermercato
+14,2026-01-30,-166.47,"Pagam. POS - PAGAMENTO POS 166,47 EUR DEL 30.01.2026 A (ITA) IPERAL OSTIENSE",expense,false,Alimentari/Spesa supermercato
+15,2026-01-31,239.60,RICARICA HYPE DA CONTO 0075849,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+16,2026-02-02,-80.67,"Pagam. POS - PAGAMENTO POS 80,67 EUR DEL 02.02.2026 A (ITA) UDON",expense,false,Ristorazione/Ristorante
+17,2026-02-05,-31.65,PAGAMENTO CONTACTLESS CARTA **** 2156 PRIMOR,expense,false,Cura personale/Cosmetici e igiene
+18,2026-02-05,-88.46,PAGAMENTO CONTACTLESS CARTA **** 9847 ALE-HOP,expense,false,Regali e donazioni/Regali
+19,2026-02-07,-151.79,"Pagam. POS - PAGAMENTO POS 151,79 EUR DEL 07.02.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
+20,2026-02-07,-8.01,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+21,2026-02-07,-8.98,AMAZON.IT MARKETPLACE - ORDINE 402-211921264,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+22,2026-02-15,-13.12,"Pagam. POS - PAGAMENTO POS 13,12 EUR DEL 15.02.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+23,2026-02-19,-21.23,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
+24,2026-02-22,-7.79,AMAZON.IT MARKETPLACE - ORDINE 402-216168050,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+25,2026-02-22,106.66,RICARICA HYPE DA CONTO 0123456,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+26,2026-02-24,-120.77,"Pagam. POS - PAGAMENTO POS 120,77 EUR DEL 24.02.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
+27,2026-02-25,-97.19,PAGAMENTO CONTACTLESS CARTA **** 4129 ESSELUNGA S.P.A.,expense,false,Alimentari/Spesa supermercato
+28,2026-02-26,-9.82,AMAZON.IT MARKETPLACE - ORDINE 402-212556585,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+29,2026-02-27,-47.73,PAGAMENTO CONTACTLESS CARTA **** 8154 TIGROS,expense,false,Alimentari/Spesa supermercato
+30,2026-02-27,-7.62,PAGAMENTO CONTACTLESS CARTA **** 4647 OLD WILD WEST,expense,false,Ristorazione/Ristorante

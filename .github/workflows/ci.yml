@@ -30,6 +30,13 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
+      - name: Verify prompt integrity (S-01)
+        run: uv run python tools/compute_prompt_hashes.py --verify
+
+      - name: Verify benchmark CSV append-only (T-09d)
+        if: github.event_name == 'pull_request'
+        run: uv run python tools/verify_bench_csv.py --base origin/${{ github.base_ref }}
+
       - name: Run tests with coverage
         run: uv run pytest tests/ -v --cov=. --cov-report=term-missing --cov-report=xml
         env:
@@ -223,6 +230,148 @@ jobs:
               });
             }
 
+  security:
+    name: Security scanning (SAST + deps)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      # ── Bandit (Python SAST) ──────────────────────────────
+      - name: Install Bandit
+        run: uv pip install bandit[toml]
+
+      - name: Run Bandit — code injection & security checks
+        run: |
+          SCAN_DIRS="core/ services/ db/ api/ chat_bot/ support/ desktop/"
+          # Full report (all severities) — saved as artifact, never fails the build
+          uv run bandit -r $SCAN_DIRS \
+            -c pyproject.toml \
+            -f json -o bandit-report.json \
+            || true
+          # Hard gate: fail only on HIGH severity + HIGH confidence issues
+          # --exit-zero prevents bandit from failing on LOW/MEDIUM findings
+          # We then check the JSON report for actual HIGH issues
+          HIGH_COUNT=$(uv run bandit -r $SCAN_DIRS \
+            -c pyproject.toml \
+            -ll -ii \
+            -f json 2>/dev/null | python3 -c "
+          import sys, json
+          data = json.load(sys.stdin)
+          high = [r for r in data.get('results', []) if r.get('issue_severity') == 'HIGH' and r.get('issue_confidence') == 'HIGH']
+          print(len(high))
+          " 2>/dev/null || echo "0")
+          echo "HIGH severity + HIGH confidence issues: $HIGH_COUNT"
+          if [ "$HIGH_COUNT" -gt 0 ]; then
+            echo "❌ Bandit found $HIGH_COUNT HIGH/HIGH issue(s):"
+            uv run bandit -r $SCAN_DIRS -c pyproject.toml -ll -ii || true
+            exit 1
+          fi
+          echo "✅ No HIGH severity issues found"
+          # Note: quarantine/ excluded — archived/dead code, not shipped
+
+      - name: Upload Bandit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bandit-report
+          path: bandit-report.json
+          retention-days: 30
+
+      # ── Semgrep (OWASP / broader SAST) ───────────────────
+      - name: Install Semgrep
+        run: pip install semgrep
+
+      - name: Run Semgrep — OWASP top-10 rules (audit mode)
+        run: |
+          semgrep scan \
+            --config p/python \
+            --config p/owasp-top-ten \
+            --config p/security-audit \
+            --exclude="tests/*" --exclude="benchmark/*" \
+            --exclude="quarantine/*" --exclude="tools/*" \
+            --json -o semgrep-report.json \
+            || true
+          # Audit mode: report findings but don't block the build.
+          # Findings are uploaded as artifact for review.
+          TOTAL=$(python3 -c "import json; print(len(json.load(open('semgrep-report.json')).get('results',[])))" 2>/dev/null || echo "?")
+          echo "Semgrep findings: $TOTAL (audit mode — not blocking)"
+
+      - name: Upload Semgrep report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: semgrep-report
+          path: semgrep-report.json
+          retention-days: 30
+
+      # ── pip-audit (known CVEs in dependencies) ───────────
+      - name: Install pip-audit
+        run: uv pip install pip-audit
+
+      - name: Run pip-audit — dependency vulnerabilities
+        run: |
+          uv run pip-audit \
+            --requirement <(uv pip freeze) \
+            --format json --output pip-audit-report.json \
+            || true
+          # Strict gate: fail on known CVEs with available fixes.
+          # --ignore-vuln for CVEs without upstream fix (no action possible).
+          uv run pip-audit \
+            --requirement <(uv pip freeze) \
+            --strict \
+            --ignore-vuln CVE-2025-69872
+
+      - name: Upload pip-audit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pip-audit-report
+          path: pip-audit-report.json
+          retention-days: 30
+
+      # ── ShellCheck (bash injection / script quality) ─────
+      - name: Install ShellCheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Run ShellCheck on installer scripts
+        run: |
+          shellcheck --severity=warning \
+            installer/install.sh \
+            installer/uninstall.sh \
+            benchmark/run_benchmark_full.sh \
+            docker/benchmark_entrypoint.sh \
+            packaging/macos/install.sh \
+            packaging/macos/uninstall.sh \
+            packaging/linux/install-debian.sh \
+            packaging/linux/install-redhat.sh \
+            packaging/linux/uninstall.sh \
+            packaging/linux/build-deb.sh \
+            packaging/linux/build-rpm.sh
+
+      # ── Trivy (Docker image vulnerabilities) ────────────
+      - name: Build Docker image for scanning
+        run: docker build -f docker/Dockerfile -t spendify:scan .
+
+      - name: Run Trivy — container vulnerability scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: 'spendify:scan'
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+
   installer-validate:
     name: Installer validation (syntax + compose)
     runs-on: ubuntu-latest
@@ -275,3 +424,27 @@ jobs:
             }
             Write-Host '✅ uninstall.ps1 syntax OK'
           "
+
+      - name: Validate native installer .ps1 syntax (PowerShell)
+        run: |
+          for f in packaging/windows/install.ps1 packaging/windows/uninstall.ps1; do
+            pwsh -NoProfile -Command "
+              \$err = \$null
+              \$null = [System.Management.Automation.Language.Parser]::ParseFile(
+                (Resolve-Path '$f'),
+                [ref]\$null,
+                [ref]\$err
+              )
+              if (\$err.Count -gt 0) {
+                \$err | ForEach-Object { Write-Error \$_.Message }
+                exit 1
+              }
+              Write-Host '✅ $f syntax OK'
+            "
+          done
+
+      - name: Validate Linux package build scripts (syntax)
+        run: |
+          for f in packaging/linux/build-deb.sh packaging/linux/build-rpm.sh; do
+            bash -n "$f" && echo "✅ $f syntax OK"
+          done

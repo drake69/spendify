@@ -1,0 +1,31 @@
+row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_category
+1,2026-01-06,-17.74,"Pagam. POS - PAGAMENTO POS 17,74 EUR DEL 06.01.2026 A (ITA) PETMARK",expense,false,Animali domestici/Cibo
+2,2026-01-16,-12.93,"Pagam. POS - PAGAMENTO POS 12,93 EUR DEL 16.01.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+3,2026-01-16,-53.71,PAGAMENTO CONTACTLESS CARTA **** 7846 COLOURS & BEAUTY,expense,false,Abbigliamento/Altro abbigliamento
+4,2026-01-20,-76.32,"Pagam. POS - PAGAMENTO POS 76,32 EUR DEL 20.01.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
+5,2026-01-25,-8.21,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+6,2026-01-26,-130.04,PAGAMENTO CONTACTLESS CARTA **** 8413 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
+7,2026-01-26,-7.11,"Pagam. POS - PAGAMENTO POS 7,11 EUR DEL 26.01.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+8,2026-01-28,-28.48,"Pagam. POS - PAGAMENTO POS 28,48 EUR DEL 28.01.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
+9,2026-01-29,-202.60,PAGAMENTO CONTACTLESS CARTA **** 5483 BUCHHANDLUNG WALTHER KÖNIG,expense,false,Svago e tempo libero/Libri / riviste
+10,2026-02-03,-300.57,"Pagam. POS - PAGAMENTO POS 300,57 EUR DEL 03.02.2026 A (ITA) MONDADORI ROMA",expense,false,Svago e tempo libero/Libri / riviste
+11,2026-02-04,-14.39,AMAZON.IT MARKETPLACE - ORDINE 402-215137252,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+12,2026-02-04,-108.36,PAGAMENTO CONTACTLESS CARTA **** 1054 GABOR,expense,false,Abbigliamento/Calzature
+13,2026-02-05,-28.00,"Pagam. POS - PAGAMENTO POS 28,00 EUR DEL 05.02.2026 A (ITA) FLOWER BURGER",expense,false,Ristorazione/Asporto / delivery
+14,2026-02-07,-158.52,"Pagam. POS - PAGAMENTO POS 158,52 EUR DEL 07.02.2026 A (ITA) MERCATÒ LOCAL BOLOGNA",expense,false,Alimentari/Spesa supermercato
+15,2026-02-07,-65.90,PAGAMENTO CONTACTLESS CARTA **** 5956 RAY-BAN OVEST,expense,false,Salute/Ottico
+16,2026-02-07,-115.85,"Pagam. POS - PAGAMENTO POS 115,85 EUR DEL 07.02.2026 A (ITA) MACELLERIA BONI",expense,false,Alimentari/Spesa supermercato
+17,2026-02-10,-8.60,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+18,2026-02-11,-8.21,"Pagam. POS - PAGAMENTO POS 8,21 EUR DEL 11.02.2026 A (ITA) THUN NAPOLI",expense,false,Regali e donazioni/Regali
+19,2026-02-11,-42.44,"Pagam. POS - PAGAMENTO POS 42,44 EUR DEL 11.02.2026 A (ITA) CONAD CITY ROMA",expense,false,Alimentari/Spesa supermercato
+20,2026-02-12,-70.22,"Pagam. POS - PAGAMENTO POS 70,22 EUR DEL 12.02.2026 A (ITA) RAY-BAN VERONA",expense,false,Salute/Ottico
+21,2026-02-12,-113.67,PAGAMENTO CONTACTLESS CARTA **** 2507 LIDL ITALIA,expense,false,Alimentari/Spesa supermercato
+22,2026-02-12,-168.63,"Pagam. POS - PAGAMENTO POS 168,63 EUR DEL 12.02.2026 A (ITA) MERCATÒ BIG",expense,false,Alimentari/Spesa supermercato
+23,2026-02-13,-121.29,"Pagam. POS - PAGAMENTO POS 121,29 EUR DEL 13.02.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
+24,2026-02-16,-69.02,"Pagam. POS - PAGAMENTO POS 69,02 EUR DEL 16.02.2026 A (ITA) BREWDOG PRATI",expense,false,Ristorazione/Bar / caffè
+25,2026-02-16,-612.84,"Pagam. POS - PAGAMENTO POS 612,84 EUR DEL 16.02.2026 A (ITA) UBIK NORD",expense,false,Svago e tempo libero/Libri / riviste
+26,2026-02-18,-459.76,Addebito SDD - MENSA SCOLASTICA COMUNE DI MILANO,expense,false,Istruzione/Rette scolastiche
+27,2026-02-18,-116.63,"Pagam. POS - PAGAMENTO POS 116,63 EUR DEL 18.02.2026 A (ITA) INCOOP SAN GIULIANO MILANESE",expense,false,Alimentari/Altro alimentari
+28,2026-02-19,-144.64,"Pagam. POS - PAGAMENTO POS 144,64 EUR DEL 19.02.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
+29,2026-02-22,-82.18,PAGAMENTO CONTACTLESS CARTA **** 6301 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
+30,2026-02-28,-14.13,"Pagam. POS - PAGAMENTO POS 14,13 EUR DEL 28.02.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali

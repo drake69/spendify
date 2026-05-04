@@ -1,0 +1,301 @@
+row_num,date,amount,description_raw,tx_type,is_internal_transfer,expected_category
+1,2026-01-01,-8.42,PAGAMENTO CONTACTLESS CARTA **** 1910 AUTOGRILL,expense,false,Ristorazione/Ristorante
+2,2026-01-01,-147.40,PAGAMENTO CONTACTLESS CARTA **** 7825 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
+3,2026-01-01,272.79,Bonif. v/fav. - RIF:214012303 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+4,2026-01-02,-157.42,PAGAMENTO CONTACTLESS CARTA **** 3535 VITALDENT GENOVA,expense,false,Salute/Dentista
+5,2026-01-02,-137.05,"Pagam. POS - PAGAMENTO POS 137,05 EUR DEL 02.01.2026 A (ITA) SPLENDIDI E SPLENDENTI",expense,false,Cura personale/Cosmetici e igiene
+6,2026-01-02,-80.02,"Pagam. POS - PAGAMENTO POS 80,02 EUR DEL 02.01.2026 A (ITA) NATURA",expense,false,Regali e donazioni/Regali
+7,2026-01-02,-42.29,"Pagam. POS - PAGAMENTO POS 42,29 EUR DEL 02.01.2026 A (ITA) AUTOGRILL",expense,false,Ristorazione/Ristorante
+8,2026-01-02,-12.19,"Pagam. POS - PAGAMENTO POS 12,19 EUR DEL 02.01.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+9,2026-01-02,-145.00,"Pagam. POS - PAGAMENTO POS 145,00 EUR DEL 02.01.2026 A (ITA) MD PARMA",expense,false,Alimentari/Spesa supermercato
+10,2026-01-02,-50.19,"Pagam. POS - PAGAMENTO POS 50,19 EUR DEL 02.01.2026 A (ITA) SUSHI SHOP CATANIA",expense,false,Ristorazione/Asporto / delivery
+11,2026-01-02,87.39,Bonif. v/fav. - RIF:218486234 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+12,2026-01-03,-30.94,"Pagam. POS - PAGAMENTO POS 30,94 EUR DEL 03.01.2026 A (ITA) FRANCO MANCA PALERMO",expense,false,Ristorazione/Ristorante
+13,2026-01-03,-94.43,"Pagam. POS - PAGAMENTO POS 94,43 EUR DEL 03.01.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
+14,2026-01-03,-80.51,"Pagam. POS - PAGAMENTO POS 80,51 EUR DEL 03.01.2026 A (ITA) STARBUCKS RESERVE",expense,false,Ristorazione/Bar / caffè
+15,2026-01-03,-149.26,"Pagam. POS - PAGAMENTO POS 149,26 EUR DEL 03.01.2026 A (ITA) FIELMANN CORSICO",expense,false,Salute/Ottico
+16,2026-01-03,-23.11,"Pagam. POS - PAGAMENTO POS 23,11 EUR DEL 03.01.2026 A (ITA) ROSSOPOMODORO",expense,false,Ristorazione/Ristorante
+17,2026-01-03,-89.36,"Pagam. POS - PAGAMENTO POS 89,36 EUR DEL 03.01.2026 A (ITA) COOP LOMBARDIA",expense,false,Altro/Spese non classificate
+18,2026-01-03,-80.29,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
+19,2026-01-04,-62.15,"Pagam. POS - PAGAMENTO POS 62,15 EUR DEL 04.01.2026 A (ITA) FLOWER BURGER CENTRO",expense,false,Ristorazione/Asporto / delivery
+20,2026-01-04,-30.15,"Pagam. POS - PAGAMENTO POS 30,15 EUR DEL 04.01.2026 A (ITA) PITAYA",expense,false,Ristorazione/Asporto / delivery
+21,2026-01-04,-228.79,"Pagam. POS - PAGAMENTO POS 228,79 EUR DEL 04.01.2026 A (ITA) FARMACIA COMUNALE",expense,false,Salute/Farmaci
+22,2026-01-04,-29.97,"Pagam. POS - PAGAMENTO POS 29,97 EUR DEL 04.01.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
+23,2026-01-04,-49.77,PAGAMENTO CONTACTLESS CARTA **** 7111 COMPRO ORO SAN GIULIANO MILANESE,expense,false,Abbigliamento/Altro abbigliamento
+24,2026-01-04,-22.05,PAGAMENTO CONTACTLESS CARTA **** 9061 ALL'ANTICO VINAIO,expense,false,Ristorazione/Asporto / delivery
+25,2026-01-04,82.19,Bonif. v/fav. - RIF:210791859 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+26,2026-01-05,-78.36,PAGAMENTO CONTACTLESS CARTA **** 6341 OLD WILD WEST,expense,false,Ristorazione/Ristorante
+27,2026-01-06,-64.36,"Pagam. POS - PAGAMENTO POS 64,36 EUR DEL 06.01.2026 A (ITA) JOHNSON FITNESS & WELLNESS",expense,false,Svago e tempo libero/Sport e palestra
+28,2026-01-06,-121.40,"Pagam. POS - PAGAMENTO POS 121,40 EUR DEL 06.01.2026 A (ITA) TUODÌ CATANIA",expense,false,Alimentari/Spesa supermercato
+29,2026-01-06,-50.20,"Pagam. POS - PAGAMENTO POS 50,20 EUR DEL 06.01.2026 A (ITA) TIGOTÀ",expense,false,Cura personale/Cosmetici e igiene
+30,2026-01-06,-128.52,PAGAMENTO CONTACTLESS CARTA **** 1914 SNIPES,expense,false,Abbigliamento/Calzature
+31,2026-01-07,-43.40,"Pagam. POS - PAGAMENTO POS 43,40 EUR DEL 07.01.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
+32,2026-01-07,-88.43,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
+33,2026-01-08,-78.98,PAGAMENTO CONTACTLESS CARTA **** 6074 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
+34,2026-01-09,-74.96,"Pagam. POS - PAGAMENTO POS 74,96 EUR DEL 09.01.2026 A (ITA) AUTOGRILL",expense,false,Ristorazione/Ristorante
+35,2026-01-09,-138.98,"Pagam. POS - PAGAMENTO POS 138,98 EUR DEL 09.01.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
+36,2026-01-09,-167.88,"Pagam. POS - PAGAMENTO POS 167,88 EUR DEL 09.01.2026 A (ITA) FARMACIA DR ROSSI",expense,false,Salute/Farmaci
+37,2026-01-09,-114.99,"Pagam. POS - PAGAMENTO POS 114,99 EUR DEL 09.01.2026 A (ITA) CISALFA SPORT MARGHERA",expense,false,Svago e tempo libero/Sport e palestra
+38,2026-01-09,-72.00,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
+39,2026-01-09,282.37,Bonif. v/fav. - RIF:218061958 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+40,2026-01-09,105.16,Bonif. v/fav. - RIF:212123388 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+41,2026-01-10,-85.80,"Pagam. POS - PAGAMENTO POS 85,80 EUR DEL 10.01.2026 A (ITA) MERCATÒ VERONA",expense,false,Alimentari/Spesa supermercato
+42,2026-01-10,-23.01,"Pagam. POS - PAGAMENTO POS 23,01 EUR DEL 10.01.2026 A (ITA) PETMARK",expense,false,Animali domestici/Cibo
+43,2026-01-10,-26.41,PAGAMENTO CONTACTLESS CARTA **** 3943 MAXI ZOO,expense,false,Animali domestici/Cibo
+44,2026-01-10,-53.77,"Pagam. POS - PAGAMENTO POS 53,77 EUR DEL 10.01.2026 A (ITA) COOP LOMBARDIA",expense,false,Altro/Spese non classificate
+45,2026-01-10,-163.89,PAGAMENTO CONTACTLESS CARTA **** 6974 FAMILA,expense,false,Alimentari/Spesa supermercato
+46,2026-01-11,-128.35,PAGAMENTO CONTACTLESS CARTA **** 1206 SCARPE&SCARPE,expense,false,Abbigliamento/Calzature
+47,2026-01-11,-78.36,"Pagam. POS - PAGAMENTO POS 78,36 EUR DEL 11.01.2026 A (ITA) ARCAPLANET VIMODRONE",expense,false,Animali domestici/Cibo
+48,2026-01-11,-196.76,PAGAMENTO CONTACTLESS CARTA **** 3489 VITALDENT SESTO SAN GIOVANNI,expense,false,Salute/Dentista
+49,2026-01-11,-26.54,"Pagam. POS - PAGAMENTO POS 26,54 EUR DEL 11.01.2026 A (ITA) IL FORNO",expense,false,Alimentari/Mercato / freschi
+50,2026-01-11,-9.20,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+51,2026-01-11,-11.11,"Pagam. POS - PAGAMENTO POS 11,11 EUR DEL 11.01.2026 A (ITA) SPIZZICO CENTRO COMMERCIALE LE GRANGE",expense,false,Ristorazione/Asporto / delivery
+52,2026-01-11,134.65,Bonif. v/fav. - RIF:211275512 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+53,2026-01-12,-70.27,"Pagam. POS - PAGAMENTO POS 70,27 EUR DEL 12.01.2026 A (ITA) LA PIADINERIA CINISELLO BALSAMO",expense,false,Ristorazione/Asporto / delivery
+54,2026-01-12,-74.98,PAGAMENTO CONTACTLESS CARTA **** 2820 CONAD CITY,expense,false,Alimentari/Spesa supermercato
+55,2026-01-12,-48.13,"Pagam. POS - PAGAMENTO POS 48,13 EUR DEL 12.01.2026 A (ITA) COMPRO ORO",expense,false,Abbigliamento/Altro abbigliamento
+56,2026-01-12,-10.03,PAGAMENTO CONTACTLESS CARTA **** 3678 ITALMARK,expense,false,Alimentari/Spesa supermercato
+57,2026-01-13,-90.53,PAGAMENTO CONTACTLESS CARTA **** 2480 RAY-BAN PALERMO,expense,false,Salute/Ottico
+58,2026-01-13,-29.46,"Pagam. POS - PAGAMENTO POS 29,46 EUR DEL 13.01.2026 A (ITA) POKE HOUSE",expense,false,Ristorazione/Asporto / delivery
+59,2026-01-13,-30.35,"Pagam. POS - PAGAMENTO POS 30,35 EUR DEL 13.01.2026 A (ITA) L'ANTICA PIZZERIA DA MICHELE PRATI",expense,false,Ristorazione/Ristorante
+60,2026-01-13,-63.73,"Pagam. POS - PAGAMENTO POS 63,73 EUR DEL 13.01.2026 A (ITA) PAM",expense,false,Alimentari/Spesa supermercato
+61,2026-01-13,-37.70,"Pagam. POS - PAGAMENTO POS 37,70 EUR DEL 13.01.2026 A (ITA) O'TACOS MESTRE",expense,false,Ristorazione/Asporto / delivery
+62,2026-01-13,-156.90,"Pagam. POS - PAGAMENTO POS 156,90 EUR DEL 13.01.2026 A (ITA) NATURASÌ",expense,false,Alimentari/Spesa supermercato
+63,2026-01-13,-66.83,Disposizione - RIF:210139487 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
+64,2026-01-13,249.95,Bonif. v/fav. - RIF:211763953 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+65,2026-01-14,-9.15,AMAZON.IT MARKETPLACE - ORDINE 402-217297488,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+66,2026-01-14,172.89,Bonif. v/fav. - RIF:213120697 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+67,2026-01-15,-7.61,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+68,2026-01-15,-126.34,"Pagam. POS - PAGAMENTO POS 126,34 EUR DEL 15.01.2026 A (ITA) PITTAROSSO GENOVA",expense,false,Abbigliamento/Calzature
+69,2026-01-15,-22.66,PAGAMENTO CONTACTLESS CARTA **** 6250 AUTOGRILL,expense,false,Ristorazione/Ristorante
+70,2026-01-15,-13.26,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
+71,2026-01-15,260.35,Bonif. v/fav. - RIF:215759109 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+72,2026-01-16,-80.12,"Pagam. POS - PAGAMENTO POS 80,12 EUR DEL 16.01.2026 A (ITA) ZARA ITALIA SRL",expense,false,Abbigliamento/Abbigliamento adulti
+73,2026-01-16,-126.68,"Pagam. POS - PAGAMENTO POS 126,68 EUR DEL 16.01.2026 A (ITA) ZARA ITALIA SRL",expense,false,Abbigliamento/Abbigliamento adulti
+74,2026-01-17,-9.90,"Pagam. POS - PAGAMENTO POS 9,90 EUR DEL 17.01.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+75,2026-01-17,-7.06,"Pagam. POS - PAGAMENTO POS 7,06 EUR DEL 17.01.2026 A (ITA) STROILI ORO PRATI",expense,false,Abbigliamento/Altro abbigliamento
+76,2026-01-17,-46.34,"Pagam. POS - PAGAMENTO POS 46,34 EUR DEL 17.01.2026 A (ITA) FLOWER BURGER VENEZIA",expense,false,Ristorazione/Asporto / delivery
+77,2026-01-17,-47.34,"Pagam. POS - PAGAMENTO POS 47,34 EUR DEL 17.01.2026 A (ITA) WOK TO WALK",expense,false,Ristorazione/Asporto / delivery
+78,2026-01-17,-25.65,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
+79,2026-01-17,-17.69,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
+80,2026-01-17,-68.55,"Pagam. POS - PAGAMENTO POS 68,55 EUR DEL 17.01.2026 A (ITA) COMPRO ORO LIVORNO",expense,false,Abbigliamento/Altro abbigliamento
+81,2026-01-18,-99.13,"Pagam. POS - PAGAMENTO POS 99,13 EUR DEL 18.01.2026 A (ITA) SÌ CON TE",expense,false,Alimentari/Spesa supermercato
+82,2026-01-18,-11.33,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+83,2026-01-18,-239.00,"Pagam. POS - PAGAMENTO POS 239,00 EUR DEL 18.01.2026 A (ITA) CENTRO DIAGNOSTICO SAN DONATO",expense,false,Salute/Farmaci
+84,2026-01-19,-75.32,PAGAMENTO CONTACTLESS CARTA **** 1541 SUSHIKO CATANIA,expense,false,Ristorazione/Ristorante
+85,2026-01-19,-53.61,"Pagam. POS - PAGAMENTO POS 53,61 EUR DEL 19.01.2026 A (ITA) WOK TO WALK",expense,false,Ristorazione/Asporto / delivery
+86,2026-01-19,-45.16,"Pagam. POS - PAGAMENTO POS 45,16 EUR DEL 19.01.2026 A (ITA) SCARPE&SCARPE",expense,false,Abbigliamento/Calzature
+87,2026-01-19,-11.89,Addebito SDD - JUST EAT ITALY SRL,expense,false,Ristorazione/Ristorante
+88,2026-01-19,-64.19,"Pagam. POS - PAGAMENTO POS 64,19 EUR DEL 19.01.2026 A (ITA) L'ISOLA DEI TESORI PALERMO",expense,false,Animali domestici/Cibo
+89,2026-01-19,-72.22,PAGAMENTO CONTACTLESS CARTA **** 6143 TIGOTÀ PARMA,expense,false,Cura personale/Cosmetici e igiene
+90,2026-01-19,138.06,Bonif. v/fav. - RIF:217805514 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+91,2026-01-20,-14.14,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+92,2026-01-20,-132.92,"Pagam. POS - PAGAMENTO POS 132,92 EUR DEL 20.01.2026 A (ITA) PENNY",expense,false,Alimentari/Spesa supermercato
+93,2026-01-20,-138.48,"Pagam. POS - PAGAMENTO POS 138,48 EUR DEL 20.01.2026 A (ITA) DESPAR CATANIA",expense,false,Alimentari/Altro alimentari
+94,2026-01-20,178.72,Bonif. v/fav. - RIF:214438524 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+95,2026-01-21,-80.95,"Pagam. POS - PAGAMENTO POS 80,95 EUR DEL 21.01.2026 A (ITA) INCOOP",expense,false,Alimentari/Altro alimentari
+96,2026-01-21,-40.59,PAGAMENTO CONTACTLESS CARTA **** 9982 OLD WILD WEST BRESCIA,expense,false,Ristorazione/Ristorante
+97,2026-01-21,-37.63,Disposizione - RIF:215052938 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
+98,2026-01-22,-7.91,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+99,2026-01-22,-77.47,"Pagam. POS - PAGAMENTO POS 77,47 EUR DEL 22.01.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
+100,2026-01-22,-78.73,"Pagam. POS - PAGAMENTO POS 78,73 EUR DEL 22.01.2026 A (ITA) MCDONALD'S ITALIA",expense,false,Ristorazione/Ristorante
+101,2026-01-22,-82.58,PAGAMENTO CONTACTLESS CARTA **** 7357 UDON,expense,false,Ristorazione/Ristorante
+102,2026-01-22,-60.16,"Pagam. POS - PAGAMENTO POS 60,16 EUR DEL 22.01.2026 A (ITA) BOTTEGA VERDE ASSAGO",expense,false,Cura personale/Cosmetici e igiene
+103,2026-01-22,-59.12,"Pagam. POS - PAGAMENTO POS 59,12 EUR DEL 22.01.2026 A (ITA) WOK TO WALK",expense,false,Ristorazione/Asporto / delivery
+104,2026-01-22,-46.02,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
+105,2026-01-22,93.37,Bonif. v/fav. - RIF:212165356 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+106,2026-01-22,277.06,Bonif. v/fav. - RIF:218744411 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+107,2026-01-23,-17.00,"Pagam. POS - PAGAMENTO POS 17,00 EUR DEL 23.01.2026 A (ITA) ALE-HOP",expense,false,Regali e donazioni/Regali
+108,2026-01-23,-10.40,"Pagam. POS - PAGAMENTO POS 10,40 EUR DEL 23.01.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
+109,2026-01-24,-33.01,"Pagam. POS - PAGAMENTO POS 33,01 EUR DEL 24.01.2026 A (ITA) UDON",expense,false,Ristorazione/Ristorante
+110,2026-01-24,-97.10,"Pagam. POS - PAGAMENTO POS 97,10 EUR DEL 24.01.2026 A (ITA) TABACCHERIA N.12",expense,false,Altro/Spese non classificate
+111,2026-01-25,-17.21,PAGAMENTO CONTACTLESS CARTA **** 7186 BILLY TACOS VOMERO,expense,false,Ristorazione/Asporto / delivery
+112,2026-01-25,-55.50,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
+113,2026-01-25,-5.99,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+114,2026-01-25,-8.10,PAGAMENTO CONTACTLESS CARTA **** 8614 PAM LOCAL,expense,false,Alimentari/Altro alimentari
+115,2026-01-25,-27.68,"Pagam. POS - PAGAMENTO POS 27,68 EUR DEL 25.01.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
+116,2026-01-25,-162.08,PAGAMENTO CONTACTLESS CARTA **** 9650 ARD DISCOUNT CAGLIARI,expense,false,Alimentari/Spesa supermercato
+117,2026-01-26,-8.05,AMAZON.IT MARKETPLACE - ORDINE 402-216229979,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+118,2026-01-26,-7.40,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+119,2026-01-26,-21.69,PAGAMENTO CONTACTLESS CARTA **** 6368 TACO BELL LIVORNO,expense,false,Ristorazione/Asporto / delivery
+120,2026-01-26,-42.77,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
+121,2026-01-26,-241.09,"Pagam. POS - PAGAMENTO POS 241,09 EUR DEL 26.01.2026 A (ITA) FIELMANN",expense,false,Salute/Ottico
+122,2026-01-26,-56.56,"Pagam. POS - PAGAMENTO POS 56,56 EUR DEL 26.01.2026 A (ITA) THUN OVEST",expense,false,Regali e donazioni/Regali
+123,2026-01-26,-132.92,"Pagam. POS - PAGAMENTO POS 132,92 EUR DEL 26.01.2026 A (ITA) GRANDVISION",expense,false,Salute/Ottico
+124,2026-01-27,-12.59,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+125,2026-01-27,-78.80,"Pagam. POS - PAGAMENTO POS 78,80 EUR DEL 27.01.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
+126,2026-01-27,-175.59,PAGAMENTO CONTACTLESS CARTA **** 8702 IL FORNO,expense,false,Alimentari/Mercato / freschi
+127,2026-01-27,-49.60,"Pagam. POS - PAGAMENTO POS 49,60 EUR DEL 27.01.2026 A (ITA) 100 MONTADITOS",expense,false,Ristorazione/Ristorante
+128,2026-01-27,-15.25,PAGAMENTO CONTACTLESS CARTA **** 8590 PENNY BARI,expense,false,Alimentari/Spesa supermercato
+129,2026-01-27,216.46,Bonif. v/fav. - RIF:213817755 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+130,2026-01-27,292.77,Bonif. v/fav. - RIF:219016697 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+131,2026-01-28,-127.70,PAGAMENTO CONTACTLESS CARTA **** 7584 CADDY'S,expense,false,Cura personale/Cosmetici e igiene
+132,2026-01-28,-13.89,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+133,2026-01-28,227.16,Bonif. v/fav. - RIF:214973635 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+134,2026-01-28,277.83,Bonif. v/fav. - RIF:215303258 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+135,2026-01-28,96.54,Bonif. v/fav. - RIF:212416340 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+136,2026-01-28,130.12,Bonif. v/fav. - RIF:219195834 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+137,2026-01-29,-88.49,PAGAMENTO CONTACTLESS CARTA **** 3765 PITTAROSSO PORTA NUOVA,expense,false,Abbigliamento/Calzature
+138,2026-01-29,-8.08,"Pagam. POS - PAGAMENTO POS 8,08 EUR DEL 29.01.2026 A (ITA) 100 MONTADITOS",expense,false,Ristorazione/Ristorante
+139,2026-01-29,-55.53,PAGAMENTO CONTACTLESS CARTA **** 9743 FAMILA SESTO SAN GIOVANNI,expense,false,Alimentari/Spesa supermercato
+140,2026-01-29,-83.94,"Pagam. POS - PAGAMENTO POS 83,94 EUR DEL 29.01.2026 A (ITA) UDON VIMODRONE",expense,false,Ristorazione/Ristorante
+141,2026-01-29,-121.55,"Pagam. POS - PAGAMENTO POS 121,55 EUR DEL 29.01.2026 A (ITA) H&M HENNES AND MAURITZ",expense,false,Abbigliamento/Abbigliamento adulti
+142,2026-01-29,-109.42,"Pagam. POS - PAGAMENTO POS 109,42 EUR DEL 29.01.2026 A (ITA) SCARPE&SCARPE CENTRO COMMERCIALE LE GRANGE",expense,false,Abbigliamento/Calzature
+143,2026-01-29,-63.93,PAGAMENTO CONTACTLESS CARTA **** 9488 ROSSOPOMODORO NAPOLI,expense,false,Ristorazione/Ristorante
+144,2026-01-29,132.08,Bonif. v/fav. - RIF:210745848 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+145,2026-01-30,-9.69,"Pagam. POS - PAGAMENTO POS 9,69 EUR DEL 30.01.2026 A (ITA) LAFARMACIA.",expense,false,Salute/Farmaci
+146,2026-01-30,-37.53,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
+147,2026-01-30,-133.43,"Pagam. POS - PAGAMENTO POS 133,43 EUR DEL 30.01.2026 A (ITA) ACQUA & SAPONE SAN GIULIANO MILANESE",expense,false,Cura personale/Cosmetici e igiene
+148,2026-01-30,-23.95,"Pagam. POS - PAGAMENTO POS 23,95 EUR DEL 30.01.2026 A (ITA) SUSHIKO VENEZIA",expense,false,Ristorazione/Ristorante
+149,2026-01-30,-168.08,"Pagam. POS - PAGAMENTO POS 168,08 EUR DEL 30.01.2026 A (ITA) PANIFICIO TOSI",expense,false,Alimentari/Spesa supermercato
+150,2026-01-30,-12.97,AMAZON.IT MARKETPLACE - ORDINE 402-217457737,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+151,2026-01-30,-64.91,PAGAMENTO CONTACTLESS CARTA **** 3319 CRAI,expense,false,Alimentari/Spesa supermercato
+152,2026-01-30,-8.95,"Pagam. POS - PAGAMENTO POS 8,95 EUR DEL 30.01.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+153,2026-01-30,-45.41,PAGAMENTO CONTACTLESS CARTA **** 9787 TIGRE AMICO OSTIENSE,expense,false,Alimentari/Spesa supermercato
+154,2026-01-30,259.43,Bonif. v/fav. - RIF:213317311 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+155,2026-01-30,82.33,Bonif. v/fav. - RIF:217547260 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+156,2026-01-31,-200.29,PAGAMENTO CONTACTLESS CARTA **** 8881 FIELMANN OSTIENSE,expense,false,Salute/Ottico
+157,2026-01-31,-153.11,"Pagam. POS - PAGAMENTO POS 153,11 EUR DEL 31.01.2026 A (ITA) CENTRO DIAGNOSTICO SAN DONATO",expense,false,Salute/Farmaci
+158,2026-01-31,-30.56,PAGAMENTO CONTACTLESS CARTA **** 7918 HISTOIRE D'OR,expense,false,Abbigliamento/Altro abbigliamento
+159,2026-01-31,-12.20,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+160,2026-01-31,-62.38,PAGAMENTO CONTACTLESS CARTA **** 7710 STROILI ORO BOLOGNA,expense,false,Abbigliamento/Altro abbigliamento
+161,2026-02-01,56.01,Bonif. v/fav. - RIF:219314015 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+162,2026-02-02,-15.89,"Pagam. POS - PAGAMENTO POS 15,89 EUR DEL 02.02.2026 A (ITA) SNIPES TORINO",expense,false,Abbigliamento/Calzature
+163,2026-02-02,-14.93,Addebito SDD - GOOGLE *CLOUD STORAGE,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+164,2026-02-02,-133.47,PAGAMENTO CONTACTLESS CARTA **** 8710 VITALDENT,expense,false,Salute/Dentista
+165,2026-02-02,67.72,Bonif. v/fav. - RIF:215348075 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+166,2026-02-03,-139.97,PAGAMENTO CONTACTLESS CARTA **** 8697 GABOR OVEST,expense,false,Abbigliamento/Calzature
+167,2026-02-03,-19.63,"Pagam. POS - PAGAMENTO POS 19,63 EUR DEL 03.02.2026 A (ITA) PITTAROSSO",expense,false,Abbigliamento/Calzature
+168,2026-02-03,-37.00,PAGAMENTO CONTACTLESS CARTA **** 9500 BREWDOG NORD,expense,false,Ristorazione/Bar / caffè
+169,2026-02-03,-81.34,PAGAMENTO CONTACTLESS CARTA **** 7128 RAY-BAN,expense,false,Salute/Ottico
+170,2026-02-03,226.43,Bonif. v/fav. - RIF:217882208 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+171,2026-02-04,-114.07,PAGAMENTO CONTACTLESS CARTA **** 1749 SPLENDIDI E SPLENDENTI,expense,false,Cura personale/Cosmetici e igiene
+172,2026-02-04,-101.61,"Pagam. POS - PAGAMENTO POS 101,61 EUR DEL 04.02.2026 A (ITA) TODIS PRATI",expense,false,Alimentari/Spesa supermercato
+173,2026-02-04,-52.81,"Pagam. POS - PAGAMENTO POS 52,81 EUR DEL 04.02.2026 A (ITA) CHURCH'S PORTA NUOVA",expense,false,Abbigliamento/Calzature
+174,2026-02-04,-21.40,"Pagam. POS - PAGAMENTO POS 21,40 EUR DEL 04.02.2026 A (ITA) DM PADOVA",expense,false,Cura personale/Cosmetici e igiene
+175,2026-02-04,286.66,Bonif. v/fav. - RIF:216140046 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+176,2026-02-05,-15.66,Disposizione - RIF:217506606 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
+177,2026-02-05,-131.90,"Pagam. POS - PAGAMENTO POS 131,90 EUR DEL 05.02.2026 A (ITA) FARMACIA COMUNALE",expense,false,Salute/Farmaci
+178,2026-02-05,-42.70,"Pagam. POS - PAGAMENTO POS 42,70 EUR DEL 05.02.2026 A (ITA) RISTORANTE DA GINO",expense,false,Ristorazione/Ristorante
+179,2026-02-05,-66.66,Disposizione - RIF:219867791 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
+180,2026-02-05,257.79,Bonif. v/fav. - RIF:217342238 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+181,2026-02-06,-116.25,"Pagam. POS - PAGAMENTO POS 116,25 EUR DEL 06.02.2026 A (ITA) DR. MAX ROZZANO",expense,false,Salute/Farmaci
+182,2026-02-06,-66.51,PAGAMENTO CONTACTLESS CARTA **** 2689 WYCON COSMETICS,expense,false,Cura personale/Cosmetici e igiene
+183,2026-02-06,-77.47,"Pagam. POS - PAGAMENTO POS 77,47 EUR DEL 06.02.2026 A (ITA) RAY-BAN",expense,false,Salute/Ottico
+184,2026-02-06,-241.29,"Pagam. POS - PAGAMENTO POS 241,29 EUR DEL 06.02.2026 A (ITA) DENTALPRO PRATI",expense,false,Salute/Dentista
+185,2026-02-06,223.45,Bonif. v/fav. - RIF:214048742 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+186,2026-02-07,-156.45,"Pagam. POS - PAGAMENTO POS 156,45 EUR DEL 07.02.2026 A (ITA) CENTRO DIAGNOSTICO SAN DONATO",expense,false,Salute/Farmaci
+187,2026-02-07,-149.23,"Pagam. POS - PAGAMENTO POS 149,23 EUR DEL 07.02.2026 A (ITA) RAY-BAN",expense,false,Salute/Ottico
+188,2026-02-07,-80.63,"Pagam. POS - PAGAMENTO POS 80,63 EUR DEL 07.02.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
+189,2026-02-07,-34.96,"Pagam. POS - PAGAMENTO POS 34,96 EUR DEL 07.02.2026 A (ITA) TIGROS",expense,false,Alimentari/Spesa supermercato
+190,2026-02-07,93.90,Bonif. v/fav. - RIF:218413799 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+191,2026-02-07,289.72,Bonif. v/fav. - RIF:217075720 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+192,2026-02-08,-35.73,PAGAMENTO CONTACTLESS CARTA **** 9194 HOKA CENTRO COMMERCIALE LE GRANGE,expense,false,Svago e tempo libero/Sport e palestra
+193,2026-02-08,-23.47,"Pagam. POS - PAGAMENTO POS 23,47 EUR DEL 08.02.2026 A (ITA) OLD WILD WEST",expense,false,Ristorazione/Ristorante
+194,2026-02-08,-6.96,"Pagam. POS - PAGAMENTO POS 6,96 EUR DEL 08.02.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+195,2026-02-08,-27.24,PAGAMENTO CONTACTLESS CARTA **** 7984 MERCATÒ SAN GIULIANO MILANESE,expense,false,Alimentari/Spesa supermercato
+196,2026-02-08,-31.45,"Pagam. POS - PAGAMENTO POS 31,45 EUR DEL 08.02.2026 A (ITA) LIDL ITALIA SRL",expense,false,Alimentari/Spesa supermercato
+197,2026-02-08,215.01,Bonif. v/fav. - RIF:216175540 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+198,2026-02-09,-90.19,PAGAMENTO CONTACTLESS CARTA **** 6929 NATURA,expense,false,Regali e donazioni/Regali
+199,2026-02-09,-52.15,"Pagam. POS - PAGAMENTO POS 52,15 EUR DEL 09.02.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
+200,2026-02-09,-93.62,PAGAMENTO CONTACTLESS CARTA **** 5869 DM,expense,false,Cura personale/Cosmetici e igiene
+201,2026-02-09,-7.65,PAGAMENTO CONTACTLESS CARTA **** 7265 IKEA CAFÉ,expense,false,Ristorazione/Bar / caffè
+202,2026-02-09,-96.40,"Pagam. POS - PAGAMENTO POS 96,40 EUR DEL 09.02.2026 A (ITA) IL FORNAIO PERUGIA",expense,false,Alimentari/Mercato / freschi
+203,2026-02-09,-90.11,"Pagam. POS - PAGAMENTO POS 90,11 EUR DEL 09.02.2026 A (ITA) CHURCH'S",expense,false,Abbigliamento/Calzature
+204,2026-02-09,-50.50,PAGAMENTO CONTACTLESS CARTA **** 6971 PARAFARMACIA CONAD,expense,false,Salute/Farmaci
+205,2026-02-09,-174.46,PAGAMENTO CONTACTLESS CARTA **** 5857 IL FORNO ASSAGO,expense,false,Alimentari/Mercato / freschi
+206,2026-02-09,178.40,Bonif. v/fav. - RIF:216320127 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+207,2026-02-10,-137.65,"Pagam. POS - PAGAMENTO POS 137,65 EUR DEL 10.02.2026 A (ITA) ZARA ITALIA SRL",expense,false,Abbigliamento/Abbigliamento adulti
+208,2026-02-10,-47.72,"Pagam. POS - PAGAMENTO POS 47,72 EUR DEL 10.02.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
+209,2026-02-10,-140.64,PAGAMENTO CONTACTLESS CARTA **** 2787 SUPERMERCATI ZAZZERON EUR,expense,false,Alimentari/Spesa supermercato
+210,2026-02-10,-12.10,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+211,2026-02-10,121.07,Bonif. v/fav. - RIF:217659944 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+212,2026-02-10,253.32,Bonif. v/fav. - RIF:216178762 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+213,2026-02-11,-39.74,"Pagam. POS - PAGAMENTO POS 39,74 EUR DEL 11.02.2026 A (ITA) ROSTICCERIA DA MARIO",expense,false,Ristorazione/Ristorante
+214,2026-02-11,-42.04,"Pagam. POS - PAGAMENTO POS 42,04 EUR DEL 11.02.2026 A (ITA) ROADHOUSE MESTRE",expense,false,Ristorazione/Ristorante
+215,2026-02-11,63.98,Bonif. v/fav. - RIF:215546407 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+216,2026-02-12,-61.05,PAGAMENTO CONTACTLESS CARTA **** 4644 STROILI ORO TIBURTINA,expense,false,Abbigliamento/Altro abbigliamento
+217,2026-02-12,-151.07,PAGAMENTO CONTACTLESS CARTA **** 3626 RAY-BAN,expense,false,Salute/Ottico
+218,2026-02-12,-17.90,PAGAMENTO CONTACTLESS CARTA **** 6521 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
+219,2026-02-12,259.93,Bonif. v/fav. - RIF:212811220 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+220,2026-02-13,-11.34,"Pagam. POS - PAGAMENTO POS 11,34 EUR DEL 13.02.2026 A (ITA) BAR CENTRALE",expense,false,Ristorazione/Ristorante
+221,2026-02-13,-8.31,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+222,2026-02-13,-95.26,Disposizione - RIF:218020705 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
+223,2026-02-13,-23.86,PAGAMENTO CONTACTLESS CARTA **** 6318 PETMARK ASSAGO,expense,false,Animali domestici/Cibo
+224,2026-02-13,-77.05,Addebito SDD - DELIVEROO ITALY SRL,expense,false,Ristorazione/Ristorante
+225,2026-02-13,-5.38,"Pagam. POS - PAGAMENTO POS 5,38 EUR DEL 13.02.2026 A (ITA) UNIEURO S.P.A.",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+226,2026-02-14,-10.54,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+227,2026-02-14,-147.57,"Pagam. POS - PAGAMENTO POS 147,57 EUR DEL 14.02.2026 A (ITA) EMISFERO",expense,false,Alimentari/Spesa supermercato
+228,2026-02-14,-73.03,PAGAMENTO CONTACTLESS CARTA **** 6345 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
+229,2026-02-14,-84.45,PAGAMENTO CONTACTLESS CARTA **** 8960 OVS S.P.A.,expense,false,Abbigliamento/Abbigliamento adulti
+230,2026-02-15,-9.32,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+231,2026-02-15,-52.53,PAGAMENTO CONTACTLESS CARTA **** 6146 SPORTLER,expense,false,Svago e tempo libero/Sport e palestra
+232,2026-02-15,-11.35,"Pagam. POS - PAGAMENTO POS 11,35 EUR DEL 15.02.2026 A (ITA) CONAD CITY ROMA",expense,false,Alimentari/Spesa supermercato
+233,2026-02-16,-25.57,"Pagam. POS - PAGAMENTO POS 25,57 EUR DEL 16.02.2026 A (ITA) PETMARK",expense,false,Animali domestici/Cibo
+234,2026-02-16,-117.04,PAGAMENTO CONTACTLESS CARTA **** 2693 CISALFA SPORT EUR,expense,false,Svago e tempo libero/Sport e palestra
+235,2026-02-16,-19.55,"Pagam. POS - PAGAMENTO POS 19,55 EUR DEL 16.02.2026 A (ITA) COOP.FI NAPOLI",expense,false,Alimentari/Spesa supermercato
+236,2026-02-17,-10.81,"Pagam. POS - PAGAMENTO POS 10,81 EUR DEL 17.02.2026 A (ITA) STROILI ORO",expense,false,Abbigliamento/Altro abbigliamento
+237,2026-02-17,-156.45,"Pagam. POS - PAGAMENTO POS 156,45 EUR DEL 17.02.2026 A (ITA) SALMOIRAGHI & VIGANÒ PRATI",expense,false,Salute/Ottico
+238,2026-02-17,-120.52,PAGAMENTO CONTACTLESS CARTA **** 3332 TIGROS,expense,false,Alimentari/Spesa supermercato
+239,2026-02-17,-31.50,"Pagam. POS - PAGAMENTO POS 31,50 EUR DEL 17.02.2026 A (ITA) O'TACOS",expense,false,Ristorazione/Asporto / delivery
+240,2026-02-17,-28.41,"Pagam. POS - PAGAMENTO POS 28,41 EUR DEL 17.02.2026 A (ITA) COOP LOMBARDIA",expense,false,Altro/Spese non classificate
+241,2026-02-17,-148.35,"Pagam. POS - PAGAMENTO POS 148,35 EUR DEL 17.02.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
+242,2026-02-17,101.81,Bonif. v/fav. - RIF:212991642 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+243,2026-02-18,-14.73,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+244,2026-02-18,-109.97,PAGAMENTO CONTACTLESS CARTA **** 7841 COOP,expense,false,Alimentari/Spesa supermercato
+245,2026-02-18,-72.12,"Pagam. POS - PAGAMENTO POS 72,12 EUR DEL 18.02.2026 A (ITA) CHURCH'S ROMA",expense,false,Abbigliamento/Calzature
+246,2026-02-18,-45.62,Addebito SDD - WIND TRE S.P.A. MOBILE,expense,false,Altro/Spese non classificate
+247,2026-02-18,-11.53,PAGAMENTO CONTACTLESS CARTA **** 5709 TRATTORIA LA PERGOLA,expense,false,Ristorazione/Ristorante
+248,2026-02-18,-14.19,Addebito SDD - APPLE.COM/BILL,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+249,2026-02-18,-110.00,PAGAMENTO CONTACTLESS CARTA **** 3150 PAM PERUGIA,expense,false,Alimentari/Spesa supermercato
+250,2026-02-18,-45.10,"Pagam. POS - PAGAMENTO POS 45,10 EUR DEL 18.02.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
+251,2026-02-19,-142.86,PAGAMENTO CONTACTLESS CARTA **** 9524 GABOR,expense,false,Abbigliamento/Calzature
+252,2026-02-19,-75.96,PAGAMENTO CONTACTLESS CARTA **** 1019 MAXI ZOO FIRENZE,expense,false,Animali domestici/Cibo
+253,2026-02-19,-23.54,"Pagam. POS - PAGAMENTO POS 23,54 EUR DEL 19.02.2026 A (ITA) NATURA",expense,false,Regali e donazioni/Regali
+254,2026-02-19,-87.76,"Pagam. POS - PAGAMENTO POS 87,76 EUR DEL 19.02.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
+255,2026-02-20,-140.77,"Pagam. POS - PAGAMENTO POS 140,77 EUR DEL 20.02.2026 A (ITA) EUROSPIN",expense,false,Alimentari/Spesa supermercato
+256,2026-02-20,-12.57,"Pagam. POS - PAGAMENTO POS 12,57 EUR DEL 20.02.2026 A (ITA) POKE HOUSE LIVORNO",expense,false,Ristorazione/Asporto / delivery
+257,2026-02-20,-11.48,"Pagam. POS - PAGAMENTO POS 11,48 EUR DEL 20.02.2026 A (ITA) MEDIAWORLD CARUGATE",expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+258,2026-02-20,-76.40,Disposizione - RIF:216363941 BEN. TINTORIA RAPIDA CENTRO,expense,false,Altro/Spese non classificate
+259,2026-02-20,102.40,Bonif. v/fav. - RIF:212673316 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+260,2026-02-20,60.44,Bonif. v/fav. - RIF:212556730 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+261,2026-02-20,209.41,Bonif. v/fav. - RIF:214789713 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+262,2026-02-21,-46.94,"Pagam. POS - PAGAMENTO POS 46,94 EUR DEL 21.02.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
+263,2026-02-21,-35.77,PAGAMENTO CONTACTLESS CARTA **** 5512 VITALDENT VOMERO,expense,false,Salute/Dentista
+264,2026-02-21,-146.85,"Pagam. POS - PAGAMENTO POS 146,85 EUR DEL 21.02.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
+265,2026-02-21,-41.07,PAGAMENTO CONTACTLESS CARTA **** 6696 L'ANTICA PIZZERIA DA MICHELE,expense,false,Ristorazione/Ristorante
+266,2026-02-21,-134.18,PAGAMENTO CONTACTLESS CARTA **** 9449 SIGMA,expense,false,Alimentari/Spesa supermercato
+267,2026-02-22,-122.67,PAGAMENTO CONTACTLESS CARTA **** 7696 DM PERUGIA,expense,false,Cura personale/Cosmetici e igiene
+268,2026-02-22,-43.21,PRELIEVO ATM BANCOMAT FIL. 00456 MILANO,expense,false,Altro/Spese non classificate
+269,2026-02-22,-11.12,PAGAMENTO CONTACTLESS CARTA **** 7810 DESPAR MARGHERA,expense,false,Alimentari/Altro alimentari
+270,2026-02-22,-145.08,PAGAMENTO CONTACTLESS CARTA **** 8277 DPIÙ TORINO,expense,false,Alimentari/Spesa supermercato
+271,2026-02-22,-59.57,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
+272,2026-02-22,280.70,Bonif. v/fav. - RIF:210379923 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+273,2026-02-23,-172.37,PAGAMENTO CONTACTLESS CARTA **** 3499 FIELMANN VENEZIA,expense,false,Salute/Ottico
+274,2026-02-23,-67.71,PAGAMENTO CONTACTLESS CARTA **** 9789 SPIZZICO BOLOGNA,expense,false,Ristorazione/Asporto / delivery
+275,2026-02-23,-141.50,Disposizione - RIF:215082338 BEN. DR VERDI ODONTOIATRA,expense,false,Salute/Farmaci
+276,2026-02-23,-106.15,"Pagam. POS - PAGAMENTO POS 106,15 EUR DEL 23.02.2026 A (ITA) TIGRE VENEZIA",expense,false,Alimentari/Spesa supermercato
+277,2026-02-24,-132.98,"Pagam. POS - PAGAMENTO POS 132,98 EUR DEL 24.02.2026 A (ITA) PRIMADONNA PALERMO",expense,false,Abbigliamento/Calzature
+278,2026-02-24,-54.97,"Pagam. POS - PAGAMENTO POS 54,97 EUR DEL 24.02.2026 A (ITA) ALICE",expense,false,Ristorazione/Asporto / delivery
+279,2026-02-24,-13.45,"Pagam. POS - PAGAMENTO POS 13,45 EUR DEL 24.02.2026 A (ITA) DENTALPRO CENTRO COMM. IL LEONE",expense,false,Salute/Dentista
+280,2026-02-25,-10.76,Addebito SDD - NETFLIX INTERNATIONAL B.V.,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+281,2026-02-25,-11.73,PAGAMENTO CONTACTLESS CARTA **** 6267 BOTTEGA VERDE,expense,false,Cura personale/Cosmetici e igiene
+282,2026-02-25,-57.67,"Pagam. POS - PAGAMENTO POS 57,67 EUR DEL 25.02.2026 A (ITA) CISALFA SPORT PALERMO",expense,false,Svago e tempo libero/Sport e palestra
+283,2026-02-25,286.16,Bonif. v/fav. - RIF:218773717 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+284,2026-02-25,85.95,Bonif. v/fav. - RIF:213755506 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+285,2026-02-26,-85.26,"Pagam. POS - PAGAMENTO POS 85,26 EUR DEL 26.02.2026 A (ITA) ACQUA & SAPONE",expense,false,Cura personale/Cosmetici e igiene
+286,2026-02-26,-37.74,"Pagam. POS - PAGAMENTO POS 37,74 EUR DEL 26.02.2026 A (ITA) ESSELUNGA MILANO",expense,false,Alimentari/Spesa supermercato
+287,2026-02-26,-132.92,"Pagam. POS - PAGAMENTO POS 132,92 EUR DEL 26.02.2026 A (ITA) FIELMANN OSTIENSE",expense,false,Salute/Ottico
+288,2026-02-26,-208.94,"Pagam. POS - PAGAMENTO POS 208,94 EUR DEL 26.02.2026 A (ITA) PARAFARMACIA CONAD",expense,false,Salute/Farmaci
+289,2026-02-27,-77.85,PAGAMENTO CONTACTLESS CARTA **** 4650 CONAD SUPERSTORE,expense,false,Alimentari/Spesa supermercato
+290,2026-02-27,-14.31,Addebito SDD - SPOTIFY AB,expense,false,Svago e tempo libero/Streaming / abbonamenti digitali
+291,2026-02-27,-42.12,"Pagam. POS - PAGAMENTO POS 42,12 EUR DEL 27.02.2026 A (ITA) BLUESPIRIT",expense,false,Abbigliamento/Altro abbigliamento
+292,2026-02-27,-172.07,"Pagam. POS - PAGAMENTO POS 172,07 EUR DEL 27.02.2026 A (ITA) MEGA",expense,false,Alimentari/Spesa supermercato
+293,2026-02-27,-41.71,"Pagam. POS - PAGAMENTO POS 41,71 EUR DEL 27.02.2026 A (ITA) PRIMOR",expense,false,Cura personale/Cosmetici e igiene
+294,2026-02-27,-77.69,Addebito SDD - TELECOM ITALIA S.P.A. FIBRA,expense,false,Altro/Spese non classificate
+295,2026-02-27,-99.79,"Pagam. POS - PAGAMENTO POS 99,79 EUR DEL 27.02.2026 A (ITA) MERCATO RIONALE PORTA PALAZZO",expense,false,Alimentari/Spesa supermercato
+296,2026-02-27,-44.73,"Pagam. POS - PAGAMENTO POS 44,73 EUR DEL 27.02.2026 A (ITA) DECATHLON ASSAGO",expense,false,Abbigliamento/Abbigliamento adulti
+297,2026-02-27,154.05,Bonif. v/fav. - RIF:215351092 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+298,2026-02-27,212.31,Bonif. v/fav. - RIF:214918604 ORD. RICARICA REVOLUT LAURA,internal_in,true,Trasferimenti e rimborsi/Giroconto entrata
+299,2026-02-28,-26.68,"Pagam. POS - PAGAMENTO POS 26,68 EUR DEL 28.02.2026 A (ITA) LA PIADINERIA ROZZANO",expense,false,Ristorazione/Asporto / delivery
+300,2026-02-28,-96.41,"Pagam. POS - PAGAMENTO POS 96,41 EUR DEL 28.02.2026 A (ITA) MERCATÒ EXTRA",expense,false,Alimentari/Spesa supermercato

@@ -1,0 +1,99 @@
+machine,model,backend,phase,n_files_target,status,exact_pct,fuzzy_pct,err_pct,fb_pct,s_per_10tx,notes
+Mac Luigi,Qwen3.5-4B-Q4,llamacpp,classifier,50,done,,,,,dati G6 esistenti
+Mac Luigi,Qwen3.5-4B-Q4,llamacpp,categorizer,50,done,32.8,49.0,31.6,19.3,33.3,dati G6 esistenti
+Mac Luigi,Qwen3.5-9B-Q3,llamacpp,classifier,50,done,,,,,dati G6 esistenti
+Mac Luigi,Qwen3.5-9B-Q3,llamacpp,categorizer,50,done,42.6,52.9,33.6,13.5,44.5,dati G6 esistenti
+Mac Luigi,Qwen3.5-9B-Q4,llamacpp,classifier,50,done,,,,,dati G6 esistenti
+Mac Luigi,Qwen3.5-9B-Q4,llamacpp,categorizer,50,done,37.6,56.4,29.9,13.7,44.5,dati G6 esistenti
+Mac Luigi,Nemotron-Mini-4B,llamacpp,classifier,8,running,,,,,Fase 1 in corso
+Mac Luigi,Nemotron-Mini-4B,llamacpp,categorizer,8,running,,,,,Fase 1 in corso
+Mac Luigi,Phi4-mini,llamacpp,classifier,8,running,,,,,Fase 1 in corso
+Mac Luigi,Phi4-mini,llamacpp,categorizer,8,running,,,,,Fase 1 in corso
+Mac Luigi,Mistral-7B,llamacpp,classifier,8,running,,,,,Fase 1 in corso
+Mac Luigi,Mistral-7B,llamacpp,categorizer,8,running,,,,,Fase 1 in corso
+Mac Luigi,DeepSeek-R1-7B,llamacpp,classifier,8,running,,,,,Fase 1 in corso
+Mac Luigi,DeepSeek-R1-7B,llamacpp,categorizer,8,running,,,,,Fase 1 in corso
+Mac Elena,Qwen3.5-4B-Q4,llamacpp,classifier,8,todo,,,,,
+Mac Elena,Qwen3.5-4B-Q4,llamacpp,categorizer,8,todo,,,,,
+Mac Elena,Qwen3.5-9B-Q3,llamacpp,classifier,8,todo,,,,,
+Mac Elena,Qwen3.5-9B-Q3,llamacpp,categorizer,8,todo,,,,,
+Mac Elena,Qwen3.5-9B-Q4,llamacpp,classifier,8,todo,,,,,
+Mac Elena,Qwen3.5-9B-Q4,llamacpp,categorizer,8,todo,,,,,
+Mac Elena,Nemotron-Mini-4B,llamacpp,classifier,8,todo,,,,,
+Mac Elena,Nemotron-Mini-4B,llamacpp,categorizer,8,todo,,,,,
+Mac Elena,Phi4-mini,llamacpp,classifier,8,todo,,,,,
+Mac Elena,Phi4-mini,llamacpp,categorizer,8,todo,,,,,
+Mac Elena,Mistral-7B,llamacpp,classifier,8,todo,,,,,
+Mac Elena,Mistral-7B,llamacpp,categorizer,8,todo,,,,,
+Mac Elena,DeepSeek-R1-7B,llamacpp,classifier,8,todo,,,,,
+Mac Elena,DeepSeek-R1-7B,llamacpp,categorizer,8,todo,,,,,
+Junone,Qwen3.5-4B-Q4,llamacpp,classifier,8,todo,,,,,
+Junone,Qwen3.5-4B-Q4,llamacpp,categorizer,8,todo,,,,,
+Junone,Qwen3.5-9B-Q3,llamacpp,classifier,8,todo,,,,,
+Junone,Qwen3.5-9B-Q3,llamacpp,categorizer,8,todo,,,,,
+Junone,Qwen3.5-9B-Q4,llamacpp,classifier,8,todo,,,,,
+Junone,Qwen3.5-9B-Q4,llamacpp,categorizer,8,todo,,,,,
+Junone,Nemotron-Mini-4B,llamacpp,classifier,8,todo,,,,,
+Junone,Nemotron-Mini-4B,llamacpp,categorizer,8,todo,,,,,
+Junone,Phi4-mini,llamacpp,classifier,8,todo,,,,,
+Junone,Phi4-mini,llamacpp,categorizer,8,todo,,,,,
+Junone,Mistral-7B,llamacpp,classifier,8,todo,,,,,
+Junone,Mistral-7B,llamacpp,categorizer,8,todo,,,,,
+Junone,DeepSeek-R1-7B,llamacpp,classifier,8,todo,,,,,
+Junone,DeepSeek-R1-7B,llamacpp,categorizer,8,todo,,,,,
+Win Roberto,Qwen3.5-4B-Q4,llamacpp,classifier,8,todo,,,,,CPU only
+Win Roberto,Qwen3.5-4B-Q4,llamacpp,categorizer,8,todo,,,,,CPU only
+Win Roberto,Qwen3.5-9B-Q3,llamacpp,classifier,8,todo,,,,,CPU only
+Win Roberto,Qwen3.5-9B-Q3,llamacpp,categorizer,8,todo,,,,,CPU only
+Win Roberto,Qwen3.5-9B-Q4,llamacpp,classifier,8,todo,,,,,CPU only
+Win Roberto,Qwen3.5-9B-Q4,llamacpp,categorizer,8,todo,,,,,CPU only
+Win Roberto,Nemotron-Mini-4B,llamacpp,classifier,8,todo,,,,,CPU only
+Win Roberto,Nemotron-Mini-4B,llamacpp,categorizer,8,todo,,,,,CPU only
+Win Roberto,Phi4-mini,llamacpp,classifier,8,todo,,,,,CPU only
+Win Roberto,Phi4-mini,llamacpp,categorizer,8,todo,,,,,CPU only
+Win Roberto,Mistral-7B,llamacpp,classifier,8,todo,,,,,CPU only
+Win Roberto,Mistral-7B,llamacpp,categorizer,8,todo,,,,,CPU only
+Win Roberto,DeepSeek-R1-7B,llamacpp,classifier,8,todo,,,,,CPU only
+Win Roberto,DeepSeek-R1-7B,llamacpp,categorizer,8,todo,,,,,CPU only
+Linux Ricki,Qwen3.5-4B-Q4,llamacpp,classifier,8,todo,,,,,
+Linux Ricki,Qwen3.5-4B-Q4,llamacpp,categorizer,8,todo,,,,,
+Linux Ricki,Qwen3.5-9B-Q3,llamacpp,classifier,8,todo,,,,,
+Linux Ricki,Qwen3.5-9B-Q3,llamacpp,categorizer,8,todo,,,,,
+Linux Ricki,Qwen3.5-9B-Q4,llamacpp,classifier,8,todo,,,,,
+Linux Ricki,Qwen3.5-9B-Q4,llamacpp,categorizer,8,todo,,,,,
+Linux Ricki,Nemotron-Mini-4B,llamacpp,classifier,8,todo,,,,,
+Linux Ricki,Nemotron-Mini-4B,llamacpp,categorizer,8,todo,,,,,
+Linux Ricki,Phi4-mini,llamacpp,classifier,8,todo,,,,,
+Linux Ricki,Phi4-mini,llamacpp,categorizer,8,todo,,,,,
+Linux Ricki,Mistral-7B,llamacpp,classifier,8,todo,,,,,
+Linux Ricki,Mistral-7B,llamacpp,categorizer,8,todo,,,,,
+Linux Ricki,DeepSeek-R1-7B,llamacpp,classifier,8,todo,,,,,
+Linux Ricki,DeepSeek-R1-7B,llamacpp,categorizer,8,todo,,,,,
+Mostro Bracco,Qwen3.5-4B-Q4,llamacpp,classifier,8,todo,,,,,
+Mostro Bracco,Qwen3.5-4B-Q4,llamacpp,categorizer,8,todo,,,,,
+Mostro Bracco,Qwen3.5-9B-Q3,llamacpp,classifier,8,todo,,,,,
+Mostro Bracco,Qwen3.5-9B-Q3,llamacpp,categorizer,8,todo,,,,,
+Mostro Bracco,Qwen3.5-9B-Q4,llamacpp,classifier,8,todo,,,,,
+Mostro Bracco,Qwen3.5-9B-Q4,llamacpp,categorizer,8,todo,,,,,
+Mostro Bracco,Nemotron-Mini-4B,llamacpp,classifier,8,todo,,,,,
+Mostro Bracco,Nemotron-Mini-4B,llamacpp,categorizer,8,todo,,,,,
+Mostro Bracco,Phi4-mini,llamacpp,classifier,8,todo,,,,,
+Mostro Bracco,Phi4-mini,llamacpp,categorizer,8,todo,,,,,
+Mostro Bracco,Mistral-7B,llamacpp,classifier,8,todo,,,,,
+Mostro Bracco,Mistral-7B,llamacpp,categorizer,8,todo,,,,,
+Mostro Bracco,DeepSeek-R1-7B,llamacpp,classifier,8,todo,,,,,
+Mostro Bracco,DeepSeek-R1-7B,llamacpp,categorizer,8,todo,,,,,
+Win Luca,Qwen3.5-4B-Q4,llamacpp,classifier,8,todo,,,,,
+Win Luca,Qwen3.5-4B-Q4,llamacpp,categorizer,8,todo,,,,,
+Win Luca,Qwen3.5-9B-Q3,llamacpp,classifier,8,todo,,,,,
+Win Luca,Qwen3.5-9B-Q3,llamacpp,categorizer,8,todo,,,,,
+Win Luca,Qwen3.5-9B-Q4,llamacpp,classifier,8,todo,,,,,
+Win Luca,Qwen3.5-9B-Q4,llamacpp,categorizer,8,todo,,,,,
+Win Luca,Nemotron-Mini-4B,llamacpp,classifier,8,todo,,,,,
+Win Luca,Nemotron-Mini-4B,llamacpp,categorizer,8,todo,,,,,
+Win Luca,Phi4-mini,llamacpp,classifier,8,todo,,,,,
+Win Luca,Phi4-mini,llamacpp,categorizer,8,todo,,,,,
+Win Luca,Mistral-7B,llamacpp,classifier,8,todo,,,,,
+Win Luca,Mistral-7B,llamacpp,categorizer,8,todo,,,,,
+Win Luca,DeepSeek-R1-7B,llamacpp,classifier,8,todo,,,,,
+Win Luca,DeepSeek-R1-7B,llamacpp,categorizer,8,todo,,,,,

@@ -1,0 +1,18 @@
+[
+  {"q": "ciao", "a": "Ciao! Sono l'assistente di supporto Spendif.ai. Come posso aiutarti?"},
+  {"q": "salve", "a": "Salve! Sono l'assistente di supporto Spendif.ai. Come posso aiutarti?"},
+  {"q": "buongiorno", "a": "Buongiorno! Sono l'assistente di supporto Spendif.ai. Come posso aiutarti?"},
+  {"q": "buonasera", "a": "Buonasera! Sono l'assistente di supporto Spendif.ai. Come posso aiutarti?"},
+  {"q": "hello", "a": "Hello! I'm the Spendif.ai support assistant. How can I help you?"},
+  {"q": "hi", "a": "Hi! I'm the Spendif.ai support assistant. How can I help you?"},
+  {"q": "hey", "a": "Hey! I'm the Spendif.ai support assistant. How can I help you?"},
+  {"q": "good morning", "a": "Good morning! I'm the Spendif.ai support assistant. How can I help you?"},
+  {"q": "good afternoon", "a": "Good afternoon! I'm the Spendif.ai support assistant. How can I help you?"},
+  {"q": "hola", "a": "¡Hola! Soy el asistente de soporte de Spendif.ai. ¿En qué puedo ayudarte?"},
+  {"q": "buenos dias", "a": "¡Buenos días! Soy el asistente de soporte de Spendif.ai. ¿En qué puedo ayudarte?"},
+  {"q": "bonjour", "a": "Bonjour! Je suis l'assistant de support Spendif.ai. Comment puis-je vous aider?"},
+  {"q": "salut", "a": "Salut! Je suis l'assistant de support Spendif.ai. Comment puis-je vous aider?"},
+  {"q": "hallo", "a": "Hallo! Ich bin der Spendif.ai Support-Assistent. Wie kann ich Ihnen helfen?"},
+  {"q": "guten morgen", "a": "Guten Morgen! Ich bin der Spendif.ai Support-Assistent. Wie kann ich Ihnen helfen?"},
+  {"q": "guten tag", "a": "Guten Tag! Ich bin der Spendif.ai Support-Assistent. Wie kann ich Ihnen helfen?"}
+]

@@ -72,7 +72,7 @@ TAXONOMY_DEFAULTS: dict[str, dict] = {
             {"category": "Regali e donazioni", "subcategories": [
                 "Regali", "Donazioni / beneficenza",
             ]},
-            {"category": "Altro", "subcategories": [
+            {"category": "Altro", "is_fallback": True, "subcategories": [
                 "Spese non classificate",
             ]},
         ],
@@ -100,7 +100,7 @@ TAXONOMY_DEFAULTS: dict[str, dict] = {
                 "Pensione / rendita", "Sussidio / bonus statale",
                 "Indennità (NASpI, maternità, ecc.)",
             ]},
-            {"category": "Altro entrate", "subcategories": [
+            {"category": "Altro entrate", "is_fallback": True, "subcategories": [
                 "Vendita beni usati", "Regalo ricevuto",
                 "Entrate non classificate",
             ]},
@@ -166,7 +166,7 @@ TAXONOMY_DEFAULTS: dict[str, dict] = {
             {"category": "Gifts & donations", "subcategories": [
                 "Gifts", "Donations / Charity",
             ]},
-            {"category": "Other", "subcategories": [
+            {"category": "Other", "is_fallback": True, "subcategories": [
                 "Unclassified expenses",
             ]},
         ],
@@ -193,7 +193,7 @@ TAXONOMY_DEFAULTS: dict[str, dict] = {
                 "Pension / Annuity", "Government subsidy",
                 "Allowance (unemployment, maternity, etc.)",
             ]},
-            {"category": "Other income", "subcategories": [
+            {"category": "Other income", "is_fallback": True, "subcategories": [
                 "Sale of used goods", "Gift received",
                 "Unclassified income",
             ]},
@@ -262,7 +262,7 @@ TAXONOMY_DEFAULTS: dict[str, dict] = {
             {"category": "Cadeaux & dons", "subcategories": [
                 "Cadeaux", "Dons / associations",
             ]},
-            {"category": "Autre", "subcategories": [
+            {"category": "Autre", "is_fallback": True, "subcategories": [
                 "Dépenses non classifiées",
             ]},
         ],
@@ -290,7 +290,7 @@ TAXONOMY_DEFAULTS: dict[str, dict] = {
                 "Retraite / rente", "Allocation / aide de l'État",
                 "Indemnité (chômage, maternité, etc.)",
             ]},
-            {"category": "Autres revenus", "subcategories": [
+            {"category": "Autres revenus", "is_fallback": True, "subcategories": [
                 "Vente de biens d'occasion", "Cadeau reçu",
                 "Revenus non classifiés",
             ]},
@@ -360,7 +360,7 @@ TAXONOMY_DEFAULTS: dict[str, dict] = {
             {"category": "Geschenke & Spenden", "subcategories": [
                 "Geschenke", "Spenden / Charity",
             ]},
-            {"category": "Sonstiges", "subcategories": [
+            {"category": "Sonstiges", "is_fallback": True, "subcategories": [
                 "Nicht klassifizierte Ausgaben",
             ]},
         ],
@@ -388,7 +388,7 @@ TAXONOMY_DEFAULTS: dict[str, dict] = {
                 "Rente / Altersrente", "Staatliche Förderung",
                 "Zuwendungen (Arbeitslosengeld, Mutterschaft, etc.)",
             ]},
-            {"category": "Sonstige Einnahmen", "subcategories": [
+            {"category": "Sonstige Einnahmen", "is_fallback": True, "subcategories": [
                 "Verkauf gebrauchter Waren", "Erhaltenes Geschenk",
                 "Nicht klassifizierte Einnahmen",
             ]},
@@ -457,7 +457,7 @@ TAXONOMY_DEFAULTS: dict[str, dict] = {
             {"category": "Regalos y donaciones", "subcategories": [
                 "Regalos", "Donaciones / ONG",
             ]},
-            {"category": "Otros", "subcategories": [
+            {"category": "Otros", "is_fallback": True, "subcategories": [
                 "Gastos no clasificados",
             ]},
         ],
@@ -485,7 +485,7 @@ TAXONOMY_DEFAULTS: dict[str, dict] = {
                 "Pensión / renta", "Subsidio / ayuda estatal",
                 "Prestación (desempleo, maternidad, etc.)",
             ]},
-            {"category": "Otros ingresos", "subcategories": [
+            {"category": "Otros ingresos", "is_fallback": True, "subcategories": [
                 "Venta de bienes usados", "Regalo recibido",
                 "Ingresos no clasificados",
             ]},

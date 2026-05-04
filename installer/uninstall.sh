@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# ── Spendify — Disinstallatore (Mac / Linux) ─────────────────────────────────
+# ── Spendif.ai — Disinstallatore (Mac / Linux) ─────────────────────────────────
 # Uso:  curl -fsSL https://raw.githubusercontent.com/drake69/spendify/main/installer/uninstall.sh | bash
-#       oppure: bash ~/spendify/uninstall.sh
+#       oppure: bash ~/spendifai/uninstall.sh
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
-INSTALL_DIR="${SPENDIFY_INSTALL_DIR:-$HOME/spendify}"
+INSTALL_DIR="${SPENDIFAI_INSTALL_DIR:-$HOME/spendifai}"
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BOLD='\033[1m'; RESET='\033[0m'
 
-info()    { echo -e "${BOLD}[spendify]${RESET} $*"; }
+info()    { echo -e "${BOLD}[spendif.ai]${RESET} $*"; }
 success() { echo -e "${GREEN}✅ $*${RESET}"; }
 warn()    { echo -e "${YELLOW}⚠️  $*${RESET}"; }
 error()   { echo -e "${RED}❌ $*${RESET}" >&2; exit 1; }
@@ -24,7 +24,7 @@ ask() {
 
 echo ""
 echo -e "${BOLD}╔══════════════════════════════════════╗${RESET}"
-echo -e "${BOLD}║      Spendify — Disinstallatore      ║${RESET}"
+echo -e "${BOLD}║      Spendif.ai — Disinstallatore      ║${RESET}"
 echo -e "${BOLD}╚══════════════════════════════════════╝${RESET}"
 echo ""
 
@@ -39,7 +39,7 @@ fi
 # ── 2. Verifica cartella installazione ───────────────────────────────────────
 if [ ! -f "$INSTALL_DIR/docker-compose.yml" ]; then
     warn "Nessuna installazione trovata in: $INSTALL_DIR"
-    warn "Imposta SPENDIFY_INSTALL_DIR se hai installato in una cartella diversa."
+    warn "Imposta SPENDIFAI_INSTALL_DIR se hai installato in una cartella diversa."
     COMPOSE_FOUND=false
 else
     info "Installazione trovata in: $INSTALL_DIR"
@@ -54,7 +54,7 @@ echo ""
 REMOVE_DB=$(ask    "Eliminare il database delle transazioni? (i tuoi dati finanziari)")
 REMOVE_OLLAMA=$(ask "Eliminare i modelli Ollama (~8 GB su disco)?")
 REMOVE_LLAMA=$(ask  "Eliminare l'immagine llama.cpp e la cartella models/ (file GGUF)?")
-REMOVE_IMAGES=$(ask "Eliminare le immagini Docker di Spendify/Ollama (libera ~500 MB–1 GB)?")
+REMOVE_IMAGES=$(ask "Eliminare le immagini Docker di Spendif.ai/Ollama (libera ~500 MB–1 GB)?")
 REMOVE_DIR=$(ask   "Eliminare la cartella di installazione ($INSTALL_DIR)?")
 REMOVE_DOCKER=$(ask "Mostrare istruzioni per rimuovere Docker Desktop?")
 
@@ -62,14 +62,14 @@ echo ""
 
 # ── 4. Ferma e rimuovi i container ───────────────────────────────────────────
 if $COMPOSE_FOUND && $DOCKER_OK; then
-    info "Fermo i container Spendify..."
+    info "Fermo i container Spendif.ai..."
 
     # Profili possibili: base + ollama + llama-cpp
     PROFILE_ARGS=""
-    if docker volume ls --format '{{.Name}}' 2>/dev/null | grep -q "spendify_ollama_models"; then
+    if docker volume ls --format '{{.Name}}' 2>/dev/null | grep -q "spendifai_ollama_models"; then
         PROFILE_ARGS="$PROFILE_ARGS --profile ollama"
     fi
-    if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q "spendify_llama"; then
+    if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q "spendifai_llama"; then
         PROFILE_ARGS="$PROFILE_ARGS --profile llama-cpp"
     fi
 
@@ -81,14 +81,14 @@ fi
 # ── 5. Rimuovi volumi selezionati ─────────────────────────────────────────────
 if $DOCKER_OK; then
     if $REMOVE_DB; then
-        info "Rimuovo il database (volume spendify_data e spendify_logs)..."
-        docker volume rm spendify_spendify_data 2>/dev/null && success "Volume spendify_data rimosso" || warn "Volume spendify_data non trovato (già rimosso?)"
-        docker volume rm spendify_spendify_logs 2>/dev/null && success "Volume spendify_logs rimosso" || warn "Volume spendify_logs non trovato"
+        info "Rimuovo il database (volume spendifai_data e spendifai_logs)..."
+        docker volume rm spendifai_spendifai_data 2>/dev/null && success "Volume spendifai_data rimosso" || warn "Volume spendifai_data non trovato (già rimosso?)"
+        docker volume rm spendifai_spendifai_logs 2>/dev/null && success "Volume spendifai_logs rimosso" || warn "Volume spendifai_logs non trovato"
     fi
 
     if $REMOVE_OLLAMA; then
         info "Rimuovo i modelli Ollama (volume ollama_models, ~8 GB)..."
-        docker volume rm spendify_ollama_models 2>/dev/null && success "Volume ollama_models rimosso" || warn "Volume ollama_models non trovato (mai installato?)"
+        docker volume rm spendifai_ollama_models 2>/dev/null && success "Volume ollama_models rimosso" || warn "Volume ollama_models non trovato (mai installato?)"
     fi
 
     if $REMOVE_LLAMA; then
@@ -112,12 +112,12 @@ if $DOCKER_OK; then
 
     if $REMOVE_IMAGES; then
         info "Rimuovo le immagini Docker..."
-        # Immagine Spendify (tutti i tag ghcr.io/drake69/spendify)
+        # Immagine Spendif.ai (tutti i tag ghcr.io/drake69/spendify)
         if docker images --format '{{.Repository}}' | grep -q "ghcr.io/drake69/spendify"; then
             docker images --format '{{.Repository}}:{{.Tag}}' | grep "ghcr.io/drake69/spendify" \
-                | xargs docker rmi 2>/dev/null && success "Immagine Spendify rimossa" || warn "Impossibile rimuovere l'immagine Spendify"
+                | xargs docker rmi 2>/dev/null && success "Immagine Spendif.ai rimossa" || warn "Impossibile rimuovere l'immagine Spendif.ai"
         else
-            warn "Immagine Spendify non trovata"
+            warn "Immagine Spendif.ai non trovata"
         fi
         # Immagine Ollama
         if docker images --format '{{.Repository}}' | grep -q "^ollama/ollama$"; then
@@ -170,7 +170,7 @@ fi
 # ── 8. Riepilogo ──────────────────────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}── Riepilogo ───────────────────────────────────────────────────${RESET}"
-$COMPOSE_FOUND  && success "Container Spendify rimossi"       || true
+$COMPOSE_FOUND  && success "Container Spendif.ai rimossi"       || true
 $REMOVE_DB      && success "Database transazioni rimosso"      || info "Database transazioni conservato"
 $REMOVE_OLLAMA  && success "Modelli Ollama rimossi"            || info "Modelli Ollama conservati"
 $REMOVE_LLAMA   && success "llama.cpp + models/ rimossi"       || info "llama.cpp conservato"
