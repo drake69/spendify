@@ -1,31 +1,33 @@
 version: 2
 updates:
-  # Python dependencies (uv/pip)
+  # Python dependencies (pyproject.toml / uv.lock)
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
       interval: "weekly"
-    labels: ["tech-debt", "SW"]
+      day: "monday"
+    labels: ["dependencies", "SW"]
     commit-message:
-      prefix: "deps"
+      prefix: "chore(deps)"
     open-pull-requests-limit: 5
 
-  # GitHub Actions
+  # GitHub Actions versions (prevents stale action references like trivy-action)
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-    labels: ["tech-debt", "SW"]
+      day: "monday"
+    labels: ["ci", "SW"]
     commit-message:
-      prefix: "ci"
+      prefix: "chore(ci)"
     open-pull-requests-limit: 5
 
-  # Docker
+  # Docker base image (python:3.13-slim)
   - package-ecosystem: "docker"
     directory: "/docker"
     schedule:
-      interval: "weekly"
-    labels: ["tech-debt", "SW"]
+      interval: "monthly"
+    labels: ["docker", "SW"]
     commit-message:
-      prefix: "docker"
+      prefix: "chore(docker)"
     open-pull-requests-limit: 3
