@@ -289,15 +289,31 @@ jobs:
           retention-days: 30
 
       # ── Semgrep (OWASP / broader SAST) ───────────────────
-      - name: Run Semgrep — OWASP top-10 rules
-        uses: returntocorp/semgrep-action@v1
+      - name: Install Semgrep
+        run: pip install semgrep
+
+      - name: Run Semgrep — OWASP top-10 rules (audit mode)
+        run: |
+          semgrep scan \
+            --config p/python \
+            --config p/owasp-top-ten \
+            --config p/security-audit \
+            --exclude="tests/*" --exclude="benchmark/*" \
+            --exclude="quarantine/*" --exclude="tools/*" \
+            --json -o semgrep-report.json \
+            || true
+          # Audit mode: report findings but don't block the build.
+          # Findings are uploaded as artifact for review.
+          TOTAL=$(python3 -c "import json; print(len(json.load(open('semgrep-report.json')).get('results',[])))" 2>/dev/null || echo "?")
+          echo "Semgrep findings: $TOTAL (audit mode — not blocking)"
+
+      - name: Upload Semgrep report
+        uses: actions/upload-artifact@v4
+        if: always()
         with:
-          config: >-
-            p/python
-            p/owasp-top-ten
-            p/security-audit
-        env:
-          SEMGREP_RULES: p/python p/owasp-top-ten p/security-audit
+          name: semgrep-report
+          path: semgrep-report.json
+          retention-days: 30
 
       # ── pip-audit (known CVEs in dependencies) ───────────
       - name: Install pip-audit

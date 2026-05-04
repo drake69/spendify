@@ -55,6 +55,15 @@ markers = [
 addopts = "-m 'not llm'"
 testpaths = ["tests"]
 
+[tool.coverage.run]
+omit = [
+    "app.py",           # Streamlit entrypoint — top-level st.* calls, not importable in pytest
+    "desktop/*",        # GUI launcher — requires pywebview display, not testable in headless CI
+    "quarantine/*",     # archived/dead code
+    "benchmark/*",      # standalone benchmark scripts
+    "tools/*",          # dev tooling
+]
+
 [tool.bandit]
 exclude_dirs = ["tests", "tools", "benchmark", "scripts", "quarantine"]
 skips = ["B101"]  # assert used in tests / dev tooling
