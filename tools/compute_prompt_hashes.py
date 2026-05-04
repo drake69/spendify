@@ -21,9 +21,9 @@ HASHES_FILE = PROMPTS_DIR / "prompt_hashes.json"
 
 
 def _sha256(filepath: Path) -> str:
-    """Compute SHA256 hex digest of a file."""
+    """Compute SHA256 hex digest of a file (CRLF normalized to LF)."""
     h = hashlib.sha256()
-    h.update(filepath.read_bytes())
+    h.update(filepath.read_bytes().replace(b"\r\n", b"\n"))
     return h.hexdigest()
 
 

@@ -45,7 +45,10 @@ def verify_prompt_integrity() -> list[str]:
             logger.critical(f"prompt_guard: {msg}")
             continue
 
-        actual_hash = hashlib.sha256(filepath.read_bytes()).hexdigest()
+        # Normalize line endings to LF before hashing — prevents CRLF
+        # mismatches on Windows where git may checkout files with \r\n.
+        raw = filepath.read_bytes().replace(b"\r\n", b"\n")
+        actual_hash = hashlib.sha256(raw).hexdigest()
         if actual_hash != expected_hash:
             msg = (
                 f"Prompt modificato: {name} — "
