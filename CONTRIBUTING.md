@@ -10,8 +10,9 @@ Grazie per l'interesse! Queste linee guida descrivono come segnalare problemi, p
 2. [Segnalare un bug](#segnalare-un-bug)
 3. [Proporre una funzionalità](#proporre-una-funzionalità)
 4. [Contribuire codice](#contribuire-codice)
-5. [Setup ambiente di sviluppo](#setup-ambiente-di-sviluppo)
-6. [Convenzioni](#convenzioni)
+5. [Tradurre Spendif.ai](#tradurre-spendifai)
+6. [Setup ambiente di sviluppo](#setup-ambiente-di-sviluppo)
+7. [Convenzioni](#convenzioni)
 
 ---
 
@@ -82,6 +83,110 @@ fork → branch → commit → PR → review → merge
 - Feedback entro ~3 giorni lavorativi per P0/P1
 - Feedback entro ~1 settimana per P2/P3
 - La PR viene mergiata solo se la CI è verde (test + lint + Docker smoke test)
+
+---
+
+## Tradurre Spendif.ai
+
+Le traduzioni sono uno dei contributi più graditi: ti bastano un editor di testo e qualche minuto. Non serve essere developer.
+
+### Stato attuale delle lingue
+
+| Lingua | UI Streamlit | Landing page (HTML) |
+|--------|--------------|---------------------|
+| 🇮🇹 Italiano | ✅ master (verifica umana) | ✅ master (verifica umana) |
+| 🇬🇧 English | ✅ tradotta da LLM, parzialmente verificata | ✅ tradotta da LLM, parzialmente verificata |
+| 🇩🇪 / 🇫🇷 / 🇪🇸 / 🇵🇹 / 🇳🇱 / 🇯🇵 / 🇵🇱 | ❌ non disponibile | ✅ tradotta da LLM, **non ancora verificata da umano** |
+
+Le traduzioni LLM-only sono una baseline imperfetta: c'è bisogno di occhi umani su tutte. Se sei madrelingua o hai competenze in una di queste lingue, il tuo contributo fa la differenza.
+
+### Architettura delle traduzioni
+
+Spendif.ai ha **due aree** che richiedono traduzioni separate:
+
+1. **UI Streamlit** — `sw_artifacts/ui/i18n/<lang>.json` — un file flat key→string per ogni lingua. Caricato a runtime dall'app. Lo schema chiavi segue la convenzione `area.elemento` e `area.elemento.desc` per le descrizioni (es. `nav.import` + `nav.import.desc`).
+
+2. **Landing page** — `sw_artifacts/index.<lang>.html` — un file HTML completo per ogni lingua. **Schema in transizione**: stiamo migrando anche queste a un sistema JSON simile a `ui/i18n/` (tracked in `backlog.json` AI-14). Fino a quel refactor, le traduzioni della landing si fanno editando direttamente l'HTML — vedi sezione [Landing page (transizione)](#landing-page-transizione) qui sotto.
+
+### Tradurre la UI Streamlit (raccomandato — il flusso più semplice)
+
+#### Passo 1 — Scegli la lingua
+
+Esempio: vuoi aggiungere il tedesco (`de`).
+
+#### Passo 2 — Copia il master
+
+```bash
+cp sw_artifacts/ui/i18n/en.json sw_artifacts/ui/i18n/de.json
+```
+
+Parti da `en.json` come master (è la baseline di riferimento). Mai partire da `it.json` se non sei italiano: rischi calchi linguistici.
+
+#### Passo 3 — Modifica il file
+
+Apri `sw_artifacts/ui/i18n/de.json` con un editor a tua scelta. La struttura è semplice:
+
+```json
+{
+  "_language_name": "Deutsch",
+  "nav.import": "📥 Importieren",
+  "nav.import.desc": "CSV/XLSX-Dateien aus deinen Bankkonten importieren",
+  "nav.history": "📜 Importverlauf"
+}
+```
+
+Regole:
+
+- **Cambia `_language_name`** con il nome della lingua nella lingua stessa (es. `Deutsch`, non `German`)
+- **Mantieni le chiavi invariate** — sono identificatori, non testo da tradurre
+- **Mantieni emoji e formattazione** dove presenti — fanno parte del design
+- **Mantieni le sostituzioni `{var}` o `%(name)s`** — sono placeholder per valori dinamici
+- **Le chiavi `.desc`** sono descrizioni più lunghe usate come hint o tooltip — non saltarle
+
+#### Passo 4 — Editor consigliati per non-developer
+
+Se non sei abituato a JSON, qualsiasi di questi semplifica la vita:
+
+- [**BabelEdit**](https://www.codeandweb.com/babeledit) — gratis per progetti open source. UI side-by-side EN/target lingua, evidenzia chiavi mancanti, segnala doppi spazi.
+- [**Tolgee Cloud**](https://tolgee.io/) — interfaccia web side-by-side, suggerimenti AI integrati. Free tier sufficiente.
+- [**VS Code**](https://code.visualstudio.com/) con estensione "JSON Tools" — per chi vuole solo un editor solido.
+- [**JSONedit**](https://tomeko.net/software/JSONedit/) — Windows desktop, gratuito, leggero.
+
+#### Passo 5 — Verifica e PR
+
+```bash
+# Verifica che il JSON sia valido
+python -c "import json; json.load(open('sw_artifacts/ui/i18n/de.json'))"
+```
+
+Apri una PR seguendo il flusso standard ([Contribuire codice](#contribuire-codice)).
+
+Nel body della PR includi:
+- La lingua aggiunta o aggiornata
+- Quante chiavi hai tradotto / verificato
+- Eventuali decisioni terminologiche non ovvie (es. "ho reso `ledger` come `Hauptbuch` perché...")
+
+### Landing page (transizione)
+
+**Workflow attuale (transitorio)**: edita direttamente `sw_artifacts/index.<lang>.html`. Apri in parallelo `index.en.html` come riferimento, modifica solo i testi visibili (NON CSS, JS o `href` URL), salva, PR.
+
+Suggerimenti pratici:
+
+- Tieni due editor o due tab affiancati: EN a sinistra, lingua target a destra
+- Cerca `<h1>`, `<h2>`, `<h3>`, `<p>`, `<title>`, `<meta>` per trovare le stringhe traducibili
+- **NON tradurre**: `<style>`, `<script>`, `href="..."`, snippet shell nei `<code-body>` (curl/irm/bash), tag id (`id="install"`), label nei tab (`🍎 macOS`), nomi propri (Spendify, Ollama, Streamlit, GitHub)
+- Aggiorna `<html lang="...">` in alto
+
+**Workflow futuro (post AI-14)**: stiamo lavorando per portare anche le landing su un sistema JSON simile a `ui/i18n/`. Quando sarà pronto, contribuire una lingua significherà editare un solo file `i18n/landing/<lang>.json` invece di un HTML intero. Se vuoi aiutare a sbloccare questo refactor, vedi backlog item AI-14.
+
+### Verifica umana di traduzioni LLM esistenti
+
+Anche solo rileggere e correggere una traduzione esistente è un contributo prezioso. Se trovi errori, frasi che suonano artificiali, o termini tecnici sbagliati, apri una PR con i fix. Indica nel commit message:
+
+```
+i18n(de): fix awkward LLM phrasings in nav and analytics sections
+i18n(ja): correct technical term for "ledger" — 元帳 → 取引履歴
+```
 
 ---
 
