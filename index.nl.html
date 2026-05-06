@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="nl">
 <head>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-M7MGHTEV07"></script>
@@ -11,10 +11,10 @@
   </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Spendify — Your unified bank ledger, on your computer</title>
-  <meta name="description" content="Spendify automatically aggregates movements files from different banks into a single ledger — no duplicates, no subscriptions, no sending your data to anyone." />
-  <meta property="og:title" content="Spendify — Your unified bank ledger" />
-  <meta property="og:description" content="An open source personal financial ledger that runs on your computer. Your data stays yours." />
+  <title>Spendify — Je geünificeerde rekeningoverzicht, op je eigen computer</title>
+  <meta name="description" content="Spendify voegt automatisch transactiebestanden van verschillende banken samen tot één overzicht — geen duplicaten, geen abonnementen, geen verzending van je gegevens naar wie dan ook." />
+  <meta property="og:title" content="Spendify — Je geünificeerde rekeningoverzicht" />
+  <meta property="og:description" content="Een open source persoonlijk financieel grootboek dat draait op je eigen computer. Je gegevens blijven van jou." />
   <meta property="og:type" content="website" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -662,20 +662,20 @@
 <nav>
   <a class="nav-logo" href="#">💰 <span>Spend</span>ify</a>
   <ul class="nav-links">
-    <li><a href="#how-it-works">How it works</a></li>
+    <li><a href="#how-it-works">Hoe het werkt</a></li>
     <li><a href="#privacy">Privacy</a></li>
-    <li><a href="#features">Features</a></li>
+    <li><a href="#features">Functies</a></li>
     <li><a href="#developer">Developer</a></li>
     <li><a href="https://github.com/drake69/spendify" target="_blank" class="nav-cta">GitHub ↗</a></li>
   </ul>
   <div class="lang-switcher">
     <a href="index.html" title="Italiano">🇮🇹</a>
-    <a href="index.en.html" title="English" class="active">🇬🇧</a>
+    <a href="index.en.html" title="English">🇬🇧</a>
     <a href="index.de.html" title="Deutsch">🇩🇪</a>
     <a href="index.fr.html" title="Français">🇫🇷</a>
     <a href="index.es.html" title="Español">🇪🇸</a>
     <a href="index.pt.html" title="Português">🇵🇹</a>
-    <a href="index.nl.html" title="Nederlands">🇳🇱</a>
+    <a href="index.nl.html" title="Nederlands" class="active">🇳🇱</a>
     <a href="index.ja.html" title="日本語">🇯🇵</a>
     <a href="index.pl.html" title="Polski">🇵🇱</a>
   </div>
@@ -683,63 +683,63 @@
 
 <!-- ── HERO ─────────────────────────────────────────────────────────────── -->
 <section class="hero">
-  <div class="hero-badge">Open source · <strong>Offline-first</strong> · No subscription</div>
-  <h1>Your <span class="accent">unified</span> bank ledger,<br>on your computer</h1>
+  <div class="hero-badge">Open source · <strong>Offline-first</strong> · Geen abonnement</div>
+  <h1>Je <span class="accent">geünificeerde</span> rekeningoverzicht,<br>op je eigen computer</h1>
   <p class="hero-sub">
-    Import files from all your banks. Spendify merges them, eliminates double-counting,
-    classifies every transaction — and your data never leaves your disk.
+    Importeer bestanden van al je banken. Spendify voegt ze samen, voorkomt dubbeltellingen,
+    classificeert elke transactie — en je gegevens verlaten nooit je harde schijf.
   </p>
   <div class="hero-actions">
-    <a class="btn btn-primary" href="#install">▶ Install now</a>
+    <a class="btn btn-primary" href="#install">▶ Nu installeren</a>
     <a class="btn btn-secondary" href="https://github.com/drake69/spendify" target="_blank">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-      View on GitHub
+      Bekijk op GitHub
     </a>
   </div>
-  <p class="hero-note">Python · Streamlit · SQLite · Ollama · no account required</p>
+  <p class="hero-note">Python · Streamlit · SQLite · Ollama · geen account vereist</p>
 </section>
 
 <!-- ── TRUST BAR ─────────────────────────────────────────────────────────── -->
 <div class="trust-bar">
-  <div class="trust-item"><span class="ico">🔒</span> Data only on your computer</div>
-  <div class="trust-item"><span class="ico">🔁</span> Idempotent SHA-256 import</div>
-  <div class="trust-item"><span class="ico">🏦</span> Multi-bank, multi-format</div>
-  <div class="trust-item"><span class="ico">🤖</span> Local or cloud AI with PII redaction</div>
-  <div class="trust-item"><span class="ico">🧪</span> 199 tests, zero external dependencies</div>
+  <div class="trust-item"><span class="ico">🔒</span> Gegevens alleen op je eigen computer</div>
+  <div class="trust-item"><span class="ico">🔁</span> Idempotente SHA-256-import</div>
+  <div class="trust-item"><span class="ico">🏦</span> Multi-bank, multi-formaat</div>
+  <div class="trust-item"><span class="ico">🤖</span> Lokale of cloud-AI met PII-redactie</div>
+  <div class="trust-item"><span class="ico">🧪</span> 199 tests, geen externe afhankelijkheden</div>
 </div>
 
 <!-- ── PROBLEM ──────────────────────────────────────────────────────────── -->
 <section id="problema">
   <div class="container">
-    <div class="section-label">The problem</div>
-    <h2>Three banks, three files, one mess</h2>
+    <div class="section-label">Het probleem</div>
+    <h2>Drie banken, drie bestanden, één chaos</h2>
     <p class="section-sub">
-      Every month: download, open Excel, paste, fix the signs, find the duplicates.
-      And every time something doesn't add up.
+      Elke maand: downloaden, Excel openen, plakken, de tekens corrigeren, de duplicaten zoeken.
+      En elke keer klopt er iets niet.
     </p>
 
     <div class="problem-grid fade-in">
       <div class="problem-card">
-        <h3>😩 The monthly routine everyone hates</h3>
-        <p>Three movements files from three different banking portals, incompatible CSV formats,
-        dates in different formats, amounts with random signs. Merging them by hand takes hours
-        and always produces errors.</p>
+        <h3>😩 De maandelijkse routine waar iedereen een hekel aan heeft</h3>
+        <p>Drie transactiebestanden van drie verschillende bankportalen, incompatibele CSV-formaten,
+        datums in verschillende formaten, bedragen met willekeurige tekens. Ze handmatig samenvoegen kost uren
+        en levert altijd fouten op.</p>
       </div>
       <div class="problem-card highlight">
-        <h3>🔴 The problem of all problems: double-counting</h3>
-        <p>The supermarket purchase appears in the credit card statement <em>and</em> in the current account
-        as a monthly aggregate charge. Adding everything up, your expenses look double
-        what they actually are. No common tool solves this automatically.</p>
+        <h3>🔴 Het probleem der problemen: dubbeltellingen</h3>
+        <p>De boodschappen verschijnen op het creditcardafschrift <em>én</em> op de betaalrekening
+        als maandelijkse verzamelafschrijving. Tel je alles op, dan lijken je uitgaven het dubbele
+        van wat ze werkelijk zijn. Geen enkele gangbare tool lost dit automatisch op.</p>
       </div>
       <div class="problem-card">
-        <h3>🔄 Internal transfers that distort your balance</h3>
-        <p>A wire transfer to a savings account is not an expense. But if you import both accounts,
-        the same transaction appears twice — as an outflow from the current account and as an inflow on the savings account.</p>
+        <h3>🔄 Interne overboekingen die je saldo vertekenen</h3>
+        <p>Een overboeking naar een spaarrekening is geen uitgave. Maar als je beide rekeningen importeert,
+        verschijnt dezelfde transactie tweemaal — als uitgave op de betaalrekening en als inkomende op de spaarrekening.</p>
       </div>
       <div class="problem-card">
-        <h3>📋 The categorisation that never ends</h3>
-        <p>Classifying 300 transactions per month by hand is a job. Cloud apps do it,
-        but they send your banking data to their servers and charge you a monthly subscription.</p>
+        <h3>📋 De categorisatie die nooit eindigt</h3>
+        <p>300 transacties per maand handmatig classificeren is een baan op zich. Cloud-apps doen het wel,
+        maar ze sturen je bankgegevens naar hun servers en rekenen een maandelijks abonnement.</p>
       </div>
     </div>
   </div>
@@ -750,27 +750,27 @@
 <!-- ── HOW IT WORKS ──────────────────────────────────────────────────────── -->
 <section id="how-it-works">
   <div class="container">
-    <div class="section-label">How it works</div>
-    <h2>Three steps, no black magic</h2>
-    <p class="section-sub">No banking integrations, no account, no per-file configuration.</p>
+    <div class="section-label">Hoe het werkt</div>
+    <h2>Drie stappen, geen zwarte magie</h2>
+    <p class="section-sub">Geen bankintegraties, geen account, geen configuratie per bestand.</p>
 
     <div class="steps fade-in">
       <div class="step">
-        <h3>Download files from your bank</h3>
-        <p>Export movements files as CSV or XLSX from your bank's portal.
-        Works with any bank — Spendify automatically detects
-        the format with no manual configuration.</p>
+        <h3>Download bestanden van je bank</h3>
+        <p>Exporteer transactiebestanden als CSV of XLSX vanuit het portaal van je bank.
+        Werkt met elke bank — Spendify herkent het formaat automatisch
+        zonder handmatige configuratie.</p>
       </div>
       <div class="step">
-        <h3>Drag them into Spendify and click Process</h3>
-        <p>Select all files at once, even from different banks, even from different years.
-        Spendify detects the document type, corrects signs, eliminates double-counting
-        between card and account, and classifies every transaction.</p>
+        <h3>Sleep ze in Spendify en klik op Verwerken</h3>
+        <p>Selecteer alle bestanden tegelijk, ook van verschillende banken, ook uit verschillende jaren.
+        Spendify herkent het documenttype, corrigeert tekens, voorkomt dubbeltellingen
+        tussen kaart en rekening, en classificeert elke transactie.</p>
       </div>
       <div class="step">
-        <h3>See where your money goes</h3>
-        <p>The unified ledger shows everything in one place: charts, filters, export,
-        and the certainty that every euro is counted <strong>exactly once</strong>.</p>
+        <h3>Zie waar je geld naartoe gaat</h3>
+        <p>Het geünificeerde grootboek toont alles op één plek: grafieken, filters, export,
+        en de zekerheid dat elke euro <strong>precies één keer</strong> wordt geteld.</p>
       </div>
     </div>
   </div>
@@ -781,45 +781,45 @@
 <!-- ── DIFFERENTIATORS ───────────────────────────────────────────────────── -->
 <section id="algoritmi">
   <div class="container">
-    <div class="section-label">What no one else does automatically</div>
-    <h2>Algorithms that solve real problems</h2>
-    <p class="section-sub">This is not a generic budgeting app. It is designed around the specific problems of people with multiple bank accounts.</p>
+    <div class="section-label">Wat niemand anders automatisch doet</div>
+    <h2>Algoritmes die echte problemen oplossen</h2>
+    <p class="section-sub">Dit is geen generieke budget-app. Het is ontworpen rond de specifieke problemen van mensen met meerdere rekeningen.</p>
 
     <div class="diff-grid fade-in">
       <div class="diff-card">
         <div class="tag">RF-03</div>
-        <h3>Credit card–current account reconciliation</h3>
-        <p>When the credit card charges the monthly amount to the current account,
-        Spendify recognises the relationship and removes the double-counting automatically.</p>
+        <h3>Reconciliatie creditcard–betaalrekening</h3>
+        <p>Wanneer de creditcard het maandbedrag afschrijft van de betaalrekening,
+        herkent Spendify het verband en verwijdert de dubbeltelling automatisch.</p>
         <p style="margin-top:.75rem; color: var(--muted); font-size:.88rem;">
-          Time window ±45 days · 3 matching phases:
-          sliding window → subset sum for split amounts → partial reconciliation
+          Tijdvenster ±45 dagen · 3 matchingfasen:
+          glijdend venster → subset sum voor opgesplitste bedragen → gedeeltelijke reconciliatie
         </p>
       </div>
       <div class="diff-card">
         <div class="tag">RF-04</div>
-        <h3>Internal transfer detection</h3>
-        <p>A wire transfer from a current account to a savings account is neither an expense nor
-        income: it is an internal transfer. Spendify recognises it by comparing
-        amounts, dates, and account holder names in the descriptions — even if the two files
-        were imported at different times.</p>
+        <h3>Detectie van interne overboekingen</h3>
+        <p>Een overboeking van een betaalrekening naar een spaarrekening is geen uitgave en geen
+        inkomen: het is een interne overboeking. Spendify herkent dit door bedragen,
+        datums en rekeninghoudersnamen in de omschrijvingen te vergelijken — zelfs als de twee bestanden
+        op verschillende momenten zijn geïmporteerd.</p>
       </div>
       <div class="diff-card">
         <div class="tag">Dedup</div>
-        <h3>Idempotent deduplication</h3>
-        <p>Every transaction has a unique ID calculated from its content (SHA-256).
-        If you import the same file twice, nothing happens.
-        You can re-import your entire transaction history without fear of duplicates.</p>
+        <h3>Idempotente deduplicatie</h3>
+        <p>Elke transactie heeft een unieke ID berekend uit de inhoud (SHA-256).
+        Als je hetzelfde bestand twee keer importeert, gebeurt er niets.
+        Je kunt je hele transactiehistorie opnieuw importeren zonder angst voor duplicaten.</p>
       </div>
       <div class="diff-card">
         <div class="tag">Categories</div>
-        <h3>Cascading hybrid classification</h3>
-        <p>Categorisation uses four levels in sequence:</p>
+        <h3>Hybride classificatie in cascade</h3>
+        <p>De categorisatie gebruikt vier niveaus achter elkaar:</p>
         <ul class="cascade-list">
-          <li><span class="num">1</span><span><strong>Your rules</strong> — "CONAD" → Groceries (applied retroactively)</span></li>
-          <li><span class="num">2</span><span><strong>Static regex</strong> — predefined patterns for common categories</span></li>
-          <li><span class="num">3</span><span><strong>LLM</strong> — for everything else, local or cloud AI</span></li>
-          <li><span class="num">4</span><span><strong>Fallback</strong> — "To review" if everything else fails</span></li>
+          <li><span class="num">1</span><span><strong>Je eigen regels</strong> — "ALBERT HEIJN" → Boodschappen (met terugwerkende kracht toegepast)</span></li>
+          <li><span class="num">2</span><span><strong>Statische regex</strong> — vooraf gedefinieerde patronen voor gangbare categorieën</span></li>
+          <li><span class="num">3</span><span><strong>LLM</strong> — voor al het overige, lokale of cloud-AI</span></li>
+          <li><span class="num">4</span><span><strong>Fallback</strong> — "Te beoordelen" als al het andere faalt</span></li>
         </ul>
       </div>
     </div>
@@ -832,38 +832,38 @@
 <section id="privacy" class="privacy-section">
   <div class="container">
     <div class="section-label">Privacy</div>
-    <h2>Your data stays yours. Seriously.</h2>
-    <p class="section-sub">It is not just a slogan. It is the architecture.</p>
+    <h2>Je gegevens blijven van jou. Echt waar.</h2>
+    <p class="section-sub">Het is geen slogan. Het is de architectuur.</p>
 
     <div class="privacy-grid fade-in">
       <div class="privacy-card">
         <div class="ico-big">🏠</div>
-        <h3>Offline-first by default</h3>
-        <p>Spendify uses <strong>Ollama locally</strong> by default: an AI engine that runs
-        on your computer, with no internet connection. Your movements files never
-        leave your disk.</p>
+        <h3>Standaard offline-first</h3>
+        <p>Spendify gebruikt standaard <strong>Ollama lokaal</strong>: een AI-engine die draait
+        op je eigen computer, zonder internetverbinding. Je transactiebestanden verlaten nooit
+        je harde schijf.</p>
       </div>
       <div class="privacy-card">
         <div class="ico-big">🛡️</div>
-        <h3>Automatic PII redaction</h3>
-        <p>If you use OpenAI or Claude, Spendify automatically removes all
-        identifying data before any remote call:</p>
+        <h3>Automatische PII-redactie</h3>
+        <p>Als je OpenAI of Claude gebruikt, verwijdert Spendify automatisch alle
+        identificerende gegevens vóór elke remote-aanroep:</p>
         <div class="pii-chips">
           <span class="pii-chip">IBAN → &lt;ACCOUNT_ID&gt;</span>
           <span class="pii-chip">PAN → &lt;CARD_ID&gt;</span>
-          <span class="pii-chip">Tax ID → &lt;FISCAL_ID&gt;</span>
-          <span class="pii-chip">Name → fictitious alias</span>
+          <span class="pii-chip">BSN → &lt;FISCAL_ID&gt;</span>
+          <span class="pii-chip">Naam → fictief alias</span>
         </div>
         <p style="margin-top:.75rem; font-size:.83rem; color:var(--muted)">
-          If the check fails, the call is blocked — not silently degraded.
+          Als de controle faalt, wordt de aanroep geblokkeerd — niet stilzwijgend gedegradeerd.
         </p>
       </div>
       <div class="privacy-card">
         <div class="ico-big">💾</div>
-        <h3>Portable local database</h3>
-        <p>Data is stored in a SQLite file on your computer. You can copy it, move it,
-        back it up like any other file. No mandatory cloud,
-        no account, no subscription.</p>
+        <h3>Portable lokale database</h3>
+        <p>De gegevens worden opgeslagen in een SQLite-bestand op je computer. Je kunt het kopiëren, verplaatsen
+        of er een back-up van maken zoals van elk ander bestand. Geen verplichte cloud,
+        geen account, geen abonnement.</p>
       </div>
     </div>
   </div>
@@ -874,43 +874,43 @@
 <!-- ── FOR WHO ───────────────────────────────────────────────────────────── -->
 <section id="per-chi">
   <div class="container">
-    <div class="section-label">Who Spendify is for</div>
-    <h2>Not for everyone. For those who want real control.</h2>
-    <p class="section-sub">Four profiles that find in Spendify something alternatives do not offer.</p>
+    <div class="section-label">Voor wie is Spendify</div>
+    <h2>Niet voor iedereen. Voor wie echte controle wil.</h2>
+    <p class="section-sub">Vier profielen die in Spendify iets vinden wat alternatieven niet bieden.</p>
 
     <div class="audience-grid fade-in">
       <div class="audience-card">
         <div class="ico-circle">🏦</div>
         <div>
-          <h3>People with accounts at multiple banks</h3>
-          <p>Current account + credit card + savings account + trading account?
-          Spendify unifies them all into a single ledger without having to do anything manually.</p>
+          <h3>Mensen met rekeningen bij meerdere banken</h3>
+          <p>Betaalrekening + creditcard + spaarrekening + beleggingsrekening?
+          Spendify voegt ze allemaal samen tot één overzicht zonder dat je iets handmatig hoeft te doen.</p>
         </div>
       </div>
       <div class="audience-card">
         <div class="ico-circle">📊</div>
         <div>
-          <h3>People who track their finances seriously</h3>
-          <p>If you use Excel for your expenses, Spendify can replace that routine:
-          you import the files once, Spendify unifies and classifies, you review
-          only the exceptions.</p>
+          <h3>Mensen die hun financiën serieus volgen</h3>
+          <p>Als je Excel gebruikt voor je uitgaven, kan Spendify die routine vervangen:
+          je importeert de bestanden één keer, Spendify voegt samen en classificeert, en jij beoordeelt
+          alleen de uitzonderingen.</p>
         </div>
       </div>
       <div class="audience-card">
         <div class="ico-circle">🔐</div>
         <div>
-          <h3>People who do not trust the cloud</h3>
-          <p>No mandatory remote backend, no account, no registration.
-          Your banking data stays where it belongs: on your computer.</p>
+          <h3>Mensen die de cloud niet vertrouwen</h3>
+          <p>Geen verplichte remote backend, geen account, geen registratie.
+          Je bankgegevens blijven waar ze horen: op je eigen computer.</p>
         </div>
       </div>
       <div class="audience-card">
         <div class="ico-circle">👨‍💻</div>
         <div>
           <h3>Developers</h3>
-          <p>Open source Python project with modular architecture, LLM pipeline on structured data,
-          full test suite. A starting point for experimenting or
-          building custom integrations.</p>
+          <p>Open source Python-project met modulaire architectuur, LLM-pipeline op gestructureerde data,
+          volledige testsuite. Een startpunt om mee te experimenteren of
+          op maat gemaakte integraties te bouwen.</p>
         </div>
       </div>
     </div>
@@ -922,58 +922,58 @@
 <!-- ── FEATURES ──────────────────────────────────────────────────────────── -->
 <section id="features">
   <div class="container">
-    <div class="section-label">Features</div>
-    <h2>Everything you need, nothing more</h2>
+    <div class="section-label">Functies</div>
+    <h2>Alles wat je nodig hebt, niets meer</h2>
     <br>
 
     <div class="features-grid fade-in">
       <div class="feature-row">
-        <span class="feature-name">Multi-bank import</span>
-        <span class="feature-desc">CSV and XLSX from any bank</span>
+        <span class="feature-name">Multi-bank-import</span>
+        <span class="feature-desc">CSV en XLSX van elke bank</span>
       </div>
       <div class="feature-row">
-        <span class="feature-name">Auto-detect format</span>
-        <span class="feature-desc">No manual configuration for each file type</span>
+        <span class="feature-name">Auto-detectie van formaat</span>
+        <span class="feature-desc">Geen handmatige configuratie per bestandstype</span>
       </div>
       <div class="feature-row">
-        <span class="feature-name">Unified ledger</span>
-        <span class="feature-desc">All transactions in chronological order, filterable by date / account / category / context</span>
+        <span class="feature-name">Geünificeerd grootboek</span>
+        <span class="feature-desc">Alle transacties op chronologische volgorde, filterbaar op datum / rekening / categorie / context</span>
       </div>
       <div class="feature-row">
-        <span class="feature-name">Automatic classification</span>
-        <span class="feature-desc">15 expense categories + 7 income categories with subcategories</span>
+        <span class="feature-name">Automatische classificatie</span>
+        <span class="feature-desc">15 uitgavencategorieën + 7 inkomstencategorieën met subcategorieën</span>
       </div>
       <div class="feature-row">
-        <span class="feature-name">Customisable taxonomy</span>
-        <span class="feature-desc">Add / edit categories without restarting the app</span>
+        <span class="feature-name">Aanpasbare taxonomie</span>
+        <span class="feature-desc">Categorieën toevoegen / bewerken zonder de app opnieuw te starten</span>
       </div>
       <div class="feature-row">
-        <span class="feature-name">Deterministic rules</span>
-        <span class="feature-desc">"ESSELUNGA → Groceries" rules applied retroactively</span>
+        <span class="feature-name">Deterministische regels</span>
+        <span class="feature-desc">Regels als "ALBERT HEIJN → Boodschappen", met terugwerkende kracht toegepast</span>
       </div>
       <div class="feature-row">
-        <span class="feature-name">Interactive analytics</span>
-        <span class="feature-desc">7 charts: monthly trend, cumulative balance, category pie, top 10 merchants</span>
+        <span class="feature-name">Interactieve analytics</span>
+        <span class="feature-desc">7 grafieken: maandelijkse trend, cumulatief saldo, categorie-pie, top 10 verkopers</span>
       </div>
       <div class="feature-row">
-        <span class="feature-name">Life contexts</span>
-        <span class="feature-desc">Segment expenses by Work / Vacation / Daily life</span>
+        <span class="feature-name">Levenscontexten</span>
+        <span class="feature-desc">Segmenteer uitgaven op Werk / Vakantie / Dagelijks leven</span>
       </div>
       <div class="feature-row">
         <span class="feature-name">Check List</span>
-        <span class="feature-desc">Month × account pivot table: see which months you have not imported yet</span>
+        <span class="feature-desc">Pivot-tabel maand × rekening: zie welke maanden je nog niet hebt geïmporteerd</span>
       </div>
       <div class="feature-row">
         <span class="feature-name">Export</span>
-        <span class="feature-desc">Standalone HTML (with charts), CSV, XLSX</span>
+        <span class="feature-desc">Standalone HTML (met grafieken), CSV, XLSX</span>
       </div>
       <div class="feature-row">
-        <span class="feature-name">Configurable LLM</span>
-        <span class="feature-desc">Ollama, OpenAI, Claude, Groq, Gemini, LM Studio, any compatible API</span>
+        <span class="feature-name">Configureerbare LLM</span>
+        <span class="feature-desc">Ollama, OpenAI, Claude, Groq, Gemini, LM Studio, elke compatibele API</span>
       </div>
       <div class="feature-row">
-        <span class="feature-name">PII sanitization</span>
-        <span class="feature-desc">Automatic IBAN / card number / tax ID / name protection before remote calls</span>
+        <span class="feature-name">PII-sanitatie</span>
+        <span class="feature-desc">Automatische bescherming van IBAN / kaartnummer / BSN / naam vóór remote-aanroepen</span>
       </div>
     </div>
   </div>
@@ -984,9 +984,9 @@
 <!-- ── INSTALL ───────────────────────────────────────────────────────────── -->
 <section id="install" class="install-section">
   <div class="container">
-    <div class="section-label">Installation</div>
-    <h2>One command, app ready</h2>
-    <p class="section-sub">Native desktop app with local AI included. No Docker, no Terminal kept open.</p>
+    <div class="section-label">Installatie</div>
+    <h2>Eén commando, app klaar voor gebruik</h2>
+    <p class="section-sub">Native desktop-app met lokale AI inbegrepen. Geen Docker, geen Terminal die openblijft.</p>
 
     <div class="os-tabs">
       <button class="os-tab active" onclick="switchOS('mac')">🍎 macOS</button>
@@ -1003,7 +1003,7 @@
             <span class="d1"></span><span class="d2"></span><span class="d3"></span>
           </div>
           <span class="code-label">bash</span>
-          <button class="copy-btn" onclick="copyCode(this, 'mac')">Copy</button>
+          <button class="copy-btn" onclick="copyCode(this, 'mac')">Kopiëren</button>
         </div>
         <div class="code-body">
           <div><span class="p">$ </span><span class="c">curl</span><span class="a"> -fsSL https://raw.githubusercontent.com/drake69/spendify/main/packaging/macos/install.sh | bash</span></div>
@@ -1019,7 +1019,7 @@
             <span class="d1"></span><span class="d2"></span><span class="d3"></span>
           </div>
           <span class="code-label">bash</span>
-          <button class="copy-btn" onclick="copyCode(this, 'deb')">Copy</button>
+          <button class="copy-btn" onclick="copyCode(this, 'deb')">Kopiëren</button>
         </div>
         <div class="code-body">
           <div><span class="p">$ </span><span class="c">curl</span><span class="a"> -fsSL https://raw.githubusercontent.com/drake69/spendify/main/packaging/linux/install-debian.sh | bash</span></div>
@@ -1035,7 +1035,7 @@
             <span class="d1"></span><span class="d2"></span><span class="d3"></span>
           </div>
           <span class="code-label">bash</span>
-          <button class="copy-btn" onclick="copyCode(this, 'rhel')">Copy</button>
+          <button class="copy-btn" onclick="copyCode(this, 'rhel')">Kopiëren</button>
         </div>
         <div class="code-body">
           <div><span class="p">$ </span><span class="c">curl</span><span class="a"> -fsSL https://raw.githubusercontent.com/drake69/spendify/main/packaging/linux/install-redhat.sh | bash</span></div>
@@ -1051,7 +1051,7 @@
             <span class="d1"></span><span class="d2"></span><span class="d3"></span>
           </div>
           <span class="code-label">powershell</span>
-          <button class="copy-btn" onclick="copyCode(this, 'win')">Copy</button>
+          <button class="copy-btn" onclick="copyCode(this, 'win')">Kopiëren</button>
         </div>
         <div class="code-body">
           <div><span class="p">PS&gt; </span><span class="c">irm</span><span class="a"> https://raw.githubusercontent.com/drake69/spendify/main/packaging/windows/install.ps1 | iex</span></div>
@@ -1060,20 +1060,20 @@
     </div>
 
     <p class="install-post">
-      The script detects your hardware, downloads the optimal AI model for your RAM (1–7 GB) and sets everything up — <strong>zero intervention</strong>.<br>
-      The app appears in Launchpad / Start Menu / file manager, ready to use.
+      Het script detecteert je hardware, downloadt het optimale AI-model voor je RAM (1–7 GB) en regelt alles — <strong>zonder enige tussenkomst</strong>.<br>
+      De app verschijnt in Launchpad / Startmenu / bestandsbeheer, klaar voor gebruik.
     </p>
 
     <p class="install-dev-link">
-      Developer or manual install? →
-      <a href="https://github.com/drake69/spendify/blob/main/docs/installazione.en.md" target="_blank">Full guide</a>
+      Developer of handmatige installatie? →
+      <a href="https://github.com/drake69/spendify/blob/main/docs/installazione.en.md" target="_blank">Volledige handleiding</a>
     </p>
 
     <!-- ── Docker (alternative) ──────────────────────────────────────── -->
     <div style="margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--border);">
-      <h3 style="color: var(--blue); margin-bottom: 0.5rem;">🐳 Prefer Docker?</h3>
+      <h3 style="color: var(--blue); margin-bottom: 0.5rem;">🐳 Liever Docker?</h3>
       <p style="color: var(--muted); margin-bottom: 1.2rem;">
-        Only <a href="https://www.docker.com/products/docker-desktop/" target="_blank" style="color:var(--blue)">Docker Desktop</a> required. Official container from GitHub Container Registry, browser at <strong>http://localhost:8501</strong>.
+        Alleen <a href="https://www.docker.com/products/docker-desktop/" target="_blank" style="color:var(--blue)">Docker Desktop</a> vereist. Officiële container van GitHub Container Registry, browser op <strong>http://localhost:8501</strong>.
       </p>
 
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
@@ -1103,8 +1103,8 @@
 <!-- ── Community / support ─────────────────────────────────────────────── -->
 <div style="text-align: center; padding: 2.5rem 1rem 1rem; max-width: 760px; margin: 0 auto;">
   <p style="color: var(--muted); font-size: 0.95rem; line-height: 1.8;">
-    🆘 <strong style="color: var(--text);">Need help?</strong> <a href="https://github.com/drake69/spendify/issues" target="_blank">Open an issue on GitHub</a> — bugs, questions, feature requests.<br>
-    ⭐ <strong style="color: var(--text);">Like Spendif.ai?</strong> <a href="https://github.com/drake69/spendify" target="_blank">Give us a star</a> — it helps us reach the official package registries (Homebrew Core, winget).
+    🆘 <strong style="color: var(--text);">Hulp nodig?</strong> <a href="https://github.com/drake69/spendify/issues" target="_blank">Open een issue op GitHub</a> — bugs, vragen, feature-verzoeken.<br>
+    ⭐ <strong style="color: var(--text);">Vind je Spendif.ai leuk?</strong> <a href="https://github.com/drake69/spendify" target="_blank">Geef ons een ster</a> — het helpt ons de officiële package registries te bereiken (Homebrew Core, winget).
   </p>
 </div>
 
@@ -1114,19 +1114,19 @@
 <section id="stack">
   <div class="container">
     <div class="section-label">Tech stack</div>
-    <h2>Mature technologies, no exotic dependencies</h2>
-    <p class="section-sub">No LLM framework (no LangChain) — AI backends use the official SDKs directly.</p>
+    <h2>Volwassen technologieën, geen exotische afhankelijkheden</h2>
+    <p class="section-sub">Geen LLM-framework (geen LangChain) — AI-backends gebruiken direct de officiële SDK's.</p>
 
     <div class="stack-grid fade-in">
       <div class="stack-badge"><strong>Python 3.13</strong> <span>+ pandas</span></div>
-      <div class="stack-badge"><strong>Streamlit</strong> <span>web interface</span></div>
+      <div class="stack-badge"><strong>Streamlit</strong> <span>web-interface</span></div>
       <div class="stack-badge"><strong>SQLite</strong> <span>+ SQLAlchemy</span></div>
-      <div class="stack-badge"><strong>Pydantic v2</strong> <span>schema validation</span></div>
-      <div class="stack-badge"><strong>Plotly</strong> <span>interactive charts</span></div>
+      <div class="stack-badge"><strong>Pydantic v2</strong> <span>schemavalidatie</span></div>
+      <div class="stack-badge"><strong>Plotly</strong> <span>interactieve grafieken</span></div>
       <div class="stack-badge"><strong>uv</strong> <span>package manager</span></div>
-      <div class="stack-badge"><strong>Ollama</strong> <span>local AI</span></div>
-      <div class="stack-badge"><strong>chardet</strong> <span>encoding detection</span></div>
-      <div class="stack-badge"><strong>openpyxl</strong> <span>Excel parsing</span></div>
+      <div class="stack-badge"><strong>Ollama</strong> <span>lokale AI</span></div>
+      <div class="stack-badge"><strong>chardet</strong> <span>encoding-detectie</span></div>
+      <div class="stack-badge"><strong>openpyxl</strong> <span>Excel-parsing</span></div>
     </div>
   </div>
 </section>
@@ -1136,8 +1136,8 @@
 <!-- ── DEVELOPER ─────────────────────────────────────────────────────────── -->
 <section id="developer">
   <div class="container">
-    <div class="section-label">For developers</div>
-    <h2>Modular architecture, full test suite</h2>
+    <div class="section-label">Voor developers</div>
+    <h2>Modulaire architectuur, volledige testsuite</h2>
 
     <div class="pipeline-box fade-in">
 <span class="ph">CSV/XLSX File</span>
@@ -1155,20 +1155,20 @@
 
     <div class="contribute-grid fade-in">
       <div class="contribute-card">
-        <h3>🔌 New LLM backends</h3>
-        <p>Implement <code>LLMBackend</code> (3 methods) and register it in <code>BackendFactory</code>. Works with any OpenAI-compatible API.</p>
+        <h3>🔌 Nieuwe LLM-backends</h3>
+        <p>Implementeer <code>LLMBackend</code> (3 methoden) en registreer hem in <code>BackendFactory</code>. Werkt met elke OpenAI-compatibele API.</p>
       </div>
       <div class="contribute-card">
-        <h3>🏦 New bank formats</h3>
-        <p>Flow 2 recognises them automatically via LLM without code changes. The schema is saved and reused in subsequent imports.</p>
+        <h3>🏦 Nieuwe bankformaten</h3>
+        <p>Flow 2 herkent ze automatisch via LLM zonder codewijzigingen. Het schema wordt opgeslagen en hergebruikt bij volgende imports.</p>
       </div>
       <div class="contribute-card">
-        <h3>🏷️ New categories</h3>
-        <p>From the Taxonomy page, without touching the code. The taxonomy is fully configurable from the interface.</p>
+        <h3>🏷️ Nieuwe categorieën</h3>
+        <p>Vanuit de pagina Taxonomie, zonder de code aan te raken. De taxonomie is volledig configureerbaar vanuit de interface.</p>
       </div>
       <div class="contribute-card">
         <h3>🚀 REST API</h3>
-        <p>The <code>process_file()</code> pipeline is completely separate from the UI — it can be exposed via FastAPI without changes.</p>
+        <p>De pipeline <code>process_file()</code> staat volledig los van de UI — hij kan zonder wijzigingen via FastAPI worden ontsloten.</p>
       </div>
     </div>
 
@@ -1178,11 +1178,11 @@
         <div class="code-dots">
           <span class="d1"></span><span class="d2"></span><span class="d3"></span>
         </div>
-        <span class="code-label">bash — test suite</span>
+        <span class="code-label">bash — testsuite</span>
       </div>
       <div class="code-body">
-        <div><span class="p">$ </span><span class="c">uv run pytest</span><span class="a"> tests/ -v</span>         <span class="co"># 199 tests, zero external dependencies</span></div>
-        <div><span class="p">$ </span><span class="c">uv run pytest</span><span class="a"> tests/ --cov=core</span>  <span class="co"># coverage of business logic layer</span></div>
+        <div><span class="p">$ </span><span class="c">uv run pytest</span><span class="a"> tests/ -v</span>         <span class="co"># 199 tests, geen externe afhankelijkheden</span></div>
+        <div><span class="p">$ </span><span class="c">uv run pytest</span><span class="a"> tests/ --cov=core</span>  <span class="co"># coverage van de business-logic-laag</span></div>
       </div>
     </div>
   </div>
@@ -1194,18 +1194,18 @@
 <section id="roadmap">
   <div class="container">
     <div class="section-label">Roadmap</div>
-    <h2>What is coming</h2>
+    <h2>Wat eraan komt</h2>
     <br>
     <ul class="roadmap-list fade-in">
-      <li><span class="dot"></span>PDF support — native parsing of PDF movements files</li>
-      <li><span class="dot"></span>Monthly budget per category with alerting</li>
-      <li><span class="dot"></span>Automatic import via Open Banking (PSD2)</li>
-      <li><span class="dot"></span>REST API for external integrations</li>
-      <li><span class="dot"></span>Multi-user version with authentication</li>
-      <li><span class="dot"></span>Mobile app — ledger and analytics viewer</li>
-      <li><span class="dot"></span>Distribution via <strong>Homebrew</strong> (macOS) — <code>brew install --cask spendifai</code></li>
-      <li><span class="dot"></span><code>.deb</code> and <code>.rpm</code> packages as GitHub release assets</li>
-      <li><span class="dot"></span>Distribution via <strong>winget</strong> (Windows) — <code>winget install SpendifAi.SpendifAi</code></li>
+      <li><span class="dot"></span>PDF-ondersteuning — native parsing van PDF-transactiebestanden</li>
+      <li><span class="dot"></span>Maandbudget per categorie met alerting</li>
+      <li><span class="dot"></span>Automatische import via Open Banking (PSD2)</li>
+      <li><span class="dot"></span>REST API voor externe integraties</li>
+      <li><span class="dot"></span>Multi-user-versie met authenticatie</li>
+      <li><span class="dot"></span>Mobiele app — viewer voor grootboek en analytics</li>
+      <li><span class="dot"></span>Distributie via <strong>Homebrew</strong> (macOS) — <code>brew install --cask spendifai</code></li>
+      <li><span class="dot"></span><code>.deb</code>- en <code>.rpm</code>-packages als GitHub release-assets</li>
+      <li><span class="dot"></span>Distributie via <strong>winget</strong> (Windows) — <code>winget install SpendifAi.SpendifAi</code></li>
     </ul>
   </div>
 </section>
@@ -1216,25 +1216,25 @@
 <section id="contribuire">
   <div class="container">
     <div class="section-label">Open source</div>
-    <h2>Contributions are welcome</h2>
-    <p class="section-sub">Areas where contributions are most useful:</p>
+    <h2>Bijdragen zijn welkom</h2>
+    <p class="section-sub">Gebieden waar bijdragen het meest van pas komen:</p>
 
     <div class="contribute-grid fade-in">
       <div class="contribute-card">
-        <h3>🏦 New bank formats</h3>
-        <p>If your bank is not automatically recognised, open an issue with an anonymised CSV sample.</p>
+        <h3>🏦 Nieuwe bankformaten</h3>
+        <p>Als jouw bank niet automatisch wordt herkend, open dan een issue met een geanonimiseerd CSV-voorbeeld.</p>
       </div>
       <div class="contribute-card">
-        <h3>🧪 UI tests</h3>
-        <p>The suite covers the business logic layer but not yet the Streamlit interface. There is room to contribute.</p>
+        <h3>🧪 UI-tests</h3>
+        <p>De suite dekt de business-logic-laag, maar nog niet de Streamlit-interface. Hier is ruimte om bij te dragen.</p>
       </div>
       <div class="contribute-card">
-        <h3>🌍 Internationalisation</h3>
-        <p>The architecture already supports multiple languages for descriptions. The UI is in Italian — there is scope to add other languages.</p>
+        <h3>🌍 Internationalisatie</h3>
+        <p>De architectuur ondersteunt al meerdere talen voor omschrijvingen. De UI is in het Italiaans — er is ruimte om andere talen toe te voegen.</p>
       </div>
       <div class="contribute-card">
         <h3>⚡ Performance</h3>
-        <p>Batch categorisation is the bottleneck with a local LLM. There is room for parallelisation.</p>
+        <p>Batch-categorisatie is de bottleneck met een lokale LLM. Er is ruimte voor parallellisatie.</p>
       </div>
     </div>
 
@@ -1242,7 +1242,7 @@
     <div style="text-align:center; margin-top: 1rem;">
       <a class="btn btn-primary" href="https://github.com/drake69/spendify" target="_blank">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-        Go to GitHub
+        Naar GitHub
       </a>
     </div>
   </div>
@@ -1255,10 +1255,10 @@
     <a href="https://github.com/drake69/spendify" target="_blank">github.com/drake69/spendify</a>
   </p>
   <p class="disclaimer">
-    Spendify is not a cloud service. It is a program that runs on your computer.
-    Your banking data is never sent to third-party servers, unless you explicitly choose
-    a remote LLM backend — in that case, all identifying data is
-    removed before transmission.
+    Spendify is geen cloud-dienst. Het is een programma dat draait op je eigen computer.
+    Je bankgegevens worden nooit naar servers van derden gestuurd, tenzij je expliciet kiest
+    voor een remote LLM-backend — in dat geval worden alle identificerende gegevens
+    verwijderd vóór verzending.
   </p>
 </footer>
 
@@ -1291,8 +1291,8 @@
   };
   function copyCode(btn, os) {
     navigator.clipboard.writeText(installCmds[os] || installCmds.mac).then(() => {
-      btn.textContent = 'Copied ✓';
-      setTimeout(() => btn.textContent = 'Copy', 2000);
+      btn.textContent = 'Gekopieerd ✓';
+      setTimeout(() => btn.textContent = 'Kopiëren', 2000);
     });
   }
 </script>
