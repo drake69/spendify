@@ -22,6 +22,13 @@ Il versioning segue [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Registrazione in Add/Remove Programs di Windows durante l'installazione
 - Workflow CI Linux (`release-linux.yml`): build di .deb/.rpm, smoke test in container, allegati alla GitHub Release
 - Identificatore winget rinominato in `SpendifAi.SpendifAi`
+- Installer MSIX per Windows (`packaging/windows/build-msix.ps1` + `AppxManifest.xml.in`), sostituisce il precedente artefatto ZIP-only per Windows
+- Script di firma locale: `packaging/macos/sign-local.sh` (codesign + notarytool + stapler) e `packaging/windows/sign-local.ps1` (wrapper SignTool)
+- Builder DMG locale (`packaging/macos/build-dmg.sh`) che replica il job CI per riproducibilità offline
+- Modello release CI ibrido: `release.yml` builda tutti e quattro gli installer unsigned e pubblica una GitHub Release in **draft**; l'owner firma DMG e MSIX in locale e li sostituisce via `gh release upload --clobber` prima di rimuovere `--draft`. Documentato in `docs/release_process.it.md` §2bis (EN+IT)
+- Pagina "Primo avvio" su gh-pages, copertura completa 9 lingue (`getting-started.{html,en,de,es,fr,ja,nl,pl,pt}.html`): guida illustrata a 3 step (Download → Installa → Primo avvio) con bottoni di download per DMG/MSIX/.deb/.rpm e placeholder per screenshot (`assets/screenshots/`). Ogni pagina include il beacon Cloudflare Web Analytics e il selettore lingua completo
+- Aggiornata la sezione "Primo avvio" di `installation_{macos,windows}.{md,it.md}` per descrivere il flusso nativo pywebview (splash + download modello + wizard onboarding), sostituendo la sequenza obsoleta Terminale/browser che vale solo per i vecchi script `install.sh`/`install.ps1`
+- Landing page (tutte le 9 lingue: `index.html` IT, `index.{en,de,es,fr,ja,nl,pl,pt}.html`): aggiunto CTA localizzato "Scarica installer" che punta alla pagina getting-started corrispondente alla lingua, sopra le tab esistenti con gli script curl
 
 ### Fixed
 - Auto-invalidazione degli schemi: gli schemi in cache (Flow 1) con parse rate < 10% vengono eliminati automaticamente e ritentati con Flow 2 (riclassificazione LLM)

@@ -154,9 +154,35 @@ Viene installata la wheel solo CPU. L'inferenza funziona su qualsiasi hardware m
 
 ---
 
-## Primo avvio e inizializzazione del database
+## Primo avvio
 
-Al primo avvio:
+Cosa succede al primo avvio dipende dall'installer usato:
+
+### Installazione MSIX (consigliata)
+
+Se installato da `Spendif.ai.msix` (Start Menu → Spendif.ai), l'app apre una
+**finestra nativa**. Niente finestra dei comandi, niente browser.
+
+1. **Splash screen** con barra di progresso.
+2. **Download modello AI** (~2–4 GB in base alla VRAM/RAM rilevata). Il
+   launcher chiama `core.model_manager.ensure_model_available()` che sceglie
+   il GGUF più grande che entra in VRAM (o RAM se non c'è GPU): Qwen2.5-3B
+   (2.1 GB), Gemma-3-4B, Qwen2.5-7B o Gemma-3-12B (6.8 GB). Scaricato in
+   `%APPDATA%\Spendif.ai\models\`. **Il primo avvio può richiedere 5–15
+   minuti** con una connessione casa tipica — è normale.
+3. **`.env` viene scritto** con `LLM_BACKEND=local_llama_cpp`, il path del
+   modello e `SPENDIFAI_DB=sqlite:///%APPDATA%/Spendif.ai/ledger.db`.
+4. **Streamlit parte dentro la stessa finestra** quando il modello è pronto.
+5. **Wizard di onboarding** (4 step): lingua, titolari, conti, conferma. Il
+   database `%APPDATA%\Spendif.ai\ledger.db` viene creato al confirm.
+6. **App pronta.** Dai successivi avvii gli step 2–3 sono saltati.
+
+> Spazio libero richiesto al primo avvio: ~5 GB (modello + stato Python).
+> Non chiudere lo splash finché la barra di progresso non sparisce.
+
+### Installazione via script (legacy `install.ps1`)
+
+Se installato via `irm ... | iex` (script PowerShell):
 
 1. Doppio click sul collegamento **Spendif.ai** sul Desktop (oppure trovalo nello Start Menu)
 2. Si apre una finestra dei comandi che mostra l'avvio del server Streamlit

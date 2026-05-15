@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spendif.ai — Installation et premier lancement</title>
+  <meta name="description" content="Téléchargez Spendif.ai pour macOS, Windows ou Linux. Guide pas-à-pas pour l'installation, le premier lancement et la configuration initiale." />
+  <meta property="og:title" content="Spendif.ai — Installation et premier lancement" />
+  <meta property="og:description" content="Trois étapes : télécharger, installer, premier lancement. Tout en local, pas de cloud." />
+
+  <!-- Cloudflare Web Analytics — privacy-friendly, cookie-less analytics -->
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "cf66fd7e52d248d9afaadeeedb0ea166"}'></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --bg:#0d1117; --surface:#161b22; --surface2:#21262d; --border:#30363d; --blue:#58a6ff; --green:#3fb950; --purple:#bc8cff; --orange:#e3b341; --red:#f85149; --text:#e6edf3; --muted:#8b949e; --radius:12px; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; line-height: 1.6; }
+    a { color: var(--blue); text-decoration: none; } a:hover { text-decoration: underline; }
+    .nav { position: sticky; top: 0; background: rgba(13,17,23,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); z-index: 100; }
+    .nav-inner { max-width: 1100px; margin: 0 auto; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+    .nav-brand { font-weight: 700; font-size: 1.15rem; } .nav-brand a { color: var(--text); }
+    .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+    .nav-links a { color: var(--muted); font-size: 0.95rem; }
+    .lang-switch { color: var(--muted); font-size: 0.9rem; } .lang-switch a { color: var(--blue); }
+    .hero { padding: 4rem 1.5rem 2rem; text-align: center; }
+    .hero h1 { font-size: 2.4rem; line-height: 1.2; margin-bottom: 0.8rem; }
+    .hero .lead { font-size: 1.15rem; color: var(--muted); max-width: 640px; margin: 0 auto; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem 4rem; }
+    section { margin-top: 3.5rem; }
+    h2 { font-size: 1.6rem; margin-bottom: 1rem; }
+    h3 { font-size: 1.2rem; margin: 1.5rem 0 0.8rem; color: var(--text); }
+    p { color: var(--muted); margin-bottom: 0.8rem; }
+    .step-num { display: inline-block; width: 2.2rem; height: 2.2rem; border-radius: 50%; background: var(--blue); color: white; text-align: center; line-height: 2.2rem; font-weight: 700; margin-right: 0.8rem; vertical-align: middle; }
+    .dl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+    .dl-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; transition: border-color 0.2s, transform 0.2s; }
+    .dl-card:hover { border-color: var(--blue); transform: translateY(-2px); }
+    .dl-card h3 { margin: 0 0 0.5rem; color: var(--text); }
+    .dl-card .os-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .dl-card .ext { color: var(--muted); font-size: 0.85rem; font-family: monospace; margin-bottom: 1rem; }
+    .dl-btn { display: inline-block; background: var(--blue); color: white; padding: 0.6rem 1.1rem; border-radius: 8px; font-weight: 600; text-decoration: none; transition: opacity 0.2s; }
+    .dl-btn:hover { opacity: 0.9; text-decoration: none; }
+    .dl-notes { color: var(--muted); font-size: 0.85rem; margin-top: 0.8rem; }
+    .step { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 2rem 0; align-items: start; }
+    .step.reverse { grid-template-columns: 1fr 1fr; }
+    .step.reverse .step-text { order: 2; } .step.reverse .step-img { order: 1; }
+    @media (max-width: 720px) { .step, .step.reverse { grid-template-columns: 1fr; } .step.reverse .step-text, .step.reverse .step-img { order: 0; } }
+    .step-img { background: var(--surface2); border: 1px dashed var(--border); border-radius: var(--radius); aspect-ratio: 16 / 10; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 0.9rem; text-align: center; padding: 1rem; overflow: hidden; }
+    .step-img img { max-width: 100%; max-height: 100%; border-radius: 8px; }
+    .step-img .ph { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+    .step-img .ph code { background: var(--bg); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; }
+    .note { background: var(--surface); border-left: 4px solid var(--orange); padding: 1rem 1.2rem; border-radius: 6px; margin: 1.5rem 0; }
+    .note strong { color: var(--orange); }
+    footer { border-top: 1px solid var(--border); padding: 2rem 1.5rem; text-align: center; color: var(--muted); font-size: 0.9rem; }
+    footer a { color: var(--blue); }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="nav-brand"><a href="/">Spendif.ai</a></div>
+      <div class="nav-links">
+        <a href="#download">Télécharger</a>
+        <a href="#install">Installer</a>
+        <a href="#first-launch">Premier lancement</a>
+        <span class="lang-switch">🌐 <a href="getting-started.en.html">EN</a> · <a href="getting-started.html">IT</a> · <a href="getting-started.de.html">DE</a> · <a href="getting-started.es.html">ES</a> · <a href="getting-started.ja.html">JA</a> · <a href="getting-started.nl.html">NL</a> · <a href="getting-started.pl.html">PL</a> · <a href="getting-started.pt.html">PT</a></span>
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <h1>Installation et premier lancement</h1>
+    <p class="lead">Trois étapes pour faire fonctionner Spendif.ai sur votre ordinateur : télécharger, installer, premier lancement. Tout en local, sans compte.</p>
+  </section>
+
+  <div class="wrap">
+
+    <section id="download">
+      <h2><span class="step-num">1</span>Téléchargez pour votre système</h2>
+      <p>Les installeurs officiels sont publiés en tant qu'assets de chaque <a href="https://github.com/drake69/spendify/releases/latest" target="_blank">GitHub Release</a>. Choisissez le format adapté à votre OS.</p>
+
+      <div class="dl-grid">
+        <div class="dl-card">
+          <div class="os-icon">🍎</div>
+          <h3>macOS</h3>
+          <div class="ext">SpendifAi-*.dmg</div>
+          <a class="dl-btn" href="https://github.com/drake69/spendify/releases/latest" target="_blank">Télécharger DMG</a>
+          <div class="dl-notes">macOS 12 Monterey ou supérieur. Apple Silicon + Intel.</div>
+        </div>
+        <div class="dl-card">
+          <div class="os-icon">🪟</div>
+          <h3>Windows</h3>
+          <div class="ext">SpendifAi-*.msix</div>
+          <a class="dl-btn" href="https://github.com/drake69/spendify/releases/latest" target="_blank">Télécharger MSIX</a>
+          <div class="dl-notes">Windows 10 1809+ / Windows 11. Sideload + certificat de confiance requis pendant la pré-alpha.</div>
+        </div>
+        <div class="dl-card">
+          <div class="os-icon">🐧</div>
+          <h3>Debian / Ubuntu</h3>
+          <div class="ext">spendifai_*_amd64.deb</div>
+          <a class="dl-btn" href="https://github.com/drake69/spendify/releases/latest" target="_blank">Télécharger .deb</a>
+          <div class="dl-notes">Ubuntu 22.04+, Debian 12+, Mint 21+.</div>
+        </div>
+        <div class="dl-card">
+          <div class="os-icon">🎩</div>
+          <h3>Fedora / RHEL</h3>
+          <div class="ext">spendifai-*.rpm</div>
+          <a class="dl-btn" href="https://github.com/drake69/spendify/releases/latest" target="_blank">Télécharger .rpm</a>
+          <div class="dl-notes">Fedora 40+, RHEL 9+, Rocky / Alma 9+.</div>
+        </div>
+      </div>
+
+      <p class="dl-notes" style="margin-top:1.5rem">Vous cherchez une version spécifique ? Voir <a href="https://github.com/drake69/spendify/releases" target="_blank">toutes les releases</a> · Code source : <a href="https://github.com/drake69/spendify" target="_blank">drake69/spendify</a>.</p>
+    </section>
+
+    <section id="install">
+      <h2><span class="step-num">2</span>Installer</h2>
+
+      <div class="step">
+        <div class="step-text">
+          <h3>macOS — DMG</h3>
+          <p>1. Double-cliquez sur le fichier <code>.dmg</code> téléchargé.</p>
+          <p>2. Glissez <strong>Spendif.ai.app</strong> dans le dossier <strong>Applications</strong>.</p>
+          <p>3. Éjectez le DMG (Cmd+E) et lancez l'app depuis Launchpad.</p>
+          <p>Si vous voyez "Impossible d'ouvrir Spendif.ai car le développeur ne peut pas être vérifié" (build pas encore signée) : clic droit sur l'app → <strong>Ouvrir</strong> → confirmer.</p>
+        </div>
+        <div class="step-img">
+          <div class="ph"><div>📷 Capture</div><code>assets/screenshots/macos-dmg-dragdrop.png</code><div>(glisser-déposer du DMG vers Applications)</div></div>
+        </div>
+      </div>
+
+      <div class="step reverse">
+        <div class="step-text">
+          <h3>Windows — MSIX</h3>
+          <p>1. Double-cliquez sur le fichier <code>.msix</code> téléchargé.</p>
+          <p>2. L'installeur d'applications intégré à Windows s'ouvre. Cliquez sur <strong>Installer</strong>.</p>
+          <p>3. L'app apparaît dans le menu Démarrer — lancez-la depuis là.</p>
+          <p>Si vous voyez "Éditeur inconnu" : ouvrez PowerShell en admin et importez le certificat une fois (voir le <a href="https://github.com/drake69/spendify/blob/main/docs/installation_windows.md" target="_blank">guide</a>).</p>
+        </div>
+        <div class="step-img">
+          <div class="ph"><div>📷 Capture</div><code>assets/screenshots/windows-msix-install.png</code><div>(boîte de dialogue Windows App Installer)</div></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-text">
+          <h3>Linux — .deb / .rpm</h3>
+          <p>Depuis le terminal :</p>
+          <p><code>sudo apt install ./spendifai_*.deb</code> &nbsp;(Debian/Ubuntu)</p>
+          <p><code>sudo dnf install ./spendifai-*.rpm</code> &nbsp;(Fedora/RHEL)</p>
+          <p>Le <code>postinst</code> installe <code>uv</code>, crée le venv, télécharge le modèle et configure <code>.env</code>. Guide complet : <a href="https://github.com/drake69/spendify/blob/main/docs/installazione.en.md" target="_blank">documentation d'installation</a>.</p>
+        </div>
+        <div class="step-img">
+          <div class="ph"><div>📷 Capture</div><code>assets/screenshots/linux-deb-install.png</code><div>(sortie terminal dpkg/dnf)</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="first-launch">
+      <h2><span class="step-num">3</span>Premier lancement</h2>
+      <p>Au premier lancement, Spendif.ai prépare son environnement — c'est l'étape la plus longue, mais elle n'arrive qu'une fois.</p>
+
+      <div class="note">
+        <strong>⏱ Temps requis :</strong> 5–15 minutes sur une connexion domestique typique. Espace libre requis : ~5 Go.<br>
+        Gardez la fenêtre ouverte jusqu'à ce que la barre de progression disparaisse.
+      </div>
+
+      <div class="step">
+        <div class="step-text">
+          <h3>3a. Splash + téléchargement du modèle IA</h3>
+          <p>Double-cliquer ouvre une fenêtre native avec un <strong>écran de démarrage</strong> et une barre de progression. Spendif.ai détecte la RAM/VRAM disponible et télécharge le LLM le plus adapté (Qwen 2.5, Gemma 3 — tailles de 2 à 8 Go).</p>
+          <p>Le modèle est stocké dans <code>~/.spendifai/models/</code> (macOS/Linux) ou <code>%APPDATA%\Spendif.ai\models\</code> (Windows) et survit aux réinstallations.</p>
+        </div>
+        <div class="step-img">
+          <div class="ph"><div>📷 Capture</div><code>assets/screenshots/splash-download-progress.png</code><div>(splash + progression téléchargement modèle)</div></div>
+        </div>
+      </div>
+
+      <div class="step reverse">
+        <div class="step-text">
+          <h3>3b. Assistant d'onboarding — 4 étapes</h3>
+          <p>Une fois le modèle prêt, le splash laisse place à l'<strong>assistant de configuration</strong> :</p>
+          <p>1. <strong>Langue</strong> — taxonomie, format de date, séparateurs numériques.<br>
+             2. <strong>Titulaires</strong> — votre nom et les variantes utilisées par la banque.<br>
+             3. <strong>Comptes</strong> — compte courant, cartes, espèces.<br>
+             4. <strong>Confirmer</strong> — tout est écrit ici uniquement, pas de persistance partielle.</p>
+          <p>Aucun choix n'est définitif : tout peut être modifié plus tard depuis <em>Paramètres</em>.</p>
+        </div>
+        <div class="step-img">
+          <div class="ph"><div>📷 Capture</div><code>assets/screenshots/onboarding-step-1-language.png</code><div>(assistant étape 1 — choix de la langue)</div></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-text">
+          <h3>3c. App prête</h3>
+          <p>À la confirmation, Spendif.ai crée la base SQLite et vous emmène sur la page <strong>Importer</strong>. Depuis là, vous chargez vos premiers CSV/XLSX bancaires.</p>
+          <p>Aux lancements suivants : double-clic → splash (1-2 secondes) → app. Plus de téléchargements, plus d'assistant.</p>
+        </div>
+        <div class="step-img">
+          <div class="ph"><div>📷 Capture</div><code>assets/screenshots/app-ready-import-page.png</code><div>(app prête, page Importer)</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="help">
+      <h2>Des problèmes ?</h2>
+      <p>
+        Documentation complète :
+        <a href="https://github.com/drake69/spendify/blob/main/docs/installazione.en.md" target="_blank">guide d'installation</a> ·
+        <a href="https://github.com/drake69/spendify/blob/main/docs/guida_utente.en.md" target="_blank">guide utilisateur</a> ·
+        <a href="https://github.com/drake69/spendify/blob/main/docs/installation_macos.md" target="_blank">macOS détaillé</a> ·
+        <a href="https://github.com/drake69/spendify/blob/main/docs/installation_windows.md" target="_blank">Windows détaillé</a>.
+      </p>
+      <p>Bugs, questions, demandes : <a href="https://github.com/drake69/spendify/issues" target="_blank">ouvrir une issue sur GitHub</a>.</p>
+    </section>
+
+  </div>
+
+  <footer>
+    <p>© 2026 Luigi Corsaro · Spendif.ai · Licence MIT · <a href="https://github.com/drake69/spendify" target="_blank">Code source sur GitHub</a></p>
+  </footer>
+</body>
+</html>
