@@ -3,7 +3,12 @@
 # Build:  docker build -t spendify .
 # Run:    docker run -p 8501:8501 --env-file .env spendify
 
-FROM python:3.14-slim
+# Pinned to 3.13 to match pyproject.toml `requires-python = ">=3.12,<3.14"`.
+# The upper bound exists because the Linux .deb/.rpm bundle uses
+# `--system-site-packages` against system PyGObject + pycairo, which on
+# Ubuntu 24.04 / Fedora 42 are built against Python 3.12. Keeping the cap
+# aligned across native bundles and the Docker image avoids drift.
+FROM python:3.13-slim
 
 # Build tools required by llama-cpp-python (compiled from source via scikit-build)
 RUN apt-get update -qq && \
