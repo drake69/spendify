@@ -57,6 +57,74 @@ winget manifest generation.
 
 ---
 
+## 2bis. CI-driven release with hybrid local signing (recommended)
+
+The workflow `.github/workflows/release.yml` automates building the four
+installers (DMG, MSIX, .deb, .rpm) on every `v*.*.*` tag and creates a
+**draft** GitHub Release with the unsigned artefacts attached. The owner
+then signs DMG and MSIX **locally** with their certificates and replaces
+the unsigned files before publishing. This keeps signing credentials off
+GitHub while still automating the build.
+
+### Step-by-step
+
+```bash
+# 1. Bump VERSION, update CHANGELOG, commit, tag, push
+echo "3.1.0" > VERSION
+git add VERSION CHANGELOG.md
+git commit -m "chore(release): bump to 3.1.0"
+git tag v3.1.0
+git push origin main v3.1.0
+```
+
+Once the tag lands, the CI runs four parallel build jobs (~15–25 min for
+the macOS job, ~10–15 min for the Windows job) and produces a **draft**
+release. Then, on the owner's machines:
+
+```bash
+# 2a. macOS — sign + notarise the DMG
+gh release download v3.1.0 --pattern '*.dmg' --dir /tmp/release
+export APPLE_DEV_ID="Developer ID Application: Luigi Corsaro (TEAMID)"
+export APPLE_ID="lcorsaro69@gmail.com"
+export APPLE_TEAM_ID="..."
+export APPLE_APP_PASSWORD="app-specific-password"
+bash packaging/macos/sign-local.sh --dmg /tmp/release/SpendifAi-3.1.0.dmg
+gh release upload v3.1.0 /tmp/release/SpendifAi-3.1.0.dmg --clobber
+```
+
+```powershell
+# 2b. Windows — sign the MSIX
+gh release download v3.1.0 --pattern '*.msix' --dir C:\release
+$env:MSIX_CERT_PATH = "C:\certs\spendifai.pfx"
+$env:MSIX_CERT_PASSWORD = "secret"
+.\packaging\windows\sign-local.ps1 -Msix C:\release\SpendifAi-3.1.0.msix
+gh release upload v3.1.0 C:\release\SpendifAi-3.1.0.msix --clobber
+```
+
+```bash
+# 3. Recompute SHA256SUMS.txt to include the signed files
+gh release download v3.1.0 --dir /tmp/release
+cd /tmp/release && sha256sum *.dmg *.msix *.deb *.rpm > SHA256SUMS.txt
+gh release upload v3.1.0 SHA256SUMS.txt --clobber
+
+# 4. Publish the draft
+gh release edit v3.1.0 --draft=false
+```
+
+### Why hybrid
+
+| Concern | Pure CI signing | Local signing | Hybrid (this one) |
+|---------|-----------------|---------------|-------------------|
+| Build automation | ✓ | ✗ | ✓ (CI) |
+| Certs off GitHub | ✗ | ✓ | ✓ |
+| One-click release | ✓ | ✗ | ✗ (manual sign step) |
+| Risk if token leaks | Signed malware | None | None |
+
+Suitable for solo founders or small teams that already have the certs
+locally and prefer not to upload them as Secrets.
+
+---
+
 ## 3. Homebrew Distribution
 
 ### Homebrew Tap (current approach)
@@ -313,10 +381,24 @@ Both scripts install to `~/.local/share/Spendif.ai/` (no sudo required for the c
 
 ---
 
-## 6. GitHub Actions CI/CD (Future)
+## 6. GitHub Actions CI/CD (implemented)
 
-A fully automated release pipeline via GitHub Actions would eliminate the need
-to run `release.sh` locally. Proposed workflow:
+The workflow `.github/workflows/release.yml` is live and produces all four
+installers on every `v*.*.*` tag. See **Section 2bis** for the hybrid
+signing workflow that wraps it.
+
+Jobs:
+
+| Job | Runner | Produces | Notes |
+|-----|--------|----------|-------|
+| `build-macos` | `macos-latest` | `SpendifAi-<ver>.dmg` (unsigned) | PyInstaller + `create-dmg` |
+| `build-windows` | `windows-latest` | `SpendifAi-<ver>.msix` (unsigned) | PyInstaller + `makeappx.exe`. See `packaging/windows/build-msix.ps1`. |
+| `build-deb` | `ubuntu-latest` | `spendifai_<ver>_amd64.deb` | Smoke-tested in `ubuntu:24.04` container |
+| `build-rpm` | `ubuntu-latest` | `spendifai-<ver>-1.noarch.rpm` | Smoke-tested in `fedora:41` container |
+| `publish` | `ubuntu-latest` | Draft GitHub Release + `SHA256SUMS.txt` | Notes extracted from `CHANGELOG.md` |
+
+Older proposal kept below for reference — describes the path we did **not**
+take (signing inside CI with secrets):
 
 ```yaml
 # .github/workflows/release.yml

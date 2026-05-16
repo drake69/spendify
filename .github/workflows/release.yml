@@ -118,10 +118,14 @@ jobs:
           retention-days: 30
 
   # ─────────────────────────────────────────────────────────────────────────
-  # Windows — PyInstaller → .exe folder → ZIP
+  # Windows — PyInstaller → .exe folder → MSIX (unsigned)
+  #
+  # The MSIX is produced unsigned in CI. Owner signs locally with a
+  # Code Signing certificate via packaging\windows\sign-local.ps1 before
+  # publishing the GitHub Release (hybrid signing model — see docs/release.md).
   # ─────────────────────────────────────────────────────────────────────────
   build-windows:
-    name: Build Windows ZIP
+    name: Build Windows MSIX
     needs: prepare
     runs-on: windows-latest
 
@@ -137,42 +141,25 @@ jobs:
       - name: Install dependencies (with desktop extras)
         run: uv sync --extra desktop
 
-      - name: Build via PyInstaller
-        run: |
-          uv run pyinstaller desktop.spec --noconfirm --clean
-          dir dist\
-
-      - name: Verify .exe
-        run: |
-          if (Test-Path "dist\SpendifAi\SpendifAi.exe") {
-            Write-Host "✅ SpendifAi.exe created"
-          } else {
-            Write-Host "❌ SpendifAi.exe not found"
-            exit 1
-          }
-
-      - name: Create ZIP
+      - name: Build MSIX (PyInstaller + makeappx)
         run: |
           $version = "${{ needs.prepare.outputs.version }}"
-          $zipName = "SpendifAi-${version}-windows.zip"
+          .\packaging\windows\build-msix.ps1 -Version $version
 
-          # Create staging directory with installer + docs
-          New-Item -ItemType Directory -Force "dist\zip_staging" | Out-Null
-          Copy-Item "dist\SpendifAi" "dist\zip_staging\SpendifAi" -Recurse
-          Copy-Item "packaging\windows\install.ps1" "dist\zip_staging\install.ps1"
-          Copy-Item "packaging\windows\uninstall.ps1" "dist\zip_staging\uninstall.ps1"
-          if (Test-Path "README.md") { Copy-Item "README.md" "dist\zip_staging\README.md" }
-          if (Test-Path "VERSION") { Copy-Item "VERSION" "dist\zip_staging\VERSION" }
+      - name: Verify MSIX
+        run: |
+          $msix = Get-ChildItem "build\SpendifAi-*.msix" | Select-Object -First 1
+          if (-not $msix) {
+            Write-Host "❌ MSIX not produced"
+            exit 1
+          }
+          Write-Host "✅ $($msix.Name) ($([math]::Round($msix.Length / 1MB, 1)) MB)"
 
-          Compress-Archive -Path "dist\zip_staging\*" -DestinationPath "dist\$zipName"
-          Write-Host "✅ $zipName created"
-          Get-Item "dist\$zipName" | Format-Table Name, Length
-
-      - name: Upload ZIP artifact
+      - name: Upload MSIX artifact
         uses: actions/upload-artifact@v4
         with:
-          name: windows-zip
-          path: dist/SpendifAi-*-windows.zip
+          name: windows-msix
+          path: build/SpendifAi-*.msix
           retention-days: 30
 
   # ─────────────────────────────────────────────────────────────────────────
@@ -285,7 +272,7 @@ jobs:
       - name: Compute SHA256 checksums
         run: |
           cd packages
-          find . -type f \( -name "*.dmg" -o -name "*.zip" -o -name "*.deb" -o -name "*.rpm" \) | while read f; do
+          find . -type f \( -name "*.dmg" -o -name "*.msix" -o -name "*.deb" -o -name "*.rpm" \) | while read f; do
             sha256sum "$f"
           done | tee ../SHA256SUMS.txt
 
@@ -310,8 +297,8 @@ jobs:
 
           | Platform | File | Install |
           |----------|------|---------|
-          | macOS | SpendifAi-${VERSION}.dmg | Double-click to install |
-          | Windows | SpendifAi-${VERSION}-windows.zip | Extract, run install.ps1 |
+          | macOS | SpendifAi-${VERSION}.dmg | Double-click, drag to Applications |
+          | Windows | SpendifAi-${VERSION}.msix | Double-click to install (requires trusted signature) |
           | Ubuntu/Debian | spendifai_${VERSION}_amd64.deb | sudo apt install ./spendifai_*.deb |
           | Fedora/RHEL | spendifai-${VERSION}-1.noarch.rpm | sudo dnf install ./spendifai-*.rpm |
 
@@ -319,13 +306,17 @@ jobs:
           EOF
           cat SHA256SUMS.txt >> RELEASE_NOTES.md
 
-      - name: Create GitHub Release
+      - name: Create draft GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Release is created as DRAFT so the owner can sign the unsigned
+          # DMG / MSIX locally and replace them via `gh release upload --clobber`
+          # before publishing. See docs/release.md (hybrid signing model).
           TAG="${{ needs.prepare.outputs.tag }}"
-          FILES=$(find packages/ -type f \( -name "*.dmg" -o -name "*.zip" -o -name "*.deb" -o -name "*.rpm" \))
+          FILES=$(find packages/ -type f \( -name "*.dmg" -o -name "*.msix" -o -name "*.deb" -o -name "*.rpm" \))
           gh release create "$TAG" \
+            --draft \
             --title "Spendif.ai $TAG" \
             --notes-file RELEASE_NOTES.md \
             $FILES SHA256SUMS.txt

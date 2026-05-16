@@ -20,6 +20,13 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Windows Add/Remove Programs registration during install
 - Linux CI workflow (`release-linux.yml`): builds .deb/.rpm, smoke-tests in containers, attaches to GitHub Release
 - winget identifier renamed to `SpendifAi.SpendifAi`
+- Windows MSIX installer (`packaging/windows/build-msix.ps1` + `AppxManifest.xml.in`), replaces the previous ZIP-only Windows artefact
+- Local signing scripts: `packaging/macos/sign-local.sh` (codesign + notarytool + stapler) and `packaging/windows/sign-local.ps1` (SignTool wrapper)
+- Local DMG builder (`packaging/macos/build-dmg.sh`) mirroring the CI job for offline reproducibility
+- Hybrid CI release model: `release.yml` builds all four installers unsigned and publishes a **draft** GitHub Release; the owner signs DMG and MSIX locally and replaces them via `gh release upload --clobber` before flipping `--draft=false`. Documented in `docs/release_process.md` §2bis (EN+IT)
+- Getting-started page on gh-pages, full 9-locale coverage (`getting-started.{html,en,de,es,fr,ja,nl,pl,pt}.html`): three-step illustrated install/first-launch guide with download buttons for DMG/MSIX/.deb/.rpm and screenshot placeholders (`assets/screenshots/`). Each page includes the Cloudflare Web Analytics beacon and a full language switcher
+- Updated `installation_{macos,windows}.{md,it.md}` "First Launch" section to describe the native pywebview flow (splash + model download + onboarding wizard), replacing the obsolete Terminal/browser sequence which only applies to the legacy `install.sh`/`install.ps1` scripts
+- Landing pages (all 9 locales: `index.html` IT, `index.{en,de,es,fr,ja,nl,pl,pt}.html`): added localized "Download installer" CTA pointing to the locale-matched getting-started page above the existing curl-script tabs
 
 ### Fixed
 - Schema auto-invalidation: cached schemas (Flow 1) producing < 10% parse rate are automatically deleted and retried with Flow 2 (LLM re-classification)

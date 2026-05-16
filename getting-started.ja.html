@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spendif.ai — インストールと初回起動</title>
+  <meta name="description" content="macOS、Windows、Linux 向けに Spendif.ai をダウンロード。インストール、初回起動、初期設定までのステップガイド。" />
+  <meta property="og:title" content="Spendif.ai — インストールと初回起動" />
+  <meta property="og:description" content="ダウンロード、インストール、初回起動の 3 ステップ。すべてオフライン、クラウド不要。" />
+
+  <!-- Cloudflare Web Analytics — privacy-friendly, cookie-less analytics -->
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "cf66fd7e52d248d9afaadeeedb0ea166"}'></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --bg:#0d1117; --surface:#161b22; --surface2:#21262d; --border:#30363d; --blue:#58a6ff; --green:#3fb950; --purple:#bc8cff; --orange:#e3b341; --red:#f85149; --text:#e6edf3; --muted:#8b949e; --radius:12px; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Segoe UI", Helvetica, Arial, sans-serif; line-height: 1.6; }
+    a { color: var(--blue); text-decoration: none; } a:hover { text-decoration: underline; }
+    .nav { position: sticky; top: 0; background: rgba(13,17,23,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); z-index: 100; }
+    .nav-inner { max-width: 1100px; margin: 0 auto; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+    .nav-brand { font-weight: 700; font-size: 1.15rem; } .nav-brand a { color: var(--text); }
+    .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+    .nav-links a { color: var(--muted); font-size: 0.95rem; }
+    .lang-switch { color: var(--muted); font-size: 0.9rem; } .lang-switch a { color: var(--blue); }
+    .hero { padding: 4rem 1.5rem 2rem; text-align: center; }
+    .hero h1 { font-size: 2.4rem; line-height: 1.2; margin-bottom: 0.8rem; }
+    .hero .lead { font-size: 1.15rem; color: var(--muted); max-width: 640px; margin: 0 auto; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem 4rem; }
+    section { margin-top: 3.5rem; }
+    h2 { font-size: 1.6rem; margin-bottom: 1rem; }
+    h3 { font-size: 1.2rem; margin: 1.5rem 0 0.8rem; color: var(--text); }
+    p { color: var(--muted); margin-bottom: 0.8rem; }
+    .step-num { display: inline-block; width: 2.2rem; height: 2.2rem; border-radius: 50%; background: var(--blue); color: white; text-align: center; line-height: 2.2rem; font-weight: 700; margin-right: 0.8rem; vertical-align: middle; }
+    .dl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+    .dl-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; transition: border-color 0.2s, transform 0.2s; }
+    .dl-card:hover { border-color: var(--blue); transform: translateY(-2px); }
+    .dl-card h3 { margin: 0 0 0.5rem; color: var(--text); }
+    .dl-card .os-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .dl-card .ext { color: var(--muted); font-size: 0.85rem; font-family: monospace; margin-bottom: 1rem; }
+    .dl-btn { display: inline-block; background: var(--blue); color: white; padding: 0.6rem 1.1rem; border-radius: 8px; font-weight: 600; text-decoration: none; transition: opacity 0.2s; }
+    .dl-btn:hover { opacity: 0.9; text-decoration: none; }
+    .dl-notes { color: var(--muted); font-size: 0.85rem; margin-top: 0.8rem; }
+    .step { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 2rem 0; align-items: start; }
+    .step.reverse { grid-template-columns: 1fr 1fr; }
+    .step.reverse .step-text { order: 2; } .step.reverse .step-img { order: 1; }
+    @media (max-width: 720px) { .step, .step.reverse { grid-template-columns: 1fr; } .step.reverse .step-text, .step.reverse .step-img { order: 0; } }
+    .step-img { background: var(--surface2); border: 1px dashed var(--border); border-radius: var(--radius); aspect-ratio: 16 / 10; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 0.9rem; text-align: center; padding: 1rem; overflow: hidden; }
+    .step-img img { max-width: 100%; max-height: 100%; border-radius: 8px; }
+    .step-img .ph { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+    .step-img .ph code { background: var(--bg); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; }
+    .note { background: var(--surface); border-left: 4px solid var(--orange); padding: 1rem 1.2rem; border-radius: 6px; margin: 1.5rem 0; }
+    .note strong { color: var(--orange); }
+    footer { border-top: 1px solid var(--border); padding: 2rem 1.5rem; text-align: center; color: var(--muted); font-size: 0.9rem; }
+    footer a { color: var(--blue); }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="nav-brand"><a href="/">Spendif.ai</a></div>
+      <div class="nav-links">
+        <a href="#download">ダウンロード</a>
+        <a href="#install">インストール</a>
+        <a href="#first-launch">初回起動</a>
+        <span class="lang-switch">🌐 <a href="getting-started.en.html">EN</a> · <a href="getting-started.html">IT</a> · <a href="getting-started.de.html">DE</a> · <a href="getting-started.es.html">ES</a> · <a href="getting-started.fr.html">FR</a> · <a href="getting-started.nl.html">NL</a> · <a href="getting-started.pl.html">PL</a> · <a href="getting-started.pt.html">PT</a></span>
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <h1>インストールと初回起動</h1>
+    <p class="lead">Spendif.ai をお使いのコンピューターで動かすための 3 ステップ: ダウンロード、インストール、初回起動。すべてオフライン、アカウント不要です。</p>
+  </section>
+
+  <div class="wrap">
+
+    <section id="download">
+      <h2><span class="step-num">1</span>お使いの OS 用にダウンロード</h2>
+      <p>公式インストーラーは各 <a href="https://github.com/drake69/spendify/releases/latest" target="_blank">GitHub Release</a> のアセットとして公開されています。OS に合ったフォーマットを選んでください。</p>
+
+      <div class="dl-grid">
+        <div class="dl-card">
+          <div class="os-icon">🍎</div>
+          <h3>macOS</h3>
+          <div class="ext">SpendifAi-*.dmg</div>
+          <a class="dl-btn" href="https://github.com/drake69/spendify/releases/latest" target="_blank">DMG をダウンロード</a>
+          <div class="dl-notes">macOS 12 Monterey 以降。Apple Silicon + Intel 対応。</div>
+        </div>
+        <div class="dl-card">
+          <div class="os-icon">🪟</div>
+          <h3>Windows</h3>
+          <div class="ext">SpendifAi-*.msix</div>
+          <a class="dl-btn" href="https://github.com/drake69/spendify/releases/latest" target="_blank">MSIX をダウンロード</a>
+          <div class="dl-notes">Windows 10 1809+ / Windows 11。プレアルファ期間中はサイドロード + 信頼された証明書が必要です。</div>
+        </div>
+        <div class="dl-card">
+          <div class="os-icon">🐧</div>
+          <h3>Debian / Ubuntu</h3>
+          <div class="ext">spendifai_*_amd64.deb</div>
+          <a class="dl-btn" href="https://github.com/drake69/spendify/releases/latest" target="_blank">.deb をダウンロード</a>
+          <div class="dl-notes">Ubuntu 22.04+, Debian 12+, Mint 21+。</div>
+        </div>
+        <div class="dl-card">
+          <div class="os-icon">🎩</div>
+          <h3>Fedora / RHEL</h3>
+          <div class="ext">spendifai-*.rpm</div>
+          <a class="dl-btn" href="https://github.com/drake69/spendify/releases/latest" target="_blank">.rpm をダウンロード</a>
+          <div class="dl-notes">Fedora 40+, RHEL 9+, Rocky / Alma 9+。</div>
+        </div>
+      </div>
+
+      <p class="dl-notes" style="margin-top:1.5rem">特定のバージョンをお探しですか? <a href="https://github.com/drake69/spendify/releases" target="_blank">すべてのリリース</a>を参照 · ソースコード: <a href="https://github.com/drake69/spendify" target="_blank">drake69/spendify</a>。</p>
+    </section>
+
+    <section id="install">
+      <h2><span class="step-num">2</span>インストール</h2>
+
+      <div class="step">
+        <div class="step-text">
+          <h3>macOS — DMG</h3>
+          <p>1. ダウンロードした <code>.dmg</code> ファイルをダブルクリックします。</p>
+          <p>2. <strong>Spendif.ai.app</strong> を <strong>アプリケーション</strong> フォルダにドラッグします。</p>
+          <p>3. DMG を取り出し (Cmd+E)、Launchpad からアプリを起動します。</p>
+          <p>「開発元を確認できないため、Spendif.ai を開けません」と表示された場合 (まだ署名されていないビルド): アプリを右クリック → <strong>開く</strong> → 確認。</p>
+        </div>
+        <div class="step-img">
+          <div class="ph"><div>📷 スクリーンショット</div><code>assets/screenshots/macos-dmg-dragdrop.png</code><div>(DMG からアプリケーションへドラッグ &amp; ドロップ)</div></div>
+        </div>
+      </div>
+
+      <div class="step reverse">
+        <div class="step-text">
+          <h3>Windows — MSIX</h3>
+          <p>1. ダウンロードした <code>.msix</code> ファイルをダブルクリックします。</p>
+          <p>2. Windows 内蔵のアプリ インストーラーが開きます。<strong>インストール</strong> をクリックします。</p>
+          <p>3. アプリがスタートメニューに表示されます — そこから起動します。</p>
+          <p>「不明な発行元」と表示された場合: 管理者として PowerShell を開き、証明書を一度インポートしてください (<a href="https://github.com/drake69/spendify/blob/main/docs/installation_windows.md" target="_blank">ガイド</a>参照)。</p>
+        </div>
+        <div class="step-img">
+          <div class="ph"><div>📷 スクリーンショット</div><code>assets/screenshots/windows-msix-install.png</code><div>(Windows アプリ インストーラーのダイアログ)</div></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-text">
+          <h3>Linux — .deb / .rpm</h3>
+          <p>ターミナルから:</p>
+          <p><code>sudo apt install ./spendifai_*.deb</code> &nbsp;(Debian/Ubuntu)</p>
+          <p><code>sudo dnf install ./spendifai-*.rpm</code> &nbsp;(Fedora/RHEL)</p>
+          <p><code>postinst</code> が <code>uv</code> をインストールし、venv を作成し、モデルをダウンロードして <code>.env</code> を構成します。完全なガイド: <a href="https://github.com/drake69/spendify/blob/main/docs/installazione.en.md" target="_blank">インストールドキュメント</a>。</p>
+        </div>
+        <div class="step-img">
+          <div class="ph"><div>📷 スクリーンショット</div><code>assets/screenshots/linux-deb-install.png</code><div>(dpkg/dnf のターミナル出力)</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="first-launch">
+      <h2><span class="step-num">3</span>初回起動</h2>
+      <p>初回起動時、Spendif.ai は環境をセットアップします — 一番時間がかかるステップですが、一度だけです。</p>
+
+      <div class="note">
+        <strong>⏱ 所要時間:</strong> 一般的な家庭用回線で 5〜15 分。必要な空き容量: 約 5 GB。<br>
+        プログレスバーが消えるまでウィンドウを開いたままにしてください。
+      </div>
+
+      <div class="step">
+        <div class="step-text">
+          <h3>3a. スプラッシュ + AI モデルのダウンロード</h3>
+          <p>ダブルクリックで、<strong>スプラッシュ画面</strong>とプログレスバーを備えたネイティブウィンドウが開きます。Spendif.ai は利用可能な RAM/VRAM を検出し、最も適した LLM をダウンロードします (Qwen 2.5、Gemma 3 — 2〜8 GB)。</p>
+          <p>モデルは <code>~/.spendifai/models/</code> (macOS/Linux) または <code>%APPDATA%\Spendif.ai\models\</code> (Windows) に保存され、再インストールしても残ります。</p>
+        </div>
+        <div class="step-img">
+          <div class="ph"><div>📷 スクリーンショット</div><code>assets/screenshots/splash-download-progress.png</code><div>(スプラッシュ + モデルダウンロード進捗)</div></div>
+        </div>
+      </div>
+
+      <div class="step reverse">
+        <div class="step-text">
+          <h3>3b. オンボーディング ウィザード — 4 ステップ</h3>
+          <p>モデルの準備ができると、スプラッシュは <strong>設定ウィザード</strong> に切り替わります:</p>
+          <p>1. <strong>言語</strong> — 分類体系、日付形式、数値区切り。<br>
+             2. <strong>名義人</strong> — あなたの名前と銀行が使うバリエーション。<br>
+             3. <strong>口座</strong> — 当座預金、カード、現金。<br>
+             4. <strong>確認</strong> — すべてここでのみ書き込まれ、部分的な永続化はありません。</p>
+          <p>どの選択も最終的ではありません: 後から <em>設定</em> で変更できます。</p>
+        </div>
+        <div class="step-img">
+          <div class="ph"><div>📷 スクリーンショット</div><code>assets/screenshots/onboarding-step-1-language.png</code><div>(ウィザード ステップ 1 — 言語選択)</div></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-text">
+          <h3>3c. アプリ準備完了</h3>
+          <p>ウィザードの確認時に、Spendif.ai は SQLite データベースを作成し、<strong>インポート</strong> ページに移動します。そこから最初の銀行 CSV/XLSX ファイルを読み込みます。</p>
+          <p>次回以降の起動フローは: ダブルクリック → スプラッシュ (1〜2 秒) → アプリ。ダウンロードもウィザードもありません。</p>
+        </div>
+        <div class="step-img">
+          <div class="ph"><div>📷 スクリーンショット</div><code>assets/screenshots/app-ready-import-page.png</code><div>(アプリ準備完了、インポート ページ)</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="help">
+      <h2>困りごとがありますか?</h2>
+      <p>
+        完全なドキュメント:
+        <a href="https://github.com/drake69/spendify/blob/main/docs/installazione.en.md" target="_blank">インストールガイド</a> ·
+        <a href="https://github.com/drake69/spendify/blob/main/docs/guida_utente.en.md" target="_blank">ユーザーガイド</a> ·
+        <a href="https://github.com/drake69/spendify/blob/main/docs/installation_macos.md" target="_blank">macOS 詳細</a> ·
+        <a href="https://github.com/drake69/spendify/blob/main/docs/installation_windows.md" target="_blank">Windows 詳細</a>。
+      </p>
+      <p>バグ、質問、要望: <a href="https://github.com/drake69/spendify/issues" target="_blank">GitHub Issue を開く</a>。</p>
+    </section>
+
+  </div>
+
+  <footer>
+    <p>© 2026 Luigi Corsaro · Spendif.ai · MIT License · <a href="https://github.com/drake69/spendify" target="_blank">GitHub のソースコード</a></p>
+  </footer>
+</body>
+</html>

@@ -120,9 +120,39 @@ bash install.sh [OPTIONS]
 
 ---
 
-## First Launch and Database Initialisation
+## First Launch
 
-On first launch:
+What happens when you double-click **Spendif.ai** for the first time depends on
+how it was installed:
+
+### Native install (DMG, recommended)
+
+When installed from the `.dmg` (`Spendif.ai.app` in `/Applications`), the app
+opens a **native window**. No Terminal, no browser tab.
+
+1. **Splash screen** appears with a progress bar.
+2. **AI model download** (~2–4 GB depending on detected RAM). The bundled
+   launcher calls `core.model_manager.ensure_model_available()` which picks
+   the largest GGUF that fits comfortably in your free RAM (Qwen2.5-3B,
+   Gemma-3-4B, Qwen2.5-7B, or Gemma-3-12B). The download lives at
+   `~/.spendifai/models/` so it survives reinstalls. **First launch can take
+   5–15 minutes** on a typical home connection — this is normal.
+3. **`.env` is written** to set `LLM_BACKEND=local_llama_cpp`, the model
+   path, and `SPENDIFAI_DB=sqlite:///~/.spendifai/ledger.db`.
+4. **Streamlit boots inside the same window** once the model is ready.
+5. **Onboarding wizard** (4 steps) appears: language, holders, accounts,
+   confirm. The database `~/.spendifai/ledger.db` is created on confirm.
+6. **App is ready.** Subsequent launches skip steps 2–3 and go straight from
+   splash → wizard or main app.
+
+> Free disk space required at first launch: ~5 GB (model + Python venv state).
+> Keep the splash window open until the progress bar disappears — closing
+> mid-download forces a fresh start on next launch.
+
+### Script install (legacy `install.sh`)
+
+If installed via `bash packaging/macos/install.sh`:
+
 1. Streamlit starts on `http://localhost:8501` (a Terminal window opens)
 2. The browser is opened automatically after 3 seconds
 3. SQLAlchemy creates `~/.spendifai/spendifai.db` on the first database access

@@ -177,9 +177,35 @@ OpenAI or Anthropic API key for production use on CPU-only machines.
 
 ---
 
-## First Launch and Database Initialisation
+## First Launch
 
-On first launch:
+What happens at first launch depends on which installer you used:
+
+### MSIX install (recommended)
+
+When installed from `Spendif.ai.msix` (Start Menu → Spendif.ai), the app
+opens a **native window**. No command window, no browser tab.
+
+1. **Splash screen** with a progress bar.
+2. **AI model download** (~2–4 GB depending on detected VRAM/RAM). The
+   bundled launcher calls `core.model_manager.ensure_model_available()` which
+   picks the largest GGUF that fits in VRAM (or RAM if no GPU): Qwen2.5-3B
+   (2.1 GB), Gemma-3-4B, Qwen2.5-7B, or Gemma-3-12B (6.8 GB). Downloaded to
+   `%APPDATA%\Spendif.ai\models\`. **First launch can take 5–15 minutes** on
+   a typical home connection — this is normal.
+3. **`.env` is written** with `LLM_BACKEND=local_llama_cpp`, the model path,
+   and `SPENDIFAI_DB=sqlite:///%APPDATA%/Spendif.ai/ledger.db`.
+4. **Streamlit boots inside the same window** once the model is ready.
+5. **Onboarding wizard** (4 steps): language, holders, accounts, confirm.
+   Database `%APPDATA%\Spendif.ai\ledger.db` is created on confirm.
+6. **App is ready.** Subsequent launches skip steps 2–3.
+
+> Free disk space required at first launch: ~5 GB (model + Python state).
+> Keep the splash window open until the progress bar disappears.
+
+### Script install (legacy `install.ps1`)
+
+If installed via `irm ... | iex` (PowerShell script):
 
 1. Double-click the **Spendif.ai** Desktop shortcut (or find it in Start Menu)
 2. A command window opens showing the Streamlit server starting up

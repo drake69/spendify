@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Spendif.ai — MSIX AppxManifest template.
+
+  Tokens substituted by packaging/windows/build-msix.ps1:
+    @VERSION@               e.g. 3.0.0.0 (4-part version)
+    @PUBLISHER@             X.500 DN, must match cert subject exactly
+                            e.g. "CN=Luigi Corsaro, O=Spendif.ai, C=IT"
+    @PUBLISHER_DISPLAY@     Friendly name shown to user
+    @ARCH@                  x64 | arm64 | neutral
+
+  Capabilities are kept MINIMAL:
+    - runFullTrust: required because PyInstaller produces a desktop EXE
+      that needs full Win32 access (file system, native dlls, llama.cpp GPU).
+    - No internetClient: Spendif.ai runs locally; downloads happen on
+      first launch from the desktop launcher, not from the packaged app.
+      Add later if the in-app updater is implemented.
+-->
+<Package
+    xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+    xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+    xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+    IgnorableNamespaces="uap rescap">
+
+  <Identity
+      Name="SpendifAi"
+      Publisher="@PUBLISHER@"
+      Version="@VERSION@"
+      ProcessorArchitecture="@ARCH@" />
+
+  <Properties>
+    <DisplayName>Spendif.ai</DisplayName>
+    <PublisherDisplayName>@PUBLISHER_DISPLAY@</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+    <Description>Personal finance manager with local AI categorisation. Runs fully offline.</Description>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22631.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-us" />
+    <Resource Language="it-it" />
+  </Resources>
+
+  <Applications>
+    <Application Id="SpendifAi" Executable="SpendifAi\SpendifAi.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+          DisplayName="Spendif.ai"
+          Description="Personal finance manager with local AI"
+          BackgroundColor="transparent"
+          Square150x150Logo="Assets\Square150x150Logo.png"
+          Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" />
+      </uap:VisualElements>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>
