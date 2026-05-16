@@ -46,6 +46,14 @@ dependencies = [
 desktop = [
     "pywebview>=5.0",
     "pyinstaller>=6.0",
+    # GUI backend for pywebview:
+    # - macOS uses Cocoa (built into pyobjc) — no extra dep
+    # - Windows uses WebView2 (system component) — no extra dep
+    # - Linux needs either GTK (PyGObject + system libs) or Qt; we pick Qt
+    #   because PyQt6 is pure-pip (no system -dev packages, no version
+    #   mismatch with the system python3-gi shipped by Ubuntu/Fedora).
+    "qtpy>=2.4 ; sys_platform == 'linux'",
+    "PyQt6>=6.6 ; sys_platform == 'linux'",
 ]
 
 [tool.pytest.ini_options]
