@@ -383,9 +383,12 @@ def classify_document(
     sample = df_raw.loc[sorted(_top_idx)].copy()
 
     if sanitize:
-        for col in sample.select_dtypes(include="object").columns:
+        for col in sample.select_dtypes(include=["object", "string"]).columns:
+            # pandas 2.x quirk: `astype(str)` on a `string`-dtype Series with
+            # NaN leaves the NaN as float, breaking the regex-based sanitizer
+            # downstream. `fillna("")` first makes the conversion total.
             sample[col] = sanitize_dataframe_descriptions(
-                sample[col].astype(str).tolist(), sanitize_config
+                sample[col].fillna("").astype(str).tolist(), sanitize_config
             )
 
     sample_json = sample.to_json(orient="records", force_ascii=False)

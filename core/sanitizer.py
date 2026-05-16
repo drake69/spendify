@@ -86,6 +86,13 @@ def redact_pii(text: str, config: SanitizationConfig | None = None) -> str:
       Bank codes     → <TX_CODE>
       Fiscal code    → <FISCAL_ID>
     """
+    # Defensive guard: pandas `string`-dtype columns leak NaN through
+    # `astype(str).tolist()`, so callers may pass floats. Coerce to str
+    # and treat NaN / None as empty.
+    if text is None or (isinstance(text, float) and text != text):
+        return ""
+    if not isinstance(text, str):
+        text = str(text)
     if not text:
         return text
 

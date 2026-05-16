@@ -274,3 +274,53 @@ class TestSanitizeDataframeDescriptions:
         descs = [f"desc {i}" for i in range(10)]
         results = sanitize_dataframe_descriptions(descs, None)
         assert results == descs  # no PII, all unchanged
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Defensive type coercion (regression: pandas 2.x string-dtype + NaN)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestNonStringInputs:
+    """Regression for the crash where `sample[col].astype(str).tolist()` on a
+    pandas `string`-dtype Series with NaN leaked float NaNs into the sanitizer,
+    which then exploded on the first `re.sub` call with
+    `TypeError: expected string or bytes-like object, got 'float'`.
+    """
+
+    def test_redact_pii_handles_nan(self):
+        assert redact_pii(float("nan")) == ""
+
+    def test_redact_pii_handles_none(self):
+        assert redact_pii(None) == ""
+
+    def test_redact_pii_coerces_non_string(self):
+        assert redact_pii(1.5) == "1.5"
+        assert redact_pii(42) == "42"
+
+    def test_sanitize_dataframe_descriptions_mixed_types(self):
+        descs = ["bonifico IT60X0542811101000000123456", float("nan"), None, 1.5, "ok"]
+        results = sanitize_dataframe_descriptions(descs, SanitizationConfig())
+        assert len(results) == 5
+        assert "<ACCOUNT_ID>" in results[0]
+        assert results[1] == ""
+        assert results[2] == ""
+        assert results[3] == "1.5"
+        assert results[4] == "ok"
+
+    def test_sanitize_pandas_string_dtype_series_with_nan(self):
+        # Reproduce the upstream pandas quirk: `string` dtype + NaN +
+        # `.astype(str).tolist()` yields a list with a float NaN in it.
+        import pandas as pd
+
+        series = pd.Series(["bonifico IT60X0542811101000000123456", None, "ok"], dtype="string")
+        as_list = series.astype(str).tolist()
+        assert any(not isinstance(x, str) for x in as_list), (
+            "If this assertion ever fails, pandas fixed the underlying quirk and "
+            "the defensive guard in redact_pii is no longer load-bearing — but it "
+            "still costs nothing to keep."
+        )
+        results = sanitize_dataframe_descriptions(as_list, SanitizationConfig())
+        assert len(results) == 3
+        assert "<ACCOUNT_ID>" in results[0]
+        assert results[1] == ""
+        assert results[2] == "ok"
