@@ -14,14 +14,16 @@ You download your transaction files from the bank, drag them into Spendif.ai, it
 
 **Situation:** You've just installed Spendif.ai and are launching it for the first time.
 
-The app automatically shows the **onboarding wizard** (4 steps). No need to look for any menu.
+The app automatically shows the **onboarding wizard** (4 steps). No need to look for any menu. *In parallel* the desktop launcher kicks off the download of the LLM model best suited for your hardware — a banner at the top of every step shows the progress ("📚 78% · ~3 min").
 
 1. **Step 1 — Language:** choose the taxonomy language. The wizard suggests your browser language. This also sets date format and number separators (e.g. `31/12/2025` with `,` separator for Italian).
 2. **Step 2 — Holders:** enter your name (and the variants used by the bank — e.g. `Mario Rossi, ROSSI MARIO`). These names are used to protect your privacy in LLM prompts and to detect internal transfers.
-3. **Step 3 — Accounts:** add your bank accounts (name + bank + account type). The account type is mandatory and indicates the financial instrument: *Bank account*, *Credit card*, *Debit card*, *Prepaid card*, *Savings account* or *Cash*. You can skip this step and add them later from Settings.
-4. **Step 4 — Confirm:** review the summary and click **Start!** — data is saved only at this point.
+3. **Step 3 — Accounts:** add your bank accounts (name + bank + account type). The account type is mandatory and indicates the financial instrument: *Bank account*, *Credit card*, *Debit card*, *Prepaid card*, *Savings account* or *Cash*. At least one account is required.
+4. **Step 4 — Summary and Start:** review the summary and click **Start**. The button is disabled until the AI model is 100% downloaded (live indicator "⏳ Waiting for AI model — 78% · ~3 min"): this guarantees the Import page works immediately after the wizard. Data is saved only at this point.
 
-> **Updating from a previous version?** The wizard does not appear if the database already has data — the app opens normally.
+> **Invisible LLM defaults:** the wizard also writes `llm_backend=local_llama_cpp`, the downloaded model path, and inference parameters (4096-token context, CPU by default). All editable later from **⚙️ Settings**.
+
+> **Updating from a previous version?** The wizard is only skipped when ALL four prerequisites the wizard itself would set are already present (UI language, holders, at least one account, llm_backend). If any is missing, the wizard appears even on an existing DB to complete the setup.
 
 ---
 

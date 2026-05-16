@@ -14,14 +14,16 @@ Scarichi i file movimenti dalla banca, li trascini in Spendif.ai, lui li unifica
 
 **Situazione:** Hai appena installato Spendif.ai e lo avvii per la prima volta.
 
-L'app ti mostra automaticamente il **wizard di configurazione iniziale** (4 step). Non devi cercare nessun menu.
+L'app ti mostra automaticamente il **wizard di configurazione iniziale** (4 step). Non devi cercare nessun menu. *In parallelo* parte il download del modello LLM più adatto al tuo hardware — un banner in cima a ogni step mostra il progresso ("📚 78% · ~3 min").
 
 1. **Step 1 — Lingua:** scegli la lingua della tassonomia. Il wizard suggerisce la lingua del tuo browser. Questa scelta imposta anche il formato delle date e i separatori numerici (es. `31/12/2025` con separatore `,` per l'italiano).
 2. **Step 2 — Titolari:** inserisci il tuo nome (e le varianti usate dalla banca — es. `Mario Rossi, ROSSI MARIO`). Questi nomi vengono usati per proteggere la tua privacy nei prompt LLM e per riconoscere i tuoi bonifici interni.
-3. **Step 3 — Conti:** aggiungi i tuoi conti bancari (nome + banca + tipo conto). Il tipo conto è obbligatorio e indica lo strumento finanziario: *Conto corrente*, *Carta di credito*, *Carta di debito*, *Carta prepagata*, *Conto risparmio* o *Contanti*. Puoi saltare questo step e aggiungerli dopo dalle Impostazioni.
-4. **Step 4 — Conferma:** controlla il riepilogo e clicca **Inizia!** — solo a questo punto i dati vengono salvati.
+3. **Step 3 — Conti:** aggiungi i tuoi conti bancari (nome + banca + tipo conto). Il tipo conto è obbligatorio e indica lo strumento finanziario: *Conto corrente*, *Carta di credito*, *Carta di debito*, *Carta prepagata*, *Conto risparmio* o *Contanti*. Almeno un conto è obbligatorio.
+4. **Step 4 — Riepilogo e Avvia:** controlla il riepilogo e clicca **Avvia**. Il bottone è disabilitato finché il modello AI non è scaricato al 100% (indicatore live "⏳ Attendi modello AI — 78% · ~3 min"): garantisce che la pagina Import sia subito utilizzabile dopo il wizard. Solo a questo punto i dati vengono salvati.
 
-> **Aggiornamento da versione precedente?** Il wizard non compare se il database ha già dati — l'app si apre direttamente come sempre.
+> **Default LLM invisibili:** il wizard scrive anche `llm_backend=local_llama_cpp`, il path del modello scaricato, e i parametri di inferenza (4096 token di contesto, CPU di default). Modificabili dopo da **⚙️ Impostazioni**.
+
+> **Aggiornamento da versione precedente?** Il wizard non compare solo se sono già configurati TUTTI e 4 i prerequisiti che il wizard stesso scriverebbe (lingua UI, titolari, almeno un conto, llm_backend). Se uno manca, il wizard appare anche su un DB esistente per completare il setup.
 
 ---
 

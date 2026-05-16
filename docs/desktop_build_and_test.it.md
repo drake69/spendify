@@ -227,16 +227,37 @@ e rpmbuild si interrompeva. Ora l'entry icona è condizionale su
 fornito l'icona viene impacchettata, altrimenti il pacchetto va
 senza.
 
-### Wizard skippato su DB fresh (AI-58 — aperto, P0)
+### Wizard skippato su DB fresh (AI-58 — risolto)
 
-Dopo cleanup e reinstall, la pagina immersiva di primo avvio non
-appare: si vede direttamente la sidebar e il warning "I nomi dei
-titolari non sono configurati" sulla pagina Import. Causa:
-`db/models.py:785-798` setta `onboarding_done=true` se
-`taxonomy_category` ha righe, ma la taxonomy italiana di default
-viene auto-seedata sempre, quindi il flag è sempre settato.
+Prima l'auto-skip migration guardava solo il numero di righe in
+`taxonomy_category`, che è > 0 su ogni fresh install perché la
+tassonomia di default arriva seedata. Ogni nuovo utente veniva
+silenziosamente flaggato come "già onboardato" e non vedeva mai il
+wizard.
 
-Workaround finché il fix non arriva, riattivazione manuale del wizard:
+Adesso `_migrate_set_onboarding_done_for_existing_users` richiede TUTTE
+e 4 le prerequisiti che il wizard stesso configura:
+
+1. `ui_language` configurata
+2. `owner_names` non vuoto
+3. `llm_backend` configurato
+4. almeno una riga in `account`
+
+Qualunque manchi → migration lascia `onboarding_done` non settato →
+wizard renderizzato. Le 4 condizioni combaciano con ciò che
+`_apply_onboarding` scrive a fine wizard, così un user reale che
+upgrada da una versione pre-onboarding salta comunque il wizard in
+silenzio.
+
+Lo stesso fix fa sì che lo step di applicazione del wizard scriva i
+default LLM invisibili (`llm_backend=local_llama_cpp`,
+`llama_cpp_n_gpu_layers=0`, `llama_cpp_n_ctx=4096`,
+`llama_cpp_model_path` da `$LLAMA_CPP_MODEL_PATH` settato dal launcher),
+e il bottone finale "Avvia" è gated sul completamento al 100% del
+download del modello — vedi `_read_model_download_status` in
+`ui/onboarding_page.py`.
+
+Per ri-attivare il wizard a scopo di smoke test manuale:
 
 ```bash
 sqlite3 ~/.spendifai/ledger.db "DELETE FROM user_settings WHERE key='onboarding_done';"

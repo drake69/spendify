@@ -228,16 +228,34 @@ runner and rpmbuild aborted. Now the icon entry is conditional on
 `ICON_PRESENT=1`. The build succeeds either way; if a PNG is provided
 the icon is shipped, otherwise the package goes without one.
 
-### Wizard skipped on a fresh DB (AI-58 — open, P0)
+### Wizard skipped on a fresh DB (AI-58 — fixed)
 
-After running cleanup and reinstalling, the immersive first-run page
-still does not appear: the sidebar renders normally and the Import
-page shows the "owner names missing" warning. Root cause:
-`db/models.py:785-798` auto-sets `onboarding_done=true` whenever
-`taxonomy_category` has rows, but the default Italian taxonomy is
-auto-seeded on every fresh DB, so the flag is always set.
+Previously the auto-skip migration looked only at `taxonomy_category`
+row count, which is non-zero on every fresh install because the default
+taxonomy ships seeded. Every new user was silently flagged as
+"already onboarded" and never saw the wizard.
 
-Until the fix lands, the wizard can be re-triggered manually:
+Now `_migrate_set_onboarding_done_for_existing_users` requires ALL four
+prerequisites the wizard itself would have set:
+
+1. `ui_language` is configured
+2. `owner_names` is non-empty
+3. `llm_backend` is configured
+4. at least one `account` row exists
+
+Any missing → migration leaves `onboarding_done` unset → wizard
+renders. The four conditions match what `_apply_onboarding` writes on
+wizard completion, so a real returning user from a pre-onboarding
+version still gets the silent skip.
+
+The same fix also makes the wizard apply step bake invisible LLM
+defaults (`llm_backend=local_llama_cpp`, `llama_cpp_n_gpu_layers=0`,
+`llama_cpp_n_ctx=4096`, `llama_cpp_model_path` from the launcher's
+`$LLAMA_CPP_MODEL_PATH`), and the final "Start" button gates on the
+model download being 100% complete — see `_read_model_download_status`
+in `ui/onboarding_page.py`.
+
+If you need to re-trigger the wizard for a manual smoke test:
 
 ```bash
 sqlite3 ~/.spendifai/ledger.db "DELETE FROM user_settings WHERE key='onboarding_done';"

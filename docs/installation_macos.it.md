@@ -135,24 +135,37 @@ l'hai installato:
 Se installato dal `.dmg` (`Spendif.ai.app` in `/Applications`), l'app apre una
 **finestra nativa**. Niente Terminale, niente browser.
 
-1. **Splash screen** con barra di progresso.
-2. **Download modello AI** (~2–4 GB in base alla RAM rilevata). Il launcher
-   chiama `core.model_manager.ensure_model_available()` che sceglie il GGUF
-   più grande che entra comodamente nella RAM libera (Qwen2.5-3B,
-   Gemma-3-4B, Qwen2.5-7B o Gemma-3-12B). Il download finisce in
-   `~/.spendifai/models/` e sopravvive a reinstallazioni. **Il primo avvio
-   può richiedere 5–15 minuti** con una connessione casa tipica — è normale.
-3. **`.env` viene scritto** con `LLM_BACKEND=local_llama_cpp`, il path del
-   modello e `SPENDIFAI_DB=sqlite:///~/.spendifai/ledger.db`.
-4. **Streamlit parte dentro la stessa finestra** quando il modello è pronto.
-5. **Wizard di onboarding** (4 step): lingua, titolari, conti, conferma. Il
-   database `~/.spendifai/ledger.db` viene creato al confirm.
-6. **App pronta.** Dai successivi avvii gli step 2–3 sono saltati: splash →
-   wizard (se non ancora completato) o app principale.
+1. **Splash screen** (finestra pywebview con barra di progresso).
+2. **Download modello AI parte in un thread di background** non appena il
+   launcher si avvia. `core.model_manager.ensure_model_available()` sceglie
+   il GGUF più grande che entra nella RAM libera (Qwen2.5-1.5B per 2-4 GB,
+   Qwen2.5-3B per 4-8 GB, Qwen2.5-7B per 8-12 GB, Gemma-3-12B per 12 GB+).
+   Il download finisce in `~/.spendifai/models/` e sopravvive a
+   reinstallazioni. Il progresso viene scritto ad ogni chunk su
+   `~/.spendifai/model_download.status`.
+3. **`.env` viene scritto** in `~/.spendifai/.env` (`LLM_BACKEND=local_llama_cpp`,
+   `SPENDIFAI_DB=sqlite:///~/.spendifai/ledger.db`).
+4. **Streamlit parte dentro la stessa finestra** *in parallelo* al download
+   del modello — il wizard di onboarding è raggiungibile in pochi secondi e
+   il modello continua a scaricarsi in background.
+5. **Wizard di onboarding** (4 step): lingua, titolari, conti, riepilogo.
+   Un banner live in cima ad ogni step mostra "📚 Sto scaricando il cervello
+   di Spendif.ai — 78% · ~3 min" così puoi seguire il progresso mentre
+   compili il wizard.
+6. **Step riepilogo — bottone "Avvia" GATED sul completamento del download.**
+   L'utente può compilare il wizard mentre il modello si scarica. Premendo
+   "Avvia" si attende che il download raggiunga il 100% (il bottone resta
+   disabilitato con indicatore "⏳ Attendi modello AI — 78% · ~3 min") prima
+   di applicare le impostazioni, scrivere `llama_cpp_model_path` nel DB e
+   marcare `onboarding_done`. Garanzia: la pagina Import funziona dal primo
+   click subito dopo la fine del wizard.
+7. **App pronta.** Dai successivi avvii gli step 2-3 sono saltati (modello
+   già su disco) e 5-6 (wizard già completato) e si va diretti all'app.
 
 > Spazio libero richiesto al primo avvio: ~5 GB (modello + stato venv Python).
-> Non chiudere lo splash finché la barra di progresso non sparisce — chiudere
-> a metà download costringe a ripartire da zero al prossimo avvio.
+> Il tempo totale di primo avvio dipende dalla velocità della connessione ma
+> l'utente è produttivo nel wizard in pochi secondi — l'unico "blocco" è sul
+> bottone finale Avvia se finisce il wizard prima del download.
 
 ### Installazione via script (legacy `install.sh`)
 

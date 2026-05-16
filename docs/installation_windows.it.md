@@ -163,22 +163,34 @@ Cosa succede al primo avvio dipende dall'installer usato:
 Se installato da `Spendif.ai.msix` (Start Menu → Spendif.ai), l'app apre una
 **finestra nativa**. Niente finestra dei comandi, niente browser.
 
-1. **Splash screen** con barra di progresso.
-2. **Download modello AI** (~2–4 GB in base alla VRAM/RAM rilevata). Il
-   launcher chiama `core.model_manager.ensure_model_available()` che sceglie
-   il GGUF più grande che entra in VRAM (o RAM se non c'è GPU): Qwen2.5-3B
-   (2.1 GB), Gemma-3-4B, Qwen2.5-7B o Gemma-3-12B (6.8 GB). Scaricato in
-   `%APPDATA%\Spendif.ai\models\`. **Il primo avvio può richiedere 5–15
-   minuti** con una connessione casa tipica — è normale.
-3. **`.env` viene scritto** con `LLM_BACKEND=local_llama_cpp`, il path del
-   modello e `SPENDIFAI_DB=sqlite:///%APPDATA%/Spendif.ai/ledger.db`.
-4. **Streamlit parte dentro la stessa finestra** quando il modello è pronto.
-5. **Wizard di onboarding** (4 step): lingua, titolari, conti, conferma. Il
-   database `%APPDATA%\Spendif.ai\ledger.db` viene creato al confirm.
-6. **App pronta.** Dai successivi avvii gli step 2–3 sono saltati.
+1. **Splash screen** (finestra pywebview con testo di avanzamento).
+2. **Download modello AI parte in un thread di background** non appena il
+   launcher si avvia. `core.model_manager.ensure_model_available()` sceglie
+   il GGUF più grande che entra in VRAM (o RAM se non c'è GPU): Qwen2.5-1.5B
+   (2-4 GB), Qwen2.5-3B (4-8 GB), Qwen2.5-7B (8-12 GB), Gemma-3-12B (12 GB+).
+   Scaricato in `%USERPROFILE%\.spendifai\models\`. Progresso scritto ad ogni
+   chunk su `%USERPROFILE%\.spendifai\model_download.status`.
+3. **`.env` viene scritto** in `%USERPROFILE%\.spendifai\.env`
+   (`LLM_BACKEND=local_llama_cpp`, `SPENDIFAI_DB=sqlite:///...ledger.db`).
+4. **Streamlit parte dentro la stessa finestra** *in parallelo* al download
+   del modello — il wizard appare in pochi secondi e il modello continua a
+   scaricarsi in background.
+5. **Wizard di onboarding** (4 step): lingua, titolari, conti, riepilogo.
+   Un banner live in cima ad ogni step mostra il progresso del download
+   così puoi seguirlo mentre compili il wizard.
+6. **Step riepilogo — bottone "Avvia" GATED sul completamento del download.**
+   Puoi compilare il wizard mentre il modello si scarica. Premendo "Avvia"
+   si attende il 100% (il bottone resta disabilitato con indicatore
+   "⏳ Attendi modello AI — 78% · ~3 min") prima di applicare le
+   impostazioni, scrivere `llama_cpp_model_path` nel DB e marcare
+   `onboarding_done`. Garanzia: la pagina Import funziona dal primo click
+   subito dopo la fine del wizard.
+7. **App pronta.** Dai successivi avvii gli step 2-3 sono saltati (modello
+   già su disco) e 5-6 (wizard già completato).
 
 > Spazio libero richiesto al primo avvio: ~5 GB (modello + stato Python).
-> Non chiudere lo splash finché la barra di progresso non sparisce.
+> L'utente è produttivo nel wizard in pochi secondi — l'unico "blocco" è
+> sul bottone finale Avvia se finisce il wizard prima del download.
 
 ### Installazione via script (legacy `install.ps1`)
 

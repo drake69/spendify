@@ -288,15 +288,14 @@
       <p>Al primo avvio Spendif.ai prepara l'ambiente — è il passaggio più lungo, ma succede solo la prima volta.</p>
 
       <div class="note">
-        <strong>⏱ Tempo richiesto:</strong> 5–15 minuti su connessione casa tipica. Spazio libero richiesto: ~5 GB.<br>
-        Tieni la finestra aperta finché la barra di progresso non scompare.
+        <strong>⏱ Tempo richiesto:</strong> dipende dalla velocità della tua connessione (di solito 5-15 minuti). Spazio libero richiesto: ~5 GB. Buona notizia: <strong>puoi iniziare a compilare il wizard subito</strong>, il modello si scarica in parallelo.
       </div>
 
       <div class="step">
         <div class="step-text">
-          <h3>3a. Splash + download modello AI</h3>
-          <p>Al doppio click si apre una finestra nativa con uno <strong>splash screen</strong> e una barra di progresso. Spendif.ai rileva la RAM/VRAM disponibile e scarica il modello LLM più adatto (Qwen 2.5, Gemma 3, dimensioni da 2 a 8 GB).</p>
-          <p>Il modello finisce in <code>~/.spendifai/models/</code> (macOS/Linux) o <code>%APPDATA%\Spendif.ai\models\</code> (Windows) e sopravvive a reinstallazioni.</p>
+          <h3>3a. Splash + download modello AI (in parallelo)</h3>
+          <p>Al doppio click si apre una finestra nativa con uno <strong>splash screen</strong>. Spendif.ai rileva la RAM/VRAM disponibile e fa partire il download in background del modello LLM più adatto al tuo hardware (Qwen 2.5, Gemma 3, dimensioni da 1 a 8 GB).</p>
+          <p>Il modello finisce in <code>~/.spendifai/models/</code> (macOS/Linux) o <code>%USERPROFILE%\.spendifai\models\</code> (Windows) e sopravvive a reinstallazioni. <strong>Il wizard di configurazione appare in pochi secondi</strong>, senza attendere la fine del download.</p>
         </div>
         <div class="step-img">
           <!-- PLACEHOLDER: splash screen with progress -->
@@ -312,12 +311,12 @@
       <div class="step reverse">
         <div class="step-text">
           <h3>3b. Wizard di onboarding — 4 step</h3>
-          <p>Quando il modello è pronto, lo splash lascia spazio al <strong>wizard di configurazione</strong>:</p>
+          <p>Mentre il modello continua a scaricarsi in background, il <strong>wizard di configurazione</strong> ti guida in 4 step:</p>
           <p>1. <strong>Lingua</strong> — tassonomia, formato date e separatori numerici.<br>
              2. <strong>Titolari</strong> — il tuo nome e le varianti usate dalla banca.<br>
              3. <strong>Conti</strong> — conto corrente, carte, contanti.<br>
-             4. <strong>Conferma</strong> — tutto viene scritto solo qui, nessuna persistenza parziale.</p>
-          <p>Nessuna scelta è definitiva: puoi cambiare tutto da <em>Impostazioni</em> in seguito.</p>
+             4. <strong>Riepilogo + Avvia</strong> — tutto viene scritto solo qui, nessuna persistenza parziale.</p>
+          <p>Su ogni step un <strong>banner mostra il progresso del download</strong> (es. "📚 78% · ~3 min"). Sul riepilogo finale il bottone <em>Avvia</em> resta disabilitato finché il modello non è al 100% — così quando entri nell'app Import è subito utilizzabile. Tutto è cambiabile da <em>Impostazioni</em> in seguito.</p>
         </div>
         <div class="step-img">
           <!-- PLACEHOLDER: onboarding wizard step 1 -->

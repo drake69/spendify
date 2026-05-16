@@ -186,22 +186,33 @@ What happens at first launch depends on which installer you used:
 When installed from `Spendif.ai.msix` (Start Menu → Spendif.ai), the app
 opens a **native window**. No command window, no browser tab.
 
-1. **Splash screen** with a progress bar.
-2. **AI model download** (~2–4 GB depending on detected VRAM/RAM). The
-   bundled launcher calls `core.model_manager.ensure_model_available()` which
-   picks the largest GGUF that fits in VRAM (or RAM if no GPU): Qwen2.5-3B
-   (2.1 GB), Gemma-3-4B, Qwen2.5-7B, or Gemma-3-12B (6.8 GB). Downloaded to
-   `%APPDATA%\Spendif.ai\models\`. **First launch can take 5–15 minutes** on
-   a typical home connection — this is normal.
-3. **`.env` is written** with `LLM_BACKEND=local_llama_cpp`, the model path,
-   and `SPENDIFAI_DB=sqlite:///%APPDATA%/Spendif.ai/ledger.db`.
-4. **Streamlit boots inside the same window** once the model is ready.
-5. **Onboarding wizard** (4 steps): language, holders, accounts, confirm.
-   Database `%APPDATA%\Spendif.ai\ledger.db` is created on confirm.
-6. **App is ready.** Subsequent launches skip steps 2–3.
+1. **Splash screen** (pywebview window with progress text).
+2. **AI model download starts in a background thread** as soon as the
+   launcher boots. `core.model_manager.ensure_model_available()` picks the
+   largest GGUF that fits in VRAM (or RAM if no GPU): Qwen2.5-1.5B (2-4 GB),
+   Qwen2.5-3B (4-8 GB), Qwen2.5-7B (8-12 GB), Gemma-3-12B (12 GB+). Downloaded
+   to `%USERPROFILE%\.spendifai\models\`. Progress is written every chunk to
+   `%USERPROFILE%\.spendifai\model_download.status`.
+3. **`.env` is written** to `%USERPROFILE%\.spendifai\.env`
+   (`LLM_BACKEND=local_llama_cpp`, `SPENDIFAI_DB=sqlite:///...ledger.db`).
+4. **Streamlit boots inside the same window** *in parallel* with the model
+   download — the onboarding wizard appears within seconds and the model
+   continues downloading in the background.
+5. **Onboarding wizard** (4 steps): language, holders, accounts, summary.
+   A live banner at the top of every step shows download progress so you
+   can track it while filling in the form.
+6. **Summary step — Start button is GATED on download completion.** You
+   can fill in the wizard while the model streams in. Pressing "Start"
+   waits until 100% (the button stays disabled with a "⏳ Waiting for AI
+   model — 78% · ~3 min" indicator) before applying settings, baking
+   `llama_cpp_model_path` into the DB, and marking `onboarding_done`. This
+   guarantees the Import page works the moment the wizard ends.
+7. **App is ready.** Subsequent launches skip steps 2-3 (model already on
+   disk) and 5-6 (wizard already done).
 
 > Free disk space required at first launch: ~5 GB (model + Python state).
-> Keep the splash window open until the progress bar disappears.
+> The user is productive in the wizard within seconds — they only "block"
+> on the final Start button if they finish the wizard before the download.
 
 ### Script install (legacy `install.ps1`)
 
