@@ -214,7 +214,7 @@ cat > "${INSTALL_ROOT}/launch.sh" <<'LAUNCH'
 #  /opt/spendifai contains read-only source code; nothing user-specific lives
 #  there. All per-user state goes in ~/.spendifai/.
 # =============================================================================
-set -e
+set -eo pipefail        # pipefail so `... | tail` stops swallowing uv errors
 
 APP_DIR="/opt/spendifai"
 USER_HOME_DIR="$HOME/.spendifai"
@@ -240,6 +240,7 @@ echo "uv: $UV"
 # ── 2. Create user venv on first launch ─────────────────────────────────────
 if [ ! -d "$VENV_DIR" ]; then
   echo "First launch — creating $VENV_DIR"
+  echo "This compiles llama-cpp-python natively (3-8 min on arm64; faster on amd64)."
 
   # Detect NVIDIA GPU (best-effort, falls back silently)
   if command -v nvidia-smi &>/dev/null; then
@@ -247,13 +248,23 @@ if [ ! -d "$VENV_DIR" ]; then
     export FORCE_CMAKE=1
   fi
 
-  # Use the project pyproject.toml but point uv at a venv outside /opt
+  # Use the project pyproject.toml but point uv at a venv outside /opt.
+  # We do NOT pass --quiet — silent compile feels like a hung script and the
+  # `set -o pipefail` above would only help if we piped at all. Verbose stderr
+  # makes uv errors visible in launch.log when something breaks.
   cd "$APP_DIR"
-  UV_PROJECT_ENVIRONMENT="$VENV_DIR" "$UV" sync --extra desktop --quiet 2>&1 | tail -5 || {
-    echo "GPU build failed, retrying CPU-only"
+  if ! UV_PROJECT_ENVIRONMENT="$VENV_DIR" "$UV" sync --extra desktop; then
+    echo "GPU build failed (or first attempt errored), retrying CPU-only..."
     unset CMAKE_ARGS FORCE_CMAKE
-    UV_PROJECT_ENVIRONMENT="$VENV_DIR" "$UV" sync --extra desktop --quiet
-  }
+    rm -rf "$VENV_DIR"        # nuke a possibly-partial venv before retry
+    UV_PROJECT_ENVIRONMENT="$VENV_DIR" "$UV" sync --extra desktop
+  fi
+
+  if [ ! -x "$VENV_DIR/bin/python" ]; then
+    echo "FATAL: venv created but $VENV_DIR/bin/python is missing."
+    echo "Check this log and ~/.spendifai/launch.log for uv errors."
+    exit 1
+  fi
   echo "venv ready: $VENV_DIR"
 fi
 
