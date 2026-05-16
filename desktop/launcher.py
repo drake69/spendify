@@ -440,13 +440,19 @@ def main() -> None:
 
     print(f"main(): splash HTML = {_SPLASH_HTML} (exists: {_SPLASH_HTML.exists()})", flush=True)
 
-    # Create the native window showing the splash screen
+    # Create the native window showing the splash screen.
+    # `maximized=True` makes it fill the available screen area on every OS
+    # (minus the menu bar / dock) so even on small laptops the wizard's
+    # "Next" button is always visible without scrolling. Streamlit's
+    # default page layout is tall — at 900 px the action row was below
+    # the fold on a 16" MacBook Pro at native scaling.
     window = webview.create_window(
         title="Spendif.ai",
         url=str(_SPLASH_HTML),
         width=1400,
         height=900,
         min_size=(1024, 700),
+        maximized=True,
     )
     print("main(): pywebview window created", flush=True)
 
@@ -494,6 +500,51 @@ def main() -> None:
             print(f"_on_shown: waiting for port {port}...", flush=True)
             if _wait_for_port(port):
                 print(f"_on_shown: Streamlit ready, navigating window", flush=True)
+                # Hook the post-navigation event ONCE: as soon as Streamlit's
+                # initial HTML lands, inject a branded overlay on top of it
+                # and poll for the wizard root. This hides Streamlit's own
+                # "Please wait, running script" intermediate state so the
+                # user never sees the "double splash" jank (splash.html →
+                # blank Streamlit shell → wizard).
+                _injected = {"done": False}
+
+                def _on_loaded() -> None:
+                    if _injected["done"]:
+                        return
+                    _injected["done"] = True
+                    window.evaluate_js("""
+                        (function() {
+                            if (document.getElementById('__sai_overlay')) return;
+                            const o = document.createElement('div');
+                            o.id = '__sai_overlay';
+                            o.style.cssText = 'position:fixed;inset:0;background:#0e1117;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#fafafa;transition:opacity .4s;';
+                            o.innerHTML = '<h1 style="margin:0 0 8px;font-size:2.4rem;font-weight:700;">Spendif.ai</h1><p style="margin:0;opacity:.7;">Caricamento dell\\'interfaccia…</p>';
+                            document.body.appendChild(o);
+                            // Poll for Streamlit's app root to acquire real children
+                            // (the first script render). Cap at 15 s as a safety net.
+                            let attempts = 0;
+                            const t = setInterval(function() {
+                                attempts++;
+                                const app = document.querySelector('[data-testid="stApp"]') || document.querySelector('.stApp');
+                                if (app && app.querySelectorAll('h1, h2, h3, button, [data-testid="stMarkdown"]').length > 0) {
+                                    clearInterval(t);
+                                    o.style.opacity = '0';
+                                    setTimeout(function() { o.remove(); }, 450);
+                                } else if (attempts > 75) {
+                                    clearInterval(t);
+                                    o.remove();
+                                }
+                            }, 200);
+                        })();
+                    """)
+
+                try:
+                    window.events.loaded += _on_loaded
+                except Exception as exc:
+                    # Older pywebview versions may not expose `.events`; fall
+                    # back gracefully — UX gets the legacy double-flash but
+                    # the app still works.
+                    print(f"_on_shown: overlay hook unavailable: {exc!r}", flush=True)
                 window.load_url(f"http://127.0.0.1:{port}")
             else:
                 print("_on_shown: Streamlit did not respond within 30s", flush=True)

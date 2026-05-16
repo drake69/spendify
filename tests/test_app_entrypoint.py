@@ -78,7 +78,12 @@ class TestStaleJobReset:
 class TestOnboardingGate:
     """Verify onboarding detection (lines 80-85)."""
 
-    def test_fresh_db_onboarding_auto_set(self, tmp_path):
+    def test_fresh_db_onboarding_NOT_auto_set(self, tmp_path):
+        """Regression for #AI-58: a brand-new DB must NOT be flagged as
+        already-onboarded just because the migration chain seeded the
+        default taxonomy. The auto-skip migration now needs all four
+        wizard prerequisites (ui_language, owner_names, llm_backend,
+        ≥1 account) — none are set on a fresh DB."""
         from services.settings_service import SettingsService
 
         db_path = tmp_path / "test.db"
@@ -86,9 +91,7 @@ class TestOnboardingGate:
         create_tables(eng)
 
         svc = SettingsService(eng)
-        # create_tables seeds taxonomy defaults + sets onboarding_done
-        # for DBs that already have taxonomy rows (migration logic)
-        assert svc.is_onboarding_done() is True
+        assert svc.is_onboarding_done() is False
 
     def test_after_onboarding_done(self, tmp_path):
         from services.settings_service import SettingsService
