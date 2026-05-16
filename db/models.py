@@ -775,12 +775,15 @@ def _migrate_add_import_batch_tracking(engine) -> None:
 
 
 def _migrate_set_onboarding_done_for_existing_users(engine) -> None:
-    """Mark onboarding as complete for DBs that already have taxonomy data.
+    """Mark onboarding as complete for DBs that already have user-imported data.
 
-    Prevents existing users from seeing the onboarding wizard after upgrading.
-    Runs after all other migrations so taxonomy_category is guaranteed to exist.
-    Condition: taxonomy_category has rows (= app was already set up before onboarding
-    was introduced).  Does nothing if onboarding_done is already set.
+    Prevents existing users from seeing the onboarding wizard after upgrading
+    to a version that introduces it. The signal is "the user has actually used
+    the app", which means at least one imported transaction — NOT the presence
+    of taxonomy rows, because the default taxonomy is auto-seeded on every
+    fresh install and would mark every new user as "already onboarded" (#AI-58).
+
+    Does nothing if onboarding_done is already set.
     """
     from sqlalchemy import text as _text
     with engine.connect() as conn:
@@ -789,7 +792,9 @@ def _migrate_set_onboarding_done_for_existing_users(engine) -> None:
         )).scalar()
         if existing is not None:
             return  # already decided — don't touch
-        count = conn.execute(_text("SELECT COUNT(*) FROM taxonomy_category")).scalar()
+        # Imported transactions = real prior usage. Default taxonomy seed does
+        # NOT count: it ships with every fresh install.
+        count = conn.execute(_text('SELECT COUNT(*) FROM "transaction"')).scalar()
         if count and count > 0:
             conn.execute(_text(
                 "INSERT OR REPLACE INTO user_settings (key, value) "

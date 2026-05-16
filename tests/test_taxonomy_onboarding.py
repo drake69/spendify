@@ -233,8 +233,8 @@ class TestOnboardingFlag:
 # ── Auto-skip migration for existing users ────────────────────────────────────
 
 class TestAutoSkipMigration:
-    def test_existing_db_with_taxonomy_gets_onboarding_done(self):
-        """Simulate an existing installation: taxonomy populated before migration runs."""
+    def test_db_with_imported_transactions_gets_onboarding_done(self):
+        """An existing user (has real imported transactions) skips the wizard."""
         from sqlalchemy import create_engine as _ce
         from db.models import (
             Base,
@@ -247,14 +247,45 @@ class TestAutoSkipMigration:
         Base.metadata.create_all(eng)
         _migrate_add_user_settings(eng)
         _migrate_add_taxonomy_default(eng)
-        _migrate_add_taxonomy(eng)          # seeds taxonomy_category
+        _migrate_add_taxonomy(eng)
+        # Insert one fake transaction to simulate a user who has actually used the app.
+        with eng.connect() as conn:
+            conn.execute(text(
+                "INSERT INTO \"transaction\" (id, date, amount, description, source_file) "
+                "VALUES ('abc123', '2025-01-01', 10.0, 'past usage', 'legacy.csv')"
+            ))
+            conn.commit()
         _migrate_set_onboarding_done_for_existing_users(eng)
 
         svc = SettingsService(eng)
         assert svc.is_onboarding_done() is True
 
+    def test_fresh_db_with_only_seeded_taxonomy_does_not_skip_onboarding(self):
+        """Regression for #AI-58: default taxonomy seed must not be mistaken
+        for a returning user. Fresh installs always have taxonomy_category > 0
+        because _migrate_add_taxonomy seeds defaults; without this guard every
+        first-time user was silently skipped past the wizard."""
+        from sqlalchemy import create_engine as _ce
+        from db.models import (
+            Base,
+            _migrate_add_user_settings,
+            _migrate_add_taxonomy_default,
+            _migrate_add_taxonomy,
+            _migrate_set_onboarding_done_for_existing_users,
+        )
+        eng = _ce("sqlite:///:memory:", connect_args={"check_same_thread": False})
+        Base.metadata.create_all(eng)
+        _migrate_add_user_settings(eng)
+        _migrate_add_taxonomy_default(eng)
+        _migrate_add_taxonomy(eng)          # seeds taxonomy_category — fresh install
+        # NO transactions inserted — this is a brand-new user.
+        _migrate_set_onboarding_done_for_existing_users(eng)
+
+        svc = SettingsService(eng)
+        assert svc.is_onboarding_done() is False
+
     def test_empty_db_does_not_get_onboarding_done(self):
-        """A fresh DB with no taxonomy rows must NOT get onboarding_done=true."""
+        """A fresh DB with no transactions and no seed must NOT mark onboarding_done."""
         from sqlalchemy import create_engine as _ce
         from db.models import (
             Base,
@@ -266,13 +297,6 @@ class TestAutoSkipMigration:
         Base.metadata.create_all(eng)
         _migrate_add_user_settings(eng)
         _migrate_add_taxonomy_default(eng)
-        # NOTE: _migrate_add_taxonomy NOT called → taxonomy_category is empty
-        with eng.connect() as conn:
-            conn.execute(text(
-                "CREATE TABLE IF NOT EXISTS taxonomy_category "
-                "(id INTEGER PRIMARY KEY, name TEXT, type TEXT, sort_order INTEGER)"
-            ))
-            conn.commit()
         _migrate_set_onboarding_done_for_existing_users(eng)
 
         svc = SettingsService(eng)
