@@ -1404,6 +1404,36 @@ def get_default_taxonomy_languages(session: Session) -> list[str]:
     return [r[0] for r in rows]
 
 
+def apply_taxonomy_overrides(
+    session: Session,
+    renames: dict[str, str],
+    deletions: list[str],
+) -> None:
+    """Apply onboarding-wizard category overrides on top of a seeded taxonomy.
+
+    ``renames`` maps original category name → new name.
+    ``deletions`` lists original category names to drop (subcategories
+    cascade via the ON DELETE CASCADE FK).
+    """
+    from db.models import TaxonomyCategory
+
+    # Deletions first — if a name is both renamed and deleted, deletion wins.
+    if deletions:
+        session.query(TaxonomyCategory).filter(
+            TaxonomyCategory.name.in_(deletions)
+        ).delete(synchronize_session=False)
+
+    # Then renames — but only for categories still alive.
+    for original, new in renames.items():
+        if not new or new == original:
+            continue
+        session.query(TaxonomyCategory).filter(
+            TaxonomyCategory.name == original
+        ).update({"name": new}, synchronize_session=False)
+
+    session.commit()
+
+
 def seed_user_taxonomy_from_default(session: Session, language: str) -> int:
     """Replace the user taxonomy with the built-in template for *language*.
 

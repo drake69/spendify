@@ -63,6 +63,12 @@ _K_LANG     = "_ob_lang"
 _K_COUNTRY  = "_ob_country"
 _K_NAMES    = "_ob_owner_names"
 _K_ACCOUNTS = "_ob_accounts"
+# Taxonomy edits: dict {"expenses": [{"original": str, "name": str, "enabled": bool}],
+#                       "income":   [{"original": str, "name": str, "enabled": bool}],
+#                       "lang":     str}  (lang keeps the snapshot tied to the language
+# that was current when the preview was seeded — invalidates the cache if the user
+# goes back and changes language).
+_K_TAXONOMY = "_ob_taxonomy_edits"
 
 
 def _account_types() -> dict[str, str]:
@@ -398,42 +404,86 @@ def _step2_accounts(lang: str) -> None:
             st.rerun()
 
 
-def _step3_taxonomy(cfg_svc: SettingsService, lang: str) -> None:
-    """Step 3 — Default taxonomy review.
+def _seed_taxonomy_edits(cfg_svc: SettingsService, lang: str) -> dict:
+    """Seed the editable taxonomy snapshot from the default template for *lang*.
 
-    The wizard auto-applies the default taxonomy for the chosen language
-    on confirm. Show the user what they'll get so they can decide whether
-    to keep it or customise it later from Settings → Taxonomy. We deliberately
-    do not let them edit it inline here: editing taxonomy is a non-trivial
-    bulk operation (rename / re-parent subcategories, etc.) and that page
-    already exists as Settings → Taxonomy. Forcing a second editor into the
-    onboarding wizard would just duplicate complex UI for a step most users
-    will keep as-is.
+    Returns a dict with two lists (expenses / income), each item shaped:
+        {"original": str, "name": str, "enabled": bool}
+    ``original`` is the read-only key we use later to match the row against
+    the default seed when applying customisations. ``name`` is the (possibly
+    renamed) display name. ``enabled`` is False when the user has unchecked
+    the category — those rows are deleted from the seeded user taxonomy on
+    confirm.
+    """
+    preview = cfg_svc.get_default_taxonomy_preview(lang)
+    return {
+        "lang": lang,
+        "expenses": [
+            {"original": c, "name": c, "enabled": True}
+            for c in preview.get("expenses", [])
+        ],
+        "income": [
+            {"original": c, "name": c, "enabled": True}
+            for c in preview.get("income", [])
+        ],
+    }
+
+
+def _step3_taxonomy(cfg_svc: SettingsService, lang: str) -> None:
+    """Step 3 — Review and edit the default taxonomy.
+
+    Lightweight editor: per-category rename + enable/disable. We do NOT
+    surface subcategory editing here — too much UI for a wizard, and the
+    Settings → Taxonomy page already covers the full editor.
+
+    On Next, the edits live in ``st.session_state[_K_TAXONOMY]`` and the
+    confirm step's apply call replays them on top of the default seed.
     """
     st.subheader(t("onboarding.step_taxonomy.title"))
     st.caption(t("onboarding.step_taxonomy.caption"))
 
-    preview = cfg_svc.get_default_taxonomy_preview(lang)
-    expenses: list[str] = preview.get("expenses", [])
-    income: list[str] = preview.get("income", [])
+    # Re-seed the snapshot whenever the user came back and switched language.
+    edits = st.session_state.get(_K_TAXONOMY)
+    if edits is None or edits.get("lang") != lang:
+        edits = _seed_taxonomy_edits(cfg_svc, lang)
+        st.session_state[_K_TAXONOMY] = edits
+
+    def _render_group(title_icon: str, title_key: str, rows: list[dict], key_prefix: str):
+        n_enabled = sum(1 for r in rows if r["enabled"])
+        st.markdown(
+            f"**{title_icon} {t(title_key)}** "
+            f"({n_enabled} / {len(rows)})"
+        )
+        for idx, row in enumerate(rows):
+            col_chk, col_name = st.columns([1, 5], vertical_alignment="center")
+            row["enabled"] = col_chk.checkbox(
+                "✓",
+                value=row["enabled"],
+                key=f"{key_prefix}_chk_{idx}",
+                label_visibility="collapsed",
+            )
+            row["name"] = col_name.text_input(
+                "",
+                value=row["name"],
+                key=f"{key_prefix}_name_{idx}",
+                label_visibility="collapsed",
+                disabled=not row["enabled"],
+            )
 
     col_exp, col_inc = st.columns(2)
     with col_exp:
-        st.markdown(
-            f"**💸 {t('onboarding.step_taxonomy.expenses')}** "
-            f"({len(expenses)})"
-        )
-        for cat in expenses:
-            st.markdown(f"- {cat}")
+        _render_group("💸", "onboarding.step_taxonomy.expenses",
+                      edits["expenses"], "_ob_tax_exp")
     with col_inc:
-        st.markdown(
-            f"**💰 {t('onboarding.step_taxonomy.income')}** "
-            f"({len(income)})"
-        )
-        for cat in income:
-            st.markdown(f"- {cat}")
+        _render_group("💰", "onboarding.step_taxonomy.income",
+                      edits["income"], "_ob_tax_inc")
 
-    st.info(t("onboarding.step_taxonomy.customize_later"), icon="🛠️")
+    st.caption(t("onboarding.step_taxonomy.customize_later"))
+
+    # Reset link — restores the default for this language.
+    if st.button(t("onboarding.step_taxonomy.reset"), key="_ob_tax_reset"):
+        st.session_state[_K_TAXONOMY] = _seed_taxonomy_edits(cfg_svc, lang)
+        st.rerun()
 
     st.divider()
     col_back, _, col_next = st.columns([1, 2, 1])
@@ -576,8 +626,25 @@ def _apply_onboarding(
 ) -> None:
     """Apply all onboarding settings in one shot and mark as done."""
     with st.spinner(t("onboarding.step3.applying")):
-        # 1. Taxonomy (also sets description_language)
+        # 1. Taxonomy: default seed + user's wizard customisations (renames +
+        #    disables). apply_default_taxonomy is destructive (wipes
+        #    taxonomy_category / _subcategory first), so we always run it then
+        #    replay the edits on top.
         n_cats = cfg_svc.apply_default_taxonomy(lang)
+        taxonomy_edits = st.session_state.get(_K_TAXONOMY) or {}
+        if taxonomy_edits.get("lang") == lang:
+            renames: dict[str, str] = {}
+            deletions: list[str] = []
+            for group in ("expenses", "income"):
+                for row in taxonomy_edits.get(group, []):
+                    orig = row.get("original", "")
+                    new = (row.get("name") or "").strip()
+                    if not row.get("enabled", True):
+                        deletions.append(orig)
+                    elif new and new != orig:
+                        renames[orig] = new
+            if renames or deletions:
+                cfg_svc.apply_taxonomy_overrides(renames=renames, deletions=deletions)
 
         # 2. Locale + owner settings + UI language + country + invisible LLM defaults.
         # The LLM defaults are part of onboarding even though the wizard does not

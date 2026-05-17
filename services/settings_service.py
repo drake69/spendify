@@ -176,6 +176,26 @@ class SettingsService:
         self.set_bulk({"description_language": language})
         return n
 
+    def apply_taxonomy_overrides(
+        self,
+        renames: dict[str, str] | None = None,
+        deletions: list[str] | None = None,
+    ) -> None:
+        """Apply category-level customisations on top of the seeded taxonomy.
+
+        ``renames`` maps original category name → new name.
+        ``deletions`` lists original category names to drop (cascades to
+        their subcategories).
+
+        Used by the onboarding wizard's Taxonomy step to let the user
+        tweak the default template without rebuilding the full taxonomy
+        editor inside the wizard.
+        """
+        if not renames and not deletions:
+            return
+        with self._session() as s:
+            repository.apply_taxonomy_overrides(s, renames or {}, deletions or [])
+
     def is_onboarding_done(self) -> bool:
         """Return True if the user has completed onboarding."""
         with self._session() as s:

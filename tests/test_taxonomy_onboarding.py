@@ -230,6 +230,59 @@ class TestOnboardingFlag:
         assert svc.is_onboarding_done() is True
 
 
+# ── Apply taxonomy overrides (wizard step 3 — rename + disable) ───────────────
+
+class TestApplyTaxonomyOverrides:
+    """SettingsService.apply_taxonomy_overrides is used by the onboarding
+    Taxonomy step to let the user tweak the default template without
+    rebuilding the full taxonomy editor inside the wizard."""
+
+    def _count_named(self, engine, name: str) -> int:
+        with engine.connect() as conn:
+            return conn.execute(text(
+                "SELECT COUNT(*) FROM taxonomy_category WHERE name = :n"
+            ), {"n": name}).scalar() or 0
+
+    def _total(self, engine) -> int:
+        with engine.connect() as conn:
+            return conn.execute(text("SELECT COUNT(*) FROM taxonomy_category")).scalar() or 0
+
+    def test_no_overrides_is_a_noop(self, engine, svc):
+        svc.apply_default_taxonomy("it")
+        n_before = self._total(engine)
+        svc.apply_taxonomy_overrides()
+        assert self._total(engine) == n_before
+
+    def test_deletion_removes_category(self, engine, svc):
+        svc.apply_default_taxonomy("it")
+        assert self._count_named(engine, "Trasporti") == 1
+        n_before = self._total(engine)
+        svc.apply_taxonomy_overrides(deletions=["Trasporti"])
+        assert self._count_named(engine, "Trasporti") == 0
+        assert self._total(engine) == n_before - 1
+
+    def test_rename_changes_name(self, engine, svc):
+        svc.apply_default_taxonomy("it")
+        svc.apply_taxonomy_overrides(renames={"Casa": "Abitazione"})
+        assert self._count_named(engine, "Casa") == 0
+        assert self._count_named(engine, "Abitazione") == 1
+
+    def test_deletion_wins_over_rename_on_same_category(self, engine, svc):
+        svc.apply_default_taxonomy("it")
+        svc.apply_taxonomy_overrides(
+            renames={"Casa": "Abitazione"},
+            deletions=["Casa"],
+        )
+        assert self._count_named(engine, "Casa") == 0
+        assert self._count_named(engine, "Abitazione") == 0
+
+    def test_rename_to_empty_or_same_is_ignored(self, engine, svc):
+        svc.apply_default_taxonomy("it")
+        svc.apply_taxonomy_overrides(renames={"Casa": "", "Trasporti": "Trasporti"})
+        assert self._count_named(engine, "Casa") == 1
+        assert self._count_named(engine, "Trasporti") == 1
+
+
 # ── Auto-skip migration for existing users ────────────────────────────────────
 
 class TestAutoSkipMigration:
