@@ -1408,28 +1408,79 @@ def apply_taxonomy_overrides(
     session: Session,
     renames: dict[str, str],
     deletions: list[str],
+    sub_renames: dict[tuple[str, str], str] | None = None,
+    sub_deletions: list[tuple[str, str]] | None = None,
 ) -> None:
-    """Apply onboarding-wizard category overrides on top of a seeded taxonomy.
+    """Apply onboarding-wizard taxonomy overrides on top of a seeded taxonomy.
 
-    ``renames`` maps original category name → new name.
-    ``deletions`` lists original category names to drop (subcategories
-    cascade via the ON DELETE CASCADE FK).
+    Category-level:
+      * ``renames`` maps original category name → new name.
+      * ``deletions`` lists original category names to drop (subcategories
+        cascade via the FK).
+
+    Subcategory-level:
+      * ``sub_renames`` maps ``(parent_original, sub_original)`` → new sub name.
+      * ``sub_deletions`` lists ``(parent_original, sub_original)`` to drop.
+
+    Order: category deletions first (cascades to subcategories of the deleted
+    parents), category renames second, then subcategory deletions, then
+    subcategory renames. This keeps the lookups deterministic — subcategory
+    edits scope themselves by the ORIGINAL parent name even after a parent
+    rename has been applied.
     """
-    from db.models import TaxonomyCategory
+    from db.models import TaxonomyCategory, TaxonomySubcategory
 
-    # Deletions first — if a name is both renamed and deleted, deletion wins.
+    # Resolve original parent name → current TaxonomyCategory rows BEFORE any
+    # change, so subcategory edits below can still target by original parent
+    # even after category renames.
+    parent_by_original = {
+        row.name: row
+        for row in session.query(TaxonomyCategory).all()
+    }
+
+    # ── 1. Category deletions (deletion wins over rename on same name)
     if deletions:
+        deleted = set(deletions)
         session.query(TaxonomyCategory).filter(
-            TaxonomyCategory.name.in_(deletions)
+            TaxonomyCategory.name.in_(deleted)
         ).delete(synchronize_session=False)
+        # Keep the local map in sync so we don't try to edit subcats of a
+        # category that's already gone.
+        for name in list(parent_by_original):
+            if name in deleted:
+                parent_by_original.pop(name)
 
-    # Then renames — but only for categories still alive.
-    for original, new in renames.items():
+    # ── 2. Category renames
+    for original, new in (renames or {}).items():
         if not new or new == original:
+            continue
+        if original not in parent_by_original:
             continue
         session.query(TaxonomyCategory).filter(
             TaxonomyCategory.name == original
         ).update({"name": new}, synchronize_session=False)
+
+    # ── 3. Subcategory deletions
+    for parent_orig, sub_orig in (sub_deletions or []):
+        cat = parent_by_original.get(parent_orig)
+        if cat is None:
+            continue  # parent was deleted — nothing to clean up
+        session.query(TaxonomySubcategory).filter(
+            TaxonomySubcategory.category_id == cat.id,
+            TaxonomySubcategory.name == sub_orig,
+        ).delete(synchronize_session=False)
+
+    # ── 4. Subcategory renames
+    for (parent_orig, sub_orig), sub_new in (sub_renames or {}).items():
+        if not sub_new or sub_new == sub_orig:
+            continue
+        cat = parent_by_original.get(parent_orig)
+        if cat is None:
+            continue
+        session.query(TaxonomySubcategory).filter(
+            TaxonomySubcategory.category_id == cat.id,
+            TaxonomySubcategory.name == sub_orig,
+        ).update({"name": sub_new}, synchronize_session=False)
 
     session.commit()
 

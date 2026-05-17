@@ -282,6 +282,51 @@ class TestApplyTaxonomyOverrides:
         assert self._count_named(engine, "Casa") == 1
         assert self._count_named(engine, "Trasporti") == 1
 
+    def test_subcategory_rename_uses_original_parent_name(self, engine, svc):
+        """Subcategory edits key by the ORIGINAL parent name even after the
+        parent itself is renamed — otherwise the user has to know that renames
+        happen first and adjust their keys, which is too leaky an abstraction
+        to leak into the wizard's edit dict."""
+        svc.apply_default_taxonomy("it")
+        svc.apply_taxonomy_overrides(
+            renames={"Casa": "Abitazione"},
+            sub_renames={("Casa", "Mutuo / Affitto"): "Mutuo"},
+        )
+        with engine.connect() as conn:
+            subs = conn.execute(text(
+                "SELECT s.name FROM taxonomy_subcategory s "
+                "JOIN taxonomy_category c ON s.category_id = c.id "
+                "WHERE c.name = :n ORDER BY s.sort_order"
+            ), {"n": "Abitazione"}).fetchall()
+        names = [r[0] for r in subs]
+        assert "Mutuo" in names
+        assert "Mutuo / Affitto" not in names
+
+    def test_subcategory_deletion(self, engine, svc):
+        svc.apply_default_taxonomy("it")
+        svc.apply_taxonomy_overrides(
+            sub_deletions=[("Casa", "Condominio")],
+        )
+        with engine.connect() as conn:
+            still_there = conn.execute(text(
+                "SELECT COUNT(*) FROM taxonomy_subcategory s "
+                "JOIN taxonomy_category c ON s.category_id = c.id "
+                "WHERE c.name = 'Casa' AND s.name = 'Condominio'"
+            )).scalar()
+        assert still_there == 0
+
+    def test_subcategory_edits_skip_deleted_parents(self, engine, svc):
+        """If the user disables the whole Casa category, the subcategory
+        edits scoped to ('Casa', ...) become silent no-ops — they would
+        otherwise raise (parent not found in the lookup map)."""
+        svc.apply_default_taxonomy("it")
+        # Should not raise
+        svc.apply_taxonomy_overrides(
+            deletions=["Casa"],
+            sub_renames={("Casa", "Mutuo / Affitto"): "Mutuo"},
+        )
+        assert self._count_named(engine, "Casa") == 0
+
 
 # ── Auto-skip migration for existing users ────────────────────────────────────
 

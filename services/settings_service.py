@@ -180,21 +180,31 @@ class SettingsService:
         self,
         renames: dict[str, str] | None = None,
         deletions: list[str] | None = None,
+        sub_renames: dict[tuple[str, str], str] | None = None,
+        sub_deletions: list[tuple[str, str]] | None = None,
     ) -> None:
-        """Apply category-level customisations on top of the seeded taxonomy.
+        """Apply category- and subcategory-level customisations on top of the
+        seeded taxonomy.
 
-        ``renames`` maps original category name → new name.
-        ``deletions`` lists original category names to drop (cascades to
-        their subcategories).
+        ``renames`` and ``deletions`` target categories. ``sub_renames`` and
+        ``sub_deletions`` target subcategories and key them by the tuple
+        ``(parent_original_name, subcategory_original_name)`` so subcategories
+        with the same display name under different parents stay distinct.
 
         Used by the onboarding wizard's Taxonomy step to let the user
         tweak the default template without rebuilding the full taxonomy
         editor inside the wizard.
         """
-        if not renames and not deletions:
+        if not (renames or deletions or sub_renames or sub_deletions):
             return
         with self._session() as s:
-            repository.apply_taxonomy_overrides(s, renames or {}, deletions or [])
+            repository.apply_taxonomy_overrides(
+                s,
+                renames or {},
+                deletions or [],
+                sub_renames or {},
+                sub_deletions or [],
+            )
 
     def is_onboarding_done(self) -> bool:
         """Return True if the user has completed onboarding."""
@@ -214,4 +224,29 @@ class SettingsService:
         return {
             "expenses": [e["category"] for e in data.get("expenses", [])],
             "income":   [e["category"] for e in data.get("income", [])],
+        }
+
+    def get_default_taxonomy_full_preview(self, language: str) -> dict:
+        """Return the full 3-level taxonomy template for *language*.
+
+        Shape:
+            {
+              "expenses": [{"category": str, "subcategories": [str, ...]}, ...],
+              "income":   [{"category": str, "subcategories": [str, ...]}, ...]
+            }
+
+        Used by the onboarding wizard's Taxonomy editor to render categories
+        with their subcategories side-by-side.
+        """
+        from db.taxonomy_defaults import TAXONOMY_DEFAULTS
+        data = TAXONOMY_DEFAULTS.get(language, TAXONOMY_DEFAULTS.get("it", {}))
+        return {
+            "expenses": [
+                {"category": e["category"], "subcategories": list(e.get("subcategories", []))}
+                for e in data.get("expenses", [])
+            ],
+            "income": [
+                {"category": e["category"], "subcategories": list(e.get("subcategories", []))}
+                for e in data.get("income", [])
+            ],
         }
