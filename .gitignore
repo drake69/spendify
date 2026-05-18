@@ -3,6 +3,10 @@ __pycache__/
 .venv/
 venv
 
+# Build artifacts (PyInstaller)
+build/
+dist/
+
 # Environment / secrets
 .env
 .env.local
