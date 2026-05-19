@@ -185,6 +185,128 @@ def _wait_for_port(port: int, timeout: float = 30.0) -> bool:
 #      completion. The wizard / app keep running in parallel.
 
 _MODEL_STATUS_FILE = _SPENDIFAI_HOME / "model_download.status"
+_INSTANCE_LOCK_FILE = _SPENDIFAI_HOME / "launcher.lock"
+
+
+# ---------------------------------------------------------------------------
+# Single-instance lock — clean up orphaned subprocesses from a previous run
+# ---------------------------------------------------------------------------
+#
+# The cleanup at window-close (_cleanup) handles the happy path. But on
+# force-quit (⌘Q via Dock, Activity Monitor's Force Quit, SIGKILL, hard crash,
+# or a pywebview.start() that never returns) atexit does not run and the
+# Streamlit child — which lives in its own process group (start_new_session=
+# True) — survives the launcher. Over time this accumulates several orphan
+# instances holding the LLM in RAM each.
+#
+# Pattern: write a lock file with launcher PID + child PGID after spawning
+# Streamlit; delete it in _cleanup. On startup, if the file is present, the
+# previous shutdown was dirty → kill the recorded tree before continuing.
+
+
+def _pid_alive(pid: int) -> bool:
+    """True if pid refers to a live process. PID 0/1 always returns False."""
+    if pid <= 1:
+        return False
+    try:
+        os.kill(pid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        # Process exists but is owned by another user — counts as alive.
+        return True
+
+
+def _kill_pid_tree(pid: int) -> None:
+    """Best-effort terminate of the process tree rooted at pid. Never raises."""
+    if not _pid_alive(pid):
+        return
+    try:
+        if sys.platform == "win32":
+            subprocess.run(
+                ["taskkill", "/F", "/T", "/PID", str(pid)],
+                capture_output=True, timeout=5,
+            )
+            return
+        try:
+            pgid = os.getpgid(pid)
+        except ProcessLookupError:
+            return
+        try:
+            os.killpg(pgid, signal.SIGTERM)
+        except (ProcessLookupError, PermissionError):
+            return
+        # Brief grace period then escalate.
+        for _ in range(20):
+            time.sleep(0.1)
+            if not _pid_alive(pid):
+                return
+        try:
+            os.killpg(pgid, signal.SIGKILL)
+        except (ProcessLookupError, PermissionError):
+            pass
+    except Exception as exc:
+        print(f"_kill_pid_tree: failed for pid={pid}: {exc!r}", flush=True)
+
+
+def _kill_previous_instance() -> None:
+    """If a lock file from a previous dirty shutdown is present, kill the
+    recorded process tree(s) and remove the file. No-op on clean start."""
+    if not _INSTANCE_LOCK_FILE.exists():
+        return
+    try:
+        import json
+        payload = json.loads(_INSTANCE_LOCK_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        print(f"_kill_previous_instance: lock file unreadable ({exc!r}) — removing", flush=True)
+        try:
+            _INSTANCE_LOCK_FILE.unlink()
+        except OSError:
+            pass
+        return
+
+    my_pid = os.getpid()
+    for key in ("child_pid", "launcher_pid"):
+        pid = int(payload.get(key) or 0)
+        if pid and pid != my_pid:
+            print(f"_kill_previous_instance: killing stale {key}={pid}", flush=True)
+            _kill_pid_tree(pid)
+
+    try:
+        _INSTANCE_LOCK_FILE.unlink()
+    except OSError:
+        pass
+
+
+def _write_instance_lock(child: subprocess.Popen) -> None:
+    """Persist launcher PID + Streamlit child PID so the next launch can sweep
+    them if this shutdown does not run _cleanup (force quit / crash)."""
+    import json
+    payload = {
+        "launcher_pid": os.getpid(),
+        "child_pid": child.pid,
+        "started_at": datetime_now_iso(),
+    }
+    try:
+        _INSTANCE_LOCK_FILE.write_text(json.dumps(payload), encoding="utf-8")
+    except OSError as exc:
+        print(f"_write_instance_lock: could not write lock ({exc!r})", flush=True)
+
+
+def _clear_instance_lock() -> None:
+    """Remove the lock file. Called at the end of _cleanup on a clean exit."""
+    try:
+        _INSTANCE_LOCK_FILE.unlink()
+    except FileNotFoundError:
+        pass
+    except OSError as exc:
+        print(f"_clear_instance_lock: could not remove lock ({exc!r})", flush=True)
+
+
+def datetime_now_iso() -> str:
+    from datetime import datetime, timezone
+    return datetime.now(timezone.utc).isoformat()
 
 
 def _bootstrap_env(app_dir: Path) -> None:
@@ -414,6 +536,7 @@ def _cleanup() -> None:
                     p.kill()
             except Exception as exc:
                 print(f"_cleanup: kill failed for pid={p.pid}: {exc!r}", flush=True)
+    _clear_instance_lock()
     print("_cleanup: done", flush=True)
 
 
@@ -431,6 +554,10 @@ if sys.platform != "win32":
 # ---------------------------------------------------------------------------
 
 def main() -> None:
+    print("main(): checking for stale instance lock...", flush=True)
+    _SPENDIFAI_HOME.mkdir(parents=True, exist_ok=True)
+    _kill_previous_instance()
+
     print("main(): resolving app_dir...", flush=True)
     app_dir = _resolve_app_dir()
     print(f"main(): app_dir = {app_dir}", flush=True)
@@ -495,7 +622,8 @@ def main() -> None:
             #    the model downloads in the background. The wizard does not
             #    need the LLM, only the Import page does.
             print("_on_shown: starting Streamlit...", flush=True)
-            _start_streamlit(port, app_dir)
+            _streamlit_proc = _start_streamlit(port, app_dir)
+            _write_instance_lock(_streamlit_proc)
 
             print(f"_on_shown: waiting for port {port}...", flush=True)
             if _wait_for_port(port):
