@@ -33,6 +33,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     create_engine,
+    inspect,
 )
 from sqlalchemy.orm import DeclarativeBase, Session, relationship
 
@@ -108,14 +109,29 @@ def _schema_hash_path(engine) -> pathlib.Path:
     return pathlib.Path("")
 
 
+def _db_has_tables(engine) -> bool:
+    """True if the engine's database has at least one user table.
+
+    Used to invalidate the .schema_hash fast-path when the DB file was
+    deleted (or recreated empty) while the hash cache lingered.
+    """
+    try:
+        return bool(inspect(engine).get_table_names())
+    except Exception:
+        return False
+
+
 def create_tables(engine=None):
     if engine is None:
         engine = get_engine()
 
     # ── fast-path: skip migrations if models.py hasn't changed ───────
+    # Guard: only trust the hash cache if the DB actually has tables.
+    # If the DB file was deleted (or is empty) while .schema_hash lingered,
+    # skipping create_all leaves an empty schema → runtime "no such table".
     current_hash = _schema_hash()
     hash_file = _schema_hash_path(engine)
-    if hash_file.name and hash_file.is_file():
+    if hash_file.name and hash_file.is_file() and _db_has_tables(engine):
         try:
             saved = hash_file.read_text().strip()
             if saved == current_hash:

@@ -41,6 +41,27 @@ class TestDBBootstrap:
         url = os.getenv("SPENDIFAI_DB", "sqlite:///ledger.db")
         assert url.startswith("sqlite:///")
 
+    def test_orphan_schema_hash_does_not_skip_create(self, tmp_path):
+        """Regression: if the DB file is deleted but `.schema_hash` lingers,
+        the fast-path must NOT skip create_all (would leave tables missing
+        and raise `no such table` at first query)."""
+        db_path = tmp_path / "test.db"
+        url = f"sqlite:///{db_path}"
+
+        # 1st run: create schema → .schema_hash written
+        create_tables(get_engine(url))
+        hash_file = tmp_path / ".schema_hash"
+        assert hash_file.is_file()
+
+        # Simulate user wiping the DB while .schema_hash survives
+        db_path.unlink()
+
+        # 2nd run on a fresh engine must rebuild the schema
+        eng2 = get_engine(url)
+        create_tables(eng2)
+        from sqlalchemy import inspect as _inspect
+        assert "import_job" in _inspect(eng2).get_table_names()
+
 
 # ── Prompt integrity ─────────────────────────────────────────────────────────
 
