@@ -1,6 +1,5 @@
 {
   "_language_name": "English",
-
   "nav.import": "📥 Import",
   "nav.import.desc": "Import CSV/XLSX files from your bank accounts",
   "nav.history": "📜 Import history",
@@ -29,12 +28,10 @@
   "nav.checklist.desc": "Verify completeness and quality of imported data",
   "nav.chat": "💬 Assistant",
   "nav.chat.desc": "Spendif.ai support chatbot",
-
   "sidebar.title": "🏦 Spendif.ai",
   "sidebar.llm_warning": "⚠️ AI processing in progress. Changing page will interrupt the process.",
   "sidebar.nav_confirm_msg": "You are about to leave the current page. AI processing will be interrupted.",
   "sidebar.nav_stay": "Stay",
-
   "ledger.title": "📋 Ledger — Transaction Register",
   "ledger.filter.from": "From",
   "ledger.filter.to": "To",
@@ -80,7 +77,6 @@
   "ledger.no_changes": "No changes detected.",
   "ledger.export_csv": "📥 Export CSV",
   "ledger.export_xlsx": "📥 Export Excel",
-
   "review.title": "🔍 Review — Manual Review",
   "review.auto_resolved": "✅ {n} transactions automatically resolved by rules.",
   "review.rerun_llm": "🔄 Reprocess with LLM ({n} pending review)",
@@ -136,7 +132,6 @@
   "review.rule_saved": " · Rule saved.",
   "review.rule_created": " · Rule created",
   "review.rule_updated": " · Rule updated",
-
   "history.title": "Import history",
   "history.no_imports": "No imports found.",
   "history.confirm_cancel": "Confirm cancellation of import **{filename}** ({n} transactions)? Transactions will be permanently deleted.",
@@ -151,7 +146,6 @@
   "history.col.n_transactions": "Transactions",
   "history.col.status": "Status",
   "history.col.actions": "Actions",
-
   "budget.title": "💰 Budget — Spending Targets",
   "budget.caption": "Set the budget percentage for each expense category. The total should not exceed 100%.",
   "budget.no_categories": "No expense categories configured. Go to the Taxonomy page to set them up.",
@@ -170,7 +164,6 @@
   "budget.save": "💾 Save targets",
   "budget.saved": "Budget targets saved successfully!",
   "budget.restore": "🔄 Restore from DB",
-
   "bva.title": "📊 Budget vs Actual",
   "bva.period_label": "Period",
   "bva.period.month": "Month",
@@ -199,7 +192,6 @@
   "bva.chart.comparison_title": "Target vs Actual by Category",
   "bva.chart.xaxis": "% of total expenses",
   "bva.chart.donut_title": "Actual Expense Distribution",
-
   "report.title": "📋 Report — Spending by Context and Category",
   "report.quick_period": "Quick period",
   "report.preset_current_month": "Current month",
@@ -231,7 +223,6 @@
   "report.chart_category": "Category",
   "report.export_title": "Export Report",
   "report.export_btn": "Export Excel",
-
   "rules.title": "📏 Categorization Rules",
   "rules.caption": "Rules are applied before the LLM. By editing or deleting a rule you can also update transactions already categorized by that rule.",
   "rules.match_contains": "Contains text",
@@ -282,7 +273,6 @@
   "rules.preview_no_match": "No existing transactions match this pattern.",
   "rules.preview_invalid_regex": "⚠️ Invalid regular expression.",
   "rules.new_rule_also_apply": "Also apply to the {n} transactions already in the ledger",
-
   "taxonomy.title": "🗂️ Taxonomy — Categories and Subcategories",
   "taxonomy.caption": "Changes are saved immediately to the database. New categories/subcategories are instantly available in Review and Rules.",
   "taxonomy.search": "🔍 Search category or subcategory",
@@ -323,7 +313,6 @@
   "taxonomy.cat_name_empty": "Category name cannot be empty.",
   "taxonomy.cat_exists": "Category '{name}' already exists.",
   "taxonomy.cat_created": "Category '{name}' created with {n} subcategories.",
-
   "checklist.title": "✅ Checklist — Transactions by month and account",
   "checklist.caption": "One row per month (current at the top), one column per account. The value is the transaction count; **—** means no transactions for that month.",
   "checklist.no_data": "No accounts and no transactions found. Add accounts from **Settings** and import movement files.",
@@ -336,7 +325,6 @@
   "checklist.hide_empty": "Hide months with no transactions",
   "checklist.hide_empty_help": "Hides months where no account has transactions.",
   "checklist.no_filtered_data": "No data to show with the selected filters.",
-
   "settings.title": "⚙️ Settings",
   "settings.display_format": "Display Format",
   "settings.date_format": "Date format",
@@ -487,7 +475,6 @@
   "settings.lang.en": "English",
   "settings.lang.fr": "Français",
   "settings.lang.de": "Deutsch",
-
   "onboarding.title": "👋 Welcome to Spendif.ai",
   "onboarding.subtitle": "Initial setup — it will take less than 2 minutes.",
   "onboarding.no_taxonomy": "No default taxonomy found in the database.",
@@ -502,6 +489,7 @@
   "onboarding.step0.categories_preview": "**Expense categories ({lang}):** {cats}…",
   "onboarding.step0.country": "🌍 Country",
   "onboarding.step0.country_caption": "Used to better recognise international brands (e.g. Lidl, McDonald's, Migros) in your transactions.",
+  "onboarding.step0.country_expander": "📍 I live in another country (current: {country})",
   "onboarding.step1.title": "👤 Owner Names",
   "onboarding.step1.caption": "Enter the name(s) of the account holder(s), separated by comma. They are used to automatically detect **internal transfers** between your own accounts and to clean transaction descriptions.",
   "onboarding.step1.hint": "💡 Example: `John Doe, Jane Doe` — include all name variants as they appear in bank statement files.",
@@ -549,13 +537,14 @@
   "onboarding.step3.model_error": "AI model download failed: {error}. Go to Settings to retry.",
   "onboarding.step3.applying": "Configuring…",
   "onboarding.step3.done": "✅ Configuration completed!",
+  "onboarding.preparing_categories.title": "Setting up your categories…",
+  "onboarding.preparing_categories.caption": "One-time operation (~5 min): the AI model is mapping places to your chosen categories. Everything will be ready for your first import.",
   "onboarding.account_type.bank_account": "Bank account",
   "onboarding.account_type.credit_card": "Credit card",
   "onboarding.account_type.debit_card": "Debit card",
   "onboarding.account_type.prepaid_card": "Prepaid card",
   "onboarding.account_type.savings_account": "Savings account",
   "onboarding.account_type.cash": "Cash",
-
   "bulk_edit.title": "✏️ Bulk Edit",
   "bulk_edit.caption": "Select a transaction and apply category, context or internal transfer status to all similar transactions. You can also save a deterministic rule.",
   "bulk_edit.section1_title": "1 · Choose the reference transaction",
@@ -655,7 +644,6 @@
   "bulk_edit.col.raw_desc": "Raw desc",
   "bulk_edit.col.accounts": "Accounts",
   "bulk_edit.col.copies": "Copies",
-
   "analytics.title": "📊 Analytics",
   "analytics.quick_period": "Quick period",
   "analytics.preset.current_month": "Current month",
@@ -723,7 +711,6 @@
   "analytics.status.low": "🔵 Low",
   "analytics.status.absent": "⚪ Absent",
   "analytics.status.normal": "🟢 Normal",
-
   "upload.title": "📥 Import",
   "upload.processing": "Processing…",
   "upload.progress_auto": "Auto-refresh — {pct}% completed",
@@ -794,7 +781,6 @@
   "upload.completed_tx": "✅ Completed — {n} new transactions",
   "upload.already_present_skipped": " · {n} already present (skipped)",
   "upload.final_detail": "{n_files} file(s) processed at {time} UTC",
-
   "common.save": "Save",
   "common.cancel": "Cancel",
   "common.confirm": "Confirm",
@@ -806,12 +792,41 @@
   "common.success": "Operation completed",
   "common.yes": "Yes",
   "common.no": "No",
-
   "chat.title": "Spendif.ai Assistant",
   "chat.mode_label": "Mode: **{mode}**",
   "chat.welcome": "Hi! I'm the Spendif.ai assistant. How can I help you?",
   "chat.placeholder": "Type your question...",
   "chat.thinking": "Searching...",
   "chat.sources": "Sources",
-  "chat.clear": "Clear conversation"
+  "chat.clear": "Clear conversation",
+  "country.AT": "Austria",
+  "country.AU": "Australia",
+  "country.BE": "Belgium",
+  "country.CA": "Canada",
+  "country.CH": "Switzerland",
+  "country.CZ": "Czech Republic",
+  "country.DE": "Germany",
+  "country.DK": "Denmark",
+  "country.ES": "Spain",
+  "country.FI": "Finland",
+  "country.FR": "France",
+  "country.GB": "United Kingdom",
+  "country.HU": "Hungary",
+  "country.IE": "Ireland",
+  "country.IT": "Italy",
+  "country.LU": "Luxembourg",
+  "country.NL": "Netherlands",
+  "country.NO": "Norway",
+  "country.PL": "Poland",
+  "country.PT": "Portugal",
+  "country.RO": "Romania",
+  "country.SE": "Sweden",
+  "country.SI": "Slovenia",
+  "country.SK": "Slovakia",
+  "country.SM": "San Marino",
+  "country.US": "USA",
+  "context.daily": "Daily",
+  "context.work": "Work",
+  "context.holiday": "Holiday",
+  "onboarding.preparing_categories.done": "✅ Categories ready!"
 }

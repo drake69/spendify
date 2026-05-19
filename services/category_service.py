@@ -72,10 +72,17 @@ class CategoryService:
         if backend is None:
             config = self._config_from_settings(settings)
             backend = _build_categorizer_backend(config) or _build_backend(config)
-        # C-08-cascade: load (or build) NSI taxonomy_map
+        # C-08-cascade: load (or build) NSI taxonomy_map.
+        # IMPORTANT: never pass the LLM backend here — a fresh DB would
+        # trigger a single 70-tag LLM call inside the import path that takes
+        # 5-15 min on a local 12B-Q4 model with no visible progress (one
+        # large grammar-constrained generation in llama.cpp's C layer, no
+        # Python logging). The onboarding wizard runs the LLM mapping
+        # explicitly with a visible spinner; here we degrade to the static
+        # fallback only, so the import path is always fast.
         nsi_svc = NsiTaxonomyService(self.engine)
         with self._session() as s:
-            taxonomy_map = nsi_svc.get_or_build(s, taxonomy, backend)
+            taxonomy_map = nsi_svc.get_or_build(s, taxonomy, llm_backend=None)
         return categorize_batch(
             transactions=transactions,
             taxonomy=taxonomy,

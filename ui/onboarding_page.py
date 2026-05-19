@@ -83,39 +83,32 @@ def _account_types() -> dict[str, str]:
 
 
 # ── Country list & language → country suggestion ──────────────────────────────
-# Sorted alphabetically by display name (Italian)
-_COUNTRIES: list[tuple[str, str]] = [
-    ("AT", "Austria"),
-    ("AU", "Australia"),
-    ("BE", "Belgio"),
-    ("CA", "Canada"),
-    ("CH", "Svizzera"),
-    ("CZ", "Rep. Ceca"),
-    ("DE", "Germania"),
-    ("DK", "Danimarca"),
-    ("ES", "Spagna"),
-    ("FI", "Finlandia"),
-    ("FR", "Francia"),
-    ("GB", "Gran Bretagna"),
-    ("HU", "Ungheria"),
-    ("IE", "Irlanda"),
-    ("IT", "Italia"),
-    ("LU", "Lussemburgo"),
-    ("NL", "Paesi Bassi"),
-    ("NO", "Norvegia"),
-    ("PL", "Polonia"),
-    ("PT", "Portogallo"),
-    ("RO", "Romania"),
-    ("SE", "Svezia"),
-    ("SI", "Slovenia"),
-    ("SK", "Slovacchia"),
-    ("SM", "San Marino"),
-    ("US", "USA"),
+# Codes only — display names are resolved at render time via t("country.<code>")
+# so they follow the active UI language. The list order here is the *display*
+# order in the dropdown; alphabetisation by translated name happens at use site.
+_COUNTRY_CODES: list[str] = [
+    "AT", "AU", "BE", "CA", "CH", "CZ", "DE", "DK", "ES", "FI",
+    "FR", "GB", "HU", "IE", "IT", "LU", "NL", "NO", "PL", "PT",
+    "RO", "SE", "SI", "SK", "SM", "US",
 ]
-_COUNTRY_CODES   = [c for c, _ in _COUNTRIES]
-_COUNTRY_LABELS  = [n for _, n in _COUNTRIES]
-_COUNTRY_BY_CODE = {c: n for c, n in _COUNTRIES}
-_COUNTRY_BY_NAME = {n: c for c, n in _COUNTRIES}
+
+
+def _country_label(code: str) -> str:
+    """Translated country name for the currently active UI language."""
+    return t(f"country.{code}")
+
+
+def _sorted_country_labels() -> list[str]:
+    """Country display names sorted alphabetically in the active language."""
+    return sorted((_country_label(c) for c in _COUNTRY_CODES), key=lambda s: s.lower())
+
+
+def _code_from_label(label: str) -> str | None:
+    """Reverse-lookup: translated label → country code. None if unknown."""
+    for code in _COUNTRY_CODES:
+        if _country_label(code) == label:
+            return code
+    return None
 
 # Default country suggestion per taxonomy language
 _COUNTRY_SUGGESTION: dict[str, str] = {
@@ -140,15 +133,15 @@ _DEFAULT_LOCALE = _LOCALE["it"]
 # ── UI labels (multi-language minimal set for the wizard itself) ───────────────
 _UI: dict[str, dict] = {
     "it": {"next": "Avanti →", "back": "← Indietro", "start": "🚀 Inizia!",
-           "step_labels": ["Lingua", "Titolari", "Conti", "Tassonomia", "Conferma"]},
+           "step_labels": ["Lingua", "Titolari", "Conti", "Tassonomia", "Categorie", "Conferma"]},
     "en": {"next": "Next →",   "back": "← Back",      "start": "🚀 Let's go!",
-           "step_labels": ["Language", "Owners", "Accounts", "Taxonomy", "Confirm"]},
+           "step_labels": ["Language", "Owners", "Accounts", "Taxonomy", "Categories", "Confirm"]},
     "fr": {"next": "Suivant →","back": "← Retour",    "start": "🚀 Commencer!",
-           "step_labels": ["Langue", "Titulaires", "Comptes", "Taxonomie", "Confirmer"]},
+           "step_labels": ["Langue", "Titulaires", "Comptes", "Taxonomie", "Catégories", "Confirmer"]},
     "de": {"next": "Weiter →", "back": "← Zurück",    "start": "🚀 Loslegen!",
-           "step_labels": ["Sprache", "Inhaber", "Konten", "Taxonomie", "Bestätigen"]},
+           "step_labels": ["Sprache", "Inhaber", "Konten", "Taxonomie", "Kategorien", "Bestätigen"]},
     "es": {"next": "Siguiente →","back": "← Atrás",   "start": "🚀 ¡Empezar!",
-           "step_labels": ["Idioma", "Titulares", "Cuentas", "Taxonomía", "Confirmar"]},
+           "step_labels": ["Idioma", "Titulares", "Cuentas", "Taxonomía", "Categorías", "Confirmar"]},
 }
 
 
@@ -233,24 +226,26 @@ def _step0_language(cfg_svc: SettingsService, lang_options: list[tuple[str, str]
         key="_ob_lang_radio",
     )
     sel_code = codes[labels.index(sel_label)]
+    _prev_lang = st.session_state.get(_K_LANG)
     st.session_state[_K_LANG] = sel_code
 
-    # UI language selector (i18n)
-    from ui.i18n import available_languages, set_language
-    _ui_langs = available_languages()
-    _ui_labels = [lbl for _, lbl in _ui_langs]
-    _ui_codes = [c for c, _ in _ui_langs]
-    _ui_default = sel_code if sel_code in _ui_codes else "it"
-    _ui_idx = _ui_codes.index(st.session_state.get("_ob_ui_lang", _ui_default))
-    ui_lang_sel = st.selectbox(
-        t("onboarding.step0.ui_language"),
-        _ui_labels,
-        index=_ui_idx,
-        key="_ob_ui_lang_select",
-    )
-    _ui_lang_code = _ui_codes[_ui_labels.index(ui_lang_sel)]
+    # One choice drives everything: taxonomy language, locale (date/amount
+    # format), AND UI language. If the user picks a language whose UI JSON
+    # is missing (e.g. fr.json absent), i18n._load returns {} and t() falls
+    # back to Italian per its lookup order. No second selectbox needed.
+    from ui.i18n import set_language
+    _ui_lang_code = sel_code
     st.session_state["_ob_ui_lang"] = _ui_lang_code
     set_language(_ui_lang_code)
+
+    # When the user picks a different language, everything above the radio
+    # (title, caption, step labels) was already rendered in the *previous*
+    # language during this same script execution — Streamlit reads the radio
+    # value only when reaching the widget. A full rerun re-paints the whole
+    # page coherently in the new language. Otherwise the user sees a mixed
+    # paint: page header in EN, country expander + Next button in IT.
+    if _prev_lang is not None and _prev_lang != sel_code:
+        st.rerun()
 
     # Format preview
     loc = _locale(sel_code)
@@ -271,23 +266,36 @@ def _step0_language(cfg_svc: SettingsService, lang_options: list[tuple[str, str]
     # Auto-suggest country from selected language; user can override.
     # If language changed since last render, reset suggestion.
     _prev_lang_key = "_ob_prev_lang_for_country"
+    # Also reset the cached selectbox label whenever the UI language changes,
+    # otherwise streamlit keeps showing the previous-language label and the
+    # selectbox loses its selection (label not found in the new options list).
     if st.session_state.get(_prev_lang_key) != sel_code:
         suggested = _COUNTRY_SUGGESTION.get(sel_code, "IT")
-        st.session_state["_ob_country_select"] = _COUNTRY_BY_CODE.get(suggested, "Italia")
+        st.session_state["_ob_country_select"] = _country_label(suggested)
         st.session_state[_K_COUNTRY] = suggested
     st.session_state[_prev_lang_key] = sel_code
 
-    st.subheader(t("onboarding.step0.country"))
-    st.caption(t("onboarding.step0.country_caption"))
-    _cur_country_label = st.session_state.get("_ob_country_select", _COUNTRY_BY_CODE.get("IT", "Italia"))
-    selected_country_label = st.selectbox(
-        t("onboarding.step0.country"),
-        _COUNTRY_LABELS,
-        index=_COUNTRY_LABELS.index(_cur_country_label) if _cur_country_label in _COUNTRY_LABELS else _COUNTRY_LABELS.index("Italia"),
-        key="_ob_country_select",
-        label_visibility="collapsed",
-    )
-    st.session_state[_K_COUNTRY] = _COUNTRY_BY_NAME.get(selected_country_label, "IT")
+    # Country is auto-derived from the chosen language above. Most users
+    # never need to change it; a manual override lives behind an expander
+    # so the default onboarding stays a single visible question.
+    _country_labels = _sorted_country_labels()
+    _fallback_label = _country_label("IT")
+    _cur_country_label = st.session_state.get("_ob_country_select", _fallback_label)
+    if _cur_country_label not in _country_labels:
+        # Stale label from a previous language → reset to auto-suggestion.
+        _cur_country_label = _country_label(st.session_state[_K_COUNTRY])
+        st.session_state["_ob_country_select"] = _cur_country_label
+    _auto_country = _country_label(st.session_state[_K_COUNTRY])
+    with st.expander(t("onboarding.step0.country_expander", country=_auto_country), expanded=False):
+        st.caption(t("onboarding.step0.country_caption"))
+        selected_country_label = st.selectbox(
+            t("onboarding.step0.country"),
+            _country_labels,
+            index=_country_labels.index(_cur_country_label),
+            key="_ob_country_select",
+            label_visibility="collapsed",
+        )
+        st.session_state[_K_COUNTRY] = _code_from_label(selected_country_label) or "IT"
 
     st.write("")
     _, col_next = st.columns([1, 1])
@@ -582,18 +590,58 @@ def _step3_taxonomy(cfg_svc: SettingsService, lang: str) -> None:
     with col_next:
         if st.button(_ui(lang)["next"], type="primary",
                      use_container_width=True, key="_ob_tax_next"):
+            # Persist taxonomy + settings + accounts BEFORE the NSI pre-warm
+            # step, which needs them in DB. If the user later steps back here
+            # and changes the taxonomy, _persist_choices is idempotent.
+            _names = st.session_state.get(_K_NAMES, "").strip()
+            _accounts = [a for a in st.session_state.get(_K_ACCOUNTS, []) if a["name"].strip()]
+            _country = st.session_state.get(_K_COUNTRY, "")
+            _loc = _locale(lang)
+            with st.spinner(t("onboarding.step3.applying")):
+                _persist_choices(cfg_svc, lang, _names, _accounts, _loc, country=_country)
+            # Force NSI re-prewarm if the user re-entered step 3 after editing
+            # the taxonomy.
+            st.session_state.pop("_ob_nsi_prewarm_done", None)
             st.session_state[_K_STEP] = 4
             st.rerun()
 
 
-def _step4_confirm(cfg_svc: SettingsService, lang_options: list[tuple[str, str]]) -> None:
-    """Step 4 — Riepilogo & conferma."""
+def _step4_prepare_categories(cfg_svc: SettingsService, lang: str) -> None:
+    """Step 4 — NSI taxonomy_map pre-warm.
+
+    Runs the single ~5-minute LLM call that maps OSM tags to the user's
+    chosen taxonomy. We sit on this step until the call returns, then
+    advance automatically to the confirmation step. Idempotent via the
+    `_ob_nsi_prewarm_done` session flag, so navigating back+forward does
+    not re-run the call."""
+    st.subheader(t("onboarding.preparing_categories.title"))
+    st.caption(t("onboarding.preparing_categories.caption"))
+
+    _flag = "_ob_nsi_prewarm_done"
+    _already = st.session_state.get(_flag, False)
+
+    if not _already:
+        with st.spinner(t("onboarding.preparing_categories.title")):
+            _ok = _run_nsi_prewarm(cfg_svc)
+        st.session_state[_flag] = True  # mark done even on failure (static fallback covers)
+        if _ok:
+            logger.info("onboarding: NSI pre-warm completed")
+        st.session_state[_K_STEP] = 5
+        st.rerun()
+
+    # Should rarely render — only if Streamlit reruns after the flag is set
+    # but before the rerun above takes effect.
+    st.success(t("onboarding.preparing_categories.done"))
+
+
+def _step5_confirm(cfg_svc: SettingsService, lang_options: list[tuple[str, str]]) -> None:
+    """Step 5 — Riepilogo & conferma finale."""
     lang     = st.session_state[_K_LANG]
     names    = st.session_state.get(_K_NAMES, "").strip()
     accounts = [a for a in st.session_state.get(_K_ACCOUNTS, []) if a["name"].strip()]
     lang_label    = next((lbl for code, lbl in lang_options if code == lang), lang)
     country_code  = st.session_state.get(_K_COUNTRY, "")
-    country_label = _COUNTRY_BY_CODE.get(country_code, country_code) if country_code else "—"
+    country_label = _country_label(country_code) if country_code else "—"
     loc = _locale(lang)
 
     st.subheader(t("onboarding.step3.title"))
@@ -709,6 +757,8 @@ def _step4_confirm(cfg_svc: SettingsService, lang_options: list[tuple[str, str]]
     col_back, _, col_start = st.columns([1, 2, 1])
     with col_back:
         if st.button(_ui(lang)["back"], use_container_width=True, key="_ob_conf_back"):
+            # Back to taxonomy editor (step 3). If the user edits the taxonomy
+            # again, the next Avanti will re-persist and re-trigger NSI prewarm.
             st.session_state[_K_STEP] = 3
             st.rerun()
 
@@ -725,7 +775,7 @@ def _step4_confirm(cfg_svc: SettingsService, lang_options: list[tuple[str, str]]
                      use_container_width=True, key="_ob_conf_start",
                      disabled=not _dl_ready,
                      help=_start_tooltip):
-            _apply_onboarding(cfg_svc, lang, names, accounts, loc, country=country_code)
+            _finalise_onboarding(cfg_svc)
 
     # Auto-refresh every 2 s while we are waiting on the model so the user
     # sees live progress without manually re-running.
@@ -734,7 +784,7 @@ def _step4_confirm(cfg_svc: SettingsService, lang_options: list[tuple[str, str]]
         st.rerun()
 
 
-def _apply_onboarding(
+def _persist_choices(
     cfg_svc: SettingsService,
     lang: str,
     owner_names: str,
@@ -742,7 +792,11 @@ def _apply_onboarding(
     loc: dict,
     country: str = "",
 ) -> None:
-    """Apply all onboarding settings in one shot and mark as done."""
+    """Persist taxonomy + settings + accounts + localised contexts.
+
+    Runs at the "Avanti" of step 3 (Taxonomy), BEFORE the NSI pre-warm of
+    step 4 — the pre-warm needs the taxonomy in DB to build the mapping.
+    onboarding_done is NOT set here; that happens at the end of step 5."""
     tax_lang = _taxonomy_language(lang)
     with st.spinner(t("onboarding.step3.applying")):
         # 1. Taxonomy: default seed + user's wizard customisations (renames +
@@ -816,17 +870,56 @@ def _apply_onboarding(
                     account_type=acc.get("type", "bank_account"),
                 )
 
-        # 4. Mark done
-        cfg_svc.set_onboarding_done()
+        # 3-bis. Localised default life-contexts. The base seed in
+        # DEFAULT_USER_SETTINGS is Italian; replace it now that we know the
+        # chosen UI language so a Spanish user starts with "Cotidiano /
+        # Trabajo / Vacaciones" instead of "Quotidianità / Lavoro / Vacanza".
+        import json as _json
+        _localised_contexts = [
+            t("context.daily"), t("context.work"), t("context.holiday"),
+        ]
+        cfg_svc.set_bulk({"contexts": _json.dumps(_localised_contexts, ensure_ascii=False)})
 
     logger.info(
-        f"onboarding: applied lang={lang!r} cats={n_cats} "
+        f"onboarding: persisted lang={lang!r} cats={n_cats} "
         f"names={owner_names!r} accounts={len(accounts)}"
     )
 
-    # Clean up session state
+
+def _run_nsi_prewarm(cfg_svc: SettingsService) -> bool:
+    """Single LLM call that maps OSM tags → (category, subcategory) for the
+    user's chosen taxonomy. Runs once at step 4 of the wizard; the import
+    path uses the static fallback only. Returns True on success, False on
+    any failure (non-fatal: static fallback covers us at first import)."""
+    try:
+        from services.nsi_taxonomy_service import NsiTaxonomyService
+        from services.category_service import CategoryService
+        from core.orchestrator import _build_backend, _build_categorizer_backend
+        from db import repository as _repo
+        from db.models import get_session as _get_session
+
+        with _get_session(cfg_svc.engine) as _s:
+            _settings = _repo.get_all_user_settings(_s)
+            _taxonomy = _repo.get_taxonomy_config(_s)
+        _config = CategoryService._config_from_settings(_settings)
+        _backend = _build_categorizer_backend(_config) or _build_backend(_config)
+        _nsi = NsiTaxonomyService(cfg_svc.engine)
+        with _get_session(cfg_svc.engine) as _s:
+            _nsi.build(_s, _taxonomy, llm_backend=_backend)
+        return True
+    except Exception as _exc:
+        logger.warning(f"onboarding: NSI pre-warm failed ({_exc!r}) — static fallback at import time")
+        return False
+
+
+def _finalise_onboarding(cfg_svc: SettingsService) -> None:
+    """Last action of the wizard: flip onboarding_done, clear session state,
+    show success toast, rerun so the app navigates to the home page."""
+    cfg_svc.set_onboarding_done()
+
     for k in (_K_STEP, _K_LANG, _K_COUNTRY, _K_NAMES, _K_ACCOUNTS,
-              "_ob_prev_lang_for_country", "_ob_country_select"):
+              "_ob_prev_lang_for_country", "_ob_country_select",
+              "_ob_nsi_prewarm_done"):
         st.session_state.pop(k, None)
 
     st.success(t("onboarding.step3.done"))
@@ -858,6 +951,13 @@ def render_onboarding_page(engine) -> None:
     lang = st.session_state[_K_LANG]
     ui   = _ui(lang)
 
+    # Activate the chosen language BEFORE the first t() call, otherwise the
+    # header renders in Italian (the i18n default) while the radio below
+    # shows the detected language selected — confusing mismatch on first
+    # paint when the browser locale is not Italian.
+    from ui.i18n import set_language as _set_language
+    _set_language(lang)
+
     # ── Header ────────────────────────────────────────────────────────────────
     st.title(t("onboarding.title"))
     st.caption(t("onboarding.subtitle"))
@@ -876,4 +976,6 @@ def render_onboarding_page(engine) -> None:
     elif step == 3:
         _step3_taxonomy(cfg_svc, lang)
     elif step == 4:
-        _step4_confirm(cfg_svc, lang_options)
+        _step4_prepare_categories(cfg_svc, lang)
+    elif step == 5:
+        _step5_confirm(cfg_svc, lang_options)

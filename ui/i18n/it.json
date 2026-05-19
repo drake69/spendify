@@ -1,6 +1,5 @@
 {
   "_language_name": "Italiano",
-
   "nav.import": "📥 Import",
   "nav.import.desc": "Importa file CSV/XLSX dai tuoi conti bancari",
   "nav.history": "📜 Storico import",
@@ -29,12 +28,10 @@
   "nav.checklist.desc": "Verifica completezza e qualità dei dati importati",
   "nav.chat": "💬 Assistente",
   "nav.chat.desc": "Chatbot di supporto Spendif.ai",
-
   "sidebar.title": "🏦 Spendif.ai",
   "sidebar.llm_warning": "⚠️ Elaborazione AI in corso. Cambiare pagina interromperà il processo.",
   "sidebar.nav_confirm_msg": "Stai per abbandonare la pagina corrente. L'elaborazione AI verrà interrotta.",
   "sidebar.nav_stay": "Resta",
-
   "ledger.title": "📋 Ledger — Registro Transazioni",
   "ledger.filter.from": "Da",
   "ledger.filter.to": "A",
@@ -80,7 +77,6 @@
   "ledger.no_changes": "Nessuna modifica rilevata.",
   "ledger.export_csv": "📥 Esporta CSV",
   "ledger.export_xlsx": "📥 Esporta Excel",
-
   "review.title": "🔍 Review — Revisione Manuale",
   "review.auto_resolved": "✅ {n} transazioni risolte automaticamente dalle regole.",
   "review.rerun_llm": "🔄 Rielabora con LLM ({n} da rivedere)",
@@ -136,7 +132,6 @@
   "review.rule_saved": " · Regola salvata.",
   "review.rule_created": " · Regola creata",
   "review.rule_updated": " · Regola aggiornata",
-
   "history.title": "Storico import",
   "history.no_imports": "Nessuna importazione trovata.",
   "history.confirm_cancel": "Confermi l'annullamento dell'importazione **{filename}** ({n} transazioni)? Le transazioni verranno eliminate definitivamente.",
@@ -151,7 +146,6 @@
   "history.col.n_transactions": "N. Transazioni",
   "history.col.status": "Stato",
   "history.col.actions": "Azioni",
-
   "budget.title": "💰 Budget — Obiettivi di Spesa",
   "budget.caption": "Definisci la percentuale di budget per ogni categoria di spesa. Il totale allocato non dovrebbe superare il 100%.",
   "budget.no_categories": "Nessuna categoria di spesa configurata. Vai alla pagina Tassonomia per configurarle.",
@@ -170,7 +164,6 @@
   "budget.save": "💾 Salva obiettivi",
   "budget.saved": "Obiettivi di budget salvati con successo!",
   "budget.restore": "🔄 Ripristina da DB",
-
   "bva.title": "📊 Budget vs Actual",
   "bva.period_label": "Periodo",
   "bva.period.month": "Mese",
@@ -199,7 +192,6 @@
   "bva.chart.comparison_title": "Obiettivo vs Attuale per Categoria",
   "bva.chart.xaxis": "% sul totale spese",
   "bva.chart.donut_title": "Distribuzione Spese Effettive",
-
   "report.title": "📋 Report — Spesa per Contesto e Categoria",
   "report.quick_period": "Periodo rapido",
   "report.preset_current_month": "Mese corrente",
@@ -231,7 +223,6 @@
   "report.chart_category": "Categoria",
   "report.export_title": "Esporta Report",
   "report.export_btn": "Esporta Excel",
-
   "rules.title": "📏 Regole di Categorizzazione",
   "rules.caption": "Le regole vengono applicate prima dell'LLM. Modificando o eliminando una regola puoi anche aggiornare le transazioni già categorizzate da quella regola.",
   "rules.match_contains": "Contiene il testo",
@@ -282,7 +273,6 @@
   "rules.preview_no_match": "Nessuna transazione esistente corrisponde a questo pattern.",
   "rules.preview_invalid_regex": "⚠️ Espressione regolare non valida.",
   "rules.new_rule_also_apply": "Applica anche alle {n} transazioni già presenti nel registro",
-
   "taxonomy.title": "🗂️ Tassonomia — Categorie e Sottocategorie",
   "taxonomy.caption": "Le modifiche vengono salvate immediatamente nel database. Le nuove categorie/sottocategorie sono subito disponibili in Review e Regole.",
   "taxonomy.search": "🔍 Cerca categoria o sottocategoria",
@@ -323,7 +313,6 @@
   "taxonomy.cat_name_empty": "Il nome categoria non può essere vuoto.",
   "taxonomy.cat_exists": "Categoria '{name}' già presente.",
   "taxonomy.cat_created": "Categoria '{name}' creata con {n} sottocategorie.",
-
   "checklist.title": "✅ Check List — Presenza transazioni per mese e conto",
   "checklist.caption": "Una riga per ogni mese (dal corrente in poi verso il passato), una colonna per ogni conto. Il valore è il numero di transazioni; **—** indica nessuna transazione per quel mese.",
   "checklist.no_data": "Nessun conto e nessuna transazione trovati. Aggiungi conti dalla pagina **Impostazioni** e importa i file movimenti.",
@@ -336,7 +325,6 @@
   "checklist.hide_empty": "Nascondi mesi senza transazioni",
   "checklist.hide_empty_help": "Non mostra i mesi in cui nessun conto ha transazioni.",
   "checklist.no_filtered_data": "Nessun dato da mostrare con i filtri selezionati.",
-
   "settings.title": "⚙️ Impostazioni",
   "settings.display_format": "Formato visualizzazione",
   "settings.date_format": "Formato data",
@@ -487,7 +475,6 @@
   "settings.lang.en": "English",
   "settings.lang.fr": "Français",
   "settings.lang.de": "Deutsch",
-
   "onboarding.title": "👋 Benvenuto in Spendif.ai",
   "onboarding.subtitle": "Configurazione iniziale — ci vorranno meno di 2 minuti.",
   "onboarding.no_taxonomy": "Nessuna tassonomia default trovata nel database.",
@@ -502,6 +489,7 @@
   "onboarding.step0.categories_preview": "**Categorie spese ({lang}):** {cats}…",
   "onboarding.step0.country": "🌍 Paese",
   "onboarding.step0.country_caption": "Usato per riconoscere meglio i brand internazionali (es. Lidl, McDonald's, Migros) nelle tue transazioni.",
+  "onboarding.step0.country_expander": "📍 Vivo in un altro paese (attualmente: {country})",
   "onboarding.step1.title": "👤 Nomi titolari",
   "onboarding.step1.caption": "Inserisci il nome (o i nomi) delle persone titolari dei conti, separati da virgola. Vengono usati per rilevare automaticamente i **giroconti** tra conti propri e per pulire le descrizioni delle transazioni.",
   "onboarding.step1.hint": "💡 Esempio: `Mario Rossi, Maria Rossi` — includi tutte le varianti del nome con cui appaiono nei file movimenti.",
@@ -549,13 +537,14 @@
   "onboarding.step3.model_error": "Download modello AI fallito: {error}. Vai in Impostazioni per riprovare.",
   "onboarding.step3.applying": "Configurazione in corso…",
   "onboarding.step3.done": "✅ Configurazione completata!",
+  "onboarding.preparing_categories.title": "Stiamo sistemando le tue categorie…",
+  "onboarding.preparing_categories.caption": "Operazione una tantum (~5 min): il modello AI sta associando i luoghi alle categorie scelte. Al primo import sarà tutto pronto.",
   "onboarding.account_type.bank_account": "Conto corrente",
   "onboarding.account_type.credit_card": "Carta di credito",
   "onboarding.account_type.debit_card": "Carta di debito",
   "onboarding.account_type.prepaid_card": "Carta prepagata",
   "onboarding.account_type.savings_account": "Conto risparmio",
   "onboarding.account_type.cash": "Contanti",
-
   "bulk_edit.title": "✏️ Modifiche massive",
   "bulk_edit.caption": "Seleziona una transazione e applica categoria, contesto o stato giroconto a tutte le transazioni simili. Puoi anche salvare una regola deterministica.",
   "bulk_edit.section1_title": "1 · Scegli la transazione di riferimento",
@@ -655,7 +644,6 @@
   "bulk_edit.col.raw_desc": "Raw desc",
   "bulk_edit.col.accounts": "Conti",
   "bulk_edit.col.copies": "N copie",
-
   "analytics.title": "📊 Analytics",
   "analytics.quick_period": "Periodo rapido",
   "analytics.preset.current_month": "Mese corrente",
@@ -723,7 +711,6 @@
   "analytics.status.low": "🔵 Bassa",
   "analytics.status.absent": "⚪ Assente",
   "analytics.status.normal": "🟢 Normale",
-
   "upload.title": "📥 Import",
   "upload.processing": "Elaborazione in corso…",
   "upload.progress_auto": "Aggiornamento automatico — {pct}% completato",
@@ -794,7 +781,6 @@
   "upload.completed_tx": "✅ Completato — {n} nuove transazioni",
   "upload.already_present_skipped": " · {n} già presenti (saltate)",
   "upload.final_detail": "{n_files} file elaborati alle {time} UTC",
-
   "common.save": "Salva",
   "common.cancel": "Annulla",
   "common.confirm": "Conferma",
@@ -806,12 +792,41 @@
   "common.success": "Operazione completata",
   "common.yes": "Sì",
   "common.no": "No",
-
   "chat.title": "Assistente Spendif.ai",
   "chat.mode_label": "Modalità: **{mode}**",
   "chat.welcome": "Ciao! Sono l'assistente Spendif.ai. Come posso aiutarti?",
   "chat.placeholder": "Scrivi la tua domanda...",
   "chat.thinking": "Sto cercando...",
   "chat.sources": "Fonti",
-  "chat.clear": "Cancella conversazione"
+  "chat.clear": "Cancella conversazione",
+  "country.AT": "Austria",
+  "country.AU": "Australia",
+  "country.BE": "Belgio",
+  "country.CA": "Canada",
+  "country.CH": "Svizzera",
+  "country.CZ": "Rep. Ceca",
+  "country.DE": "Germania",
+  "country.DK": "Danimarca",
+  "country.ES": "Spagna",
+  "country.FI": "Finlandia",
+  "country.FR": "Francia",
+  "country.GB": "Gran Bretagna",
+  "country.HU": "Ungheria",
+  "country.IE": "Irlanda",
+  "country.IT": "Italia",
+  "country.LU": "Lussemburgo",
+  "country.NL": "Paesi Bassi",
+  "country.NO": "Norvegia",
+  "country.PL": "Polonia",
+  "country.PT": "Portogallo",
+  "country.RO": "Romania",
+  "country.SE": "Svezia",
+  "country.SI": "Slovenia",
+  "country.SK": "Slovacchia",
+  "country.SM": "San Marino",
+  "country.US": "USA",
+  "context.daily": "Quotidianità",
+  "context.work": "Lavoro",
+  "context.holiday": "Vacanza",
+  "onboarding.preparing_categories.done": "✅ Categorie pronte!"
 }
