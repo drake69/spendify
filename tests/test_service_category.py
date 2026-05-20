@@ -207,3 +207,64 @@ class TestPrewarmNsiTaxonomyMap:
             lambda self, s, t, llm_backend=None: (_ for _ in ()).throw(ValueError("no backend"))
         )
         assert svc.prewarm_nsi_taxonomy_map() is False
+
+
+class TestBackendAutoBuild:
+    """Cover the `backend is None` branch in categorize_single /
+    categorize_many: the service must build the backend itself from
+    settings via `_build_categorizer_backend or _build_backend`."""
+
+    def test_categorize_single_builds_backend_when_none(self, svc, monkeypatch):
+        """Lines 44-45: no backend passed → service constructs one and uses it."""
+        from core import orchestrator
+        from core.categorizer import CategorizationResult, CategorySource
+        from core.models import Confidence
+
+        built = {"n": 0}
+        # Return a fake backend object — categorize_transaction will be
+        # stubbed below so it never actually calls .complete on it.
+        monkeypatch.setattr(
+            orchestrator, "_build_backend",
+            lambda _cfg: built.__setitem__("n", built["n"] + 1) or object()
+        )
+        monkeypatch.setattr(orchestrator, "_build_categorizer_backend", lambda _cfg: None)
+
+        # Stub categorize_transaction so we don't hit a real LLM
+        from services import category_service as cs
+        def _stub(**_kwargs):
+            return CategorizationResult(
+                category="X", subcategory="Y",
+                confidence=Confidence.high,
+                source=CategorySource.llm, model_name=None,
+                to_review=False,
+            )
+        monkeypatch.setattr(cs, "categorize_transaction", _stub)
+
+        result = svc.categorize_single(
+            description="qualsiasi", amount=-1.0, doc_type="bank_statement",
+            backend=None,
+        )
+        assert built["n"] == 1
+        assert result.category == "X"
+
+    def test_categorize_many_builds_backend_when_none(self, svc, monkeypatch):
+        """Lines 73-74: no backend passed to categorize_many → constructed."""
+        from core import orchestrator
+        from services import category_service as cs
+
+        built = {"n": 0}
+        monkeypatch.setattr(
+            orchestrator, "_build_backend",
+            lambda _cfg: built.__setitem__("n", built["n"] + 1) or object()
+        )
+        monkeypatch.setattr(orchestrator, "_build_categorizer_backend", lambda _cfg: None)
+
+        # Stub categorize_batch + NsiTaxonomyService.get_or_build so the
+        # call returns deterministically.
+        monkeypatch.setattr(cs, "categorize_batch", lambda **_kwargs: [])
+        from services.nsi_taxonomy_service import NsiTaxonomyService
+        monkeypatch.setattr(NsiTaxonomyService, "get_or_build", lambda *_a, **_kw: {})
+
+        result = svc.categorize_many(transactions=[], backend=None)
+        assert built["n"] == 1
+        assert result == []

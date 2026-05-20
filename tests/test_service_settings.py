@@ -119,3 +119,80 @@ def test_create_and_delete_account(svc):
 def test_delete_account_not_found(svc):
     ok = svc.delete_account(9999)
     assert ok is False
+
+
+# ── Account rename + bulk settings + raw taxonomy + default with subs ────────
+
+def test_rename_account_cascades(svc):
+    """rename_account updates the row and reports the cascade count."""
+    acc = svc.create_account("Vecchio", "BancaY", account_type="bank_account")
+    count = svc.rename_account(acc.id, "Nuovo", "BancaZ", new_account_type="credit_card")
+    # Returns the number of transactions touched by the cascade (0 here, no tx)
+    assert count == 0
+    # The account row itself is now renamed
+    accounts = svc.get_accounts()
+    by_id = {a.id: a for a in accounts}
+    assert by_id[acc.id].name == "Nuovo"
+    assert by_id[acc.id].bank_name == "BancaZ"
+    assert by_id[acc.id].account_type == "credit_card"
+
+
+def test_set_bulk_writes_multiple_keys(svc):
+    """set_bulk persists a dict of key/value pairs in one transaction."""
+    svc.set_bulk({
+        "k_alpha": "1",
+        "k_beta":  "due",
+        "k_gamma": "3.14",
+    })
+    assert svc.get("k_alpha") == "1"
+    assert svc.get("k_beta") == "due"
+    assert svc.get("k_gamma") == "3.14"
+
+
+def test_get_taxonomy_raw_returns_row_tuples(svc):
+    """get_taxonomy_raw returns plain SQLAlchemy Row tuples for one type
+    plus the full subcategory list."""
+    # Seed: one expense cat + 2 subs
+    cat = svc.create_category("Spese Test", type_="expense")
+    svc.create_subcategory(cat.id, "Sub A")
+    svc.create_subcategory(cat.id, "Sub B")
+
+    cat_rows, sub_rows = svc.get_taxonomy_raw("expense")
+    # cat_rows scoped to "expense"
+    cat_names = [r[1] for r in cat_rows]  # row[1] = name
+    assert "Spese Test" in cat_names
+    # sub_rows is global → both subs are present
+    sub_names = [r[2] for r in sub_rows]
+    assert "Sub A" in sub_names
+    assert "Sub B" in sub_names
+
+
+def test_get_taxonomy_raw_other_type_is_empty(svc):
+    """get_taxonomy_raw('income') only sees the income categories."""
+    svc.create_category("Spese Test", type_="expense")
+    cat_rows, _ = svc.get_taxonomy_raw("income")
+    # The expense category must NOT be in the income result
+    cat_names = [r[1] for r in cat_rows]
+    assert "Spese Test" not in cat_names
+
+
+def test_get_default_taxonomy_preview_for_known_language(svc):
+    """get_default_taxonomy_preview returns {expenses, income} category
+    lists for a supported language."""
+    out = svc.get_default_taxonomy_preview("it")
+    assert "expenses" in out
+    assert "income" in out
+    assert isinstance(out["expenses"], list)
+    assert isinstance(out["income"], list)
+
+
+def test_get_default_taxonomy_full_preview_includes_subcategories(svc):
+    """get_default_taxonomy_full_preview returns nested dicts with the
+    'subcategories' list per category."""
+    out = svc.get_default_taxonomy_full_preview("it")
+    assert isinstance(out["expenses"], list)
+    if out["expenses"]:
+        e0 = out["expenses"][0]
+        assert "category" in e0
+        assert "subcategories" in e0
+        assert isinstance(e0["subcategories"], list)

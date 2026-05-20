@@ -3,6 +3,12 @@ __pycache__/
 .venv/
 venv
 
+# Test / coverage artefacts
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+
 # Build artifacts (PyInstaller)
 build/
 dist/
