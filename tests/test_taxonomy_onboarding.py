@@ -472,3 +472,59 @@ class TestAutoSkipMigration:
         # Migration must NOT have overwritten the explicit 'false'
         svc = SettingsService(eng)
         assert svc.is_onboarding_done() is False
+
+
+class TestStep6FirstImport:
+    """Verify the step 6 'Primo Import' wizard step behaviour.
+
+    Lo step 6 si raggiunge dopo che step 5 (Conferma) ha flippato
+    onboarding_done=true. Il gate in app.py continua a renderizzare il
+    wizard finché _K_STEP == 6, così l'utente sceglie tra "Carica ora"
+    e "Lo faccio dopo" senza che la chiusura della finestra ripercorra
+    il wizard al riavvio.
+    """
+
+    def test_onboarding_done_flag_set_before_step6(self, tmp_path):
+        """`_mark_onboarding_complete` flips the flag — closing the app
+        while sitting on step 6 must never replay the wizard."""
+        from db.models import get_engine, create_tables
+        from services.settings_service import SettingsService
+        from ui.onboarding_page import _mark_onboarding_complete
+
+        eng = get_engine(f"sqlite:///{tmp_path}/test.db")
+        create_tables(eng)
+        svc = SettingsService(eng)
+        assert svc.is_onboarding_done() is False
+
+        _mark_onboarding_complete(svc)
+        assert svc.is_onboarding_done() is True
+
+    def test_exit_onboarding_clears_session_and_sets_target_page(self, monkeypatch):
+        """`_exit_onboarding` wipes the wizard state and routes the user
+        to the chosen page (import or home)."""
+        from ui import onboarding_page
+
+        # Fake streamlit.session_state as a plain dict; capture rerun().
+        fake_state = {
+            onboarding_page._K_STEP: 6,
+            onboarding_page._K_LANG: "it",
+            onboarding_page._K_COUNTRY: "IT",
+            onboarding_page._K_NAMES: "Mario",
+            onboarding_page._K_ACCOUNTS: [{"name": "BancaX", "bank": "", "type": "bank_account"}],
+            "_ob_prev_lang_for_country": "it",
+            "_ob_country_select": "Italia",
+            "_ob_nsi_prewarm_done": True,
+            "page": None,
+        }
+        reran = {"n": 0}
+        monkeypatch.setattr(onboarding_page.st, "session_state", fake_state)
+        monkeypatch.setattr(onboarding_page.st, "rerun", lambda: reran.__setitem__("n", reran["n"] + 1))
+
+        onboarding_page._exit_onboarding(target_page="import")
+
+        assert reran["n"] == 1
+        assert fake_state["page"] == "import"
+        for k in (onboarding_page._K_STEP, onboarding_page._K_LANG, onboarding_page._K_COUNTRY,
+                  onboarding_page._K_NAMES, onboarding_page._K_ACCOUNTS,
+                  "_ob_prev_lang_for_country", "_ob_country_select", "_ob_nsi_prewarm_done"):
+            assert k not in fake_state, f"{k} should have been cleared"

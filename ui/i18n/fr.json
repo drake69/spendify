@@ -828,5 +828,12 @@
   "context.daily": "Quotidien",
   "context.work": "Travail",
   "context.holiday": "Vacances",
-  "onboarding.preparing_categories.done": "✅ Catégories prêtes !"
+  "onboarding.preparing_categories.done": "✅ Catégories prêtes !",
+  "onboarding.first_import.title": "📥 Chargez votre premier relevé",
+  "onboarding.first_import.caption": "Pour commencer avec quelque chose de concret, nous vous suggérons de charger un petit CSV/XLSX (même un seul mois). C'est facultatif.",
+  "onboarding.first_import.upload_now": "📤 Charger maintenant",
+  "onboarding.first_import.upload_now_help": "Aller à la page Import",
+  "onboarding.first_import.skip_for_now": "⏭️ Je le ferai plus tard",
+  "onboarding.first_import.skip_help": "Atterrit sur l'Accueil, vous pouvez importer à tout moment",
+  "onboarding.first_import.step_label": "Premier import"
 }

@@ -91,7 +91,12 @@ st.markdown("""
 from services.settings_service import SettingsService as _SvcCheck
 _cfg_check = _SvcCheck(engine)
 
-if not _cfg_check.is_onboarding_done():
+# `onboarding_done` is flipped at the end of step 5 (Conferma) so that
+# closing the app on step 6 (Primo Import) does NOT replay the wizard at
+# next launch. We keep rendering the wizard while the session is still on
+# step 6, so the user can finish choosing between "upload now" vs "skip".
+_in_step6 = st.session_state.get("_ob_step") == 6
+if not _cfg_check.is_onboarding_done() or _in_step6:
     # Hide chrome — full-screen immersive look while onboarding.
     st.markdown("""
         <style>

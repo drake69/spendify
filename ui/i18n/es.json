@@ -828,5 +828,12 @@
   "context.daily": "Cotidiano",
   "context.work": "Trabajo",
   "context.holiday": "Vacaciones",
-  "onboarding.preparing_categories.done": "✅ ¡Categorías listas!"
+  "onboarding.preparing_categories.done": "✅ ¡Categorías listas!",
+  "onboarding.first_import.title": "📥 Carga tu primer extracto",
+  "onboarding.first_import.caption": "Para empezar con algo concreto, te sugerimos cargar un CSV/XLSX pequeño (incluso solo un mes). Es opcional.",
+  "onboarding.first_import.upload_now": "📤 Cargar ahora",
+  "onboarding.first_import.upload_now_help": "Ir a la página Importar",
+  "onboarding.first_import.skip_for_now": "⏭️ Lo haré después",
+  "onboarding.first_import.skip_help": "Aterriza en el Inicio, puedes importar en cualquier momento",
+  "onboarding.first_import.step_label": "Primer import"
 }

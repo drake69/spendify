@@ -133,15 +133,15 @@ _DEFAULT_LOCALE = _LOCALE["it"]
 # ── UI labels (multi-language minimal set for the wizard itself) ───────────────
 _UI: dict[str, dict] = {
     "it": {"next": "Avanti →", "back": "← Indietro", "start": "🚀 Inizia!",
-           "step_labels": ["Lingua", "Titolari", "Conti", "Tassonomia", "Categorie", "Conferma"]},
+           "step_labels": ["Lingua", "Titolari", "Conti", "Tassonomia", "Categorie", "Conferma", "Primo import"]},
     "en": {"next": "Next →",   "back": "← Back",      "start": "🚀 Let's go!",
-           "step_labels": ["Language", "Owners", "Accounts", "Taxonomy", "Categories", "Confirm"]},
+           "step_labels": ["Language", "Owners", "Accounts", "Taxonomy", "Categories", "Confirm", "First import"]},
     "fr": {"next": "Suivant →","back": "← Retour",    "start": "🚀 Commencer!",
-           "step_labels": ["Langue", "Titulaires", "Comptes", "Taxonomie", "Catégories", "Confirmer"]},
+           "step_labels": ["Langue", "Titulaires", "Comptes", "Taxonomie", "Catégories", "Confirmer", "Premier import"]},
     "de": {"next": "Weiter →", "back": "← Zurück",    "start": "🚀 Loslegen!",
-           "step_labels": ["Sprache", "Inhaber", "Konten", "Taxonomie", "Kategorien", "Bestätigen"]},
+           "step_labels": ["Sprache", "Inhaber", "Konten", "Taxonomie", "Kategorien", "Bestätigen", "Erster Import"]},
     "es": {"next": "Siguiente →","back": "← Atrás",   "start": "🚀 ¡Empezar!",
-           "step_labels": ["Idioma", "Titulares", "Cuentas", "Taxonomía", "Categorías", "Confirmar"]},
+           "step_labels": ["Idioma", "Titulares", "Cuentas", "Taxonomía", "Categorías", "Confirmar", "Primer import"]},
 }
 
 
@@ -775,13 +775,58 @@ def _step5_confirm(cfg_svc: SettingsService, lang_options: list[tuple[str, str]]
                      use_container_width=True, key="_ob_conf_start",
                      disabled=not _dl_ready,
                      help=_start_tooltip):
-            _finalise_onboarding(cfg_svc)
+            # Flip onboarding_done so the wizard never replays even if the
+            # user closes the app on step 6. Then move to step 6
+            # (Primo Import) where the user picks "upload now" vs "later".
+            _mark_onboarding_complete(cfg_svc)
+            st.session_state[_K_STEP] = 6
+            st.rerun()
 
     # Auto-refresh every 2 s while we are waiting on the model so the user
     # sees live progress without manually re-running.
     if not _dl_ready:
         time.sleep(2)
         st.rerun()
+
+
+def _step6_first_import(cfg_svc: SettingsService, lang: str) -> None:
+    """Step 6 — invito facoltativo a caricare il primo estratto conto.
+
+    Reached only after `_mark_onboarding_complete` has flipped
+    `onboarding_done=true` at the end of step 5, so closing the app here
+    does NOT replay the wizard on the next launch. Two buttons:
+
+      • "Carica ora"   → lands on the Import page.
+      • "Lo faccio dopo" → lands on the Home (today still routed to Import
+                            until the Home page lands in a follow-up).
+
+    Both options call `_exit_onboarding(target_page)` which clears wizard
+    session state and reruns.
+    """
+    st.subheader(t("onboarding.first_import.title"))
+    st.caption(t("onboarding.first_import.caption"))
+    st.write("")
+
+    col_upload, col_skip = st.columns([1, 1])
+    with col_upload:
+        if st.button(
+            t("onboarding.first_import.upload_now"),
+            type="primary",
+            use_container_width=True,
+            key="_ob_fi_upload",
+            help=t("onboarding.first_import.upload_now_help"),
+        ):
+            _exit_onboarding(target_page="import")
+    with col_skip:
+        if st.button(
+            t("onboarding.first_import.skip_for_now"),
+            use_container_width=True,
+            key="_ob_fi_skip",
+            help=t("onboarding.first_import.skip_help"),
+        ):
+            # Home page does not exist yet — land on Import for now.
+            # Switch to "home" when the Home page is implemented.
+            _exit_onboarding(target_page="import")
 
 
 def _persist_choices(
@@ -897,17 +942,22 @@ def _run_nsi_prewarm(cfg_svc: SettingsService) -> bool:
     return ok
 
 
-def _finalise_onboarding(cfg_svc: SettingsService) -> None:
-    """Last action of the wizard: flip onboarding_done, clear session state,
-    show success toast, rerun so the app navigates to the home page."""
+def _mark_onboarding_complete(cfg_svc: SettingsService) -> None:
+    """Set onboarding_done. Called at the end of step 5 (Conferma) so the
+    user can be navigated to step 6 (Primo Import) without the wizard
+    re-triggering on rerun."""
     cfg_svc.set_onboarding_done()
 
+
+def _exit_onboarding(target_page: str) -> None:
+    """Clear all wizard session state and land on *target_page* (home or
+    import). Called from step 6 after the user picks "Carica ora" or "Lo
+    faccio dopo"."""
     for k in (_K_STEP, _K_LANG, _K_COUNTRY, _K_NAMES, _K_ACCOUNTS,
               "_ob_prev_lang_for_country", "_ob_country_select",
               "_ob_nsi_prewarm_done"):
         st.session_state.pop(k, None)
-
-    st.success(t("onboarding.step3.done"))
+    st.session_state["page"] = target_page
     st.rerun()
 
 
@@ -964,3 +1014,5 @@ def render_onboarding_page(engine) -> None:
         _step4_prepare_categories(cfg_svc, lang)
     elif step == 5:
         _step5_confirm(cfg_svc, lang_options)
+    elif step == 6:
+        _step6_first_import(cfg_svc, lang)

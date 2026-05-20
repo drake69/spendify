@@ -828,5 +828,12 @@
   "context.daily": "Daily",
   "context.work": "Work",
   "context.holiday": "Holiday",
-  "onboarding.preparing_categories.done": "✅ Categories ready!"
+  "onboarding.preparing_categories.done": "✅ Categories ready!",
+  "onboarding.first_import.title": "📥 Upload your first statement",
+  "onboarding.first_import.caption": "To get started with something concrete, we suggest uploading a small CSV/XLSX (even just one month). It's optional.",
+  "onboarding.first_import.upload_now": "📤 Upload now",
+  "onboarding.first_import.upload_now_help": "Go to the Import page",
+  "onboarding.first_import.skip_for_now": "⏭️ I'll do it later",
+  "onboarding.first_import.skip_help": "Lands on the Home, you can import any time",
+  "onboarding.first_import.step_label": "First import"
 }
