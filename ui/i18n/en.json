@@ -835,5 +835,7 @@
   "onboarding.first_import.upload_now_help": "Go to the Import page",
   "onboarding.first_import.skip_for_now": "⏭️ I'll do it later",
   "onboarding.first_import.skip_help": "Lands on the Home, you can import any time",
-  "onboarding.first_import.step_label": "First import"
+  "onboarding.first_import.step_label": "First import",
+  "upload.empty_state.title": "📥 No transactions yet",
+  "upload.empty_state.caption": "Upload your first bank statement (CSV or XLSX) below to get started. Spendif.ai will parse the transactions and sort them into the categories you picked during setup."
 }

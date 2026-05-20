@@ -164,3 +164,16 @@ def test_get_by_raw_pattern(seeded_engine):
     result = svc.get_by_raw_pattern("netflix", "contains")
     assert len(result) == 1
     assert result[0].id == "r1"
+
+
+# ── has_transactions ─────────────────────────────────────────────────────────
+
+def test_has_transactions_empty_db(svc):
+    """Empty `transaction` table → returns False."""
+    assert svc.has_transactions() is False
+
+
+def test_has_transactions_after_first_insert(seeded_engine):
+    """At least one row in `transaction` → returns True."""
+    from services.transaction_service import TransactionService
+    assert TransactionService(seeded_engine).has_transactions() is True

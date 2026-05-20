@@ -449,7 +449,16 @@ def render_upload_page(engine):
     )
 
     if not uploaded_files:
-        st.info(t_fn("upload.no_files_hint"))
+        # Empty-state amichevole quando il DB non ha ancora transazioni:
+        # è il caso classico del post-onboarding "Lo faccio dopo". Una volta
+        # importata anche una sola transazione, mostriamo invece il normale
+        # hint del file picker.
+        from services.transaction_service import TransactionService
+        if not TransactionService(engine).has_transactions():
+            st.markdown(f"### {t_fn('upload.empty_state.title')}")
+            st.caption(t_fn("upload.empty_state.caption"))
+        else:
+            st.info(t_fn("upload.no_files_hint"))
         _render_job_status_poll(import_svc)
         _render_last_import_summary()
         return

@@ -835,5 +835,7 @@
   "onboarding.first_import.upload_now_help": "Aller à la page Import",
   "onboarding.first_import.skip_for_now": "⏭️ Je le ferai plus tard",
   "onboarding.first_import.skip_help": "Atterrit sur l'Accueil, vous pouvez importer à tout moment",
-  "onboarding.first_import.step_label": "Premier import"
+  "onboarding.first_import.step_label": "Premier import",
+  "upload.empty_state.title": "📥 Aucune transaction importée",
+  "upload.empty_state.caption": "Chargez votre premier relevé bancaire (CSV ou XLSX) ci-dessous pour commencer. Spendif.ai analyse les transactions et les classe dans les catégories choisies lors de la configuration."
 }

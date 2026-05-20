@@ -26,6 +26,16 @@ class TransactionService:
         with self._session() as s:
             return repository.get_transactions(s, filters or {}, limit, offset)
 
+    def has_transactions(self) -> bool:
+        """True if the `transaction` table has at least one row.
+
+        Used by the default-page selector after onboarding: if the DB is
+        empty we land the user on the Import page (with an empty-state
+        message), otherwise on the Home dashboard.
+        """
+        with self._session() as s:
+            return s.query(Transaction.id).limit(1).first() is not None
+
     def update_category(self, tx_id: str, category: str, subcategory: str) -> bool:
         with self._session() as s:
             result = repository.update_transaction_category(s, tx_id, category, subcategory)

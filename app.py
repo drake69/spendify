@@ -134,6 +134,14 @@ from ui.i18n import set_language as _set_lang
 _set_lang(_cfg_check.get_all().get("ui_language", "it"))
 
 # ── Sidebar navigation ────────────────────────────────────────────────────────
+# Default landing page is data-driven: with at least one transaction we go
+# straight to the Home dashboard; on an empty DB we land on Import (whose
+# empty state nudges the user to upload). Computed once here so sidebar
+# can stay engine-free.
+if "page" not in st.session_state:
+    from services.transaction_service import TransactionService as _TxSvc
+    st.session_state["page"] = "home" if _TxSvc(engine).has_transactions() else "import"
+
 from ui.sidebar import render_sidebar
 
 page = render_sidebar()

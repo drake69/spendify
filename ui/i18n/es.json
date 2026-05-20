@@ -835,5 +835,7 @@
   "onboarding.first_import.upload_now_help": "Ir a la página Importar",
   "onboarding.first_import.skip_for_now": "⏭️ Lo haré después",
   "onboarding.first_import.skip_help": "Aterriza en el Inicio, puedes importar en cualquier momento",
-  "onboarding.first_import.step_label": "Primer import"
+  "onboarding.first_import.step_label": "Primer import",
+  "upload.empty_state.title": "📥 Sin transacciones importadas",
+  "upload.empty_state.caption": "Carga tu primer extracto bancario (CSV o XLSX) debajo para empezar. Spendif.ai analiza las transacciones y las organiza en las categorías que elegiste durante la configuración."
 }
