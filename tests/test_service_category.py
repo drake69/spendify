@@ -149,3 +149,61 @@ def test_categorize_many_deterministic(engine):
     for r in results:
         assert r.category == "Alimentari"
         assert r.source == CategorySource.rule
+
+
+class TestPrewarmNsiTaxonomyMap:
+    """Cover CategoryService.prewarm_nsi_taxonomy_map() — the onboarding
+    step 4 hook that fires the single LLM call mapping OSM tags to
+    (category, subcategory). Build the backend stub so we never actually
+    hit a real LLM."""
+
+    def test_returns_true_when_nsi_build_succeeds(self, svc, monkeypatch):
+        """Happy path: NsiTaxonomyService.build returns without error →
+        prewarm reports success."""
+        from services.nsi_taxonomy_service import NsiTaxonomyService
+
+        # Pretend the orchestrator builds a usable backend (we don't care
+        # what it is, NsiTaxonomyService.build is monkeypatched).
+        from core import orchestrator
+        monkeypatch.setattr(orchestrator, "_build_backend", lambda _cfg: object())
+        monkeypatch.setattr(orchestrator, "_build_categorizer_backend", lambda _cfg: None)
+
+        called = {"n": 0}
+        def _fake_build(self, session, taxonomy, llm_backend=None):
+            called["n"] += 1
+            return {}
+        monkeypatch.setattr(NsiTaxonomyService, "build", _fake_build)
+
+        assert svc.prewarm_nsi_taxonomy_map() is True
+        assert called["n"] == 1
+
+    def test_returns_false_on_failure(self, svc, monkeypatch):
+        """Any exception inside build → caller gets False, no crash.
+        The import path still has the static fallback covering us."""
+        from services.nsi_taxonomy_service import NsiTaxonomyService
+        from core import orchestrator
+        monkeypatch.setattr(orchestrator, "_build_backend", lambda _cfg: object())
+        monkeypatch.setattr(orchestrator, "_build_categorizer_backend", lambda _cfg: None)
+
+        def _boom(self, session, taxonomy, llm_backend=None):
+            raise RuntimeError("synthetic LLM failure")
+        monkeypatch.setattr(NsiTaxonomyService, "build", _boom)
+
+        assert svc.prewarm_nsi_taxonomy_map() is False
+
+    def test_returns_false_when_backend_unavailable(self, svc, monkeypatch):
+        """If both backend builders return None (no LLM configured),
+        prewarm should report False — never crash."""
+        from core import orchestrator
+        monkeypatch.setattr(orchestrator, "_build_backend", lambda _cfg: None)
+        monkeypatch.setattr(orchestrator, "_build_categorizer_backend", lambda _cfg: None)
+
+        # NsiTaxonomyService.build is called with llm_backend=None → the
+        # service itself fails over to static-only mapping. Stub it to
+        # raise to exercise the except branch deterministically.
+        from services.nsi_taxonomy_service import NsiTaxonomyService
+        monkeypatch.setattr(
+            NsiTaxonomyService, "build",
+            lambda self, s, t, llm_backend=None: (_ for _ in ()).throw(ValueError("no backend"))
+        )
+        assert svc.prewarm_nsi_taxonomy_map() is False
